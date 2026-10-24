@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Gratis.Controllers;
 #if GRATIS_PREVIEW
@@ -24,7 +25,7 @@ public interface IPaletteSource
     void Used();
 }
 
-public sealed class PaletteOverlay(IPaletteSource source)
+public sealed partial class PaletteOverlay(IPaletteSource source)
 {
     private static readonly PlaceKind[] scopes = [PlaceKind.All, PlaceKind.Aetheryte, PlaceKind.Zone, PlaceKind.Quest, PlaceKind.Marker];
     private static readonly string[] labels = ["All", "Aetherytes", "Zones", "Quests", "Markers"];
@@ -93,7 +94,9 @@ public sealed class PaletteOverlay(IPaletteSource source)
         if (searched != query || searchedScope != scope) { selected = 0; scrollSelection = true; confirming = null; message = ""; }
         searched = query; searchedScope = scope; revision = source.Revision; context = source.Context;
         showUnattuned = config.PaletteShowUnattuned;
-        results = PlaceSearch.Find(source.Entries, query, scopes[scope], context, recent, source.Access, showUnattuned);
+        var entries = NearestPlaces.Parse(query, out _) ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries) : source.Entries;
+        results = PlaceSearch.Find(entries, query, scopes[scope], context, recent, source.Access, showUnattuned);
+        if (NearestPlaces.Parse(query, out _) && context.Player == null) message = "Player position is unavailable on the selected map.";
         selected = Math.Clamp(selected, 0, Math.Max(0, results.Length - 1));
     }
 
@@ -107,7 +110,7 @@ public sealed class PaletteOverlay(IPaletteSource source)
         if (config.MapCircle) { var inset = area * ((1 - .70710678f) / 2); min += inset; max -= inset; area = max - min; }
         var rows = results.Length == 0 ? 2 : Math.Min(results.Length, Math.Clamp(config.PaletteMaxResults, 1, 12));
         var size = new Vector2(MathF.Min(580 * scale, MathF.Max(1, area.X - 24 * scale)),
-            MathF.Min((116 + rows * 54) * scale, MathF.Max(1, area.Y - 24 * scale)));
+            MathF.Min((116 + rows * 54 + (query.Length == 0 ? 28 : 0)) * scale, MathF.Max(1, area.Y - 24 * scale)));
         PanelMin = min + (area - size) / 2; PanelMax = PanelMin + size;
         if (size.X < 150 * scale || size.Y < 112 * scale) return;
         using var font = MapDrawContext.Current.GetChromeFont(14 * scale, ChromeFontRole.Body)?.Push();
@@ -150,6 +153,7 @@ public sealed class PaletteOverlay(IPaletteSource source)
                         ImGui.PopStyleColor();
                     }
                 }
+                DrawNearestChips(size.X, scale);
                 Search(config);
                 var page = Math.Max(1, (int)((size.Y / scale - 116) / 54));
                 var previous = selected;
@@ -245,7 +249,8 @@ public sealed class PaletteOverlay(IPaletteSource source)
         list.PushClipRect(textMin, new Vector2(MathF.Max(textMin.X + 1, textRight), start.Y + rowHeight), true);
         using (MapDrawContext.Current.GetChromeFont(11 * scale, ChromeFontRole.Body)?.Push()) {
             var detail = result.Place.Subtitle;
-            if (result.Distance is { } distance) detail += $"  ·  {distance:0}y";
+            if (result.Distance is { } distance) detail = context.Player is { } player && result.Place.World is { } world && NearestPlaces.Parse(query, out _)
+                ? $"{NearestPlaces.Direction(player, world)} {distance:0}y  ·  " + detail : detail + $"  ·  {distance:0}y";
             list.AddText(textMin + new Vector2(0, 20 * scale), ImGui.GetColorU32(new Vector4(.67f, .69f, .73f, 1)), detail);
         }
         list.PopClipRect();

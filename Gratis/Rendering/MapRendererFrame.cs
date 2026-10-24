@@ -67,9 +67,11 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     {
         if (viewportMotion.HasAdvanced(host.FrameId)) return;
         if (textureSize.X > 0 && textureSize.Y > 0) viewportTextureSize = textureSize;
+        PrepareRememberedView();
         wasFollowing = host.Config.FollowPlayer;
         MapDrawContext.Current.Trace?.MotionAdvance();
         AdvanceViewportMotion();
+        AdvanceRememberedView();
         UpdateDrawOffset();
     }
 
@@ -126,6 +128,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void InteractWithViewport(bool drag = false)
     {
+        restoringView = null;
         if (Spotlight.OwnsViewport) { Spotlight.End(host.Now, "input: restoring viewport"); return; }
         host.Config.FollowPlayer = viewportMotion.Interact(host.Config, host.Now, drag);
     }
@@ -219,6 +222,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     private void DrawMapMarkers()
     {
         var markers = MapDrawContext.Current.Markers;
+        MapDrawContext.Current.EdgePointers.Begin(this);
+        MapDrawContext.Current.MarkerTargets.Begin(this);
         markers.Begin();
         host.CollectMarkers();
         if (markers.Enabled) host.DrawFlag();

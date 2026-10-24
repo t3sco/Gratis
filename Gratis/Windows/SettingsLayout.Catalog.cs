@@ -86,6 +86,8 @@ public sealed partial class SettingsLayout
         Add("TravelConfirmGil", "Confirm travel cost", 0, 10000, "%.0f gil");
         Add("AetheryteChips", "Nearest aetheryte chips");
         Group("Map", "Viewport");
+        Add("RememberMapView", "Remember map views", when: Gratis, tip: "Restore each map's zoom and unfollowed pan; stores up to 100 maps. Gratis only.");
+        Add("RememberMapLens", "Remember map lenses", when: Gratis);
         Add("ScaleWithFrame", "Scale with frame", tip: "Uses the shorter side; resizing preserves your zoom.");
         Add("ClampToMap", "Clamp to map", tip: "Keep the viewport inside the map texture, including near an edge.");
         Add("FollowPlayer", "Follow player");
@@ -127,6 +129,11 @@ public sealed partial class SettingsLayout
         Add("SpotlightIncludePlayer", "Frame player and target");
         Add("SpotlightDistanceChip", "Distance chip");
         Add("SpotlightGuideLine", "Dotted guide line", tip: "Straight guide only; does not calculate a route.");
+        Group("Map", "Edge pointers", Gratis);
+        Add("EdgePointers", "Off-frame target pointers");
+        Add("EdgePointerMax", "Maximum pointers", 1, 12, "%.0f");
+        Add("EdgePointerDistance", "Pointer distances");
+        Add("EdgePointerParty", "Include off-frame party", tip: "Off by default; priority targets are always eligible.");
         Group("Map", "Map labels and fog");
         Add("ShowTextLabels", "Text labels");
         Add("ScaleTextWithZoom", "Scale labels with zoom", when: c => c.ShowTextLabels);

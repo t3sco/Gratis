@@ -39,8 +39,8 @@ internal sealed class PaletteFixture : IPaletteSource
     public void Used() => driver.Config.PaletteHintSeen = true;
     public void Show(PlaceEntry place) {
         Shown = place;
-        if (place.Kind == PlaceKind.Pin && place.World is { } world)
-            driver.Renderer.BeginSpotlight(new(world, place.MapId, SpotlightSource.Pin));
+        if (place.World is { } world)
+            driver.Renderer.BeginSpotlight(new(world, place.MapId, place.Kind == PlaceKind.Pin ? SpotlightSource.Pin : SpotlightSource.Search));
     }
     public string Teleport(PlaceEntry place, bool confirmed)
     {

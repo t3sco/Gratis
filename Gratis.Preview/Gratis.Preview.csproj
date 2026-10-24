@@ -17,6 +17,7 @@
     <Compile Include="../Gratis/Windows/Settings*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Controllers/ZoneSwitchPolicy.cs" Link="Shared/ZoneSwitchPolicy.cs" />
     <Compile Include="../Gratis/Controllers/PlaceIndex.cs;../Gratis/Controllers/PlaceIndexBuilder.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../Gratis/Controllers/NearestPlaces.cs" Link="Shared/NearestPlaces.cs" />
     <Compile Include="../Gratis/Rendering/*.cs" Exclude="../Gratis/Rendering/DalamudMapDrawContext.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Classes/HoverFlags.cs;../Gratis/Classes/DrawHelpers.cs;../Gratis/Classes/MapShape.cs;../Gratis/Classes/MarkerType.cs;../Gratis/Data/IconSetting.cs;../Gratis/Data/SystemConfig.cs" Link="Shared/%(Filename)%(Extension)" />
   </ItemGroup>

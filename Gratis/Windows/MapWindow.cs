@@ -68,6 +68,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
 
     public override void OnOpen()
     {
+        System.MapRenderer.Frame.RestoreMapViewOnOpen();
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
         if (ProcessingCommand) {
             ProcessingCommand = false;

@@ -34,6 +34,8 @@ public abstract class MapDrawContext
 #endif
     public MapFrameTrace? Trace { get; set; }
     public MapAssistance? Assistance { get; set; }
+    public EdgePointers EdgePointers { get; } = new();
+    public MapMarkerTargets MarkerTargets { get; } = new();
     public ChromeVisibility Chrome { get; } = new();
     public BlurDiagnostics Blur { get; } = new();
     public MarkerBatch Markers { get; } = new();

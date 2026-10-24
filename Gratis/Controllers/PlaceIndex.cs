@@ -16,6 +16,7 @@ public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string S
     uint MapId, uint TerritoryId, Vector2? World = null, uint AetheryteId = 0,
     uint HubId = 0, string Aliases = "", uint Expansion = 0)
 {
+    public uint Icon { get; init; }
     public string SearchName { get; } = PlaceSearch.Normalize(Name);
     public string SearchAliases { get; } = PlaceSearch.Normalize(Aliases);
     public string SearchContext { get; } = PlaceSearch.Normalize(Subtitle);
@@ -106,6 +107,7 @@ public static class PlaceSearch
         PlaceSearchContext context, IReadOnlyDictionary<string, long> recent,
         Func<PlaceEntry, PlaceAccess> access, bool showUnattuned = true)
     {
+        if (NearestPlaces.Parse(query, out var nearest)) return NearestPlaces.Find(entries, nearest, context, access, showUnattuned);
         var parsed = Parse(query, scope);
         var tokens = Normalize(parsed.Query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var found = new List<PlaceResult>();

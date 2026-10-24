@@ -102,7 +102,7 @@ public sealed class MapWindowFrame
                     host.Config.BlurBackground, host.Config.BlurStrength);
             }
             var mapFocused = ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows);
-            var mapInteracting = !paletteInput && MapDrawContext.Current.Assistance?.InputActive != true && (isDragStarted || (mouseOverFrame &&
+            var mapInteracting = !paletteInput && !MapDrawContext.Current.EdgePointers.PointerOver && MapDrawContext.Current.Assistance?.InputActive != true && (isDragStarted || (mouseOverFrame &&
                 (ImGui.IsAnyMouseDown() || ImGui.IsAnyItemActive() || ImGui.GetIO().MouseWheel != 0)));
             host.Renderer.UpdateFollowInteraction(!moveBlocked && mapInteracting,
                 !moveBlocked && mouseOverFrame, mapFocused, host.PlayerPosition);
@@ -124,6 +124,7 @@ public sealed class MapWindowFrame
             else LensDrawing.Draw();
             MapDrawContext.Current.Assistance?.Draw(host);
             MoveHandle.Draw(host.Config);
+            MapDrawContext.Current.EdgePointers.Draw(host);
             }
             MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.DrawHint(host.Config);
@@ -191,6 +192,8 @@ public sealed class MapWindowFrame
 
     private void ProcessInputs(IMapWindowHost host)
     {
+        if (host.Config.IsGratis && MapDrawContext.Current.EdgePointers.InputActive) { isDragStarted = false; host.Flags |= ImGuiWindowFlags.NoMove; return; }
+
         if (host.Config.IsGratis && (MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput)) { isDragStarted = false; return; }
         if (host.Config.IsGratis && (LensDrawing.InputActive || host.Config.QuickFilterBar && FilterBarDrawing.InputActive)) { isDragStarted = false; return; }
         if (MoveHandle.BlocksMapInput || host.Palette?.CapturesInput == true || host.Palette?.IsOpen == true) {

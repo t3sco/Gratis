@@ -192,6 +192,8 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
             ImGui.TextUnformatted("Note"); ImGui.SetNextItemWidth(-1);
             ImGui.InputTextMultiline("##pin-note-"+editorSerial,ref note,280,new Vector2(-1,78*s));
             ImGui.PopStyleVar(); ImGui.PopStyleColor();
+            var pointer = Draft!.Pointer;
+            if (ImGui.Checkbox("Edge pointer", ref pointer)) Draft.Pointer = pointer;
             using(MapDrawContext.Current.GetChromeFont(10*s,ChromeFontRole.Chip)?.Push()) ImGui.TextDisabled($"{note.Length}/280  ·  Enter saves  ·  Esc cancels");
             for(var i=0;i<8;i++) {
                 if(i>0) ImGui.SameLine(0,8*s);

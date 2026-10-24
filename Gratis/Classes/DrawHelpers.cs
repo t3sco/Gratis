@@ -76,6 +76,8 @@ public static class DrawHelpers
             context.Visibility.BeginFrame(context);
             if (!context.PrepareMarker(markerInfo) && context.Spotlight?.Matches(markerInfo) != true) return;
             context.Visibility.Count(markerInfo);
+            context.EdgePointers.Observe(markerInfo);
+            context.MarkerTargets.Observe(markerInfo);
         }
 
         if (!MapShape.Contains(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos())) return;

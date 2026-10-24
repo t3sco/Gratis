@@ -51,6 +51,9 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             $"shards={index.Entries.Count(p => p.IsShard)}, markers={index.Entries.Count(p => p.Kind == PlaceKind.Marker)}"),
             error => Service.Log.Error(error, "[PlaceIndex] Sheet build failed"));
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/find", Delegate = Find });
+        System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/nearest", Delegate = _ => {
+            Refresh(); Chat.Print($"[Gratis] nearest map={Context.MapId} player={Context.Player?.ToString() ?? "unavailable on this map"} indexed={Entries.Count()} frame-markers={MapDrawContext.Current.MarkerTargets.Targets.Count}; use /gratis find nearest <thing>");
+        } });
     }
 
     private static IEnumerable<PlaceEntry> BuildSheets(CancellationToken cancellation)
@@ -102,12 +105,14 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             cancellation.ThrowIfCancellationRequested();
             if (!markerGroups.TryGetValue(map.MapMarkerRange, out var mapMarkers)) continue;
             foreach (var marker in mapMarkers) {
-                if (marker.PlaceNameSubtext.RowId == 0 || marker.Icon == 0) continue;
-                var name = marker.PlaceNameSubtext.Value.Name.ExtractText();
+                if (marker.Icon == 0) continue;
+                var family = MarkerIcon.Family(new MarkerInfo { Position = default, Offset = default, Scale = 1, IconId = marker.Icon });
+                var name = marker.PlaceNameSubtext.ValueNullable?.Name.ExtractText() ?? "";
+                if (name.Length == 0) name = family is not (MarkerIconFamily.Auto or MarkerIconFamily.Neutral) ? family.ToString() : "";
                 if (name.Length == 0) continue;
                 yield return new PlaceEntry($"m:{map.RowId}:{marker.SubrowId}", PlaceKind.Marker, name,
                     (map.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? "") + " > " + map.PlaceName.Value.Name.ExtractText(),
-                    map.RowId, map.TerritoryType.RowId, MarkerWorld(map, marker), Aliases: Alias(marker.PlaceNameSubtext.RowId));
+                    map.RowId, map.TerritoryType.RowId, MarkerWorld(map, marker), Aliases: Alias(marker.PlaceNameSubtext.RowId)) { Icon = marker.Icon };
             }
         }
     }
@@ -141,9 +146,10 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             for (var i = 0; i < agent->MapMarkerCount; i++) {
                 ref var marker = ref agent->MapMarkers[i];
                 var name = marker.MapMarker.Subtext.AsDalamudSeString().TextValue;
-                if (string.IsNullOrWhiteSpace(name) || marker.MapMarker.IconId == 0) continue;
+                if (marker.MapMarker.IconId == 0) continue;
+                if (string.IsNullOrWhiteSpace(name)) name = MarkerIcon.Family(new MarkerInfo { Position = default, Offset = default, Scale = 1, IconId = marker.MapMarker.IconId }).ToString();
                 var world = new Vector2(marker.MapMarker.X, marker.MapMarker.Y) / 16 / DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetRawMapOffsetVector();
-                live.Add(new PlaceEntry($"live:{lastMap}:{i}", PlaceKind.Marker, name, "Current map", lastMap, agent->SelectedTerritoryId, world));
+                live.Add(new PlaceEntry($"live:{lastMap}:{i}", PlaceKind.Marker, name, "Current map", lastMap, agent->SelectedTerritoryId, world) { Icon = marker.MapMarker.IconId });
             }
             foreach (var obj in Service.ObjectTable) {
                 if (agent->SelectedMapId != agent->CurrentMapId || obj.Name.TextValue.Length == 0) continue;
@@ -222,5 +228,5 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             (result.Place.Kind == PlaceKind.Aetheryte ? result.Access.Attuned ? " [Attuned]" : " [Not attuned]" : ""));
     }
 
-    public void Dispose() { index.Dispose(); System.CommandManager.RemoveCommand("/find"); }
+    public void Dispose() { index.Dispose(); System.CommandManager.RemoveCommand("/find"); System.CommandManager.RemoveCommand("/nearest"); }
 }

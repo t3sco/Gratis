@@ -13,10 +13,14 @@ public sealed partial class MapRendererFrame
             Spotlight.Reject(request, "normal behaviour: unavailable map/target/style");
             return false;
         }
+        RememberSpotlightReturn();
+        var replacing = Spotlight.OwnsViewport;
         viewportMotion.Cancel();
         viewportMotion.Follow.Interact(host.Config, host.Now, false);
         Spotlight.Begin(request, host.Config, host.MapKey, Scale, DrawOffset,
             viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize);
+        if (!replacing && host.Config.RememberMapView && ViewMemory.Find(host.Config, host.MapId) is { } saved)
+            Spotlight.RememberReturn(saved, host.Config, viewportSize.X > 0 ? viewportSize : host.Config.WindowSize, viewportTextureSize);
         return true;
     }
 

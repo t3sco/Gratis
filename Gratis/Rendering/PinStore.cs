@@ -17,6 +17,7 @@ public sealed record UserPin
     public string Title { get; set; } = "New pin";
     public string Note { get; set; } = "";
     public int Colour { get; set; }
+    public bool Pointer { get; set; }
     public int Version { get; set; } = 1;
     public Vector2 World => new(X, Y);
 }

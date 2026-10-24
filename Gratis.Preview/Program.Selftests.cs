@@ -6,6 +6,9 @@ internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
         ("imgui-errors", ImGuiErrorVerification.Run),
+        ("map-view-memory", MapViewMemoryVerification.State), ("frames-map-view-memory", MapViewMemoryVerification.Frames),
+        ("edge-pointers", EdgePointerVerification.Maths), ("frames-edge-pointers", EdgePointerVerification.Frames),
+        ("nearest-queries", NearestVerification.Ranking), ("frames-nearest", NearestVerification.Frames),
         ("frames-context-menu", ContextMenuVerification.Frames),
         ("travel-provider", TravelVerification.Provider), ("frames-travel", TravelVerification.Frames),
         ("aetheryte-selection", AetheryteVerification.Selection), ("frames-aetheryte", AetheryteVerification.Frames),
