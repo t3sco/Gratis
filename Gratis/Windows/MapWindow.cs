@@ -22,14 +22,13 @@ using Map = Lumina.Excel.Sheets.Map;
 
 namespace Gratis.Windows;
 
-public class MapWindow : Window
+public class MapWindow : Window, Rendering.IMapWindowHost
 {
-    public Vector2 MapDrawOffset { get; private set; }
-    public HoverFlags HoveredFlags { get; private set; }
+    public Vector2 MapDrawOffset => windowFrame.MapDrawOffset;
+    public HoverFlags HoveredFlags => windowFrame.HoveredFlags;
     public bool ProcessingCommand { get; set; }
 
-    private bool isDragStarted;
-    private Vector2 lastWindowSize;
+    private readonly Rendering.MapWindowFrame windowFrame = new();
     private uint lastMapId;
     private uint lastAreaPlaceNameId;
     private uint lastSubAreaPlaceNameId;
@@ -94,102 +93,20 @@ public class MapWindow : Window
         }
     }
 
-    protected override void DrawContents()
-    {
-        UpdateTitle();
-        UpdateStyle();
-        UpdateSizePosition();
+    protected override void DrawContents() => windowFrame.Draw(this);
+    SystemConfig Rendering.IMapWindowHost.Config => System.SystemConfig;
+    Rendering.MapRendererFrame Rendering.IMapWindowHost.Renderer => System.MapRenderer.Frame;
+    Vector2? Rendering.IMapWindowHost.PlayerPosition => Service.ObjectTable.LocalPlayer is { } player ? new Vector2(player.Position.X, player.Position.Z) : null;
+    double Rendering.IMapWindowHost.Now => ImGui.GetTime();
+    bool Rendering.IMapWindowHost.SettingsOpen => System.ConfigWindow.IsOpen;
+    bool Rendering.IMapWindowHost.ShouldFade => ShouldFade();
+    string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName;
+    void Rendering.IMapWindowHost.UpdateWindow() { UpdateTitle(); UpdateStyle(); UpdateSizePosition(); }
+    void Rendering.IMapWindowHost.DrawSpoilerWarning() => DrawSpoilerWarning();
+    void Rendering.IMapWindowHost.DrawToolbar() => mapToolbar.Draw();
+    void Rendering.IMapWindowHost.DrawCoordinates(bool hovered, Vector2 offset) => mapCoordinateBar.Draw(hovered, offset);
+    void Rendering.IMapWindowHost.DrawContextMenu(Vector2 offset) => mapContextMenu.Draw(offset);
 
-        HoveredFlags = HoverFlags.Nothing;
-
-        if (WindowBounds.IsBoundedBy(ImGui.GetMousePos(), ImGui.GetCursorScreenPos(), ImGui.GetCursorScreenPos() + ImGui.GetContentRegionMax())) {
-            HoveredFlags |= HoverFlags.Window;
-        }
-
-        if (!System.SystemConfig.IsGratis && System.SystemConfig.BlurBackground) {
-            var blurMin = ImGui.GetCursorScreenPos();
-            Rendering.MapWindowDrawing.DrawWindowBackgroundBlur(ImGui.GetWindowDrawList(), blurMin, blurMin + ImGui.GetContentRegionAvail(),
-                MapShape.Rounding(ImGui.GetContentRegionAvail()), true, System.SystemConfig.BlurStrength);
-        }
-
-        MapDrawOffset = ImGui.GetCursorScreenPos();
-        using var fade = ImRaii.PushStyle(ImGuiStyleVar.Alpha, System.SystemConfig.FadePercent, ShouldFade());
-        using (var renderChild = ImRaii.Child("render_child", ImGui.GetContentRegionAvail(), false, ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar)) {
-            if (!renderChild) return;
-            MapShape.Update(ImGui.GetWindowSize());
-            if (!System.SystemConfig.AcceptedSpoilerWarning) {
-                DrawSpoilerWarning();
-                return;
-            }
-
-            var mouseOverFrame = Rendering.ChromeVisibility.IsMapFrameHovered();
-            var activity = Rendering.ChromeActivity.None;
-            if (mouseOverFrame) activity |= Rendering.ChromeActivity.Hover;
-            if (isDragStarted) activity |= Rendering.ChromeActivity.Drag;
-            if (System.ConfigWindow.IsOpen) activity |= Rendering.ChromeActivity.Settings;
-            if (ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows) && ImGui.IsAnyItemActive())
-                activity |= Rendering.ChromeActivity.FocusedActiveItem;
-            Rendering.MapDrawContext.Current.Chrome.Update(System.SystemConfig, ImGui.GetTime(), activity,
-                parentAlpha: ImGui.GetStyle().Alpha);
-            if (System.SystemConfig.IsGratis) {
-                var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-                Rendering.MapWindowDrawing.DrawWindowBackgroundBlur(ImGui.GetWindowDrawList(), min, max, MapShape.Current,
-                    System.SystemConfig.BlurBackground, System.SystemConfig.BlurStrength);
-            }
-            DrawMapElements();
-
-            ImGui.SetCursorPos(Vector2.Zero);
-            if (System.SystemConfig.IsGratis) DrawFrameEffects();
-            DrawToolbar();
-            DrawCoordinateBar();
-            if (!System.SystemConfig.IsGratis) DrawFrameEffects();
-            DrawTitleOnMap();
-        }
-
-        if (ImGui.IsItemHovered()) {
-            HoveredFlags |= HoverFlags.WindowInnerFrame;
-        }
-
-        ProcessInputs();
-    }
-
-    private void DrawMapElements()
-    {
-        System.MapRenderer.DrawBaseTexture();
-        if (ImGui.IsItemHovered()) {
-            HoveredFlags |= HoverFlags.MapTexture;
-        }
-
-        System.MapRenderer.DrawDynamicElements();
-    }
-
-    private void DrawToolbar()
-    {
-        if (!ShouldShowToolbar()) return;
-
-        using (ImRaii.Group()) {
-            mapToolbar.Draw();
-        }
-
-        if (ImGui.IsItemHovered()) {
-            HoveredFlags |= HoverFlags.Toolbar;
-        }
-    }
-
-    private void DrawCoordinateBar()
-    {
-        if (!System.SystemConfig.ShowCoordinateBar) return;
-
-        using (ImRaii.Group()) {
-            mapCoordinateBar.Draw(HoveredFlags.HasFlag(HoverFlags.MapTexture), MapDrawOffset);
-        }
-
-        if (ImGui.IsItemHovered()) {
-            HoveredFlags |= HoverFlags.CoordinateBar;
-        }
-    }
-
-    private void DrawFrameEffects() => Rendering.MapWindowDrawing.DrawFrameEffects();
 
     private int pushedGripColors;
     private bool pushedChromeStyles;
@@ -218,20 +135,6 @@ public class MapWindow : Window
         if (pushedChromeStyles) ImGui.PopStyleVar(3);
         pushedChromeStyles = false;
         pushedGripColors = 0;
-    }
-
-    private void DrawTitleOnMap() => Rendering.MapWindowDrawing.DrawTitleOnMap(
-        System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName);
-
-    private bool ShouldShowToolbar()
-    {
-        if (System.SystemConfig.IsGratis && (System.SystemConfig.AutoHideChrome || System.SystemConfig.PinChrome))
-            return Rendering.MapDrawContext.Current.Chrome.ControlsAlpha(System.SystemConfig) * ImGui.GetStyle().Alpha >= .05f;
-        if (isDragStarted) return false;
-        if (System.SystemConfig.ShowToolbarOnHover && HoveredFlags.Any()) return true;
-        if (System.SystemConfig.AlwaysShowToolbar) return true;
-
-        return false;
     }
 
     private unsafe void UpdateTitle()
@@ -285,30 +188,6 @@ public class MapWindow : Window
         lastSubAreaPlaceNameId = 0;
     }
 
-    private void ProcessInputs()
-    {
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
-            ImGui.OpenPopup("Gratis_Context_Menu");
-        }
-        else {
-            if (HoveredFlags.Any()) {
-                if (System.SystemConfig.EnableShiftDragMove && ImGui.GetIO().KeyShift) {
-                    Flags &= ~ImGuiWindowFlags.NoMove;
-                }
-                else {
-                    ProcessMouseScroll();
-                    ProcessMapDragStart();
-                    Flags |= ImGuiWindowFlags.NoMove;
-                }
-            }
-
-            ProcessMapDragDragging();
-            ProcessMapDragEnd();
-        }
-
-        mapContextMenu.Draw(MapDrawOffset);
-    }
-
     private unsafe void UpdateStyle()
     {
         if (System.SystemConfig.UseCustomWindowChrome) {
@@ -343,14 +222,7 @@ public class MapWindow : Window
             AgentMap.Instance()->Hide();
         }
 
-        if (System.SystemConfig.FollowPlayer && Service.ObjectTable is { LocalPlayer: { } localPlayer }) {
-            System.MapRenderer.FollowGameObject(localPlayer);
-        }
 
-        if (System.SystemConfig.LockCenterOnMap) {
-            System.SystemConfig.FollowPlayer = false;
-            System.MapRenderer.DrawOffset = Vector2.Zero;
-        }
     }
 
     private void UpdateSizePosition()
@@ -415,48 +287,6 @@ public class MapWindow : Window
         SystemConfig.Save();
     }
 
-    private void ProcessMouseScroll()
-    {
-        if (System.SystemConfig.ZoomLocked) return;
-        if (ImGui.GetIO().MouseWheel is 0) return;
-        if (!HoveredFlags.HasFlag(HoverFlags.WindowInnerFrame)) return;
-
-        var scale = MapRenderer.MapRenderer.Scale;
-        var wheel = System.SystemConfig.ZoomSpeed * ImGui.GetIO().MouseWheel;
-        var requestedScale = System.SystemConfig.UseLinearZoom ? scale + wheel : scale * (1.0f + wheel);
-        System.MapRenderer.ZoomViewport(requestedScale,
-            ImGui.GetMousePos() - MapDrawOffset - System.MapRenderer.ViewportSize / 2);
-    }
-
-    private void ProcessMapDragDragging()
-    {
-        if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && isDragStarted) {
-            System.MapRenderer.DrawOffset += ImGui.GetMouseDragDelta() / MapRenderer.MapRenderer.Scale;
-            ImGui.ResetMouseDragDelta();
-        }
-    }
-
-    private void ProcessMapDragEnd()
-    {
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Left)) {
-            isDragStarted = false;
-        }
-    }
-
-    private void ProcessMapDragStart()
-    {
-        if (ImGui.GetWindowSize() == lastWindowSize) {
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !isDragStarted) {
-                isDragStarted = true;
-                System.SystemConfig.FollowPlayer = false;
-            }
-        }
-        else {
-            lastWindowSize = ImGui.GetWindowSize();
-            isDragStarted = false;
-        }
-    }
-
     private unsafe bool ShouldFade() =>
         System.SystemConfig.FadeMode.HasFlag(FadeMode.Always) ||
         System.SystemConfig.FadeMode.HasFlag(FadeMode.WhenFocused) && IsFocused ||
@@ -466,6 +296,7 @@ public class MapWindow : Window
     private void RegisterCommands()
     {
         ChromeDiagnosticCommand.Register();
+        MotionDiagnosticCommand.Register();
         System.CommandManager.RegisterCommand(new ToggleCommandHandler
         {
             UseShowHideText = true,

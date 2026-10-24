@@ -134,7 +134,9 @@ public static class MapToolbarDrawing
                 var min = origin + new Vector2(4 + index * 28, 4) * scale;
                 var active = action == ToolbarAction.Follow && context.Config.FollowPlayer || action == ToolbarAction.Layers && ImGui.IsPopupOpen("Gratis_Show_Layers");
                 ImGui.SetCursorScreenPos(min);
-                var clicked = ImGui.InvisibleButton($"##gratis-{action}", new Vector2(28 * scale));
+                var buttonId = $"##gratis-{action}";
+                context.Trace?.Widget(ImGui.GetID(buttonId));
+                var clicked = ImGui.InvisibleButton(buttonId, new Vector2(28 * scale));
                 var hovered = ImGui.IsItemHovered();
                 var lift = HoverAnimation.Progress($"toolbar/{ImGui.GetID(action.ToString())}", hovered);
                 if (active || lift > 0) list.AddRectFilled(min, min + new Vector2(28 * scale),

@@ -32,6 +32,15 @@ public static class MotionMath
         return result;
     }
 
+    public static Vector2 DampBounded(Vector2 value, Vector2 target, ref Vector2 velocity, float seconds, float settleSeconds)
+    {
+        var next = Damp(value, target, ref velocity, seconds, settleSeconds);
+        var bounded = Vector2.Clamp(next, Vector2.Min(value, target), Vector2.Max(value, target));
+        if (bounded.X != next.X) velocity.X = 0;
+        if (bounded.Y != next.Y) velocity.Y = 0;
+        return bounded;
+    }
+
     public static (float Radius, float Alpha) Ring(float age, int ring, float duration = .9f)
     {
         duration = MathF.Max(.1f, duration);

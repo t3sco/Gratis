@@ -73,6 +73,7 @@ public unsafe class IntegrationsController : IDisposable
     private void OnShowHook(AgentMap* agent, bool a1, bool a2) =>
         HookSafety.ExecuteSafe(() =>
         {
+            if (System.ZoneSwitchController is { IsApplying: true }) return;
             Service.Log.Verbose("[OnShow] Beginning Show");
 
             if (System.MapWindow.IsOpen && AgentMap.Instance()->AddonId is 0)
@@ -111,7 +112,11 @@ public unsafe class IntegrationsController : IDisposable
     private void OnOpenMapHook(AgentMap* agent, OpenMapInfo* mapInfo) =>
         HookSafety.ExecuteSafe(() =>
         {
+            var zoneSwitch = System.ZoneSwitchController;
+            if (zoneSwitch is { IsApplying: false } && mapInfo->Type != MapType.Centered)
+                zoneSwitch.NotifyUserAction();
             openMapHook!.Original(agent, mapInfo);
+            if (zoneSwitch is { IsApplying: true }) return;
 
             switch (mapInfo->Type)
             {
@@ -257,6 +262,7 @@ public unsafe class IntegrationsController : IDisposable
 
     public void OpenMap(uint mapId)
     {
+        System.ZoneSwitchController?.NotifyUserAction();
         AgentMap.Instance()->OpenMapByMapId(mapId, 0, true);
 
         AgentMap.Instance()->ResetMapMarkers();

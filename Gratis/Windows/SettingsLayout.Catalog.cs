@@ -85,6 +85,11 @@ public sealed partial class SettingsLayout
         Add("ScaleWithFrame", "Scale with frame", tip: "Uses the shorter side; resizing preserves your zoom.");
         Add("ClampToMap", "Clamp to map", tip: "Keep the viewport inside the map texture, including near an edge.");
         Add("FollowPlayer", "Follow player");
+        Add("FollowReturnToPlayer", "Return to player after panning", when: c => c.IsGratis,
+            tip: "Keep Follow player enabled while exploring. Classic keeps drag-to-unfollow.");
+        Add("FollowReturnTrigger", "Return trigger", choices: "When player moves|When unfocused|After idle", when: c => c.IsGratis && c.FollowReturnToPlayer);
+        Add("FollowReturnIdleSeconds", "Return idle delay", .5f, 20, "%.1f s", when: c => c.IsGratis && c.FollowReturnToPlayer && c.FollowReturnTrigger == FollowReturnTrigger.AfterIdle);
+        Add("FollowReturnEaseMs", "Return ease duration", 0, 1500, "%.0f ms", when: c => c.IsGratis && c.FollowReturnToPlayer && !c.ReduceMotion);
         Add("LockCenterOnMap", "Lock map centre");
         Add("ZoomLocked", "Lock zoom");
         Group("Map", "Zoom");
@@ -95,6 +100,11 @@ public sealed partial class SettingsLayout
         Group("Map", "On open");
         Add("FollowOnOpen", "Follow player on open");
         Add("CenterOnOpen", "Centre on open", choices: "Disabled|Player|Map");
+        Group("Map", "Zone changes");
+        Add("AutoSwitchOnZoneChange", "Switch map when changing zone");
+        Add("OnlyIfViewingCurrentZone", "Only while viewing the current zone", when: c => c.AutoSwitchOnZoneChange,
+            tip: "Leave a different map you deliberately opened selected.");
+        Add("SwitchInDuties", "Switch maps in duties", when: c => c.AutoSwitchOnZoneChange);
         Group("Map", "Map links");
         Add("CenterOnFlag", "Centre on flags");
         Add("CenterOnGathering", "Centre on gathering areas");
@@ -127,6 +137,7 @@ public sealed partial class SettingsLayout
         Add("ScalePlayerCone", "Keep cone screen size", tip: "Keeps the cone length fixed when zoom changes.");
         Group("Markers", "Gratis player", Gratis);
         Add("FlatPlayer", "Player chevron and soft cone");
+        Add("PlayerArrowSmoothing", "Player arrow smoothing", choices: "Off|Low|Medium|High", tip: "Smooths heading and soft cone; Reduce motion uses the raw heading.");
         Add("PlayerInnerHighlight", "Chevron highlight", when: c => c.FlatPlayer && c.ShowPlayerIcon);
         Add("SoftConeLength", "Cone length", 0, 200, "%.0f px", when: c => c.FlatPlayer);
         Add("SoftConeOpacity", "Cone opacity", 0, .5f, when: c => c.FlatPlayer);

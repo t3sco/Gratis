@@ -15,37 +15,12 @@ internal static partial class Program
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
-            if (args is ["--selftest", "marker-classification"]) {
-                MarkerClassificationVerification.Run();
-                return 0;
-            }
-            if (args is ["--selftest", "markers"]) {
-                MarkerDeclutterVerification.Run();
-                return 0;
-            }
-            if (args is ["--selftest", "chrome"]) {
-                Run(Options.Parse(["--scene", "chrome-hidden"])!, chromeSelftest: true);
-                return 0;
-            }
-            if (args is ["--selftest", "settings"]) {
-                SettingsVerification.Run();
-                return 0;
-            }
-            if (args is ["--selftest", "config"]) {
-                ConfigVerification.Run();
-                return 0;
-            }
-            if (args is ["--selftest", "viewport"]) {
-                ViewportVerification.Run();
-                return 0;
-            }
-            if (args is ["--selftest", "motion"]) {
-                MotionVerification.Run();
-                return 0;
-            }
+            if (args is ["--selftest", var test]) return RunSelftests(test);
+            if (TryDiff(args) || TryLiveScene(args) || TryFrameScript(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             var options = Options.Parse(args);
             if (options is null) return 0;
             Run(options);
+            ImGuiErrors.ThrowIfNewErrors(0);
             return 0;
         }
         catch (Exception error) {
@@ -57,9 +32,11 @@ internal static partial class Program
     private static unsafe void Run(Options options, bool chromeSelftest = false)
     {
         if (options.Scene.StartsWith("settings-", StringComparison.Ordinal)) { RenderSettings(options); return; }
+        if (options.Scene == "player-heading") { RenderHeadingSheet(options); return; }
         if (options.Scene == "map-recolor-sheet") { RenderRecolourSheet(options); return; }
         if (options.Scene == "frame-presets") { RenderFramePresets(options); return; }
-        var native = ImGui.CreateContext();
+        if (options.Scene == "follow-return") { RenderFollowReturnSheet(options); return; }
+        var native = ImGuiErrors.CreateContext();
         try {
             var io = ImGui.GetIO();
             io.DisplaySize = new Vector2(options.Width, options.Height);
@@ -73,6 +50,7 @@ internal static partial class Program
             var textures = new Textures();
             using var context = new PreviewContext(textures);
             MapDrawContext.Current = context;
+            if (options.Scene == "players") context.DpiScale = options.Dpi;
             if (options.Scene is "markers-legend" or "markers-quests") {
                 context.DpiScale = options.Dpi;
                 context.Config.Markers.Declutter = false;
@@ -144,7 +122,7 @@ internal static partial class Program
                 ChromeVerification.Run(context, textures);
             }
         }
-        finally { ImGui.DestroyContext(native); }
+        finally { ImGuiErrors.DestroyContext(native); }
     }
 
     private static void DrawScene(string scene, Vector2 position, Vector2 size, DrawTexture map, bool viewportOff)
@@ -164,8 +142,22 @@ internal static partial class Program
         var context = MapDrawContext.Current;
         context.Blur.BeginFrame(ImGui.GetFrameCount());
         context.Markers.Begin();
+        if (scene == "player-heading-frame") {
+            DrawHeadingFrame(size, map);
+            ImGui.EndChild();
+            ImGui.End();
+            return;
+        }
         context.Chrome.Update(context.Config, ImGui.GetTime(), false,
             scene == "chrome-hidden" ? 0 : scene == "chrome-fading" ? .5f : 1);
+        if (scene == "follow-return-frame") {
+            DrawFollowReturnFrame(size, map);
+            MapWindowDrawing.DrawFrameEffects();
+            MapToolbarDrawing.Draw(_ => { }, DrawFakeLayers);
+            ImGui.EndChild();
+            ImGui.End();
+            return;
+        }
         if (!DrawMotionMap(scene, size, map) && !DrawViewportMap(scene, size, map, viewportOff)) {
             var scale = Math.Max(size.X / map.Size.X, size.Y / map.Size.Y) * 1.15f;
             ImGui.SetCursorPos((size - map.Size * scale) / 2);
@@ -174,7 +166,7 @@ internal static partial class Program
         var player = ImGui.GetWindowPos() + size * new Vector2(.45f, .63f);
         DrawMotionTrail(scene, size, player);
         if (scene is not ("markers-legend" or "markers-quests" or "markers-enemies")) {
-            PlayerDrawing.DrawLookLine(player, .8f, -1.25f);
+            PlayerDrawing.DrawLookLine(player, .8f, context.Config is { IsGratis: true, FlatPlayer: true } ? .25f : -1.25f);
             PlayerDrawing.DrawPlayerIcon(player, MapDrawContext.Current.GetIcon(60443), .25f, 1);
         }
         if (IsMarkerScene(scene)) DrawMarkerScene(scene, size);
@@ -200,6 +192,7 @@ internal static partial class Program
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), center - new Vector2(40), center + new Vector2(40), 40);
         }
         ImGui.SetCursorPos(Vector2.Zero);
+        ImGui.Dummy(Vector2.Zero);
         if (context.Config.IsGratis) MapWindowDrawing.DrawFrameEffects();
         MapToolbarDrawing.Draw(_ => { }, DrawFakeLayers);
         if (!context.Config.IsGratis) MapWindowDrawing.DrawFrameEffects();
@@ -244,7 +237,8 @@ internal static partial class Program
                 if (args[i] == "--verify") { verify = true; continue; }
                 if (args[i] == "--viewport-off") { viewportOff = true; continue; }
                 if (args[i] is "--help" or "-h") {
-                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes.Concat(ViewportScenes).Concat(FrameScenes).Concat(MarkerScenes).Concat(MotionScenes))}> [--out path.png] [--size WxH] [--dpi 1|2] [--icons Icons|Shapes|Game] [--declutter on|off] [--map image.png] [--feather-width 0..48] [--verify] [--viewport-off]; --selftest viewport|motion|config|settings|chrome|markers|marker-classification");
+                    Console.WriteLine("Frame commands: --script timeline.json [--out directory]; --scene live [--config path] [--map-id id] [--window-size WxH] [--size WxH] [--position X,Y] [--state scene.json] [--map full-map.png] [--at seconds] [--out live.png]; --diff ours.png reference.png --out diff.png; --selftest all|frames|diff.");
+                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes.Concat(ViewportScenes).Concat(FrameScenes).Concat(MarkerScenes).Concat(MotionScenes).Concat(FollowScenes).Append("player-heading"))}> [--out path.png] [--size WxH] [--dpi 1|2] [--icons Icons|Shapes|Game] [--declutter on|off] [--map image.png] [--feather-width 0..48] [--verify] [--viewport-off]; --selftest heading|viewport|motion|motion-timeline|follow|config|settings|chrome|markers|marker-classification");
                     return null;
                 }
                 if (i + 1 >= args.Length) throw new ArgumentException($"Missing value for {args[i]}.");
@@ -276,7 +270,7 @@ internal static partial class Program
                     default: throw new ArgumentException($"Unknown option {key}.");
                 }
             }
-            if (!Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
+            if (scene is not ("player-heading" or "player-heading-frame") && !FollowScenes.Contains(scene) && !Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
             if (width < 320 || height < 240 || width > 8192 || height > 8192 || (long)width * height > 16777216)
                 throw new ArgumentException("Size must be 320x240 to 8192x8192, with at most 16 megapixels.");
             if (map is not null && (!File.Exists(map) || !Path.GetExtension(map).Equals(".png", StringComparison.OrdinalIgnoreCase)))

@@ -40,7 +40,7 @@ internal static partial class Program
         var saved = context.Config.PlayerIconScale;
         try {
             context.Config.PlayerIconScale = .35f;
-            PlayerDrawing.DrawLookLine(small, .8f, -1.25f);
+            PlayerDrawing.DrawLookLine(small, .8f, .25f);
             PlayerDrawing.DrawPlayerIcon(small, context.GetIcon(60443), .25f, 1);
         }
         finally { context.Config.PlayerIconScale = saved; }

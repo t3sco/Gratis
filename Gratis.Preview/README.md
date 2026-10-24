@@ -130,10 +130,25 @@ dotnet run --project Gratis.Preview -c Release -- --selftest settings
 
 Other settings fixtures: `settings-classic`, `settings-search`, `settings-map`,
 `settings-markers`, `settings-chrome`, `settings-tools`, `settings-advanced`.
-The config selftest reads the old MappyGlass saved System.config.json when present;
-it never writes to that directory. It checks retained fields, ignored removed fields,
+The config selftest uses an embedded legacy fixture without accessing external configs. It checks retained fields, ignored removed fields,
 new defaults and round-trip compatibility using the plugin's serializer options.
 Settings checks cover search, 37 Classic-only controls and scoped resets. Game-owned
 marker controls are labelled placeholders; game tool buttons are disabled in preview.
 Their shared placement renders, while the exact game adapters need an in-game check.
 See [the settings audit](../docs/SETTINGS_AUDIT.md) for every field and its reader.
+
+
+## Scripted window frames and live parity
+
+The shared window/renderer host runs real chrome, viewport, motion and mouse input
+logic. Run every selftest (non-zero exit on any failure), or capture a timeline:
+
+```powershell
+dotnet run --project Gratis.Preview -- --selftest all
+dotnet run --project Gratis.Preview -c Release -- --script Gratis.Preview/scripts/frame-glue.json --out _preview/frames
+dotnet run --project Gratis.Preview -c Release -- --scene live --config "$env:APPDATA\XIVLauncher\pluginConfigs\Gratis\System.config.json" --map-id 134 --out _preview/live.png
+dotnet run --project Gratis.Preview -c Release -- --diff _preview/ours.png _shots/reference.png --out _preview/diff.png
+```
+
+See [PARITY.md](../docs/PARITY.md) for the state schema, `/gratis shot` workflow,
+read-only saved configs, mutation evidence and the exact/approximated boundary.

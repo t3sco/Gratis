@@ -48,6 +48,9 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig
     public bool HideInCombat = false;
     public bool KeepOpen = false;
     public bool FollowOnOpen = false;
+    public bool AutoSwitchOnZoneChange = true;
+    public bool OnlyIfViewingCurrentZone = true;
+    public bool SwitchInDuties = true;
     public CenterTarget CenterOnOpen = CenterTarget.Disabled;
     public bool ShowRadar = true;
     public bool ShowRadarInDuties = false;

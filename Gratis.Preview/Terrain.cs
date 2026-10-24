@@ -4,9 +4,8 @@ namespace Gratis.Preview;
 
 internal static class Terrain
 {
-    public static nint Create(Textures textures)
+    public static nint Create(Textures textures, int size = 1024)
     {
-        const int size = 1024;
         var pixels = new byte[size * size * 4];
         for (var y = 0; y < size; y++) {
             for (var x = 0; x < size; x++) {

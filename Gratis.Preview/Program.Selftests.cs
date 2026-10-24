@@ -1,0 +1,80 @@
+using System.Text.Json;
+
+namespace Gratis.Preview;
+
+internal static partial class Program
+{
+    private static (string Name, Action Run)[] Selftests() => [
+        ("imgui-errors", ImGuiErrorVerification.Run),
+        ("diff", ImageDiff.Verify), ("live", VerifyLiveScene),
+        ("heading", HeadingVerification.Run), ("marker-classification", MarkerClassificationVerification.Run),
+        ("markers", MarkerDeclutterVerification.Run), ("settings", SettingsVerification.Run),
+        ("config", ConfigVerification.Run), ("viewport", ViewportVerification.Run),
+        ("zone", ZoneSwitchVerification.Run),
+        ("motion", MotionVerification.Run), ("follow", FollowVerification.Run),
+        ("motion-timeline", ViewportMotionVerification.Run), ("map-colour", MapColourVerification.Run),
+        ("chrome", () => Run(Options.Parse(["--scene", "chrome-hidden"])!, chromeSelftest: true)),
+        ("drawing", () => Run(Options.Parse(["--scene", "map-default", "--verify"])!)),
+        ("frames-autohide", FrameRegressionVerification.AutoHide),
+        ("frames-zoom", FrameRegressionVerification.Zoom), ("frames-follow", FrameRegressionVerification.Follow),
+        ("frames-pan-return", FrameRegressionVerification.PanReturn), ("frames-glass", FrameRegressionVerification.Glass),
+        ("frames-markers", FrameRegressionVerification.Markers), ("frames-allocations", FrameRegressionVerification.Allocations),
+        ("frames-instrumentation", FrameRegressionVerification.Instrumentation),
+    ];
+
+    private static int RunSelftests(string selected)
+    {
+        if (selected is "imgui-error-injected" or "imgui-assert-injected") {
+            ImGuiErrorVerification.Inject(selected == "imgui-assert-injected");
+            ImGuiErrors.ThrowIfNewErrors(0);
+            return 0;
+        }
+        var tests = Selftests().Where(test => selected == "all" || test.Name == selected ||
+            selected == "frames" && test.Name.StartsWith("frames-", StringComparison.Ordinal)).ToArray();
+        if (tests.Length == 0) throw new ArgumentException($"Unknown selftest '{selected}'. Choose all, frames, or {string.Join(", ", Selftests().Select(test => test.Name))}.");
+        var results = new List<(string Name, string Result)>();
+        foreach (var test in tests) {
+            var errorsBefore = ImGuiErrors.Count;
+            try { test.Run(); ImGuiErrors.ThrowIfNewErrors(errorsBefore); results.Add((test.Name, "PASS")); }
+            catch (Exception error) { results.Add((test.Name, "FAIL: " + error.Message)); }
+        }
+        Console.WriteLine("Selftest                   Result");
+        Console.WriteLine("-------------------------  ------");
+        foreach (var result in results) Console.WriteLine($"{result.Name,-25}  {result.Result}");
+        var failed = results.Count(result => result.Result != "PASS");
+        Console.WriteLine($"{results.Count - failed}/{results.Count} passed; {failed} failed.");
+        return failed == 0 ? 0 : 1;
+    }
+
+    private static bool TryFrameScript(string[] args)
+    {
+        if (args.Length == 0 || args[0] != "--script") return false;
+        if (args.Length is not (2 or 4) || args.Length == 4 && args[2] != "--out")
+            throw new ArgumentException("Usage: --script timeline.json [--out directory]");
+        var scriptPath = Path.GetFullPath(args[1]);
+        var script = JsonSerializer.Deserialize<FrameScript>(File.ReadAllText(scriptPath), ScriptedFrameDriver.Json)
+            ?? throw new ArgumentException("Empty script.");
+        if (script.Frames.Count == 0) throw new ArgumentException("Script must contain Frames.");
+        var directory = Path.GetDirectoryName(scriptPath)!;
+        if (script.Config is not null) script.Config = Path.GetFullPath(script.Config, directory);
+        if (script.Texture is not null) script.Texture = Path.GetFullPath(script.Texture, directory);
+        var config = script.Config is null ? null : JsonSerializer.Deserialize<Gratis.Data.SystemConfig>(File.ReadAllText(script.Config), ScriptedFrameDriver.Json)
+            ?? throw new ArgumentException("Empty config.");
+        var output = Path.GetFullPath(args.Length == 4 ? args[3] : Path.Combine("_preview", "frames"));
+        foreach (var frame in script.Frames)
+            if (frame.Screenshot is { } filename && !Path.GetExtension(filename).Equals(".png", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Script screenshot names must end in .png.");
+        if (script.Config is not null && Path.Combine(output, "snapshots.json").Equals(script.Config, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Script snapshots must not overwrite the saved config.");
+        Directory.CreateDirectory(output);
+        using var driver = new ScriptedFrameDriver(config, script);
+        var snapshots = new List<FrameSnapshot>();
+        foreach (var frame in script.Frames) {
+            snapshots.Add(driver.Step(frame));
+            if (frame.Screenshot is { } filename) driver.Save(Path.Combine(output, Path.GetFileName(filename)));
+        }
+        File.WriteAllText(Path.Combine(output, "snapshots.json"), JsonSerializer.Serialize(snapshots, ScriptedFrameDriver.Json));
+        Console.WriteLine($"Executed {snapshots.Count} shared MapWindow/MapRenderer frames; snapshots: {Path.Combine(output, "snapshots.json")}");
+        return true;
+    }
+}

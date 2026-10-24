@@ -17,6 +17,8 @@ public static class MapWindowDrawing
         var context = MapDrawContext.Current;
         var config = context.Config;
         context.Blur.BeginFrame(ImGui.GetFrameCount());
+        if (surface is GlassSurface.Toolbar or GlassSurface.Title or GlassSurface.Coordinates)
+            context.Trace?.Chrome(surface.ToString());
         var glass = config.IsGratis && config.GlassEnabled;
         var effectiveAlpha = alpha * ImGui.GetStyle().Alpha;
         if (!float.IsFinite(effectiveAlpha) || effectiveAlpha < 1 / 255f) {

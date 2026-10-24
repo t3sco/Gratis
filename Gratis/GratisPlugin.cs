@@ -50,6 +50,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.FlagController = new FlagController();
         System.AreaMapController = new AddonAreaMapController();
         System.IntegrationsController = new IntegrationsController();
+        System.ZoneSwitchController = new ZoneSwitchController();
 
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
@@ -84,6 +85,8 @@ public sealed class GratisPlugin : IDalamudPlugin
     {
         screenshotCapture.Dispose();
         glassDiagnosticCommand.Dispose();
+        System.ZoneSwitchController?.Dispose();
+        System.ZoneSwitchController = null;
         System.MapWindow.OnClose();
         System.WindowManager.Dispose();
         System.IntegrationsController.Dispose();

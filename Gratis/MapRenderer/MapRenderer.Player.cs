@@ -10,6 +10,8 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer
 {
+    private readonly Rendering.PlayerHeading playerHeading = new();
+
     private unsafe void DrawPlayer()
     {
         if (AgentMap.Instance()->SelectedMapId != AgentMap.Instance()->CurrentMapId) return;
@@ -26,24 +28,24 @@ public partial class MapRenderer
                             DrawHelpers.GetMapOffsetVector() +
                             DrawHelpers.GetMapCenterOffsetVector()) * Scale;
 
-            DrawLookLine(position);
-            DrawPlayerIcon(position);
+            var config = Rendering.MapDrawContext.Current.Config;
+            var raw = -localPlayer.Rotation + MathF.PI / 2.0f;
+            var angle = playerHeading.Advance(raw, ImGui.GetTime(), config.PlayerArrowSmoothing,
+                AgentMap.Instance()->CurrentMapId, localPlayer.Position, config.ReduceMotion || !config.IsGratis);
+            Rendering.PlayerDrawing.DrawLookLine(position, Scale,
+                config is { IsGratis: true, FlatPlayer: true } ? angle : GetCameraRotation());
+            DrawPlayerIcon(position, config.IsGratis ? angle : raw);
         }
     }
-
-    private void DrawLookLine(Vector2 position) => Rendering.PlayerDrawing.DrawLookLine(position, Scale, GetCameraRotation());
 
     private static unsafe float GetCameraRotation() => -DegreesToRadians(AreaMapNumberArray.Instance()->ConeRotation) - 0.5f * MathF.PI;
 
     private static float DegreesToRadians(float degrees) => MathF.PI / 180.0f * degrees;
 
-    private void DrawPlayerIcon(Vector2 position)
+    private void DrawPlayerIcon(Vector2 position, float angle)
     {
         if (!System.SystemConfig.ShowPlayerIcon) return;
-        if (Service.ObjectTable is not { LocalPlayer: { } player }) return;
-
         var texture = Service.TextureProvider.GetFromGameIcon(60443).GetWrapOrEmpty();
-        var angle = -player.Rotation + MathF.PI / 2.0f;
 
         Rendering.PlayerDrawing.DrawPlayerIcon(position, new Rendering.DrawTexture(texture.Handle, texture.Size), angle, Scale);
     }

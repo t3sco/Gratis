@@ -11,9 +11,7 @@ internal static class ConfigVerification
 
     public static void Run()
     {
-        var legacyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "XIVLauncher", "pluginConfigs", "MappyGlass", "System.config.json");
-        var source = File.Exists(legacyPath) ? File.ReadAllText(legacyPath) : """
+        const string source = """
             { "TitleCorner": 2, "TitleOffset": { "X": 21, "Y": 18 }, "ConeSize": 83.75,
               "MapGlow": true, "MapVignette": 0.46, "FollowOnOpen": true, "Version": 2 }
             """;
@@ -41,7 +39,6 @@ internal static class ConfigVerification
         if (config.IsGratis) throw new InvalidOperationException("Classic selection failed.");
         config.VisualStyle = 0;
         if (!config.IsGratis) throw new InvalidOperationException("Gratis selection failed.");
-        Console.WriteLine($"Config verified: {(File.Exists(legacyPath) ? "existing MappyGlass config (read-only)" : "synthetic legacy config")}; " +
-                          $"{compared} saved fields unchanged, removed/unknown fields ignored, defaults and round trip preserved.");
+        Console.WriteLine($"Config verified: embedded legacy fixture; {compared} saved fields unchanged, removed/unknown fields ignored, defaults and round trip preserved.");
     }
 }

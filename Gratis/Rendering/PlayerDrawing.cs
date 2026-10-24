@@ -21,9 +21,10 @@ public static class PlayerDrawing
         var party = family == MarkerIconFamily.Party;
         var color = (party ? context.Config.AccentColor : family == MarkerIconFamily.Alliance
             ? context.Config.PartyMarkerColor : Vector4.One) * tint;
-        radius *= family == MarkerIconFamily.Player ? .35f : .5f;
+        var diameter = party ? 9f : family == MarkerIconFamily.Alliance ? 8f : 6f;
+        radius = MathF.Max(2.5f * scale, radius * diameter / 14);
         list.AddCircleFilled(center, radius, ImGui.GetColorU32(color with { W = color.W * alpha }), 24);
-        var outline = party ? Vector4.One : GratisTheme.Outline;
+        var outline = family == MarkerIconFamily.Player ? GratisTheme.Outline : Vector4.One;
         list.AddCircle(center, radius + .75f * scale,
             ImGui.GetColorU32(outline with { W = outline.W * tint.W * alpha }), 24, 1.5f * scale);
     }

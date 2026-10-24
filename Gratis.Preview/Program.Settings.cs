@@ -11,7 +11,7 @@ internal static partial class Program
 {
     private static unsafe void RenderSettings(Options options)
     {
-        var native = ImGui.CreateContext();
+        var native = ImGuiErrors.CreateContext();
         try {
             var io = ImGui.GetIO();
             io.DisplaySize = new Vector2(options.Width, options.Height);
@@ -71,6 +71,6 @@ internal static partial class Program
             Console.WriteLine("Shared settings layout: six sections, Lucide headers, search, style disclosure and resets. Game extensions are labelled.");
             if (options.Verify) SettingsVerification.Run();
         }
-        finally { ImGui.DestroyContext(native); }
+        finally { ImGuiErrors.DestroyContext(native); }
     }
 }

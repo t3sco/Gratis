@@ -116,6 +116,7 @@ public static class DrawHelpers
             if (!FlatMarkerDrawing.Draw(markerInfo)) return;
         }
         else if (!DrawIcon(markerInfo)) return;
+        context.Trace?.DrawnMarkers.Add(markerInfo);
         ProcessInteractions(markerInfo);
         DrawTooltip(markerInfo);
     }

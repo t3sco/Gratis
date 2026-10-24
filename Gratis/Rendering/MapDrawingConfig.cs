@@ -123,6 +123,10 @@ public class MapDrawingConfig
 
     public float IconScale = 0.50f;
     public bool FollowPlayer = true;
+    public bool FollowReturnToPlayer = true;
+    public FollowReturnTrigger FollowReturnTrigger = FollowReturnTrigger.WhenPlayerMoves;
+    public float FollowReturnIdleSeconds = 3;
+    public float FollowReturnEaseMs = 350;
     public bool ScalePlayerCone = false;
     public float ConeSize = 150.0f;
     public bool HideWindowFrame = false;
@@ -167,6 +171,7 @@ public class MapDrawingConfig
     public float ToolbarFade = 0.33f;
     public bool ShowPlayerIcon = true;
     public float PlayerIconScale = 1.0f;
+    public PlayerArrowSmoothing PlayerArrowSmoothing = global::Gratis.Rendering.PlayerArrowSmoothing.Medium;
     [JsonIgnore]
     public bool DebugMode = false;
 

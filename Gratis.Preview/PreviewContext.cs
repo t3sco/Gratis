@@ -8,7 +8,7 @@ namespace Gratis.Preview;
 
 internal readonly record struct BackdropBlur(nint List, int IndexOffset, Vector2 Min, Vector2 Max, float Rounding, float Radius, float Opacity);
 
-internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDisposable
+internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config = null) : MapDrawContext, IDisposable
 {
     public List<BackdropBlur> Blurs { get; } = [];
     public bool BlurAvailable { get; set; } = true;
@@ -26,13 +26,14 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
     private readonly Dictionary<uint, IconSetting> settings = [];
     private readonly Dictionary<int, ImFontPtr> fonts = [];
     private readonly Dictionary<(ChromeFontRole Role, int Size), ImFontPtr> chromeFonts = [];
-    public override MapDrawingConfig Config { get; } = new() {
+    public override MapDrawingConfig Config { get; } = config ?? new() {
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
         MapVignette = .65f, MapGlowPulse = 0, ConeSize = 150,
     };
     public float DpiScale { get; set; } = 1;
     public override float GlobalScale => DpiScale;
-    public override float MapSizeFactor => 1;
+    public float SizeFactor { get; set; } = 1;
+    public override float MapSizeFactor => SizeFactor;
 
     private readonly Dictionary<int, ImFontPtr> iconFonts = [];
     private global::System.Runtime.InteropServices.GCHandle iconRanges;
@@ -119,6 +120,7 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
     public override bool IconButton(ToolbarAction action, string id, string tooltip)
     {
         ImGui.PushID(id);
+        Trace?.Widget(ImGui.GetID(Glyph(action)));
         var clicked = ImGui.Button(Glyph(action), new Vector2(SettingsButtonWidth, ImGui.GetFrameHeight()));
         if (ImGui.IsItemHovered()) ImGui.SetTooltip(tooltip);
         ImGui.PopID();
