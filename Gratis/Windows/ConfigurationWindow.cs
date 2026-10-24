@@ -36,7 +36,7 @@ public class ConfigurationWindow : Window
     protected override void DrawContents() => tabBar.Draw();
 }
 
-public class MapFunctionsTab : ITabItem
+public partial class MapFunctionsTab : ITabItem
 {
     public string Name => "Map Functions";
 
@@ -44,7 +44,9 @@ public class MapFunctionsTab : ITabItem
 
     public void Draw()
     {
-        var configChanged = false;
+        var configChanged = DrawMapColourSection();
+
+        configChanged |= DrawViewportSection();
 
         ImGuiTweaks.Header("Zoom Options");
         using (ImRaii.PushIndent()) {
@@ -150,7 +152,7 @@ public class MapFunctionsTab : ITabItem
     }
 }
 
-public class StyleOptionsTab : ITabItem
+public partial class StyleOptionsTab : ITabItem
 {
     public string Name => "Style";
 
@@ -197,6 +199,8 @@ public class StyleOptionsTab : ITabItem
             }
             else ImGui.TextUnformatted("Classic uses the original drawing and saved style settings below.");
         }
+
+        configChanged |= DrawChromeVisibilitySection();
 
         ImGuiTweaks.Header("Window Options");
         using (ImRaii.PushIndent()) {

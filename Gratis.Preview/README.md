@@ -100,3 +100,17 @@ codepoint ranges as Dalamud (12–24px, default 16px). Glyph ink bounds determine
 centring. Missing Lucide assets retain the primitive toolbar fallback. Category
 swatches retain marker shapes so their meaning stays consistent with the map.
 Classic's `a8e77a7` PNG hash remains `68AEFCD3FFABCF87515B6DFA549D01C564D1716EBF10C5B50FC914DA656596C7`.
+
+Chrome visibility: `chrome-hidden`, `chrome-visible`, `chrome-fading` use fixed
+progress 0, 1, and 0.5, with glass enabled. At 0, the title retains 35% alpha;
+toolbar and coordinates reach zero. All use shared drawing code. Live visibility
+uses ImGui time, a 1.2s idle delay, and a smoothstep fade over 180ms. Hover, drag,
+zoom, an open context/layers popup, a visible hover card, or open settings reveals
+immediately. Pin / disabling auto-hide keeps full alpha. Hidden toolbar areas
+reveal before pointer input is processed and retain their button actions; they do
+not act as pass-through map drags. Existing toolbar switches apply when auto-hide
+and pin are off. Blur strength decreases with surface alpha because the host blur
+API has no separate opacity argument. Classic ignores these settings entirely.
+
+`--verify` also checks chrome timing/easing, minima, reveal/pin/reset/Classic,
+Lucide glyph bounds at 12/16/24px, hidden blur suppression, and a first-hover click.

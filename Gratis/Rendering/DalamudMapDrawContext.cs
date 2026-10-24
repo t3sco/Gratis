@@ -17,11 +17,11 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 {
     private bool blurUnavailable;
 
-    public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius)
+    public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1)
     {
-        if (blurUnavailable || !float.IsFinite(radius) || radius <= 0) return false;
+        if (blurUnavailable || !float.IsFinite(radius) || radius <= 0 || opacity <= 0) return false;
         try {
-            AddHostBlur(list, min, max, rounding, Math.Clamp(radius / 8, .05f, 8));
+            AddHostBlur(list, min, max, rounding, Math.Clamp(radius * opacity / 8, .0001f, 8));
             return true;
         }
         catch (Exception) {
@@ -35,6 +35,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
         ImGuiHelpers.AddBlurBehind(list, min, max, strength, rounding, Vector4.Zero, Vector4.Zero, 0);
 
     public override MapDrawingConfig Config => System.SystemConfig;
+    public override MapColourPreset ActiveColourPreset => System.SystemConfig.MapColour?.Preset ?? MapColourPreset.Original;
     public override float GlobalScale => ImGuiHelpers.GlobalScale;
     public override unsafe float MapSizeFactor => AgentMap.Instance()->SelectedMapSizeFactorFloat;
     public override DrawTexture GetIcon(uint id)

@@ -40,7 +40,7 @@ public static class FlatMarkerDrawing
     public static Vector4 Color(MarkerCategory category)
     {
         var config = MapDrawContext.Current.Config;
-        return category switch {
+        var color = category switch {
             MarkerCategory.Transport => config.TransportMarkerColor,
             MarkerCategory.Objective => config.ObjectiveMarkerColor,
             MarkerCategory.Link => config.LinkMarkerColor,
@@ -48,6 +48,7 @@ public static class FlatMarkerDrawing
             MarkerCategory.Party => config.PartyMarkerColor,
             _ => config.PoiMarkerColor,
         };
+        return config.IsGratis ? MapColour.MarkerColour(color, MapDrawContext.Current.ActiveColourPreset) : color;
     }
 
     internal static string Key(MarkerInfo marker) => $"{ImGui.GetID("flat-marker")}/{marker.IconId}/{marker.Position.X}/{marker.Position.Y}";

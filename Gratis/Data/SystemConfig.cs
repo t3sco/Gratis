@@ -37,6 +37,8 @@ public enum FadeMode
 
 public class SystemConfig : Gratis.Rendering.MapDrawingConfig
 {
+    public Gratis.Rendering.MapColourSettings MapColour = new();
+
     public bool UseLinearZoom = false;
     public float ZoomSpeed = 0.25f;
     public bool ShowMiscTooltips = true;

@@ -7,14 +7,18 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static class Program
+internal static partial class Program
 {
-    private static readonly string[] Scenes = ["map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable"];
+    private static readonly string[] Scenes = ["map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable", "chrome-hidden", "chrome-visible", "chrome-fading", "map-recolor-midnight", "map-recolor-mono", "map-recolor-blueprint", "map-recolor-sepia", "map-recolor-original", "map-recolor-custom", "map-recolor-sheet"];
 
     public static int Main(string[] args)
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
+            if (args is ["--selftest", "viewport"]) {
+                ViewportVerification.Run();
+                return 0;
+            }
             var options = Options.Parse(args);
             if (options is null) return 0;
             Run(options);
@@ -28,6 +32,7 @@ internal static class Program
 
     private static unsafe void Run(Options options)
     {
+        if (options.Scene == "map-recolor-sheet") { RenderRecolourSheet(options); return; }
         var native = ImGui.CreateContext();
         try {
             var io = ImGui.GetIO();
@@ -41,14 +46,15 @@ internal static class Program
             var textures = new Textures();
             using var context = new PreviewContext(textures);
             MapDrawContext.Current = context;
-            context.Config.MapCircle = options.Scene is "map-circular" or "map-glint-circular" or "map-feather-circular" or "map-edge-legacy-circular";
+            if (options.ViewportOff) context.Config.ScaleWithFrame = context.Config.ClampToMap = false;
+            context.Config.MapCircle = options.Scene is "map-circular" or "map-circular-nonsquare" or "chrome-tiny-circle" or "map-glint-circular" or "map-feather-circular" or "map-edge-legacy-circular";
             context.Config.FeatherEnabled = !options.Scene.StartsWith("map-edge-legacy", StringComparison.Ordinal);
             if (options.FeatherWidth is { } featherWidth) context.Config.FeatherWidth = featherWidth;
             context.Config.VisualStyle = options.Scene == "map-classic" ? 1 : 0;
             var materialShowcase = options.Scene is "map-glint" or "map-glint-circular" or "glass-card" or "glass-tinted" or "glass-unavailable";
             context.BlurAvailable = options.Scene != "glass-unavailable";
             context.Config.GlassBlur = options.Scene != "glass-tinted";
-            if (materialShowcase || options.Scene == "map-classic" || options.Scene.StartsWith("glass-", StringComparison.Ordinal)) {
+            if (materialShowcase || options.Scene == "map-classic" || options.Scene.StartsWith("glass-", StringComparison.Ordinal) || options.Scene.StartsWith("chrome-", StringComparison.Ordinal)) {
                 context.Config.GlassEnabled = true;
                 context.Config.GlassGrain = true;
                 context.Config.RingRotate = true;
@@ -60,11 +66,15 @@ internal static class Program
             Marshal.Copy(atlasPixels, atlas, 0, atlas.Length);
             io.Fonts.SetTexID(textures.Add(atlasWidth, atlasHeight, atlas));
             var mapId = options.Map is null ? Terrain.Create(textures) : textures.Load(options.Map);
+            mapId = PrepareRecolourMap(options.Scene, textures, mapId, options.Map is null);
             var map = textures.Get(mapId);
             var mapTexture = new DrawTexture(mapId, new Vector2(map.Width, map.Height));
             var mapSize = new Vector2(Math.Min(options.Width - 64, 960), Math.Min(options.Height - 64, 640));
+            if (IsViewportScene(options.Scene)) mapSize = ViewportSceneSize(options.Scene, mapSize);
             if (options.Scene == "toolbar") mapSize.Y = Math.Min(mapSize.Y, 320);
-            if (context.Config.MapCircle) mapSize = new Vector2(Math.Min(mapSize.X, mapSize.Y));
+            if (context.Config.MapCircle && options.Scene != "map-circular-nonsquare") mapSize = new Vector2(Math.Min(mapSize.X, mapSize.Y));
+            if (options.Scene == "map-circular-nonsquare") mapSize = new Vector2(640, 360);
+            if (options.Scene is "chrome-tiny" or "chrome-tiny-circle") mapSize = new Vector2(320, 240);
             var mapPosition = (io.DisplaySize - mapSize) / 2;
             var mouse = options.Scene == "hover-tooltip" || materialShowcase
                 ? mapPosition + mapSize * new Vector2(.56f, .53f)
@@ -73,7 +83,7 @@ internal static class Program
                 context.Blurs.Clear();
                 io.AddMousePosEvent(mouse.X, mouse.Y);
                 ImGui.NewFrame();
-                DrawScene(options.Scene, mapPosition, mapSize, mapTexture);
+                DrawScene(options.Scene, mapPosition, mapSize, mapTexture, options.ViewportOff);
                 ImGui.Render();
             }
             var renderer = new SoftwareRenderer(options.Width, options.Height, textures);
@@ -82,12 +92,16 @@ internal static class Program
             Console.WriteLine($"Scene {options.Scene}; native Dear ImGui {ImGui.GetVersion()}; Geist / Noto atlas {atlasWidth}x{atlasHeight}.");
             Console.WriteLine($"Edge mask: {context.Config.FeatherShape}, {context.Config.FeatherWidth}px; map mesh {FeatheredMapDrawing.LastVertexCount} vertices (0 = legacy edge).");
             Console.WriteLine($"Glass: {context.Blurs.Count} CPU box-blur approximations (not Dalamud GPU parity).");
-            if (options.Verify) Verification.Run(context, textures);
+            if (options.Verify) {
+                MapColourVerification.Run();
+                Verification.Run(context, textures);
+                ChromeVerification.Run(context);
+            }
         }
         finally { ImGui.DestroyContext(native); }
     }
 
-    private static void DrawScene(string scene, Vector2 position, Vector2 size, DrawTexture map)
+    private static void DrawScene(string scene, Vector2 position, Vector2 size, DrawTexture map, bool viewportOff)
     {
         ImGui.SetNextWindowPos(position);
         ImGui.SetNextWindowSize(size);
@@ -101,9 +115,14 @@ internal static class Program
         ImGui.PopStyleVar(3);
         ImGui.BeginChild("render_child", size, ImGuiChildFlags.None, flags);
         MapShape.Update(ImGui.GetWindowSize());
-        var scale = Math.Max(size.X / map.Size.X, size.Y / map.Size.Y) * 1.15f;
-        ImGui.SetCursorPos((size - map.Size * scale) / 2);
-        MapTextureDrawing.DrawMapImage(map, scale);
+        var context = MapDrawContext.Current;
+        context.Chrome.Update(context.Config, ImGui.GetTime(), false,
+            scene == "chrome-hidden" ? 0 : scene == "chrome-fading" ? .5f : 1);
+        if (!DrawViewportMap(scene, size, map, viewportOff)) {
+            var scale = Math.Max(size.X / map.Size.X, size.Y / map.Size.Y) * 1.15f;
+            ImGui.SetCursorPos((size - map.Size * scale) / 2);
+            MapTextureDrawing.DrawMapImage(map, scale);
+        }
         var player = ImGui.GetWindowPos() + size * new Vector2(.45f, .63f);
         PlayerDrawing.DrawLookLine(player, .8f, -1.25f);
         PlayerDrawing.DrawPlayerIcon(player, MapDrawContext.Current.GetIcon(60443), .25f, 1);
@@ -121,6 +140,7 @@ internal static class Program
         }
         Marker(size * new Vector2(.56f, .53f), size, 60071, "The Wanderer's Camp", null,
             "Level 50 - Preview marker");
+        if (scene.StartsWith("map-recolor-", StringComparison.Ordinal)) DrawRecolourMarkers(size);
         if (scene == "glass-circle") {
             var center = ImGui.GetWindowPos() + size / 2;
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), center - new Vector2(40), center + new Vector2(40), 40);
@@ -151,7 +171,7 @@ internal static class Program
         ImGui.EndPopup();
     }
 
-    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth, bool Verify)
+    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth, bool Verify, bool ViewportOff)
     {
         public static Options? Parse(string[] args)
         {
@@ -159,11 +179,13 @@ internal static class Program
             string? output = null, map = null;
             float? featherWidth = null;
             var verify = false;
+            var viewportOff = false;
             var width = 1280; var height = 800;
             for (var i = 0; i < args.Length; i++) {
                 if (args[i] == "--verify") { verify = true; continue; }
+                if (args[i] == "--viewport-off") { viewportOff = true; continue; }
                 if (args[i] is "--help" or "-h") {
-                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes)}> [--out path.png] [--size WxH] [--map image.png] [--feather-width 0..48] [--verify]");
+                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes.Concat(ViewportScenes))}> [--out path.png] [--size WxH] [--map image.png] [--feather-width 0..48] [--verify] [--viewport-off]; --selftest viewport");
                     return null;
                 }
                 if (i + 1 >= args.Length) throw new ArgumentException($"Missing value for {args[i]}.");
@@ -186,7 +208,7 @@ internal static class Program
                     default: throw new ArgumentException($"Unknown option {key}.");
                 }
             }
-            if (!Scenes.Contains(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes)}.");
+            if (!Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
             if (width < 320 || height < 240 || width > 8192 || height > 8192 || (long)width * height > 16777216)
                 throw new ArgumentException("Size must be 320x240 to 8192x8192, with at most 16 megapixels.");
             if (map is not null && (!File.Exists(map) || !Path.GetExtension(map).Equals(".png", StringComparison.OrdinalIgnoreCase)))
@@ -194,7 +216,7 @@ internal static class Program
             if (output is not null && !Path.GetExtension(output).Equals(".png", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("--out must have a .png extension.");
             output ??= Path.Combine(ProjectRoot(), "_preview", scene + ".png");
-            return new Options(scene, output, width, height, map, featherWidth, verify);
+            return new Options(scene, output, width, height, map, featherWidth, verify, viewportOff);
         }
 
         private static string ProjectRoot()

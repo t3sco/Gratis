@@ -79,9 +79,15 @@ internal static class Verification
         End();
         var raw = new SoftwareRenderer(Width, Height, textures); raw.Render(ImGui.GetDrawData());
         var blurred = new SoftwareRenderer(Width, Height, textures); blurred.Render(ImGui.GetDrawData(), context.Blurs);
+        var fading = new SoftwareRenderer(Width, Height, textures);
+        fading.Render(ImGui.GetDrawData(), context.Blurs.Select(b => b with { Opacity = .5f }).ToArray());
+        var almostHidden = new SoftwareRenderer(Width, Height, textures);
+        almostHidden.Render(ImGui.GetDrawData(), context.Blurs.Select(b => b with { Opacity = .001f }).ToArray());
         var beforeEnergy = 0f; var afterEnergy = 0f; var beforeMean = 0f; var afterMean = 0f; var samples = 0;
         for (var y = 0; y < Height; y++) for (var x = 0; x < Width; x++) {
             var a = raw.Pixel(x, y).X; var b = blurred.Pixel(x, y).X;
+            Require(MathF.Abs(fading.Pixel(x, y).X - (a + b) / 2) < .00001f, "Blur opacity failed to fade linearly.");
+            Require(MathF.Abs(almostHidden.Pixel(x, y).X - a) <= .00101f, "Blur popped near zero opacity.");
             if (x < 80 || x >= 240 || y < 64 || y >= 176 || x == 80 && y == 64)
                 Require(a == b, "Blur escaped its rounded mask.");
             if (x < 96 || x >= 224 || y < 80 || y >= 160) continue;

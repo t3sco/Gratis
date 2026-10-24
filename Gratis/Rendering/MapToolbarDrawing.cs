@@ -13,6 +13,7 @@ public static class MapToolbarDrawing
 {
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu) {
         var context = MapDrawContext.Current;
+        using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
         if (context.Config.IsGratis && context.Config.SegmentedToolbar) {
             DrawSegmented(activate, drawLayersContextMenu);
             return;
@@ -38,6 +39,7 @@ public static class MapToolbarDrawing
                 activate(ToolbarAction.Layers);
             }
 
+            if (context.Config.IsGratis && ImGui.IsPopupOpen("Gratis_Show_Layers")) context.Chrome.Reveal(ImGui.GetTime());
             drawLayersContextMenu();
 
             ImGui.SameLine();
@@ -103,7 +105,11 @@ public static class MapToolbarDrawing
     {
         var context = MapDrawContext.Current;
         var scale = context.GlobalScale;
-        var count = context.Config.UseCustomWindowChrome ? 8 : 7;
+        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
+        var area = areaMax - areaMin;
+        var compact = area.X < 300 * scale || area.Y < 280 * scale;
+        var count = compact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : context.Config.UseCustomWindowChrome ? 8 : 7;
+        if (area.X < (count * 28 + 24) * scale || area.Y < 64 * scale) return;
         var width = (count * 28 + 8) * scale;
         var offset = MapWindowDrawing.ToolbarOffset(count);
         ImGui.SetCursorPos(offset);
@@ -115,7 +121,7 @@ public static class MapToolbarDrawing
             var list = ImGui.GetWindowDrawList();
             MapWindowDrawing.DrawSurface(list, origin, origin + new Vector2(width, 36 * scale), 18 * scale);
             for (var index = 0; index < count; index++) {
-                var (action, tooltip) = Buttons[index];
+                var (action, tooltip) = Buttons[compact ? index == 0 ? 2 : index + 5 : index];
                 var min = origin + new Vector2(4 + index * 28, 4) * scale;
                 var active = action == ToolbarAction.Follow && context.Config.FollowPlayer || action == ToolbarAction.Layers && ImGui.IsPopupOpen("Gratis_Show_Layers");
                 ImGui.SetCursorScreenPos(min);
@@ -131,6 +137,7 @@ public static class MapToolbarDrawing
                 }
                 if (clicked) activate(action);
                 if (action == ToolbarAction.Layers) {
+                    if (ImGui.IsPopupOpen("Gratis_Show_Layers")) context.Chrome.Reveal(ImGui.GetTime());
                     ImGui.PushStyleColor(ImGuiCol.PopupBg, GratisTheme.Surface);
                     ImGui.PushStyleColor(ImGuiCol.Border, GratisTheme.Border);
                     drawLayersContextMenu();

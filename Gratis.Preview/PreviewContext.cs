@@ -6,16 +6,18 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal readonly record struct BackdropBlur(nint List, int IndexOffset, Vector2 Min, Vector2 Max, float Rounding, float Radius);
+internal readonly record struct BackdropBlur(nint List, int IndexOffset, Vector2 Min, Vector2 Max, float Rounding, float Radius, float Opacity);
 
 internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDisposable
 {
     public List<BackdropBlur> Blurs { get; } = [];
     public bool BlurAvailable { get; set; } = true;
-    public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius)
+    public MapColourPreset ColourPreset { get; set; }
+    public override MapColourPreset ActiveColourPreset => ColourPreset;
+    public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1)
     {
         if (!BlurAvailable || !float.IsFinite(radius) || radius <= 0) return false;
-        Blurs.Add(new BackdropBlur((nint)list.NativePtr, list.IdxBuffer.Size, min, max, rounding, radius));
+        Blurs.Add(new BackdropBlur((nint)list.NativePtr, list.IdxBuffer.Size, min, max, rounding, radius, Math.Clamp(opacity, 0, 1)));
         return true;
     }
 

@@ -12,6 +12,11 @@ public class MapDrawingConfig
     : CharacterConfiguration
 #endif
 {
+    public bool ScaleWithFrame = true;
+    public bool ClampToMap = true;
+
+    public void ResetViewport() => ScaleWithFrame = ClampToMap = true;
+
     public int VisualStyle = 0;
     public int MarkerStyle = 1;
     public int HoverCardStyle = 0;
@@ -30,6 +35,24 @@ public class MapDrawingConfig
     public float SoftConeOpacity = .35f;
     public bool SegmentedToolbar = true;
     public float IconSize = 16;
+    public bool AutoHideChrome = true;
+    public float ChromeIdleDelay = 1.2f;
+    public float ChromeFadeDurationMs = 180;
+    public float ChromeTitleMinAlpha = .35f;
+    public float ChromeControlsMinAlpha = 0;
+    public bool PinChrome = false;
+
+    public void ResetChromeVisibility()
+    {
+        var defaults = new MapDrawingConfig();
+        AutoHideChrome = defaults.AutoHideChrome;
+        ChromeIdleDelay = defaults.ChromeIdleDelay;
+        ChromeFadeDurationMs = defaults.ChromeFadeDurationMs;
+        ChromeTitleMinAlpha = defaults.ChromeTitleMinAlpha;
+        ChromeControlsMinAlpha = defaults.ChromeControlsMinAlpha;
+        PinChrome = defaults.PinChrome;
+    }
+
     public bool NeutralFrame = true;
     public float FlatCornerRadius = 10;
     public float FlatVignette = .08f;

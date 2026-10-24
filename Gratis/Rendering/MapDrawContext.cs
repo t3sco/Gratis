@@ -32,6 +32,7 @@ public abstract class MapDrawContext
 #else
         new DalamudMapDrawContext();
 #endif
+    public ChromeVisibility Chrome { get; } = new();
     public abstract MapDrawingConfig Config { get; }
     public abstract float GlobalScale { get; }
     public abstract float MapSizeFactor { get; }
@@ -45,5 +46,6 @@ public abstract class MapDrawContext
     public virtual IDrawFont? GetIconFont(float size) => null;
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }
-    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius) => false;
+    public virtual MapColourPreset ActiveColourPreset => MapColourPreset.Original;
+    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1) => false;
 }

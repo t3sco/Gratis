@@ -24,14 +24,23 @@ public static class MapShape
 
     public static void Update(Vector2 size) => Current = Rounding(size);
 
+    public static (Vector2 Min, Vector2 Max) Bounds(Vector2 position, Vector2 size)
+    {
+        if (MapDrawContext.Current.Config is { IsGratis: true, MapCircle: true }) {
+            var half = new Vector2(MathF.Min(size.X, size.Y) / 2);
+            var center = position + size / 2;
+            return (center - half, center + half);
+        }
+        return (position, position + size);
+    }
+
     public static float FeatherWidth => MapDrawContext.Current.Config is { IsGratis: true, FeatherEnabled: true } config
         ? Math.Clamp(float.IsFinite(config.FeatherWidth) ? config.FeatherWidth : 6, 0, 48) * MapDrawContext.Current.GlobalScale : 0;
 
     public static bool ContainsSymbol(Vector2 center, Vector2 halfSize)
     {
         if (FeatherWidth <= 0) return true;
-        var min = ImGui.GetWindowPos();
-        var max = min + ImGui.GetWindowSize();
+        var (min, max) = Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         var radius = Rounding(max - min);
         var feather = FeatherWidth;
         return FeatheredMapDrawing.Depth(center - halfSize, min, max, radius) >= feather &&
@@ -45,8 +54,7 @@ public static class MapShape
         if (FeatherWidth > 0) return ContainsSymbol(screenPoint, Vector2.Zero);
         if (Current <= 0.0f) return true;
 
-        var min = ImGui.GetWindowPos();
-        var max = min + ImGui.GetWindowSize();
+        var (min, max) = Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         var inner = new Vector2(Math.Clamp(screenPoint.X, min.X + Current, max.X - Current), Math.Clamp(screenPoint.Y, min.Y + Current, max.Y - Current));
         return Vector2.DistanceSquared(inner, screenPoint) <= Current * Current;
     }

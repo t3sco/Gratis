@@ -13,6 +13,7 @@ public static class HoverCardDrawing
     public static void Draw(string key, string title, string? secondary = null, MarkerCategory? category = null)
     {
         var context = MapDrawContext.Current;
+        context.Chrome.Reveal(ImGui.GetTime());
         var scale = context.GlobalScale;
         var fade = HoverAnimation.Progress("card/" + key, true);
         var viewport = ImGui.GetWindowViewport();

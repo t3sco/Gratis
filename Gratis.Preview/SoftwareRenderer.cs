@@ -138,7 +138,7 @@ internal sealed class SoftwareRenderer(int width, int height, Textures textures)
                 var distance = Vector2.Max(q, Vector2.Zero).Length() + MathF.Min(MathF.Max(q.X, q.Y), 0) - rounding;
                 var coverage = Math.Clamp(.5f - distance, 0, 1);
                 ref var target = ref pixels[y * width + x];
-                target = Vector4.Lerp(target, sum / kernel, coverage);
+                target = Vector4.Lerp(target, sum / kernel, coverage * request.Opacity);
                 if (y + 1 < y1)
                     sum += horizontal[(Math.Clamp(y + radius + 1, 0, height - 1) - sy0) * span + x - x0] -
                            horizontal[(Math.Clamp(y - radius, 0, height - 1) - sy0) * span + x - x0];

@@ -66,6 +66,7 @@ public class MapWindow : Window
 
     public override void OnOpen()
     {
+        Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
         if (ProcessingCommand) {
             ProcessingCommand = false;
             System.SystemConfig.FollowPlayer = false;
@@ -120,6 +121,10 @@ public class MapWindow : Window
                 return;
             }
 
+            var mouseOverWindow = ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
+            Rendering.MapDrawContext.Current.Chrome.Update(System.SystemConfig, ImGui.GetTime(),
+                mouseOverWindow || isDragStarted || System.ConfigWindow.IsOpen ||
+                ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsAnyItemActive());
             DrawMapElements();
 
             ImGui.SetCursorPos(Vector2.Zero);
@@ -207,6 +212,7 @@ public class MapWindow : Window
 
     private bool ShouldShowToolbar()
     {
+        if (System.SystemConfig.IsGratis && (System.SystemConfig.AutoHideChrome || System.SystemConfig.PinChrome)) return true;
         if (isDragStarted) return false;
         if (System.SystemConfig.ShowToolbarOnHover && HoveredFlags.Any()) return true;
         if (System.SystemConfig.AlwaysShowToolbar) return true;
@@ -324,7 +330,7 @@ public class MapWindow : Window
         }
 
         if (System.SystemConfig.FollowPlayer && Service.ObjectTable is { LocalPlayer: { } localPlayer }) {
-            System.MapRenderer.CenterOnGameObject(localPlayer);
+            System.MapRenderer.FollowGameObject(localPlayer);
         }
 
         if (System.SystemConfig.LockCenterOnMap) {
@@ -401,12 +407,11 @@ public class MapWindow : Window
         if (ImGui.GetIO().MouseWheel is 0) return;
         if (!HoveredFlags.HasFlag(HoverFlags.WindowInnerFrame)) return;
 
-        if (System.SystemConfig.UseLinearZoom) {
-            MapRenderer.MapRenderer.Scale += System.SystemConfig.ZoomSpeed * ImGui.GetIO().MouseWheel;
-        }
-        else {
-            MapRenderer.MapRenderer.Scale *= 1.0f + System.SystemConfig.ZoomSpeed * ImGui.GetIO().MouseWheel;
-        }
+        var scale = MapRenderer.MapRenderer.Scale;
+        var wheel = System.SystemConfig.ZoomSpeed * ImGui.GetIO().MouseWheel;
+        var requestedScale = System.SystemConfig.UseLinearZoom ? scale + wheel : scale * (1.0f + wheel);
+        System.MapRenderer.ZoomViewport(requestedScale,
+            ImGui.GetMousePos() - MapDrawOffset - System.MapRenderer.ViewportSize / 2);
     }
 
     private void ProcessMapDragDragging()

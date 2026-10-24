@@ -16,14 +16,16 @@ public static class MapWindowDrawing
     {
         var config = MapDrawContext.Current.Config;
         var glass = config.IsGratis && config.GlassEnabled;
+        var effectiveAlpha = alpha * ImGui.GetStyle().Alpha;
+        if (effectiveAlpha < 1 / 255f) return;
         var size = max - min;
         var circular = MathF.Abs(size.X - size.Y) < .01f && radius >= MathF.Min(size.X, size.Y) / 2;
         var clipMin = list.GetClipRectMin();
         var clipMax = list.GetClipRectMax();
-        var canBlur = glass && config.GlassBlur && alpha > 0 && !circular &&
+        var canBlur = glass && config.GlassBlur && effectiveAlpha > 0 && !circular &&
             size.X > 0 && size.Y > 0 && min.X >= clipMin.X && min.Y >= clipMin.Y && max.X <= clipMax.X && max.Y <= clipMax.Y;
         var blurred = canBlur && MapDrawContext.Current.TryBlurBehind(list, min, max, radius,
-            Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48) * MapDrawContext.Current.GlobalScale);
+            Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48) * MapDrawContext.Current.GlobalScale, effectiveAlpha);
         var opacity = surfaceOpacity ?? GratisTheme.Surface.W;
         if (glass) {
             var minimum = FrameMaterialDrawing.GlassBackingOpacity(config);
@@ -45,10 +47,11 @@ public static class MapWindowDrawing
         var offset = new Vector2(8 * scale);
         if (!context.Config.MapCircle) return offset;
         var width = (count * 28 + 8) * scale;
-        offset.X = (ImGui.GetWindowSize().X - width) / 2;
+        var (min, max) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
+        offset.X = min.X + (max.X - min.X - width) / 2;
         var radius = MapShape.Current;
         var halfWidth = width / 2 + 8 * scale;
-        offset.Y += radius - MathF.Sqrt(MathF.Max(0, radius * radius - halfWidth * halfWidth));
+        offset.Y += min.Y + radius - MathF.Sqrt(MathF.Max(0, radius * radius - halfWidth * halfWidth));
         return offset;
     }
 
@@ -62,8 +65,7 @@ public static class MapWindowDrawing
     {
         var config = MapDrawContext.Current.Config;
         var scale = MapDrawContext.Current.GlobalScale;
-        var min = ImGui.GetWindowPos();
-        var max = min + ImGui.GetWindowSize();
+        var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         var rounding = MapShape.Current;
         var drawList = ImGui.GetWindowDrawList();
 
@@ -158,6 +160,8 @@ public static class MapWindowDrawing
         var config = MapDrawContext.Current.Config;
         if (!config.ShowTitleOnMap || (!config.IsGratis && !config.HideWindowFrame)) return;
 
+        using var chromeAlpha = new ChromeVisibility.AlphaScope(config.IsGratis, MapDrawContext.Current.Chrome.TitleAlpha(config));
+        uint TitleColor(Vector4 color) => config.IsGratis ? ImGui.GetColorU32(color) : ImGui.ColorConvertFloat4ToU32(color);
         var idIndex = title.IndexOf("###");
         if (idIndex >= 0) title = title[..idIndex];
         if (string.IsNullOrWhiteSpace(title)) return;
@@ -218,14 +222,14 @@ public static class MapWindowDrawing
 
         if (config.TitleBackground) {
             var rounding = config.TitleRounding * scale;
-            drawList.AddRectFilled(boxMin, boxMax, ImGui.ColorConvertFloat4ToU32(config.TitleBackgroundColor), rounding);
+            drawList.AddRectFilled(boxMin, boxMax, TitleColor(config.TitleBackgroundColor), rounding);
             if (config.TitleBorder) {
-                drawList.AddRect(boxMin, boxMax, ImGui.ColorConvertFloat4ToU32(config.TitleBorderColor), rounding, ImDrawFlags.None, 1.0f);
+                drawList.AddRect(boxMin, boxMax, TitleColor(config.TitleBorderColor), rounding, ImDrawFlags.None, 1.0f);
             }
         }
 
         var font = ImGui.GetFont();
-        var outline = ImGui.ColorConvertFloat4ToU32(config.TitleOutlineColor);
+        var outline = TitleColor(config.TitleOutlineColor);
         var cursorY = boxMin.Y + padding.Y;
         for (var index = 0; index < lines.Count; index++) {
             var line = lines[index];
@@ -234,7 +238,7 @@ public static class MapWindowDrawing
             using (handles[index]?.Push()) {
                 var lineFont = handles[index] is null ? font : ImGui.GetFont();
                 var fontSize = handles[index] is null ? baseFontSize * line.Scale : ImGui.GetFontSize();
-                var color = ImGui.ColorConvertFloat4ToU32(line.Color);
+                var color = TitleColor(line.Color);
                 var bold = new Vector2(config.TitleBold, 0.0f);
                 if (config.TitleOutline) {
                     foreach (var step in new[] { new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1), new Vector2(0, 1) }) {
@@ -262,20 +266,28 @@ public static class MapWindowDrawing
         using var titleFont = context.GetChromeFont(14 * scale, ChromeFontRole.Chip)?.Push();
         var font = ImGui.GetFont();
         var window = ImGui.GetWindowSize();
-        var wrap = MathF.Max(1, MathF.Min(280 * scale, window.X - 40 * scale));
+        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, window);
+        var area = areaMax - areaMin;
+        if (area.X < 160 * scale || area.Y < 160 * scale) return;
+        var compact = area.X < 480 * scale || area.Y < 360 * scale;
+        if (compact) region = "";
+        var padding = new Vector2(compact ? 8 : 12, compact ? 6 : 8) * scale;
+        var wrap = MathF.Max(1, MathF.Min(280 * scale,
+            (context.Config.MapCircle ? area.X * .72f : area.X - 32 * scale) - padding.X * 2));
         var primary = DrawBinding.MeasureText(14 * scale, name, wrap);
         Vector2 secondary;
         using (context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push())
             secondary = DrawBinding.MeasureText(12 * scale, region, wrap);
-        var size = new Vector2(MathF.Max(primary.X, secondary.X) + 24 * scale, primary.Y + (region.Length > 0 ? secondary.Y + 4 * scale : 0) + 16 * scale);
+        var size = new Vector2(MathF.Max(primary.X, secondary.X), primary.Y + (region.Length > 0 ? secondary.Y + 4 * scale : 0)) + padding * 2;
+        if (size.Y > area.Y * .35f) return;
         var config = MapDrawContext.Current.Config;
         var count = config.UseCustomWindowChrome ? 8 : 7;
         var y = 8 * scale;
         if (config.MapCircle) {
-            var half = window.X / 2;
+            var half = area.X / 2;
             var rimInset = half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X / 4));
             var bottom = coordinateLayout.Frame == ImGui.GetFrameCount() && coordinateLayout.Window == ImGui.GetID("coordinate-layout")
-                ? coordinateLayout.Top - ImGui.GetWindowPos().Y : window.Y - rimInset;
+                ? coordinateLayout.Top - ImGui.GetWindowPos().Y : areaMax.Y - rimInset;
             y = MathF.Max(8 * scale, bottom - size.Y - 8 * scale);
         }
         if (!config.MapCircle && size.X + (count * 28 + 32) * scale > window.X) y = 52 * scale;
@@ -286,7 +298,7 @@ public static class MapWindowDrawing
         var pos = ImGui.GetWindowPos() + new Vector2(x, y);
         var list = ImGui.GetWindowDrawList();
         DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
-        var text = pos + new Vector2(12, 8) * scale;
+        var text = pos + padding;
         if (region.Length > 0) {
             using var secondaryFont = context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push();
             list.AddText(ImGui.GetFont(), 12 * scale, text, ImGui.GetColorU32(GratisTheme.Secondary), region, wrap);
@@ -298,6 +310,11 @@ public static class MapWindowDrawing
     public static void DrawCoordinates(Vector2? character, Vector2? cursor)
     {
         if (character is null && cursor is null) return;
+        var context = MapDrawContext.Current;
+        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
+        var area = areaMax - areaMin;
+        if (context.Config.IsGratis && (area.X < 360 * context.GlobalScale || area.Y < 300 * context.GlobalScale)) return;
+        using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
         var scale = MapDrawContext.Current.GlobalScale;
         using var coordinateFont = MapDrawContext.Current.GetChromeFont(14 * scale, ChromeFontRole.Coordinates)?.Push();
         var font = ImGui.GetFont();
@@ -315,9 +332,10 @@ public static class MapWindowDrawing
         if (size.X > window.X - 32 * scale && left.Length > 0) {
             text = left; size.X = TextWidth(text) + 24 * scale;
         }
-        var pos = ImGui.GetWindowPos() + new Vector2((window.X - size.X) / 2, window.Y - size.Y - 8 * scale);
+        if (size.X > area.X - 32 * scale) return;
+        var pos = ImGui.GetWindowPos() + new Vector2((window.X - size.X) / 2, areaMax.Y - size.Y - 8 * scale);
         if (MapDrawContext.Current.Config.MapCircle) {
-            var half = window.X * .5f;
+            var half = area.X * .5f;
             pos.Y -= half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X * .25f));
         }
         coordinateLayout = (ImGui.GetFrameCount(), ImGui.GetID("coordinate-layout"), pos.Y);

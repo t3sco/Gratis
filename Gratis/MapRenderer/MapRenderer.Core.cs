@@ -35,17 +35,24 @@ public unsafe partial class MapRenderer : IDisposable
     public void Dispose()
     {
         UnloadFogHooks();
+        mapColours.Dispose();
+        blendedTexture?.Dispose();
+        fogTexture?.Dispose();
     }
 
     public void CenterOnGameObject(IGameObject obj) => CenterOnCoordinate(new Vector2(obj.Position.X, obj.Position.Z));
 
-    public void CenterOnCoordinate(Vector2 coord) => DrawOffset = -coord * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetMapOffsetVector();
+    public void CenterOnCoordinate(Vector2 coord)
+    {
+        followZoomOffset = Vector2.Zero;
+        DrawOffset = CoordinateOffset(coord);
+    }
+
+    private static Vector2 CoordinateOffset(Vector2 coord) => -coord * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetMapOffsetVector();
 
     public void DrawBaseTexture()
     {
-        UpdateScaleLimits();
-        UpdateDrawOffset();
-
+        viewportSize = ImGui.GetContentRegionAvail();
         DrawBackgroundTexture();
     }
 
@@ -55,14 +62,9 @@ public unsafe partial class MapRenderer : IDisposable
         DrawMapMarkers();
     }
 
-    private void UpdateScaleLimits() => Scale = Math.Clamp(Scale, 0.05f, 20.0f);
-
     private void UpdateDrawOffset()
     {
-        var childCenterOffset = ImGui.GetContentRegionAvail() / 2.0f;
-        var mapCenterOffset = new Vector2(1024.0f, 1024.0f) * Scale;
-
-        DrawPosition = childCenterOffset - mapCenterOffset + DrawOffset * Scale;
+        DrawPosition = Rendering.ViewportMath.DrawPosition(viewportSize, DrawOffset, Scale);
     }
 
     private void DrawBackgroundTexture()
@@ -71,24 +73,33 @@ public unsafe partial class MapRenderer : IDisposable
             var texture = Service.TextureProvider.GetFromGame($"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
 
             ImGui.SetCursorPos(DrawPosition);
-            DrawMapImage(texture);
+            var path = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
+            DrawColouredMapImage(texture, path, () => LoadMapPixels(path));
         }
         else {
-            if (blendedPath != AgentMap.Instance()->SelectedMapBgPath.ToString()) {
-                fogTexture = null;
+            var foregroundPath = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
+            var backgroundPath = $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex";
+            var source = backgroundPath + "|" + foregroundPath;
+            if (blendedPath != source) {
+                ResetFogTexture();
                 blendedTexture?.Dispose();
                 blendedTexture = LoadTexture();
-                blendedPath = AgentMap.Instance()->SelectedMapBgPath.ToString();
+                blendedPath = source;
             }
 
             if (blendedTexture is not null) {
                 ImGui.SetCursorPos(DrawPosition);
-                DrawMapImage(blendedTexture);
+                DrawColouredMapImage(blendedTexture, source, () => LoadMapPixels(foregroundPath, backgroundPath));
             }
         }
     }
 
-    private void DrawMapImage(IDalamudTextureWrap texture) => Rendering.MapTextureDrawing.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size), Scale);
+    private void DrawMapImage(IDalamudTextureWrap texture)
+    {
+        PrepareViewport(texture.Size);
+        ImGui.SetCursorPos(DrawPosition);
+        Rendering.MapTextureDrawing.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size), Scale);
+    }
 
     private static IDalamudTextureWrap? LoadTexture()
     {

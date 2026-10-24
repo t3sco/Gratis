@@ -16,6 +16,7 @@ public unsafe class MapContextMenu
         using var contextMenu = ImRaii.ContextPopup("Gratis_Context_Menu");
 
         if (!contextMenu) return;
+        Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
 
         if (ImGui.MenuItem("Place Flag")) {
             var cursorPosition = ImGui.GetMousePosOnOpeningCurrentPopup();
