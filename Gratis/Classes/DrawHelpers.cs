@@ -1,15 +1,15 @@
-﻿using System;
-using System.Drawing;
+using System;
 using System.Linq;
 using System.Numerics;
+#if GRATIS_PREVIEW
+using ImGuiNET;
+#else
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Classes;
-using Gratis.Data;
 using SeString = Dalamud.Game.Text.SeStringHandling.SeString;
+#endif
+using Gratis.Rendering;
 
 namespace Gratis.Classes;
 
@@ -21,12 +21,13 @@ public class MarkerInfo
     public uint? ObjectiveId { get; init; }
     public uint? DataId { get; set; }
     public MarkerType MarkerType { get; set; }
+    public MarkerCategory Category { get; set; }
     public uint IconId { get; set; }
     public Func<string?>? PrimaryText { get; set; }
     public Func<string?>? SecondaryText { get; set; }
     public float? Radius { get; set; }
-    public Vector4 RadiusColor { get; set; } = KnownColor.CornflowerBlue.Vector();
-    public Vector4 RadiusOutlineColor { get; set; } = KnownColor.CornflowerBlue.Vector();
+    public Vector4 RadiusColor { get; set; } = new Vector4(100 / 255.0f, 149 / 255.0f, 237 / 255.0f, 1.0f);
+    public Vector4 RadiusOutlineColor { get; set; } = new Vector4(100 / 255.0f, 149 / 255.0f, 237 / 255.0f, 1.0f);
     public Action? OnRightClicked { get; set; }
     public Action? OnLeftClicked { get; set; }
     public bool IsDynamicMarker { get; init; }
@@ -34,19 +35,22 @@ public class MarkerInfo
 
 public static class DrawHelpers
 {
-    private static bool DebugMode => System.SystemConfig.DebugMode;
+    private static bool DebugMode => MapDrawContext.Current.Config.DebugMode;
 
     public const uint QuestionMarkIcon = 60071;
 
+#if !GRATIS_PREVIEW
     public static Vector2 GetMapOffsetVector() => GetRawMapOffsetVector() * GetMapScaleFactor();
 
     public static unsafe Vector2 GetRawMapOffsetVector() => new(AgentMap.Instance()->SelectedOffsetX, AgentMap.Instance()->SelectedOffsetY);
 
-    public static unsafe float GetMapScaleFactor() => AgentMap.Instance()->SelectedMapSizeFactorFloat;
+    public static unsafe float GetMapScaleFactor() => MapDrawContext.Current.MapSizeFactor;
 
     public static Vector2 GetMapCenterOffsetVector() => new(1024.0f, 1024.0f);
 
     public static Vector2 GetCombinedOffsetVector() => -GetMapOffsetVector() + GetMapCenterOffsetVector();
+
+#endif
 
     public static void DrawMapMarker(MarkerInfo markerInfo)
     {
@@ -72,24 +76,14 @@ public static class DrawHelpers
             markerInfo.PrimaryText = () => $"[Debug] IconId: {markerInfo.IconId}";
         }
 
-        if (System.IconConfig.IconSettingMap.TryAdd(markerInfo.IconId, new IconSetting { IconId = markerInfo.IconId, })) {
-            System.IconConfig.Save();
-        }
-
-        if (System.IconConfig.IconSettingMap[markerInfo.IconId] is { Hide: true }) {
-            return;
-        }
-
-        if (markerInfo.IsDynamicMarker) {
-            foreach (var module in System.Modules) {
-                if (module.ProcessMarker(markerInfo)) {
-                    break;
-                }
-            }
-        }
+        var context = MapDrawContext.Current;
+        if (!context.PrepareMarker(markerInfo)) return;
 
         DrawRadiusUnderlay(markerInfo);
-        DrawIcon(markerInfo);
+        if (context.Config.IsGratis && context.Config.MarkerStyle == 1) {
+            if (!FlatMarkerDrawing.Draw(markerInfo)) return;
+        }
+        else DrawIcon(markerInfo);
         ProcessInteractions(markerInfo);
         DrawTooltip(markerInfo);
     }
@@ -99,9 +93,18 @@ public static class DrawHelpers
         if (markerInfo is not { Radius: { } markerRadius and > 1.0f }) return;
 
         var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
-        var radius = markerRadius * markerInfo.Scale * AgentMap.Instance()->SelectedMapSizeFactorFloat;
-        var fillColor = ImGui.GetColorU32(markerInfo.RadiusColor with { W = System.SystemConfig.AreaColor.W });
-        var radiusColor = ImGui.GetColorU32(markerInfo.RadiusOutlineColor with { W = System.SystemConfig.AreaOutlineColor.W });
+        var radius = markerRadius * markerInfo.Scale * MapDrawContext.Current.MapSizeFactor;
+        var fillColor = ImGui.GetColorU32(markerInfo.RadiusColor with { W = MapDrawContext.Current.Config.AreaColor.W });
+        var radiusColor = ImGui.GetColorU32(markerInfo.RadiusOutlineColor with { W = MapDrawContext.Current.Config.AreaOutlineColor.W });
+
+        if (MapDrawContext.Current.Config.IsGratis) {
+            var color = FlatMarkerDrawing.Color(FlatMarkerDrawing.Category(markerInfo));
+            fillColor = ImGui.GetColorU32(color with { W = MathF.Min(MapDrawContext.Current.Config.AreaColor.W, .10f) });
+            radiusColor = ImGui.GetColorU32(color with { W = MathF.Min(MapDrawContext.Current.Config.AreaOutlineColor.W, .28f) });
+            ImGui.GetWindowDrawList().AddCircleFilled(center, radius, fillColor);
+            ImGui.GetWindowDrawList().AddCircle(center, radius, radiusColor, 0, MapDrawContext.Current.GlobalScale);
+            return;
+        }
 
         ImGui.GetWindowDrawList().AddCircleFilled(center, radius, fillColor);
         ImGui.GetWindowDrawList().AddCircle(center, radius, radiusColor, 0, 3.0f);
@@ -109,10 +112,10 @@ public static class DrawHelpers
 
     private static void DrawIcon(MarkerInfo markerInfo)
     {
-        var texture = Service.TextureProvider.GetFromGameIcon(markerInfo.IconId).GetWrapOrEmpty();
-        var scale = System.SystemConfig.ScaleWithZoom ? markerInfo.Scale : 1.0f;
+        var texture = MapDrawContext.Current.GetIcon(markerInfo.IconId);
+        var scale = MapDrawContext.Current.Config.ScaleWithZoom ? markerInfo.Scale : 1.0f;
 
-        var iconScale = System.SystemConfig.IconScale;
+        var iconScale = MapDrawContext.Current.Config.IconScale;
 
         if (markerInfo.IconId is 60401 or 60402) {
             scale *= 2.0f;
@@ -123,28 +126,30 @@ public static class DrawHelpers
             iconScale = 0.42f;
         }
 
-        ImGui.SetCursorPos(markerInfo.Position + markerInfo.Offset - texture.Size * iconScale / 2.0f * scale * System.IconConfig.IconSettingMap[markerInfo.IconId].Scale);
+        ImGui.SetCursorPos(markerInfo.Position + markerInfo.Offset - texture.Size * iconScale / 2.0f * scale * MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Scale);
         var cursorScreenPos = ImGui.GetCursorScreenPos();
-        var iconSize = texture.Size * scale * iconScale * System.IconConfig.IconSettingMap[markerInfo.IconId].Scale;
+        var iconSize = texture.Size * scale * iconScale * MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Scale;
 
-        ImGui.Image(texture.Handle, iconSize, Vector2.Zero, Vector2.One, System.IconConfig.IconSettingMap[markerInfo.IconId].Color);
+        ImGui.Image(texture.Handle, iconSize, Vector2.Zero, Vector2.One, MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Color);
 
         if (DebugMode) {
             foreach (var x in Enumerable.Range(-1, 3)) {
                 foreach (var y in Enumerable.Range(-1, 3)) {
-                    ImGui.GetWindowDrawList().AddRect(cursorScreenPos + new Vector2(x, y), cursorScreenPos + iconSize, ImGui.GetColorU32(KnownColor.White.Vector()), 3.0f);
+                    ImGui.GetWindowDrawList().AddRect(cursorScreenPos + new Vector2(x, y), cursorScreenPos + iconSize, ImGui.GetColorU32(Vector4.One), 3.0f);
                 }
             }
 
-            ImGui.GetWindowDrawList().AddRect(cursorScreenPos, cursorScreenPos + iconSize, ImGui.GetColorU32(KnownColor.Red.Vector()), 3.0f);
+            ImGui.GetWindowDrawList().AddRect(cursorScreenPos, cursorScreenPos + iconSize, ImGui.GetColorU32(new Vector4(1, 0, 0, 1)), 3.0f);
         }
     }
 
+#if !GRATIS_PREVIEW
     public static void DrawText(MarkerInfo markerInfo, SeString text) => DrawText(markerInfo, text.ToString());
+#endif
 
     public static void DrawText(MarkerInfo markerInfo, string text)
     {
-        using var largeFont = System.LargeAxisFontHandle.Push();
+        using var largeFont = MapDrawContext.Current.PushLargeFont();
         ImGui.SetWindowFontScale(markerInfo.Scale);
 
         var textSize = ImGui.CalcTextSize(text);
@@ -152,9 +157,9 @@ public static class DrawHelpers
 
         drawPosition = new Vector2(MathF.Round(drawPosition.X), MathF.Round(drawPosition.Y));
 
-        if (System.SystemConfig.DebugMode) {
-            ImGui.GetWindowDrawList().AddCircleFilled(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos(), 5.0f, ImGui.GetColorU32(KnownColor.Red.Vector()));
-            ImGui.GetWindowDrawList().AddRect(drawPosition, drawPosition + textSize, ImGui.GetColorU32(KnownColor.Green.Vector()), 3.0f);
+        if (MapDrawContext.Current.Config.DebugMode) {
+            ImGui.GetWindowDrawList().AddCircleFilled(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos(), 5.0f, ImGui.GetColorU32(new Vector4(1, 0, 0, 1)));
+            ImGui.GetWindowDrawList().AddRect(drawPosition, drawPosition + textSize, ImGui.GetColorU32(new Vector4(0, 128 / 255.0f, 0, 1)), 3.0f);
         }
 
         foreach (var x in Enumerable.Range(-1, 3)) {
@@ -162,19 +167,19 @@ public static class DrawHelpers
                 if (x is 0 && y is 0) continue;
 
                 ImGui.SetCursorScreenPos(drawPosition + new Vector2(x, y));
-                ImGui.TextColored(KnownColor.Black.Vector(), text);
+                ImGui.TextColored(new Vector4(0, 0, 0, 1), text);
             }
         }
 
         ImGui.SetCursorScreenPos(drawPosition);
-        ImGui.TextColored(KnownColor.White.Vector(), text);
+        ImGui.TextColored(Vector4.One, text);
 
         ImGui.SetWindowFontScale(1.0f);
     }
 
     private static void ProcessInteractions(MarkerInfo markerInfo)
     {
-        if (System.IconConfig.IconSettingMap[markerInfo.IconId] is not { AllowClick: true }) return;
+        if (MapDrawContext.Current.GetIconSetting(markerInfo.IconId) is not { AllowClick: true }) return;
 
         if (markerInfo is { OnRightClicked: { } rightClickAction } && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
             rightClickAction.Invoke();
@@ -187,7 +192,7 @@ public static class DrawHelpers
 
     private static unsafe void DrawTooltip(MarkerInfo markerInfo)
     {
-        if (System.IconConfig.IconSettingMap[markerInfo.IconId] is { AllowTooltip: false } && !DebugMode) {
+        if (MapDrawContext.Current.GetIconSetting(markerInfo.IconId) is { AllowTooltip: false } && !DebugMode) {
             return;
         }
 
@@ -195,29 +200,46 @@ public static class DrawHelpers
 
         if (markerInfo is { Radius: { } sameRadius and > 1.0f }) {
             var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
-            var radius = sameRadius * markerInfo.Scale * AgentMap.Instance()->SelectedMapSizeFactorFloat;
+            var radius = sameRadius * markerInfo.Scale * MapDrawContext.Current.MapSizeFactor;
 
-            if (Vector2.Distance(ImGui.GetMousePos() - System.MapWindow.MapDrawOffset + ImGui.GetWindowPos(), center) <= radius && System.MapWindow.HoveredFlags.Any()) {
+            if (MapDrawContext.Current.IsRadiusHovered(center, radius)) {
                 isActivatedViaRadius = true;
             }
         }
 
         if (isActivatedViaRadius || ImGui.IsItemHovered()) {
             if (markerInfo.PrimaryText?.Invoke() is { Length: > 0 } primaryText) {
+                if (MapDrawContext.Current.Config.IsGratis && MapDrawContext.Current.Config.HoverCardStyle == 0) {
+                    var category = FlatMarkerDrawing.Category(markerInfo);
+                    var secondary = markerInfo.SecondaryText?.Invoke();
+                    HoverCardDrawing.Draw(FlatMarkerDrawing.Key(markerInfo), primaryText,
+                        string.IsNullOrWhiteSpace(secondary) ? FlatMarkerDrawing.Label(category) : $"{FlatMarkerDrawing.Label(category)}\n{secondary}",
+                        category);
+                    return;
+                }
+#if GRATIS_PREVIEW
+                ImGui.BeginTooltip();
+#else
                 using var tooltip = ImRaii.Tooltip();
+#endif
 
-                ImGui.Image(Service.TextureProvider.GetFromGameIcon(markerInfo.IconId).GetWrapOrEmpty().Handle, ImGuiHelpers.ScaledVector2(32.0f, 32.0f));
+                ImGui.Image(MapDrawContext.Current.GetIcon(markerInfo.IconId).Handle, new Vector2(32.0f) * MapDrawContext.Current.GlobalScale);
 
                 ImGui.SameLine();
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 7.5f * ImGuiHelpers.GlobalScale);
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 7.5f * MapDrawContext.Current.GlobalScale);
                 var cursorPosition = ImGui.GetCursorPos();
                 ImGui.Text(primaryText);
 
                 if (markerInfo.SecondaryText?.Invoke() is { Length: > 0 } secondaryText) {
                     ImGui.SameLine();
                     ImGui.SetCursorPos(cursorPosition);
-                    ImGuiTweaks.TextColoredUnformatted(KnownColor.Gray.Vector(), $"\n{secondaryText}");
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(128 / 255.0f, 128 / 255.0f, 128 / 255.0f, 1));
+                    ImGui.TextUnformatted($"\n{secondaryText}");
+                    ImGui.PopStyleColor();
                 }
+#if GRATIS_PREVIEW
+                ImGui.EndTooltip();
+#endif
             }
         }
     }

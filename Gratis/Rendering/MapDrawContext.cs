@@ -1,0 +1,43 @@
+using System;
+using System.Numerics;
+using Gratis.Classes;
+using Gratis.Data;
+#if !GRATIS_PREVIEW
+using Dalamud.Bindings.ImGui;
+#endif
+
+namespace Gratis.Rendering;
+
+#if GRATIS_PREVIEW
+public readonly record struct DrawTexture(nint Handle, Vector2 Size);
+#else
+public readonly record struct DrawTexture(ImTextureID Handle, Vector2 Size);
+#endif
+
+public interface IDrawFont
+{
+    IDisposable Push();
+}
+
+public enum ToolbarAction { Parent, Layers, Follow, CenterPlayer, CenterMap, Search, Settings, Close }
+
+public abstract class MapDrawContext
+{
+    public static MapDrawContext Current { get; set; } =
+#if GRATIS_PREVIEW
+        null!;
+#else
+        new DalamudMapDrawContext();
+#endif
+    public abstract MapDrawingConfig Config { get; }
+    public abstract float GlobalScale { get; }
+    public abstract float MapSizeFactor { get; }
+    public abstract DrawTexture GetIcon(uint id);
+    public abstract IconSetting GetIconSetting(uint id);
+    public abstract bool PrepareMarker(MarkerInfo marker);
+    public abstract bool IsRadiusHovered(Vector2 center, float radius);
+    public abstract IDisposable? PushLargeFont();
+    public abstract IDrawFont? GetTitleFont(int choice, float size);
+    public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
+    public abstract float SettingsButtonWidth { get; }
+}

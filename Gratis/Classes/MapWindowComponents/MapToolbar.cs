@@ -1,118 +1,83 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.Interop;
-using KamiLib.Extensions;
 using KamiLib.Window;
 using Lumina.Excel.Sheets;
 using Gratis.Windows;
+using Gratis.Rendering;
 
 namespace Gratis.Classes.MapWindowComponents;
 
 public unsafe class MapToolbar {
-    public void Draw() {
-        var borderPadding = 2.5f;
-        var toolbarSize = new Vector2(ImGui.GetContentRegionMax().X, 33.0f * ImGuiHelpers.GlobalScale);
+    public void Draw() => Rendering.MapToolbarDrawing.Draw(Activate, DrawLayersContextMenu);
 
-        using var childBackgroundStyle =
-            ImRaii.PushColor(ImGuiCol.ChildBg, Vector4.Zero with { W = System.SystemConfig.ToolbarFade });
-        using var toolbarChild = ImRaii.Child("toolbar_child", toolbarSize);
-        if (!toolbarChild) return;
+    private static void Activate(Rendering.ToolbarAction action)
+    {
+        switch (action) {
+            case ToolbarAction.Parent: {
+                using var valueArgs = new RentedAtkValues(1);
+                valueArgs[0].SetInt(5);
 
-        var cornerInset = MapShape.Current * 0.29f;
-        ImGui.SetCursorPos(new Vector2(borderPadding, borderPadding) * ImGuiHelpers.GlobalScale + new Vector2(cornerInset));
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.ArrowUp, "up", "Open Parent Map")) {
-            using var valueArgs = new RentedAtkValues(1);
-            valueArgs[0].SetInt(5);
-
-            using var returnValue = new RentedAtkValues(1);
-            AgentMap.Instance()->ReceiveEvent(returnValue, valueArgs, 1, 0);
-        }
-
-        ImGui.SameLine();
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.LayerGroup, "layers", "Show Map Layers")) {
-            ImGui.OpenPopup("Gratis_Show_Layers");
-        }
-
-        DrawLayersContextMenu();
-
-        ImGui.SameLine();
-
-        using (var _ = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetStyle().GetColor(ImGuiCol.ButtonActive),
-                   System.SystemConfig.FollowPlayer)) {
-            if (GratisGuiTweaks.IconButton(FontAwesomeIcon.LocationArrow, "follow", "Toggle Follow Player")) {
+                using var returnValue = new RentedAtkValues(1);
+                AgentMap.Instance()->ReceiveEvent(returnValue, valueArgs, 1, 0);
+                break;
+            }
+            case ToolbarAction.Layers: {
+                ImGui.OpenPopup("Gratis_Show_Layers");
+                break;
+            }
+            case ToolbarAction.Follow: {
                 System.SystemConfig.FollowPlayer = !System.SystemConfig.FollowPlayer;
 
                 if (System.SystemConfig.FollowPlayer) {
                     System.IntegrationsController.OpenOccupiedMap();
                 }
+                break;
             }
-        }
+            case ToolbarAction.CenterPlayer: {
+                if (Service.ObjectTable.LocalPlayer is null) return;
 
-        ImGui.SameLine();
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.ArrowsToCircle, "centerPlayer", "Center on Player") &&
-            Service.ObjectTable.LocalPlayer is not null) {
-            if (!System.SystemConfig.FollowPlayer) {
-                System.IntegrationsController.OpenOccupiedMap();
-                System.MapRenderer.CenterOnGameObject(Service.ObjectTable.LocalPlayer);
+                if (!System.SystemConfig.FollowPlayer) {
+                    System.IntegrationsController.OpenOccupiedMap();
+                    System.MapRenderer.CenterOnGameObject(Service.ObjectTable.LocalPlayer);
+                }
+                break;
             }
-        }
+            case ToolbarAction.CenterMap: {
+                System.SystemConfig.FollowPlayer = false;
+                System.MapRenderer.DrawOffset = Vector2.Zero;
+                break;
+            }
+            case ToolbarAction.Search: {
+                System.WindowManager.AddWindow(new MapSelectionWindow {
+                    SingleSelectionCallback = selection => {
+                        if (selection?.Map != null) {
+                            if (AgentMap.Instance()->SelectedMapId != selection.Map.RowId) {
+                                System.IntegrationsController.OpenMap(selection.Map.RowId);
+                            }
 
-        ImGui.SameLine();
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.MapMarked, "centerMap", "Center on Map")) {
-            System.SystemConfig.FollowPlayer = false;
-            System.MapRenderer.DrawOffset = Vector2.Zero;
-        }
-
-        ImGui.SameLine();
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Search, "search", "Search for Map")) {
-            System.WindowManager.AddWindow(new MapSelectionWindow {
-                SingleSelectionCallback = selection => {
-                    if (selection?.Map != null) {
-                        if (AgentMap.Instance()->SelectedMapId != selection.Map.RowId) {
-                            System.IntegrationsController.OpenMap(selection.Map.RowId);
+                            if (selection.MarkerLocation is { } location) {
+                                System.SystemConfig.FollowPlayer = false;
+                                System.MapRenderer.DrawOffset = -location + DrawHelpers.GetMapCenterOffsetVector();
+                            }
                         }
-
-                        if (selection.MarkerLocation is { } location) {
-                            System.SystemConfig.FollowPlayer = false;
-                            System.MapRenderer.DrawOffset = -location + DrawHelpers.GetMapCenterOffsetVector();
-                        }
-                    }
-                },
-            }, WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
-        }
-
-        float buttonWidth;
-        using (Service.PluginInterface.UiBuilder.IconFontFixedWidthHandle.Push()) {
-            buttonWidth = ImGui.CalcTextSize(FontAwesomeIcon.Cog.ToIconString()).X + ImGui.GetStyle().FramePadding.X * 2.0f;
-        }
-
-        var buttonCount = System.SystemConfig.HideWindowFrame ? 2 : 1;
-        var rightWidth = buttonWidth * buttonCount + ImGui.GetStyle().ItemSpacing.X * (buttonCount - 1);
-        ImGui.SameLine();
-        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - rightWidth - ImGuiHelpers.GlobalScale * borderPadding - cornerInset);
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Cog, "settings", "Open Settings")) {
-            System.ConfigWindow.UnCollapseOrShow();
-            ImGui.SetWindowFocus(System.ConfigWindow.WindowName);
-        }
-
-        if (!System.SystemConfig.HideWindowFrame) return;
-
-        ImGui.SameLine();
-
-        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Times, "closeMap", "Close Map")) {
-            System.MapWindow.Close();
+                    },
+                }, WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+                break;
+            }
+            case ToolbarAction.Settings: {
+                System.ConfigWindow.UnCollapseOrShow();
+                ImGui.SetWindowFocus(System.ConfigWindow.WindowName);
+                break;
+            }
+            case ToolbarAction.Close: {
+                System.MapWindow.Close();
+                break;
+            }
         }
     }
 

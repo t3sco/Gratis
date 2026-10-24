@@ -1,6 +1,10 @@
 using System.Numerics;
+#if GRATIS_PREVIEW
+using ImGuiNET;
+#else
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility;
+#endif
+using Gratis.Rendering;
 using Math = global::System.Math;
 using MathF = global::System.MathF;
 
@@ -12,9 +16,10 @@ public static class MapShape
 
     public static float Rounding(Vector2 size)
     {
-        var config = System.SystemConfig;
+        var config = MapDrawContext.Current.Config;
         var half = MathF.Min(size.X, size.Y) * 0.5f;
-        return config.MapCircle ? half : MathF.Min(config.MapRounding * ImGuiHelpers.GlobalScale, half);
+        var radius = config.IsGratis && config.NeutralFrame ? config.FlatCornerRadius : config.MapRounding;
+        return config.MapCircle ? half : MathF.Min(radius * MapDrawContext.Current.GlobalScale, half);
     }
 
     public static void Update(Vector2 size) => Current = Rounding(size);

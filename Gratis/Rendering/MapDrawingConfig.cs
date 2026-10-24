@@ -1,0 +1,98 @@
+using System.Drawing;
+using System.Numerics;
+using System.Text.Json.Serialization;
+#if !GRATIS_PREVIEW
+using KamiLib.Configuration;
+#endif
+
+namespace Gratis.Rendering;
+
+public class MapDrawingConfig
+#if !GRATIS_PREVIEW
+    : CharacterConfiguration
+#endif
+{
+    public int VisualStyle = 0;
+    public int MarkerStyle = 1;
+    public int HoverCardStyle = 0;
+    public Vector4 AccentColor = GratisTheme.Accent;
+    public float FlatMarkerSize = 14;
+    public bool HoverCardSwatch = true;
+    public Vector4 PoiMarkerColor = GratisTheme.Poi;
+    public Vector4 TransportMarkerColor = GratisTheme.Transport;
+    public Vector4 ObjectiveMarkerColor = GratisTheme.Objective;
+    public Vector4 LinkMarkerColor = GratisTheme.Link;
+    public Vector4 ServiceMarkerColor = GratisTheme.Service;
+    public Vector4 PartyMarkerColor = GratisTheme.Party;
+    public bool FlatPlayer = true;
+    public bool PlayerInnerHighlight = true;
+    public float SoftConeLength = 110;
+    public float SoftConeOpacity = .35f;
+    public bool SegmentedToolbar = true;
+    public bool NeutralFrame = true;
+    public float FlatCornerRadius = 10;
+    public float FlatVignette = .08f;
+    public bool CompactTitle = true;
+    public bool StyledCoordinates = true;
+    [JsonIgnore] public bool IsGratis => VisualStyle == 0;
+    [JsonIgnore] public bool UseCustomWindowChrome => HideWindowFrame || (IsGratis && NeutralFrame);
+
+    public bool ShowCoordinateBar = true;
+    public float CoordinateBarFade = .66f;
+    public Vector4 CoordinateTextColor = Vector4.One;
+
+    public float IconScale = 0.50f;
+    public bool FollowPlayer = true;
+    public bool ScalePlayerCone = false;
+    public float ConeSize = 150.0f;
+    public bool HideWindowFrame = false;
+    public bool ShowTitleOnMap = true;
+    public int TitleCorner = 1;
+    public Vector2 TitleOffset = new(8.0f, 8.0f);
+    public bool TitleBelowToolbar = true;
+    public float TitleScale = 1.0f;
+    public string TitleSeparator = " - ";
+    public int TitleFont = 1;
+    public float TitleBold = 0.5f;
+    public bool TitleStacked = true;
+    public bool TitleSecondaryAbove = true;
+    public float TitleSecondaryScale = 0.8f;
+    public float TitleLineSpacing = 2.0f;
+    public Vector4 TitleSecondaryColor = new(0.85f, 0.85f, 0.85f, 0.7f);
+    public Vector4 TitleColor = new(1.0f, 1.0f, 1.0f, 1.0f);
+    public bool TitleOutline = true;
+    public Vector4 TitleOutlineColor = new(0.0f, 0.0f, 0.0f, 0.8f);
+    public bool TitleBackground = true;
+    public Vector4 TitleBackgroundColor = new(0.08f, 0.07f, 0.06f, 0.65f);
+    public Vector2 TitlePadding = new(8.0f, 4.0f);
+    public float TitleRounding = 6.0f;
+    public bool TitleBorder = false;
+    public Vector4 TitleBorderColor = new(1.0f, 1.0f, 1.0f, 0.25f);
+    public bool MapCircle = false;
+    public float MapRounding = 0.0f;
+    public bool MapBorder = false;
+    public Vector4 MapBorderColor = new(0.35f, 0.70f, 1.00f, 0.90f);
+    public float MapBorderThickness = 2.0f;
+    public bool MapGlow = false;
+    public Vector4 MapGlowColor = new(0.30f, 0.65f, 1.00f, 0.55f);
+    public float MapGlowSize = 14.0f;
+    public float MapGlowPulse = 0.35f;
+    public float MapGlowSpeed = 1.5f;
+    public float MapVignette = 0.0f;
+    public bool ScaleWithZoom = true;
+    public Vector4 AreaColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.33f };
+    public Vector4 AreaOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.30f };
+    public Vector4 PlayerConeColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.33f };
+    public Vector4 PlayerConeOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 1.0f };
+    public float ToolbarFade = 0.33f;
+    public bool ShowPlayerIcon = true;
+    public float PlayerIconScale = 1.0f;
+    [JsonIgnore]
+    public bool DebugMode = false;
+
+    private static Vector4 ColorVector(KnownColor color)
+    {
+        var value = Color.FromKnownColor(color);
+        return new Vector4(value.R, value.G, value.B, value.A) / 255.0f;
+    }
+}

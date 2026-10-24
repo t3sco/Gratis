@@ -160,6 +160,39 @@ public class StyleOptionsTab : ITabItem
     {
         var configChanged = false;
 
+        ImGuiTweaks.Header("Visual System");
+        using (ImRaii.PushIndent()) {
+            var visual = System.SystemConfig;
+            configChanged |= ImGui.Combo("Visual style", ref visual.VisualStyle, "Gratis\0Classic\0");
+            if (visual.IsGratis) {
+                configChanged |= ImGui.ColorEdit4("Accent colour", ref visual.AccentColor, ImGuiColorEditFlags.NoAlpha);
+                configChanged |= ImGui.Combo("Marker style", ref visual.MarkerStyle, "Game icons\0Flat\0");
+                configChanged |= ImGui.SliderFloat("Flat marker size", ref visual.FlatMarkerSize, 6, 20, "%.0f px");
+                configChanged |= ImGui.Combo("Hover card style", ref visual.HoverCardStyle, "Gratis\0Classic\0");
+                configChanged |= ImGui.Checkbox("Hover card shape swatch", ref visual.HoverCardSwatch);
+                if (ImGui.TreeNode("Marker category colours")) {
+                    configChanged |= ImGui.ColorEdit4("Points of interest", ref visual.PoiMarkerColor);
+                    configChanged |= ImGui.ColorEdit4("Transport", ref visual.TransportMarkerColor);
+                    configChanged |= ImGui.ColorEdit4("Quests / FATEs", ref visual.ObjectiveMarkerColor);
+                    configChanged |= ImGui.ColorEdit4("Map links / exits", ref visual.LinkMarkerColor);
+                    configChanged |= ImGui.ColorEdit4("Shops / services", ref visual.ServiceMarkerColor);
+                    configChanged |= ImGui.ColorEdit4("Party / others", ref visual.PartyMarkerColor);
+                    ImGui.TreePop();
+                }
+                configChanged |= ImGui.Checkbox("Flat player chevron / soft cone", ref visual.FlatPlayer);
+                configChanged |= ImGui.Checkbox("Player inner highlight", ref visual.PlayerInnerHighlight);
+                configChanged |= ImGui.SliderFloat("Soft cone length", ref visual.SoftConeLength, 0, 200, "%.0f px");
+                configChanged |= ImGui.SliderFloat("Soft cone opacity", ref visual.SoftConeOpacity, 0, .5f, "%.2f");
+                configChanged |= ImGui.Checkbox("Segmented toolbar", ref visual.SegmentedToolbar);
+                configChanged |= ImGui.Checkbox("Neutral hairline frame", ref visual.NeutralFrame);
+                configChanged |= ImGui.SliderFloat("Gratis corner radius", ref visual.FlatCornerRadius, 0, 80, "%.0f px");
+                configChanged |= ImGui.SliderFloat("Gratis vignette", ref visual.FlatVignette, 0, .3f, "%.2f");
+                configChanged |= ImGui.Checkbox("Compact title chip", ref visual.CompactTitle);
+                configChanged |= ImGui.Checkbox("Styled coordinate chip", ref visual.StyledCoordinates);
+            }
+            else ImGui.TextUnformatted("Classic uses the original drawing and saved style settings below.");
+        }
+
         ImGuiTweaks.Header("Window Options");
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox("Keep Open", ref System.SystemConfig.KeepOpen);
@@ -177,6 +210,7 @@ public class StyleOptionsTab : ITabItem
         using (ImRaii.PushIndent()) {
             var frame = System.SystemConfig;
             configChanged |= ImGui.Checkbox("Circular Map", ref frame.MapCircle);
+            if (frame.IsGratis && frame.NeutralFrame) ImGui.TextDisabled("Legacy frame controls apply with Neutral hairline frame off.");
             if (!frame.MapCircle) {
                 configChanged |= ImGui.SliderFloat("Corner Rounding", ref frame.MapRounding, 0.0f, 80.0f, "%.0f px");
             }

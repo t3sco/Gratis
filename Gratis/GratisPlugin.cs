@@ -12,6 +12,8 @@ namespace Gratis;
 
 public sealed class GratisPlugin : IDalamudPlugin
 {
+    private readonly Gratis.Classes.ScreenshotCapture screenshotCapture;
+
     public GratisPlugin(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Service>();
@@ -40,6 +42,8 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.WindowManager = new WindowManager(Service.PluginInterface);
         System.WindowManager.AddWindow(System.ConfigWindow, WindowFlags.IsConfigWindow | WindowFlags.RequireLoggedIn);
         System.WindowManager.AddWindow(System.MapWindow, WindowFlags.RequireLoggedIn);
+
+        screenshotCapture = new Gratis.Classes.ScreenshotCapture();
 
         System.FlagController = new FlagController();
         System.AreaMapController = new AddonAreaMapController();
@@ -76,6 +80,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
     public void Dispose()
     {
+        screenshotCapture.Dispose();
         System.MapWindow.OnClose();
         System.WindowManager.Dispose();
         System.IntegrationsController.Dispose();

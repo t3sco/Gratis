@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);GRATIS_PREVIEW</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <None Include="assets/**" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Gratis/Rendering/*.cs" Exclude="../Gratis/Rendering/DalamudMapDrawContext.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../Gratis/Classes/DrawHelpers.cs;../Gratis/Classes/MapShape.cs;../Gratis/Classes/MarkerType.cs;../Gratis/Data/IconSetting.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

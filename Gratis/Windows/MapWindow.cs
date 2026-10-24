@@ -1,6 +1,5 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Numerics;
-using Dalamud.Interface.ManagedFontAtlas;
 using Math = global::System.Math;
 using MathF = global::System.MathF;
 using Dalamud.Bindings.ImGui;
@@ -34,6 +33,7 @@ public class MapWindow : Window
     private uint lastMapId;
     private uint lastAreaPlaceNameId;
     private uint lastSubAreaPlaceNameId;
+    private string compactMapTitle = string.Empty;
 
     private readonly MapToolbar mapToolbar = new();
     private readonly MapCoordinateBar mapCoordinateBar = new();
@@ -172,92 +172,21 @@ public class MapWindow : Window
         }
     }
 
-    private static uint WithAlpha(Vector4 color, float alphaScale)
-    {
-        color.W *= alphaScale;
-        return ImGui.ColorConvertFloat4ToU32(color);
-    }
-
-    private void DrawFrameEffects()
-    {
-        var config = System.SystemConfig;
-        var scale = ImGuiHelpers.GlobalScale;
-        var min = ImGui.GetWindowPos();
-        var max = min + ImGui.GetWindowSize();
-        var rounding = MapShape.Current;
-        var drawList = ImGui.GetWindowDrawList();
-
-        if (config.MapVignette > 0.0f) {
-            var depth = MathF.Min(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y) * 0.2f;
-            DrawGradientRing(drawList, min, max, rounding, depth, new Vector4(0.0f, 0.0f, 0.0f, config.MapVignette * 0.75f), 2.0f);
-        }
-
-        if (config.MapGlow) {
-            var pulse = 1.0f + MathF.Sin((float)ImGui.GetTime() * config.MapGlowSpeed * 2.0f) * config.MapGlowPulse * 0.5f;
-            var color = config.MapGlowColor;
-            color.W = Math.Clamp(color.W * pulse, 0.0f, 1.0f);
-            DrawGradientRing(drawList, min, max, rounding, config.MapGlowSize * scale, color, 2.0f);
-        }
-
-        if (config.MapBorder) {
-            var half = config.MapBorderThickness * scale * 0.5f;
-            drawList.AddRect(min + new Vector2(half), max - new Vector2(half), ImGui.ColorConvertFloat4ToU32(config.MapBorderColor), MathF.Max(0.0f, rounding - half), ImDrawFlags.None, config.MapBorderThickness * scale);
-        }
-    }
-
-    private static readonly global::System.Collections.Generic.List<Vector2> ringOuter = [];
-    private static readonly global::System.Collections.Generic.List<Vector2> ringInner = [];
-
-    private static void RoundedRectPoints(Vector2 min, Vector2 max, float radius, global::System.Collections.Generic.List<Vector2> points)
-    {
-        points.Clear();
-        radius = MathF.Max(0.0f, MathF.Min(radius, MathF.Min(max.X - min.X, max.Y - min.Y) * 0.5f));
-        const int segments = 10;
-        var centers = new[] { new Vector2(min.X + radius, min.Y + radius), new Vector2(max.X - radius, min.Y + radius), new Vector2(max.X - radius, max.Y - radius), new Vector2(min.X + radius, max.Y - radius) };
-        for (var corner = 0; corner < 4; corner++) {
-            var startAngle = MathF.PI * (1.0f + corner * 0.5f);
-            for (var step = 0; step <= segments; step++) {
-                var angle = startAngle + MathF.PI * 0.5f * step / segments;
-                points.Add(centers[corner] + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius);
-            }
-        }
-    }
-
-    private static void DrawGradientRing(ImDrawListPtr drawList, Vector2 min, Vector2 max, float rounding, float depth, Vector4 color, float power)
-    {
-        const int bands = 8;
-        var white = ImGui.GetFontTexUvWhitePixel();
-        for (var band = 0; band < bands; band++) {
-            var t0 = band / (float)bands;
-            var t1 = (band + 1) / (float)bands;
-            RoundedRectPoints(min + new Vector2(depth * t0), max - new Vector2(depth * t0), rounding - depth * t0, ringOuter);
-            RoundedRectPoints(min + new Vector2(depth * t1), max - new Vector2(depth * t1), rounding - depth * t1, ringInner);
-            var count = ringOuter.Count;
-            var outerColor = WithAlpha(color, MathF.Pow(1.0f - t0, power));
-            var innerColor = WithAlpha(color, MathF.Pow(1.0f - t1, power));
-
-            drawList.PrimReserve(count * 6, count * 2);
-            var baseIndex = (ushort)drawList.VtxCurrentIdx;
-            for (var index = 0; index < count; index++) drawList.PrimWriteVtx(ringOuter[index], white, outerColor);
-            for (var index = 0; index < count; index++) drawList.PrimWriteVtx(ringInner[index], white, innerColor);
-            for (var index = 0; index < count; index++) {
-                var next = (index + 1) % count;
-                drawList.PrimWriteIdx((ushort)(baseIndex + index));
-                drawList.PrimWriteIdx((ushort)(baseIndex + next));
-                drawList.PrimWriteIdx((ushort)(baseIndex + count + next));
-                drawList.PrimWriteIdx((ushort)(baseIndex + index));
-                drawList.PrimWriteIdx((ushort)(baseIndex + count + next));
-                drawList.PrimWriteIdx((ushort)(baseIndex + count + index));
-            }
-        }
-    }
+    private void DrawFrameEffects() => Rendering.MapWindowDrawing.DrawFrameEffects();
 
     private int pushedGripColors;
+    private bool pushedChromeStyles;
 
     public override void PreDraw()
     {
         pushedGripColors = 0;
-        if (IsFocused || HoveredFlags.Any()) return;
+        pushedChromeStyles = System.SystemConfig.IsGratis && System.SystemConfig.NeutralFrame;
+        if (pushedChromeStyles) {
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, System.SystemConfig.FlatCornerRadius * ImGuiHelpers.GlobalScale);
+        }
+        if ((IsFocused || HoveredFlags.Any()) && !pushedChromeStyles) return;
 
         ImGui.PushStyleColor(ImGuiCol.ResizeGrip, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.ResizeGripHovered, Vector4.Zero);
@@ -268,149 +197,13 @@ public class MapWindow : Window
     public override void PostDraw()
     {
         if (pushedGripColors > 0) ImGui.PopStyleColor(pushedGripColors);
+        if (pushedChromeStyles) ImGui.PopStyleVar(3);
+        pushedChromeStyles = false;
         pushedGripColors = 0;
     }
 
-    private readonly global::System.Collections.Generic.Dictionary<(int Choice, int Size), global::Dalamud.Interface.ManagedFontAtlas.IFontHandle> titleFonts = [];
-
-    private static readonly global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize[][] GameFontPresets = [
-        [global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis96, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis12, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis14, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis18, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis36],
-        [global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Meidinger16, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Meidinger20, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Meidinger40],
-        [global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.TrumpGothic184, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.TrumpGothic23, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.TrumpGothic34, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.TrumpGothic68],
-        [global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Jupiter16, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Jupiter20, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Jupiter23, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Jupiter45, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Jupiter90],
-    ];
-
-    private global::Dalamud.Interface.ManagedFontAtlas.IFontHandle? GetTitleFont(int fontChoice, float sizePx)
-    {
-        if (fontChoice <= 0) return null;
-
-        if (fontChoice == 1) {
-            var size = Math.Max(8, (int)(sizePx + 0.5f));
-            if (!titleFonts.TryGetValue((1, size), out var notoHandle)) {
-                notoHandle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
-                    var config = new global::Dalamud.Interface.ManagedFontAtlas.SafeFontConfig { SizePx = size };
-                    toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, config);
-                }));
-                titleFonts[(1, size)] = notoHandle;
-            }
-
-            return notoHandle;
-        }
-
-        var presets = GameFontPresets[fontChoice - 2];
-        var best = presets[0];
-        var bestDistance = float.MaxValue;
-        foreach (var preset in presets) {
-            var distance = MathF.Abs(new global::Dalamud.Interface.GameFonts.GameFontStyle(preset).SizePx - sizePx);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                best = preset;
-            }
-        }
-
-        var key = (fontChoice, (int)best);
-        if (!titleFonts.TryGetValue(key, out var handle)) {
-            handle = Service.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(new global::Dalamud.Interface.GameFonts.GameFontStyle(best));
-            titleFonts[key] = handle;
-        }
-
-        return handle;
-    }
-
-    private void DrawTitleOnMap()
-    {
-        var config = System.SystemConfig;
-        if (!config.HideWindowFrame || !config.ShowTitleOnMap) return;
-
-        var title = WindowName;
-        var idIndex = title.IndexOf("###");
-        if (idIndex >= 0) title = title[..idIndex];
-        if (string.IsNullOrWhiteSpace(title)) return;
-
-        var parts = title.Split(" - ", global::System.StringSplitOptions.RemoveEmptyEntries | global::System.StringSplitOptions.TrimEntries);
-        var lines = new global::System.Collections.Generic.List<(string Text, float Scale, Vector4 Color)>();
-        if (config.TitleStacked && parts.Length > 1) {
-            var headline = (parts[^1], config.TitleScale, config.TitleColor);
-            var secondary = (string.Join(config.TitleSeparator, parts[..^1]), config.TitleScale * config.TitleSecondaryScale, config.TitleSecondaryColor);
-            if (config.TitleSecondaryAbove) {
-                lines.Add(secondary);
-                lines.Add(headline);
-            }
-            else {
-                lines.Add(headline);
-                lines.Add(secondary);
-            }
-        }
-        else {
-            lines.Add((string.Join(config.TitleSeparator, parts), config.TitleScale, config.TitleColor));
-        }
-
-        var scale = ImGuiHelpers.GlobalScale;
-        var baseFontSize = ImGui.GetFontSize();
-        var spacing = config.TitleLineSpacing * scale;
-        var sizes = new Vector2[lines.Count];
-        var textSize = Vector2.Zero;
-        var handles = new global::Dalamud.Interface.ManagedFontAtlas.IFontHandle?[lines.Count];
-        for (var index = 0; index < lines.Count; index++) {
-            handles[index] = GetTitleFont(config.TitleFont, baseFontSize * lines[index].Scale);
-            using (handles[index]?.Push()) {
-                sizes[index] = ImGui.CalcTextSize(lines[index].Text) * (handles[index] is null ? lines[index].Scale : 1.0f);
-            }
-
-            textSize.X = sizes[index].X > textSize.X ? sizes[index].X : textSize.X;
-            textSize.Y += sizes[index].Y + (index > 0 ? spacing : 0.0f);
-        }
-
-        var padding = config.TitleBackground ? config.TitlePadding * scale : Vector2.Zero;
-        var boxSize = textSize + padding * 2.0f;
-        var offset = config.TitleOffset * scale;
-
-        var windowPos = ImGui.GetWindowPos();
-        var windowSize = ImGui.GetWindowSize();
-        var isRight = config.TitleCorner is 1 or 3;
-        var isBottom = config.TitleCorner is 2 or 3;
-        var x = isRight ? windowSize.X - boxSize.X - offset.X : offset.X;
-        var y = isBottom ? windowSize.Y - boxSize.Y - offset.Y : offset.Y;
-        if (!isBottom && config.TitleBelowToolbar && isRight) y += ImGui.GetFrameHeight();
-
-        var boxMin = windowPos + new Vector2(x, y);
-        var boxMax = boxMin + boxSize;
-        var drawList = ImGui.GetWindowDrawList();
-
-        if (config.TitleBackground) {
-            var rounding = config.TitleRounding * scale;
-            drawList.AddRectFilled(boxMin, boxMax, ImGui.ColorConvertFloat4ToU32(config.TitleBackgroundColor), rounding);
-            if (config.TitleBorder) {
-                drawList.AddRect(boxMin, boxMax, ImGui.ColorConvertFloat4ToU32(config.TitleBorderColor), rounding, ImDrawFlags.None, 1.0f);
-            }
-        }
-
-        var font = ImGui.GetFont();
-        var outline = ImGui.ColorConvertFloat4ToU32(config.TitleOutlineColor);
-        var cursorY = boxMin.Y + padding.Y;
-        for (var index = 0; index < lines.Count; index++) {
-            var line = lines[index];
-            var lineX = isRight ? boxMax.X - padding.X - sizes[index].X : boxMin.X + padding.X;
-            var linePosition = new Vector2(lineX, cursorY);
-            using (handles[index]?.Push()) {
-                var lineFont = handles[index] is null ? font : ImGui.GetFont();
-                var fontSize = handles[index] is null ? baseFontSize * line.Scale : ImGui.GetFontSize();
-                var color = ImGui.ColorConvertFloat4ToU32(line.Color);
-                var bold = new Vector2(config.TitleBold, 0.0f);
-                if (config.TitleOutline) {
-                    foreach (var step in new[] { new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1), new Vector2(0, 1) }) {
-                        drawList.AddText(lineFont, fontSize, linePosition + step, outline, line.Text);
-                        if (config.TitleBold > 0.0f) drawList.AddText(lineFont, fontSize, linePosition + step + bold, outline, line.Text);
-                    }
-                }
-
-                drawList.AddText(lineFont, fontSize, linePosition, color, line.Text);
-                if (config.TitleBold > 0.0f) drawList.AddText(lineFont, fontSize, linePosition + bold, color, line.Text);
-            }
-
-            cursorY += sizes[index].Y + spacing;
-        }
-    }
+    private void DrawTitleOnMap() => Rendering.MapWindowDrawing.DrawTitleOnMap(
+        System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName);
 
     private bool ShouldShowToolbar()
     {
@@ -431,6 +224,10 @@ public class MapWindow : Window
         if (!locationChanged) return;
         var subLocationString = string.Empty;
         var mapData = Service.DataManager.GetExcelSheet<Map>().GetRow(AgentMap.Instance()->SelectedMapId);
+        var compactParts = new global::System.Collections.Generic.List<string>();
+        if (System.SystemConfig.ShowRegionLabel) compactParts.Add(mapData.PlaceNameRegion.Value.Name.ExtractText());
+        if (System.SystemConfig.ShowMapLabel) compactParts.Add(mapData.PlaceName.Value.Name.ExtractText());
+        compactMapTitle = string.Join(" - ", compactParts);
 
         if (System.SystemConfig.ShowRegionLabel) {
             var mapRegionName = mapData.PlaceNameRegion.Value.Name.ExtractText();
@@ -494,7 +291,7 @@ public class MapWindow : Window
 
     private unsafe void UpdateStyle()
     {
-        if (System.SystemConfig.HideWindowFrame) {
+        if (System.SystemConfig.UseCustomWindowChrome) {
             Flags |= ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground;
         }
         else {
@@ -515,7 +312,7 @@ public class MapWindow : Window
             Flags &= ~ImGuiWindowFlags.NoFocusOnAppearing;
         }
 
-        if (System.SystemConfig.HideWindowBackground) {
+        if (System.SystemConfig.HideWindowBackground || (System.SystemConfig.IsGratis && System.SystemConfig.NeutralFrame)) {
             Flags |= ImGuiWindowFlags.NoBackground;
         }
         else {

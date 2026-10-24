@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -88,35 +88,7 @@ public unsafe partial class MapRenderer : IDisposable
         }
     }
 
-    private void DrawMapImage(IDalamudTextureWrap texture)
-    {
-        var size = texture.Size * Scale;
-        var rounding = MapShape.Rounding(ImGui.GetWindowSize());
-        if (rounding <= 0.0f) {
-            ImGui.Image(texture.Handle, size);
-            return;
-        }
-
-        var imageMin = ImGui.GetCursorScreenPos();
-        var imageMax = imageMin + size;
-        ImGui.Dummy(size);
-
-        var clipMin = ImGui.GetWindowPos();
-        var clipMax = clipMin + ImGui.GetWindowSize();
-        var visibleMin = Vector2.Max(imageMin, clipMin);
-        var visibleMax = Vector2.Min(imageMax, clipMax);
-        if (visibleMax.X <= visibleMin.X || visibleMax.Y <= visibleMin.Y) return;
-
-        var flags = ImDrawFlags.None;
-        if (imageMin.X <= clipMin.X && imageMin.Y <= clipMin.Y) flags |= ImDrawFlags.RoundCornersTopLeft;
-        if (imageMax.X >= clipMax.X && imageMin.Y <= clipMin.Y) flags |= ImDrawFlags.RoundCornersTopRight;
-        if (imageMin.X <= clipMin.X && imageMax.Y >= clipMax.Y) flags |= ImDrawFlags.RoundCornersBottomLeft;
-        if (imageMax.X >= clipMax.X && imageMax.Y >= clipMax.Y) flags |= ImDrawFlags.RoundCornersBottomRight;
-
-        var uvMin = (visibleMin - imageMin) / size;
-        var uvMax = (visibleMax - imageMin) / size;
-        ImGui.GetWindowDrawList().AddImageRounded(texture.Handle, visibleMin, visibleMax, uvMin, uvMax, ImGui.GetColorU32(Vector4.One), rounding, flags);
-    }
+    private void DrawMapImage(IDalamudTextureWrap texture) => Rendering.MapTextureDrawing.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size), Scale);
 
     private static IDalamudTextureWrap? LoadTexture()
     {

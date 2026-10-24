@@ -26,6 +26,11 @@ public static class MapMarkerInfoExtensions {
             Radius = marker.MapMarker.Scale,
             RadiusColor = KnownColor.MediumPurple.Vector(),
             IconId = marker.MapMarker.IconId,
+            Category = marker.DataType switch {
+                1 or 2 => Rendering.MarkerCategory.Link,
+                3 or 4 => Rendering.MarkerCategory.Transport,
+                _ => Rendering.MarkerCategory.Auto,
+            },
             PrimaryText = GetMarkerPrimaryTooltip(marker, tooltipText),
             OnLeftClicked = () => OnMarkerClicked(ref marker),
             SecondaryText = () => GetTooltip(ref marker),

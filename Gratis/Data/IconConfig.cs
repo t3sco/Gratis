@@ -1,29 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
-using System.Numerics;
-using Dalamud.Interface;
+using System.Collections.Generic;
 using KamiLib.Configuration;
 
 namespace Gratis.Data;
-
-public class IconSetting
-{
-    public required uint IconId { get; set; }
-    public bool Hide;
-    public bool AllowTooltip = true;
-    public float Scale = 1.0f;
-    public bool AllowClick = true;
-    public Vector4 Color = KnownColor.White.Vector();
-
-    public void Reset()
-    {
-        Hide = false;
-        AllowTooltip = true;
-        Scale = 1.0f;
-        AllowClick = true;
-        Color = KnownColor.White.Vector();
-    }
-}
 
 public class IconConfig
 {
