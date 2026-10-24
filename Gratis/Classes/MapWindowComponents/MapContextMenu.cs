@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -11,12 +11,31 @@ namespace Gratis.Classes.MapWindowComponents;
 
 public unsafe class MapContextMenu
 {
+    public MapContextMenu()
+    {
+        Rendering.MapDrawContext.Current.ContextMenu.Actions = new Rendering.GameContextMenuActions();
+    }
+
     public void Draw(Vector2 mapDrawOffset)
     {
         using var contextMenu = ImRaii.ContextPopup("Gratis_Context_Menu");
 
         if (!contextMenu) return;
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
+
+        if (System.SystemConfig.IsGratis && System.SystemConfig.Pins && Rendering.MapDrawContext.Current.Assistance?.PinLayer is { } pins) {
+            if (ImGui.MenuItem("Add pin here")) {
+                var world = System.MapRenderer.Frame.ScreenToWorld(ImGui.GetMousePosOnOpeningCurrentPopup(), mapDrawOffset);
+                pins.Edit(AgentMap.Instance()->SelectedMapId, world);
+            }
+            if (ImGui.MenuItem("Import pin from clipboard")) pins.Import(ImGui.GetClipboardText());
+            if (ImGui.BeginMenu("Pins on this map")) {
+                foreach (var pin in pins.Store.ForMap(AgentMap.Instance()->SelectedMapId))
+                    if (ImGui.MenuItem(pin.Title + "##" + pin.Id)) pins.Edit(pin.MapId, pin.World, pin);
+                ImGui.EndMenu();
+            }
+            ImGui.Separator();
+        }
 
         if (ImGui.MenuItem("Place Flag")) {
             var cursorPosition = ImGui.GetMousePosOnOpeningCurrentPopup();

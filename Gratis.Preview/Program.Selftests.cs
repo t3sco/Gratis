@@ -6,13 +6,17 @@ internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
         ("imgui-errors", ImGuiErrorVerification.Run),
+        ("frames-context-menu", ContextMenuVerification.Frames),
         ("travel-provider", TravelVerification.Provider), ("frames-travel", TravelVerification.Frames),
+        ("aetheryte-selection", AetheryteVerification.Selection), ("frames-aetheryte", AetheryteVerification.Frames),
+        ("pin-share-codes", PinVerification.ShareCodes), ("pin-persistence", PinVerification.Persistence), ("frames-pins", PinVerification.Frames),
         ("diff", ImageDiff.Verify), ("live", VerifyLiveScene),
         ("palette-ranking", PaletteVerification.Ranking), ("palette-index", PaletteVerification.Index),
         ("frames-palette", PaletteVerification.Frames),
         ("heading", HeadingVerification.Run), ("marker-classification", MarkerClassificationVerification.Run),
         ("markers", MarkerDeclutterVerification.Run), ("settings", SettingsVerification.Run),
         ("marker-visibility", MarkerVisibilityVerification.Run),
+        ("frames-filters", FilterBarVerification.Run),
         ("config", ConfigVerification.Run), ("viewport", ViewportVerification.Run),
         ("zone", ZoneSwitchVerification.Run), ("spotlight-fit", SpotlightVerification.Fit),
         ("frames-spotlight", SpotlightVerification.Frames),

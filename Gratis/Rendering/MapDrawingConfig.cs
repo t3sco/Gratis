@@ -39,6 +39,7 @@ public partial class MapDrawingConfig
     public bool LensAuto = false;
     public int LensCycleKey = 0;
     public MarkerPeekKey PeekKey = MarkerPeekKey.RightAlt;
+    public bool QuickFilterBar = true;
     public void ResetMarkers() => Markers = new MarkerSettings();
 
     public bool ReduceMotion = false;

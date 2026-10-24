@@ -12,7 +12,10 @@ public static class LensDrawing
 {
     private static string customName = "My lens";
     private static bool recordingKey;
+    private static MapDrawContext? drawnContext;
     public static Vector4 LastBounds { get; private set; }
+    public static bool PointerOver => ReferenceEquals(drawnContext, MapDrawContext.Current) &&
+        ImGui.IsMouseHoveringRect(new Vector2(LastBounds.X, LastBounds.Y), new Vector2(LastBounds.Z, LastBounds.W), false);
     public static bool InputActive { get; private set; }
     public static void BeginDraw() { LastBounds = Vector4.Zero; InputActive = false; }
     public static Vector2 Position(float width, float height)
@@ -33,6 +36,7 @@ public static class LensDrawing
             x = (min.X + max.X - width) / 2;
             var half = width / 2 + 10 * scale;
             y = MathF.Min(y, max.Y - radius + MathF.Sqrt(MathF.Max(0, radius * radius - half * half)) - height - 10 * scale);
+            y = MathF.Min(y, MathF.Max(min.Y + 88 * scale, max.Y - 176 * scale));
         }
         return origin + new Vector2(x, y);
     }
@@ -53,6 +57,7 @@ public static class LensDrawing
     }
     public static void DrawChip(Vector2 pos, Vector2 size, bool compact = false)
     {
+        drawnContext = MapDrawContext.Current;
         var context = MapDrawContext.Current;
         var list = ImGui.GetWindowDrawList();
         LastBounds = new Vector4(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
@@ -62,7 +67,7 @@ public static class LensDrawing
         MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * context.GlobalScale);
         GratisIcons.Draw(list, pos + new Vector2(15 * context.GlobalScale, size.Y / 2), GratisIcons.Layers, context.Config.AccentColor, 14 * context.GlobalScale);
         if (!compact) list.AddText(pos + new Vector2(29, 7) * context.GlobalScale, ImGui.GetColorU32(GratisTheme.Primary), context.Visibility.EffectiveLens);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Lens presets · priority markers stay visible\nAuto is opt-in. Right Alt: peek (configurable).");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Lens presets · priority markers stay visible\nAuto is opt-in. Hold {context.Config.PeekKey}: peek.");
     }
     public static bool DrawSelector(MapDrawingConfig config)
     {
@@ -122,6 +127,7 @@ public static class LensDrawing
     {
         if (!ImGui.BeginPopup("Gratis_Lenses")) return;
         InputActive = true;
+        MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
         var context = MapDrawContext.Current;
         var config = context.Config;
         var changed = DrawSelector(config);

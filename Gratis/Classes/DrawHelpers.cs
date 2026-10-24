@@ -107,7 +107,7 @@ public static class DrawHelpers
         }
         context.Motion.Observe(markerInfo);
 
-        if (context.Config.IsGratis && context.Visibility.Visual(markerInfo).X <= .001f && !markerInfo.IsSpotlighted) return;
+        if (context.Config.IsGratis && context.Visibility.Visual(markerInfo).X <= .001f) return;
 
         if (context.Markers.Enqueue(markerInfo)) return;
         DrawPreparedMarker(markerInfo);
@@ -240,6 +240,10 @@ public static class DrawHelpers
 
     private static void ProcessInteractions(MarkerInfo markerInfo)
     {
+        if (MapDrawContext.Current.Config is { IsGratis: true, GratisContextMenu: true }) {
+            MapDrawContext.Current.ContextMenu.Observe(markerInfo);
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Right)) return;
+        }
         if (MapDrawContext.Current.GetIconSetting(markerInfo.IconId) is not { AllowClick: true }) return;
 
         if (markerInfo is { OnRightClicked: { } rightClickAction } && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {

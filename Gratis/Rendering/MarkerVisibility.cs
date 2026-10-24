@@ -11,16 +11,17 @@ namespace Gratis.Rendering;
 
 public sealed class MarkerVisibility
 {
-    public const int GroupCount = 11;
-    public static readonly string[] Names = ["Quests", "Side quests / leves", "FATEs", "Aetherytes / transport", "Exits / links", "Shops / services", "Housing", "Gathering / hunts", "Treasure", "Party / players", "Other"];
+    public const int GroupCount = 12;
+    public static readonly string[] Names = ["Quests", "Side quests / leves", "FATEs", "Aetherytes / transport", "Exits / links", "Shops / services", "Housing", "Gathering / hunts", "Treasure", "Party / players", "Other", "Pins"];
     public static readonly char[] Icons = [GratisIcons.Flag, GratisIcons.BookOpen, GratisIcons.Swords, GratisIcons.Compass,
-        GratisIcons.DoorOpen, GratisIcons.Store, GratisIcons.House, GratisIcons.Pickaxe, GratisIcons.Package, GratisIcons.LocateFixed, GratisIcons.MapPin];
+        GratisIcons.DoorOpen, GratisIcons.Store, GratisIcons.House, GratisIcons.Pickaxe, GratisIcons.Package, GratisIcons.LocateFixed, GratisIcons.MapPin, GratisIcons.MapPin];
     private readonly MarkerVisibilityState[] states = new MarkerVisibilityState[GroupCount];
     private readonly Vector2[] values = new Vector2[GroupCount * 2];
     private readonly Vector2[] starts = new Vector2[GroupCount * 2];
     private readonly Vector2[] targets = new Vector2[GroupCount * 2];
     private readonly double[] changed = new double[GroupCount * 2];
     public int[] Counts { get; } = new int[GroupCount];
+    public int[] PriorityCounts { get; } = new int[GroupCount];
     public MarkerVisibilityState?[] Overrides { get; } = new MarkerVisibilityState?[GroupCount];
     public bool Peek { get; private set; }
     public string EffectiveLens { get; private set; } = "Explore";
@@ -58,9 +59,10 @@ public sealed class MarkerVisibility
         if (lastFrame == ImGui.GetFrameCount()) return;
         lastFrame = ImGui.GetFrameCount();
         Array.Clear(Counts);
+        Array.Clear(PriorityCounts);
         var config = context.Config;
-        var peek = config.IsGratis && !ImGui.GetIO().WantTextInput && (ImGui.IsWindowHovered() || ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows)) && IsPeekDown(config.PeekKey);
-        if (config.IsGratis && config.LensCycleKey != 0 && !ImGui.GetIO().WantTextInput && ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows) &&
+        var peek = config.IsGratis && !ImGui.GetIO().WantTextInput && (ImGui.IsWindowHovered() || ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows)) && IsPeekDown(config.PeekKey);
+        if (config.IsGratis && config.LensCycleKey != 0 && !ImGui.GetIO().WantTextInput && ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) &&
             Enum.IsDefined((ImGuiKey)config.LensCycleKey) && ImGui.IsKeyPressed((ImGuiKey)config.LensCycleKey, false)) { Lenses.Cycle(config); context.SaveConfig(); }
         var selected = config.LensAuto ? Lenses.Suggest(context.LensInDuty, context.LensGatheringClass, context.LensNearNode) : config.ActiveLens;
         Advance(config, ImGui.GetTime(), peek, selected);
@@ -72,7 +74,7 @@ public sealed class MarkerVisibility
         Peek = peek;
         var lens = Lenses.Find(config, EffectiveLens);
         for (var i = 0; i < GroupCount; i++) {
-            states[i] = lens.State((MarkerGroup)i);
+            states[i] = (MarkerGroup)i == MarkerGroup.Pins ? MarkerVisibilityState.Normal : lens.State((MarkerGroup)i);
             for (var p = 0; p < 2; p++) {
                 var index = i * 2 + p;
                 var target = Presentation(Resolve(states[i], Overrides[i], p != 0, peek));
@@ -94,8 +96,14 @@ public sealed class MarkerVisibility
         if (EffectiveLens == "Explore" && MarkerIcon.Family(marker) == MarkerIconFamily.Landmark && Overrides[(int)group] is null && !Peek) visual.Y *= 1.1f;
         return initialized ? visual : Vector2.One;
     }
-    public void Count(MarkerInfo marker) => Counts[(int)Group(marker)]++;
-    public void Toggle(MarkerGroup group) => Overrides[(int)group] = State(group) == MarkerVisibilityState.Hidden ? MarkerVisibilityState.Normal : MarkerVisibilityState.Hidden;
+    public void Count(MarkerInfo marker) { var group = (int)Group(marker); Counts[group]++; if (IsPriority(marker)) PriorityCounts[group]++; }
+    public void Toggle(MarkerGroup group)
+    {
+        var index = (int)group;
+        var hidden = Overrides[index] == MarkerVisibilityState.Hidden ||
+            Overrides[index] is null && State(group) == MarkerVisibilityState.Hidden && PriorityCounts[index] == 0;
+        Overrides[index] = hidden ? MarkerVisibilityState.Normal : MarkerVisibilityState.Hidden;
+    }
     public void Emphasize(MarkerGroup group) => Overrides[(int)group] = State(group) == MarkerVisibilityState.Loud ? MarkerVisibilityState.Quiet : MarkerVisibilityState.Loud;
     public void Solo(MarkerGroup group) { for (var i = 0; i < GroupCount; i++) Overrides[i] = i == (int)group ? MarkerVisibilityState.Normal : MarkerVisibilityState.Quiet; }
     public void ResetFilters() => Array.Clear(Overrides);

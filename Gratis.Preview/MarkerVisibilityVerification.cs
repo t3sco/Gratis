@@ -15,6 +15,10 @@ internal static class MarkerVisibilityVerification
         var states = Enum.GetValues<MarkerVisibilityState>();
         for (var mix = 0; mix < 1000; mix++) {
             var group = (MarkerGroup)random.Next(MarkerVisibility.GroupCount);
+            foreach (var state in states) {
+                Require(MarkerVisibility.Resolve(state, null, true, false) != MarkerVisibilityState.Hidden, "A custom state hid priority");
+                Require(MarkerVisibility.Resolve(state, MarkerVisibilityState.Quiet, true, false) == MarkerVisibilityState.Quiet, "Solo changed priority visibility");
+            }
             foreach (var lens in Lenses.BuiltIn)
                 foreach (var filter in states) {
                     var effective = MarkerVisibility.Resolve(lens.State(group), filter, true, false);
@@ -41,6 +45,13 @@ internal static class MarkerVisibilityVerification
         MapDrawContext.Current = context;
         try {
             var marker = new MarkerInfo { Position = Vector2.Zero, Offset = Vector2.Zero, Scale = 1, IconId = 60412 };
+            for (var i = 0; i < 100; i++) context.Visibility.Advance(config, i / 60.0, false);
+            var allocated = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 1000; i++) {
+                context.Visibility.Advance(config, i / 60.0, false);
+                _ = context.Visibility.Visual(marker);
+            }
+            Require(GC.GetAllocatedBytesForCurrentThread() == allocated, "Warmed visibility table allocated per frame/marker");
             context.Visibility.Advance(config, 0, false);
             context.Visibility.Toggle(MarkerGroup.Services);
             context.Visibility.Advance(config, .01, false);

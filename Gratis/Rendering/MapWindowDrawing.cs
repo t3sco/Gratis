@@ -12,12 +12,15 @@ namespace Gratis.Rendering;
 public static class MapWindowDrawing
 {
     private static int boundsFrame;
+    private static MapDrawContext? boundsContext;
     private static Vector4 titleBounds, coordinateBounds;
-    public static Vector4 TitleBounds => boundsFrame == ImGui.GetFrameCount() ? titleBounds : Vector4.Zero;
-    public static Vector4 CoordinateBounds => boundsFrame == ImGui.GetFrameCount() ? coordinateBounds : Vector4.Zero;
+    public static Vector4 TitleBounds => boundsFrame == ImGui.GetFrameCount() && ReferenceEquals(boundsContext, MapDrawContext.Current) ? titleBounds : Vector4.Zero;
+    public static Vector4 CoordinateBounds => boundsFrame == ImGui.GetFrameCount() && ReferenceEquals(boundsContext, MapDrawContext.Current) ? coordinateBounds : Vector4.Zero;
     private static void RecordBounds(Vector2 min, Vector2 max, bool title)
     {
-        if (boundsFrame != ImGui.GetFrameCount()) { titleBounds = coordinateBounds = Vector4.Zero; boundsFrame = ImGui.GetFrameCount(); }
+        if (boundsFrame != ImGui.GetFrameCount() || !ReferenceEquals(boundsContext, MapDrawContext.Current)) {
+            titleBounds = coordinateBounds = Vector4.Zero; boundsFrame = ImGui.GetFrameCount(); boundsContext = MapDrawContext.Current;
+        }
         if (title) titleBounds = new(min.X, min.Y, max.X, max.Y);
         else coordinateBounds = new(min.X, min.Y, max.X, max.Y);
     }

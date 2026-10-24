@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiLib.Classes;
@@ -40,8 +40,9 @@ public unsafe class FlagController : IDisposable
             var newFlagData = new Flag(territoryId, mapId, x, y, iconId);
             var dataFile = System.FlagConfig;
 
-            if (!dataFile.FlagHistory.Contains(newFlagData)) {
-                dataFile.FlagHistory.AddFirst(new Flag(territoryId, mapId, x, y, iconId));
+            if (System.SystemConfig.IsGratis || !dataFile.FlagHistory.Contains(newFlagData)) {
+                dataFile.FlagHistory.Remove(newFlagData);
+                dataFile.FlagHistory.AddFirst(newFlagData);
 
                 if (dataFile.FlagHistory.Count > dataFile.HistoryLimit) {
                     dataFile.FlagHistory.RemoveLast();

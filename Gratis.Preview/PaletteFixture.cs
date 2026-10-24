@@ -28,8 +28,8 @@ internal sealed class PaletteFixture : IPaletteSource
         new("m:3", PlaceKind.Marker, "Delivery Moogle", "La Noscea > Limsa Lominsa > Service", 1, 1, new(70)),
         new("f:1", PlaceKind.Flag, "Limsa meeting point", "Flag history > Limsa Lominsa", 1, 1, new(-70)),
     ];
-    public IEnumerable<PlaceEntry> Entries => Places;
-    public int Revision => 1;
+    public IEnumerable<PlaceEntry> Entries => Places.Concat(driver.Context.Assistance?.PinLayer?.Store.Entries ?? []);
+    public int Revision => 1 + (driver.Context.Assistance?.PinLayer?.Store.Revision ?? 0);
     public bool Building => false;
     public PlaceSearchContext Context => new(driver.MapId, 1, driver.PlayerPosition);
     public PlaceEntry? Shown { get; private set; }
@@ -37,7 +37,11 @@ internal sealed class PaletteFixture : IPaletteSource
     public PlaceAccess Access(PlaceEntry place) => new(place.AetheryteId is 1 or 3 or 4 or 7 or 10, place.AetheryteId == 7 ? 1200u : 320u);
     public void Refresh() { }
     public void Used() => driver.Config.PaletteHintSeen = true;
-    public void Show(PlaceEntry place) => Shown = place;
+    public void Show(PlaceEntry place) {
+        Shown = place;
+        if (place.Kind == PlaceKind.Pin && place.World is { } world)
+            driver.Renderer.BeginSpotlight(new(world, place.MapId, SpotlightSource.Pin));
+    }
     public string Teleport(PlaceEntry place, bool confirmed)
     {
         if (!Access(place).Attuned || place.IsShard || !driver.Config.PaletteTeleportButton) return "Unavailable";

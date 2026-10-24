@@ -19,7 +19,7 @@ public static class MarkerVisual
         var settings = config.Markers;
         if (!config.IsGratis) return config.ScaleWithZoom ? marker.Scale : 1;
         var spotlight = context.Spotlight;
-        var lensScale = spotlight?.Matches(marker) == true ? 1 : context.Visibility.Visual(marker).Y;
+        var lensScale = context.Visibility.Visual(marker).Y;
         var zoomScale = settings.ScaleWithZoom ? Math.Clamp(marker.Scale, Math.Clamp(settings.MinimumScale, .1f, 3),
             Math.Clamp(settings.MaximumScale, Math.Clamp(settings.MinimumScale, .1f, 3), 3)) : 1;
         return lensScale * zoomScale * (spotlight?.MarkerBreath(marker) ?? 1);
@@ -29,7 +29,7 @@ public static class MarkerVisual
     {
         var context = MapDrawContext.Current;
         var config = context.Config;
-        if (!config.IsGratis || context.Spotlight?.Matches(marker) == true) return 1;
+        if (!config.IsGratis) return 1;
         return context.Visibility.Visual(marker).X * (config.Markers.DimIrrelevant && !marker.IsRelevant && !MarkerRelevance.IsProtected(marker)
             ? Math.Clamp(config.Markers.IrrelevantAlpha, .1f, 1) : 1);
     }

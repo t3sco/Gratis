@@ -225,7 +225,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
             Flags &= ~ImGuiWindowFlags.NoBackground;
         }
 
-        if (!PlacePalette.Overlay.IsOpen && !PlacePalette.Overlay.CapturesInput && Service.KeyState[VirtualKey.ESCAPE] && IsFocused && !IsMapLocked()) {
+        if (!PlacePalette.Overlay.IsOpen && !PlacePalette.Overlay.CapturesInput && Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput != true && !Rendering.MapDrawContext.Current.ContextMenu.CapturesInput && Service.KeyState[VirtualKey.ESCAPE] && IsFocused && !IsMapLocked()) {
             AgentMap.Instance()->Hide();
         }
 

@@ -13,6 +13,7 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
+using MarkerInfo = Gratis.Classes.MarkerInfo;
 using Gratis.Data;
 using Gratis.Rendering;
 using KamiLib.CommandManager;
@@ -33,7 +34,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
     private double refreshed = double.NegativeInfinity;
     private uint lastMap;
     private ulong lastCharacter;
-    private (string Id, uint Cost)? pending;
+    private readonly GameTeleportService teleportService = new();
     public Func<IEnumerable<PlaceEntry>>? Pins { get; set; }
     public PaletteOverlay Overlay { get; }
     public IEnumerable<PlaceEntry> Entries => index.Entries.Concat(dynamic);
@@ -117,7 +118,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
     public unsafe void Opening()
     {
         if (Service.ClientState.IsLoggedIn) Telepo.Instance()->UpdateAetheryteList();
-        refreshed = double.NegativeInfinity; pending = null; Refresh();
+        refreshed = double.NegativeInfinity; teleportService.ClearConfirmation(); Refresh();
     }
 
     public unsafe void Refresh()
@@ -178,6 +179,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
     }
 
     public PlaceAccess Access(PlaceEntry place) => access.GetValueOrDefault(place.AetheryteId);
+    public void Invalidate() => refreshed = double.NegativeInfinity;
 
     public unsafe void Show(PlaceEntry place)
     {
@@ -187,7 +189,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
         if (AgentMap.Instance()->SelectedMapId != place.MapId) System.IntegrationsController.OpenMap(place.MapId);
         System.MapWindow.ProcessingCommand = true;
         if (place.World is { } world) {
-            var request = new SpotlightRequest(world, place.MapId, SpotlightSource.Search, IncludePlayer: sameMap);
+            var request = new SpotlightRequest(world, place.MapId, place.Kind == PlaceKind.Pin ? SpotlightSource.Pin : SpotlightSource.Search, IncludePlayer: sameMap);
             if (!System.MapRenderer.Frame.BeginSpotlight(request)) {
                 System.SystemConfig.FollowPlayer = false; System.MapRenderer.CenterOnCoordinate(world);
             }
@@ -195,24 +197,8 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
         else { System.SystemConfig.FollowPlayer = false; System.MapRenderer.DrawOffset = Vector2.Zero; }
     }
 
-    public unsafe string Teleport(PlaceEntry place, bool confirmed)
-    {
-        if (!System.SystemConfig.IsGratis || !System.SystemConfig.PaletteTeleportButton || place.IsShard || place.Kind != PlaceKind.Aetheryte)
-            return "This place is display-only.";
-        if (!Service.ClientState.IsLoggedIn || !UIState.Instance()->IsAetheryteUnlocked(place.AetheryteId)) return "Not attuned — show this place on the map.";
-        Telepo.Instance()->UpdateAetheryteList();
-        var destination = Service.AetheryteList.FirstOrDefault(a => a.AetheryteId == place.AetheryteId && a.SubIndex == 0);
-        if (destination == null) return "Teleport is unavailable for this destination.";
-        if (Service.Condition[ConditionFlag.InCombat] || Service.Condition[ConditionFlag.BetweenAreas] ||
-            ActionManager.Instance()->GetActionStatus(ActionType.Action, 5) != 0)
-            return "Unable to teleport now. Leave combat or finish your current action.";
-        var cost = destination.GilCost;
-        if (cost >= 1000 && (!confirmed || pending != (place.Id, cost))) {
-            pending = (place.Id, cost); return $"Confirm {cost:N0} gil to {place.Name}";
-        }
-        pending = null;
-        return Telepo.Instance()->Teleport(place.AetheryteId, 0) ? "Teleport requested." : "The game refused the teleport.";
-    }
+    public string Teleport(PlaceEntry place, bool confirmed) =>
+        teleportService.Request(place, confirmed, System.SystemConfig.PaletteTeleportButton);
 
     public void Used()
     {

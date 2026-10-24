@@ -259,8 +259,12 @@ public sealed class PaletteOverlay(IPaletteSource source)
             using var hintFont = MapDrawContext.Current.GetChromeFont(11 * scale, ChromeFontRole.Chip)?.Push();
             list.AddText(start + new Vector2(rowWidth - 32 * scale, 9 * scale), ImGui.GetColorU32(GratisTheme.Secondary), "Enter");
         }
-        if (hovered) ImGui.SetTooltip(result.Place.Name + "\n" + result.Place.Subtitle +
-            (result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? "\nNot attuned — show its location to plan your journey." : "\nEnter: show on map"));
+        if (hovered) {
+            ImGui.BeginTooltip();
+            ImGui.TextUnformatted(result.Place.Name + "\n" + result.Place.Subtitle +
+                (result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? "\nNot attuned — show its location to plan your journey." : "\nEnter: show on map"));
+            ImGui.EndTooltip();
+        }
         ImGui.SetCursorScreenPos(start + new Vector2(0, rowHeight));
         ImGui.Dummy(Vector2.Zero);
         ImGui.PopID();

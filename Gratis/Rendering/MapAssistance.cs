@@ -24,7 +24,7 @@ public interface ITravelPlaces
 public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlaces places,
     Func<bool> canTravel, Action save)
 {
-    public ITravelProvider Provider => provider;
+    public ITravelProvider Provider => available ? provider : NullTravelProvider.Instance;
     public ITravelPlaces Places => places;
     public bool InputActive { get; private set; }
     public string Message { get; private set; } = "";
@@ -34,6 +34,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     private double lastHover = double.NegativeInfinity;
     private uint pendingCost;
     private bool available;
+    private readonly List<(Vector2 Min, Vector2 Max)> panelBounds = [];
     public Vector2 CardMin { get; private set; }
     public Vector2 CardMax { get; private set; }
     public Vector2 TravelButtonCenter { get; private set; }
@@ -41,8 +42,10 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     public void Prepare(MapDrawingConfig config)
     {
-        InputActive = false;
-        if (!config.IsGratis) return;
+        InputActive = config.IsGratis && panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false));
+        panelBounds.Clear();
+        if (!config.IsGratis) { PinLayer?.CancelEditor(); return; }
+        InputActive |= PinLayer?.CapturesInput == true;
         places.Refresh(); available = provider.Available;
         if (available && !config.TravelActionsInitialized) {
             config.TravelActions = config.TravelActionsInitialized = true; save();
@@ -91,10 +94,14 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     public void Draw(IMapWindowHost host)
     {
         if (!host.Config.IsGratis) return;
+        DrawAetheryteChip(host);
         if (available && host.Config.TravelActions) {
             if (provider.IsBusy) DrawProgress(host);
             DrawTravelCard(host);
         }
+        PinLayer?.Draw(host, this);
+        InputActive |= PinLayer?.InputActive == true;
+        if (PinLayer?.CapturesInput == true) CapturePinKeys?.Invoke();
     }
 
     private void DrawProgress(IMapWindowHost host)
@@ -165,6 +172,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     internal void Panel(string id, Vector2 pos, Vector2 size, Action content)
     {
+        panelBounds.Add((pos, pos + size));
         var s = MapDrawContext.Current.GlobalScale;
         using var font = MapDrawContext.Current.GetChromeFont(12 * s, ChromeFontRole.Body)?.Push();
         var cursor = ImGui.GetCursorPos();

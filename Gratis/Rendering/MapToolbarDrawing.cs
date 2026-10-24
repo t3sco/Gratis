@@ -11,7 +11,9 @@ namespace Gratis.Rendering;
 
 public static class MapToolbarDrawing
 {
+    public static Vector4 LastBounds { get; private set; }
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu) {
+        LastBounds = Vector4.Zero;
         var context = MapDrawContext.Current;
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
         if (!chromeAlpha.Interactive) return;
@@ -24,6 +26,7 @@ public static class MapToolbarDrawing
 
         var surfaceList = ImGui.GetWindowDrawList();
         var surfaceOrigin = ImGui.GetCursorScreenPos();
+        LastBounds = new(surfaceOrigin.X, surfaceOrigin.Y, surfaceOrigin.X + toolbarSize.X, surfaceOrigin.Y + toolbarSize.Y);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, context.Config.IsGratis ? Vector4.Zero : Vector4.Zero with { W = context.Config.ToolbarFade });
         var visible = ImGui.BeginChild("toolbar_child", toolbarSize);
         try {
@@ -121,6 +124,7 @@ public static class MapToolbarDrawing
         ImGui.SetCursorPos(offset);
         var surfaceList = ImGui.GetWindowDrawList();
         var surfaceOrigin = ImGui.GetCursorScreenPos();
+        LastBounds = new(surfaceOrigin.X, surfaceOrigin.Y, surfaceOrigin.X + width, surfaceOrigin.Y + 36 * scale);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
         var visible = ImGui.BeginChild("toolbar_child", new Vector2(width, 36 * scale));
         try {

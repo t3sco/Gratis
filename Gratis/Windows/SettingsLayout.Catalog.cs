@@ -84,6 +84,7 @@ public sealed partial class SettingsLayout
         Group("Map", "Travel", Gratis);
         Add("TravelActions", "Lifestream travel actions", tip: "Available when Lifestream is loaded. Enabled on first detection.");
         Add("TravelConfirmGil", "Confirm travel cost", 0, 10000, "%.0f gil");
+        Add("AetheryteChips", "Nearest aetheryte chips");
         Group("Map", "Viewport");
         Add("ScaleWithFrame", "Scale with frame", tip: "Uses the shorter side; resizing preserves your zoom.");
         Add("ClampToMap", "Clamp to map", tip: "Keep the viewport inside the map texture, including near an edge.");
@@ -139,6 +140,12 @@ public sealed partial class SettingsLayout
         Add("LensTintsMap", "Lens map tint");
         Add("LensAuto", "Auto lens", tip: "Opt in to Minimal in duties, Gather near nodes on a gathering class, Explore otherwise.");
         Add("LensCycleKey", "Lens cycle key");
+        Add("QuickFilterBar", "Quick filter bar");
+        Add("PeekKey", "Hold to peek", tip: "Right Alt by default, only while the map is focused or hovered; never consumes the game's key. No binding can be guaranteed free of custom game hotkeys.");
+        Group("Markers", "Pins and notes", Gratis);
+        Add("Pins", "User pins");
+        Add("PinLabels", "Pin labels", choices: "On hover|Always|Never");
+        Add("PinMaxPerMap", "Maximum pins per map", 1, 200, "%.0f");
         Group("Markers", "Visibility and interaction");
         Add("ShowPlayers", "Other players");
         Add("ShowMiscTooltips", "Extra marker tooltips");
@@ -225,6 +232,7 @@ public sealed partial class SettingsLayout
         Add("ShowCoordinateBar", "Coordinates");
         Group("Chrome & motion", "Gratis coordinates", Gratis);
         Add("StyledCoordinates", "Coordinate chip", when: c => c.ShowCoordinateBar);
+        Add("GratisContextMenu", "Gratis context menu");
         Group("Chrome & motion", "Classic coordinates", Classic);
         Add("CoordinateTextColor", "Coordinate text colour", when: c => c.ShowCoordinateBar);
         Add("CoordinateBarFade", "Coordinate bar opacity", when: c => c.ShowCoordinateBar);

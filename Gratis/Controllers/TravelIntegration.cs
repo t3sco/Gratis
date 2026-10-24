@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Game.ClientState.Conditions;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using Gratis.Data;
 using Gratis.Rendering;
 using KamiLib.CommandManager;
@@ -13,12 +11,13 @@ namespace Gratis.Controllers;
 
 internal sealed class TravelPlacesAdapter : ITravelPlaces
 {
+    private readonly GameTeleportService teleportService = new();
     private PlaceIndexGame Source => System.MapWindow.PlacePalette;
     public IEnumerable<PlaceEntry> Entries => Source.Entries;
     public PlaceSearchContext Context => Source.Context;
     public PlaceAccess Access(PlaceEntry place) => Source.Access(place);
     public void Refresh() => Source.Refresh();
-    public string Teleport(PlaceEntry place, bool confirmed) => Source.Teleport(place, confirmed);
+    public string Teleport(PlaceEntry place, bool confirmed) => teleportService.Request(place, confirmed);
     public void Show(PlaceEntry place) => Source.Show(place);
 }
 
@@ -43,7 +42,15 @@ internal sealed class TravelIntegration
                 ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString() : null,
             () => busy.InvokeFunc(), () => active.InvokeFunc(), id => hop.InvokeFunc(id),
             (id, sub) => teleport.InvokeFunc(id, sub), () => abort.InvokeAction());
-        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), CanTravel, SystemConfig.Save);
+        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save);
+        Ui.PinLayer = new PinOverlay(new PinStore(System.SystemConfig, () => {
+            SystemConfig.Save(); System.MapWindow.PlacePalette.Invalidate();
+        }, id => Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Map>().GetRowOrDefault(id) != null),
+            place => System.MapWindow.PlacePalette.Show(place));
+        System.MapWindow.PlacePalette.Pins = () => Ui.PinLayer.Store.Entries;
+        Ui.CapturePinKeys = () => {
+            foreach (var key in Service.KeyState.GetValidVirtualKeys()) Service.KeyState[key] = false;
+        };
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/travel",
             Delegate = _ => Chat.Print($"[Gratis] Lifestream detected={provider.Available} version={provider.Version} " +
@@ -51,8 +58,4 @@ internal sealed class TravelIntegration
         });
     }
 
-    private static unsafe bool CanTravel() => Service.ClientState.IsLoggedIn && !Service.ClientState.IsPvP &&
-        Service.ObjectTable.LocalPlayer != null && !Service.Condition[ConditionFlag.InCombat] &&
-        !Service.Condition[ConditionFlag.BetweenAreas] && !Service.Condition[ConditionFlag.BetweenAreas51] &&
-        ActionManager.Instance()->GetActionStatus(ActionType.Action, 5) == 0;
 }

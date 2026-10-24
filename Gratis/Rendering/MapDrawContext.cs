@@ -42,6 +42,7 @@ public abstract class MapDrawContext
     public virtual bool LensGatheringClass => false;
     public virtual bool LensNearNode => false;
     public virtual void SaveConfig() { }
+    public ContextMenu ContextMenu { get; } = new();
     public MapMotion Motion { get; } = new();
     public Spotlight? Spotlight { get; set; }
     public bool WindowMoveInputBlocked { get; set; }

@@ -5,7 +5,7 @@ using System.Numerics;
 namespace Gratis.Rendering;
 
 public enum MarkerVisibilityState { Loud, Normal, Quiet, Hidden }
-public enum MarkerGroup { Quests, SideQuests, Fates, Transport, Links, Services, Housing, GatheringHunts, Treasure, Players, Other }
+public enum MarkerGroup { Quests, SideQuests, Fates, Transport, Links, Services, Housing, GatheringHunts, Treasure, Players, Other, Pins }
 public enum MarkerPeekKey { None, RightAlt, LeftAlt, RightCtrl, LeftCtrl }
 
 public sealed class Lens
@@ -58,8 +58,17 @@ public static class Lenses
     public static string Suggest(bool inDuty, bool gatheringClass, bool nearNode) => inDuty ? "Minimal" : gatheringClass && nearNode ? "Gather" : "Explore";
     public static void Cycle(MapDrawingConfig config)
     {
-        for (var i = 0; i < BuiltIn.Length; i++)
-            if (BuiltIn[i].Name == config.ActiveLens) { config.ActiveLens = BuiltIn[(i + 1) % BuiltIn.Length].Name; return; }
+        var found = false;
+        foreach (var lens in BuiltIn) {
+            if (found) { config.ActiveLens = lens.Name; return; }
+            found = lens.Name == config.ActiveLens;
+        }
+        if (config.CustomLenses is { } custom)
+            foreach (var lens in custom) {
+                if (lens is null) continue;
+                if (found) { config.ActiveLens = lens.Name; return; }
+                found = lens.Name == config.ActiveLens;
+            }
         config.ActiveLens = "Explore";
     }
 }
