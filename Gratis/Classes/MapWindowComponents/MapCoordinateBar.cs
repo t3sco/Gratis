@@ -10,6 +10,19 @@ public unsafe class MapCoordinateBar
     public void Draw(bool isMapHovered, Vector2 mapDrawOffset)
     {
         var agent = AgentMap.Instance();
+        if (System.SystemConfig.IsGratis) {
+            var offset = new Vector2(-agent->SelectedOffsetX, -agent->SelectedOffsetY);
+            var local = Service.ObjectTable.LocalPlayer;
+            var character = Rendering.CoordinateShare.WorldToMap(local == null ? Vector2.Zero : new(local.Position.X, local.Position.Z), offset, agent->SelectedMapSizeFactorFloat);
+            Vector2? pointed = null;
+            if (isMapHovered) {
+                var world = System.MapRenderer.Frame.ScreenToWorld(ImGui.GetMousePos(), mapDrawOffset);
+                pointed = Rendering.CoordinateShare.WorldToMap(world, offset, agent->SelectedMapSizeFactorFloat);
+                Controllers.CoordinateShareGame.Observe(world, agent->SelectedMapId, agent->SelectedTerritoryId);
+            }
+            Rendering.MapCoordinateDrawing.Draw(character, local != null && agent->SelectedMapId == agent->CurrentMapId, pointed);
+            return;
+        }
         var offsetX = -agent->SelectedOffsetX;
         var offsetY = -agent->SelectedOffsetY;
         var scale = (uint)agent->SelectedMapSizeFactor;

@@ -20,6 +20,7 @@ public class MarkerInfo
     public required float Scale { get; set; }
     public uint? ObjectiveId { get; init; }
     public uint? DataId { get; set; }
+    public bool? AetheryteAttuned { get; set; }
     public MarkerType MarkerType { get; set; }
     public MarkerCategory Category { get; set; }
     public MarkerIconFamily IconFamily { get; set; }
@@ -118,6 +119,7 @@ public static class DrawHelpers
     internal static void DrawPreparedMarker(MarkerInfo markerInfo)
     {
         var alpha = MarkerVisual.Alpha(markerInfo);
+        if (markerInfo.IsFlag) alpha *= MapDrawContext.Current.FlagArrival.FlagAlpha;
         alpha *= MapDrawContext.Current.Spotlight?.MarkerAlpha(markerInfo) ?? 1;
         if (alpha <= .001f) return;
         SpotlightDrawing.DrawMarkerGlow(markerInfo);
@@ -130,12 +132,16 @@ public static class DrawHelpers
     {
         var context = MapDrawContext.Current;
 
-        if (MarkerVisual.UseFlatMarker(markerInfo)) {
-            if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(markerInfo)) return;
-            DrawRadiusUnderlay(markerInfo);
-            if (!FlatMarkerDrawing.Draw(markerInfo)) return;
+        var attunementAlpha = AetheryteAttunementDrawing.Opacity(markerInfo);
+        using (var attunement = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * attunementAlpha, attunementAlpha < 1)) {
+            if (MarkerVisual.UseFlatMarker(markerInfo)) {
+                if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(markerInfo)) return;
+                DrawRadiusUnderlay(markerInfo);
+                if (!FlatMarkerDrawing.Draw(markerInfo)) return;
+            }
+            else if (!DrawIcon(markerInfo)) return;
         }
-        else if (!DrawIcon(markerInfo)) return;
+        AetheryteAttunementDrawing.Ring(markerInfo);
         context.Trace?.DrawnMarkers.Add(markerInfo);
         if (!context.WindowMoveInputBlocked) {
             ProcessInteractions(markerInfo);

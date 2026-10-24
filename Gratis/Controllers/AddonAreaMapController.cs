@@ -65,12 +65,14 @@ public unsafe class AddonAreaMapController : IDisposable {
 
     private void OnAreaMapPreShow(AddonEvent type, AddonArgs args) {
         if (System.ZoneSwitchController is { IsApplying: true }) return;
+        System.MapWindow.WakeGhost();
         Service.Log.Verbose($"[AreaMap] AddonEventPreShow");
         System.WindowManager.GetWindow<MapWindow>()?.Open();
     }
 
     private void OnAreaMapPreHide(AddonEvent type, AddonArgs args) {
         if (System.ZoneSwitchController is { IsApplying: true }) return;
+        System.MapWindow.WakeGhost();
         Service.Log.Verbose($"[AreaMap] AreaMapPreHide");
 
         if (System.SystemConfig.KeepOpen) {

@@ -81,5 +81,11 @@ internal static class MapViewMemoryVerification
         config.RememberMapView = config.RememberMapLens = false;
         d.Renderer.DrawOffset = new(20); var disabled = d.Step(new(1.5, MapId: 1));
         Check(disabled.Scale == followed.Scale, "disabled memory does not restore");
+        config.RememberMapView = true; config.ReduceMotion = false; config.FollowPlayer = false;
+        config.MapScale = .8f; var inFlight = d.Step(new(1.6, MapId: 2));
+        config.VisualStyle = 1; var classic = d.Step(new(1.61));
+        Check(MathF.Abs(classic.Scale / ViewportMath.FrameExtent(classic.Viewport) -
+            inFlight.Scale / ViewportMath.FrameExtent(inFlight.Viewport)) < .000001f &&
+            d.Renderer.ViewMemoryDiagnostics().Contains("restoring=False"), $"switching to Classic cancels in-flight restoration: {inFlight.Scale}/{inFlight.Viewport} -> {classic.Scale}/{classic.Viewport}; {d.Renderer.ViewMemoryDiagnostics()}");
     }
 }

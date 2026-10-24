@@ -73,6 +73,7 @@ public sealed partial class ContextMenu
             if (MapDrawContext.Current.Assistance is { } assistance) {
                 Add("Show nearest aetheryte", GratisIcons.LocateFixed, () => {
                     Spotlight();
+                    assistance.OfferContextTarget(new(World, host.Renderer.ViewedMapId, SpotlightSource.Search), host.Now);
                     var nearest = AetheryteSelection.Nearest(assistance.Places.Entries,
                         host.Renderer.ViewedMapId, World, assistance.Places.Access,
                         assistance.Provider.ActiveAetheryte, assistance.Provider.Available);

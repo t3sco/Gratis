@@ -350,8 +350,9 @@ public static class MapWindowDrawing
 
     public static void DrawCoordinates(Vector2? character, Vector2? cursor)
     {
-        if (character is null && cursor is null) return;
         var context = MapDrawContext.Current;
+        var time = context.Config.IsGratis && context.Config.ShowEorzeaTime ? EorzeaTime.Format(context.UnixTimeSeconds) : "";
+        if (character is null && cursor is null && time.Length == 0) return;
         var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
         var area = areaMax - areaMin;
         if (context.Config.IsGratis && (area.X < 360 * context.GlobalScale || area.Y < 300 * context.GlobalScale)) return;
@@ -366,13 +367,14 @@ public static class MapWindowDrawing
         var left = character is { } player ? "PLAYER " + Format(player) : "";
         var right = cursor is { } mouse ? "CURSOR " + Format(mouse) : "";
         var text = left + (left.Length > 0 && right.Length > 0 ? "  |  " : "") + right;
+        if (time.Length > 0) text += (text.Length > 0 ? "  |  " : "") + time;
         float Advance(char glyph) => char.IsDigit(glyph) || glyph == '.' ? digit :
             glyph == ' ' ? 3 * scale : DrawBinding.MeasureText(12 * scale, glyph.ToString()).X;
         float TextWidth(string value) { var width = 0f; foreach (var glyph in value) width += Advance(glyph); return width; }
         var size = new Vector2(TextWidth(text) + 24 * scale, 36 * scale);
         var window = ImGui.GetWindowSize();
         if (size.X > window.X - 32 * scale && left.Length > 0) {
-            text = left; size.X = TextWidth(text) + 24 * scale;
+            text = left + (time.Length > 0 ? "  |  " + time : ""); size.X = TextWidth(text) + 24 * scale;
         }
         if (size.X > area.X - 32 * scale) return;
         var pos = ImGui.GetWindowPos() + new Vector2((window.X - size.X) / 2, areaMax.Y - size.Y - 8 * scale);
@@ -382,6 +384,7 @@ public static class MapWindowDrawing
         }
         coordinateLayout = (ImGui.GetFrameCount(), ImGui.GetID("coordinate-layout"), pos.Y);
         RecordBounds(pos, pos + size, false);
+        CoordinateCopy.Record(pos, size, TextWidth(left), right.Length > 0 && text.Contains(right) ? TextWidth(right) : 0, TextWidth("  |  "));
         ImGui.SetCursorScreenPos(pos);
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();

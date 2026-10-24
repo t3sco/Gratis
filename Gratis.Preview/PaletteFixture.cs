@@ -37,6 +37,7 @@ internal sealed class PaletteFixture : IPaletteSource
     public PlaceAccess Access(PlaceEntry place) => new(place.AetheryteId is 1 or 3 or 4 or 7 or 10, place.AetheryteId == 7 ? 1200u : 320u);
     public void Refresh() { }
     public void Used() => driver.Config.PaletteHintSeen = true;
+    public void ShowMainStory() => driver.Context.Story.Show(driver.Renderer, Entries, Context);
     public void Show(PlaceEntry place) {
         Shown = place;
         if (place.World is { } world)

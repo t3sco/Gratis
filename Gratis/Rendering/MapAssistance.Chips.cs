@@ -20,8 +20,9 @@ public sealed partial class MapAssistance
     private void DrawAetheryteChip(IMapWindowHost host)
     {
         Chip = null;
-        if (!host.Config.AetheryteChips || !host.Renderer.Spotlight.Active || host.Renderer.Spotlight.Request is not { } target ||
-            !AetheryteSelection.Useful(target.MapId, target.Target, places.Context.MapId, places.Context.Player)) return;
+        var request = ContextTarget(host) ?? StoryTarget(host) ?? (host.Renderer.Spotlight.Active ? host.Renderer.Spotlight.Request : null);
+        if (!host.Config.AetheryteChips || request is not { } target ||
+            (!AetheryteSelection.Useful(target.MapId, target.Target, places.Context.MapId, places.Context.Player) && !IsContextTarget(target))) return;
         Chip = AetheryteSelection.Nearest(places.Entries, target.MapId, target.Target, places.Access,
             provider.ActiveAetheryte, available && host.Config.TravelActions);
         if (Chip is not { } choice) return;

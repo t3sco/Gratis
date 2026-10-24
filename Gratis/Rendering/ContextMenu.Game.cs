@@ -18,6 +18,7 @@ internal sealed unsafe class GameContextMenuActions : IContextMenuActions
     public GameContextMenuActions()
     {
         Service.PluginInterface.Inject(this);
+        Controllers.CoordinateShareGame.Register();
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/context", Delegate = _ => {
             var ui = MapDrawContext.Current.ContextMenu;
             Chat.Print($"[Gratis] context enabled={System.SystemConfig.GratisContextMenu} open={ui.IsOpen} capture={ui.CapturesInput} world={ui.World} marker={ui.Marker?.IconId} last={ui.LastAction}");
@@ -36,7 +37,7 @@ internal sealed unsafe class GameContextMenuActions : IContextMenuActions
         System.MapRenderer.PingTexturePosition(texture);
     }
     public IReadOnlyList<ContextMenuItem> RecentFlags => System.FlagConfig.FlagHistory.Take(5)
-        .Select(f => new ContextMenuItem(f.GetMap().PlaceName.ValueNullable?.Name.ExtractText() + " Â· " + CoordinateShare.Text(CoordinateShare.WorldToMap(f.GetCoordinate(), new Vector2(f.GetMap().OffsetX, f.GetMap().OffsetY), f.GetMap().SizeFactor / 100f)), GratisIcons.Flag, f.PlaceFlag)).ToArray();
+        .Select(f => new ContextMenuItem(f.GetMap().PlaceName.ValueNullable?.Name.ExtractText() + " · " + CoordinateShare.Text(CoordinateShare.WorldToMap(f.GetCoordinate(), new Vector2(f.GetMap().OffsetX, f.GetMap().OffsetY), f.GetMap().SizeFactor / 100f)), GratisIcons.Flag, f.PlaceFlag)).ToArray();
     public IReadOnlyList<ContextMenuItem> Layers {
         get {
             var current = Service.DataManager.GetExcelSheet<Map>().GetRowOrDefault(Agent->SelectedMapId);

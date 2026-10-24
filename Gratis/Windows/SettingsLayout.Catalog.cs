@@ -108,6 +108,7 @@ public sealed partial class SettingsLayout
         Add("PaletteShortcut", "Search shortcut", tip: "Ctrl+K by default; supports Ctrl, Shift, Alt and a letter, for example Ctrl+Shift+P.");
         Add("PaletteTeleportButton", "Allow palette teleports", tip: "Show locations with Enter. Alt+Enter teleports only when attuned and the game permits it.");
         Add("PaletteShowUnattuned", "Show unattuned aetherytes");
+        Add("AetheryteAttunementStyle", "Style unattuned map markers", tip: "Dim unattuned crystals and shards, add a dashed ring and hover-card status. Unknown state stays normal.");
         Add("PaletteMaxResults", "Visible search rows", 1, 12, "%.0f");
         Group("Map", "On open");
         Add("FollowOnOpen", "Follow player on open");
@@ -129,6 +130,8 @@ public sealed partial class SettingsLayout
         Add("SpotlightIncludePlayer", "Frame player and target");
         Add("SpotlightDistanceChip", "Distance chip");
         Add("SpotlightGuideLine", "Dotted guide line", tip: "Straight guide only; does not calculate a route.");
+        Group("Map", "Measure", Gratis);
+        Add("MeasureTool", "Ctrl-drag ruler", tip: "Ctrl+left-drag measures yalms; snaps within 8px. Esc clears, right-click copies. Alt moves the window.");
         Group("Map", "Edge pointers", Gratis);
         Add("EdgePointers", "Off-frame target pointers");
         Add("EdgePointerMax", "Maximum pointers", 1, 12, "%.0f");
@@ -191,6 +194,9 @@ public sealed partial class SettingsLayout
         Add("AreaOutlineColor", "Area outline", tip: "Gratis category colours override RGB; alpha still controls radius outlines.");
 
         Group("Chrome & motion", "Chrome visibility", Gratis);
+        Add("GhostMode", "Ghost mode", tip: "Fade and pass clicks to the game while moving. Hover or focus restores input. Overrides legacy window fading.");
+        Add("GhostOpacity", "Ghost opacity", .05f, 1, "%.2f", when: c => c.GhostMode);
+        Add("GhostRestoreDelay", "Stationary restore delay", 0, 5, "%.1f s", when: c => c.GhostMode);
         Add("AutoHideChrome", "Auto-hide chrome", tip: "Hover or interact to reveal the title, toolbar and coordinates.");
         Add("PinChrome", "Pin chrome");
         Add("ChromeIdleDelay", "Idle delay", 0, 10, "%.1f s", when: c => c.AutoHideChrome && !c.PinChrome);
@@ -212,6 +218,7 @@ public sealed partial class SettingsLayout
         Add("ShowAreaLabel", "Area in title", when: c => !c.IsGratis || !c.CompactTitle);
         Add("ShowSubAreaLabel", "Sub-area in title", when: c => !c.IsGratis || !c.CompactTitle);
         Group("Chrome & motion", "Gratis title", Gratis);
+        Add("SubZoneBanner", "Sub-zone arrival banner", tip: "Show area changes for 1.8 seconds, even while chrome is hidden.");
         Add("CompactTitle", "Compact title chip", when: c => c.ShowTitleOnMap);
         Group("Chrome & motion", "Classic title", Classic);
         Add("TitleCorner", "Title corner", choices: "Top left|Top right|Bottom left|Bottom right", when: c => c.ShowTitleOnMap);
@@ -239,6 +246,7 @@ public sealed partial class SettingsLayout
         Add("ShowCoordinateBar", "Coordinates");
         Group("Chrome & motion", "Gratis coordinates", Gratis);
         Add("StyledCoordinates", "Coordinate chip", when: c => c.ShowCoordinateBar);
+        Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar, tip: "Use the coordinate chip to show ET beside map coordinates.");
         Add("GratisContextMenu", "Gratis context menu");
         Group("Chrome & motion", "Classic coordinates", Classic);
         Add("CoordinateTextColor", "Coordinate text colour", when: c => c.ShowCoordinateBar);
@@ -248,6 +256,9 @@ public sealed partial class SettingsLayout
         Add("HoverCardSwatch", "Marker swatch", when: c => c.HoverCardStyle == 0);
         Group("Chrome & motion", "Motion", Gratis);
         Add("ReduceMotion", "Reduce motion");
+        Add("FlagArrival", "Flag arrival notification");
+        Add("FlagArrivalRadius", "Flag arrival radius", 1, 40, "%.1f yalms");
+        Add("FlagAutoClear", "Clear arrived flag", when: _ => false, tip: "Unavailable: no verified native flag-clear call.");
         Add("Motion.Pings", "Flag, quest and FATE pings", when: c => !c.ReduceMotion);
         Add("Motion.PingSeconds", "Ping duration", .3f, 1.5f, "%.2f s", when: c => !c.ReduceMotion && c.Motion.Pings);
         Add("Motion.PlayerTrail", "Player trail", when: c => !c.ReduceMotion);

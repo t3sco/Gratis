@@ -21,6 +21,7 @@ public interface IPaletteSource
     void Opening() => Refresh();
     void Refresh();
     void Show(PlaceEntry place);
+    void ShowMainStory();
     string Teleport(PlaceEntry place, bool confirmed);
     void Used();
 }
@@ -94,7 +95,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         if (searched != query || searchedScope != scope) { selected = 0; scrollSelection = true; confirming = null; message = ""; }
         searched = query; searchedScope = scope; revision = source.Revision; context = source.Context;
         showUnattuned = config.PaletteShowUnattuned;
-        var entries = NearestPlaces.Parse(query, out _) ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries) : source.Entries;
+        var entries = NearestPlaces.Parse(query, out _) ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries) : source.Entries.Append(MainStoryObjective.Action);
         results = PlaceSearch.Find(entries, query, scopes[scope], context, recent, source.Access, showUnattuned);
         if (NearestPlaces.Parse(query, out _) && context.Player == null) message = "Player position is unavailable on the selected map.";
         selected = Math.Clamp(selected, 0, Math.Max(0, results.Length - 1));
@@ -249,9 +250,15 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         list.PushClipRect(textMin, new Vector2(MathF.Max(textMin.X + 1, textRight), start.Y + rowHeight), true);
         using (MapDrawContext.Current.GetChromeFont(11 * scale, ChromeFontRole.Body)?.Push()) {
             var detail = result.Place.Subtitle;
-            if (result.Distance is { } distance) detail = context.Player is { } player && result.Place.World is { } world && NearestPlaces.Parse(query, out _)
-                ? $"{NearestPlaces.Direction(player, world)} {distance:0}y  ·  " + detail : detail + $"  ·  {distance:0}y";
-            list.AddText(textMin + new Vector2(0, 20 * scale), ImGui.GetColorU32(new Vector4(.67f, .69f, .73f, 1)), detail);
+            var detailPosition = textMin + new Vector2(0, 20 * scale);
+            if (result.Distance is { } distance) {
+                if (context.Player is { } player && result.Place.World is { } world && NearestPlaces.Parse(query, out _)) {
+                    DrawNearestDirection(list, detailPosition + new Vector2(5, 7) * scale, player, world, scale);
+                    detailPosition.X += 15 * scale; detail = $"{distance:0}y  ·  " + detail;
+                }
+                else detail += $"  ·  {distance:0}y";
+            }
+            list.AddText(detailPosition, ImGui.GetColorU32(new Vector4(.67f, .69f, .73f, 1)), detail);
         }
         list.PopClipRect();
         if (buttonWidth > 0) {
@@ -284,6 +291,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
 
     private void Activate(PlaceEntry place)
     {
+        if (place.Id == MainStoryObjective.Action.Id) { source.ShowMainStory(); Close(); return; }
         recent[place.Id] = ++sequence;
         if (recent.Count > 128) { string? oldest = null; long rank = long.MaxValue; foreach (var item in recent) if (item.Value < rank) { rank = item.Value; oldest = item.Key; } if (oldest != null) recent.Remove(oldest); }
         source.Show(place); Close();

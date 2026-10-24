@@ -32,6 +32,8 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     };
     public float DpiScale { get; set; } = 1;
     public override float GlobalScale => DpiScale;
+    public long ClockUnixSeconds { get; set; } = 2544;
+    public override long UnixTimeSeconds => ClockUnixSeconds;
     public float SizeFactor { get; set; } = 1;
     public override float MapSizeFactor => SizeFactor;
 

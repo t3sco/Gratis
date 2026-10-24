@@ -9,6 +9,7 @@ namespace Gratis.Controllers;
 public unsafe class FlagController : IDisposable
 {
     private readonly Hook<AgentMap.Delegates.SetFlagMapMarker>? setFlagMapMarkerHook;
+    private readonly FlagArrivalGame arrival = new();
 
     public FlagController()
     {
@@ -21,6 +22,7 @@ public unsafe class FlagController : IDisposable
 
     public void Dispose()
     {
+        arrival.Dispose();
         setFlagMapMarkerHook?.Dispose();
     }
 
@@ -52,5 +54,6 @@ public unsafe class FlagController : IDisposable
             }
 
             setFlagMapMarkerHook!.Original.Invoke(thisPtr, territoryId, mapId, x, y, iconId);
+            arrival.FlagSet();
         }, Service.Log, "Exception during OnSetFlagMapMarker");
 }

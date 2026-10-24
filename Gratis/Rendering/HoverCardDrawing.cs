@@ -13,6 +13,9 @@ public static class HoverCardDrawing
     public static void Draw(string key, string title, string? secondary = null, MarkerCategory? category = null, Classes.MarkerInfo? marker = null)
     {
         var context = MapDrawContext.Current;
+        context.HoverCardFrame = ImGui.GetFrameCount();
+        var attuned = AetheryteAttunement.Status(context.Config, marker);
+        if (attuned.HasValue) secondary = (attuned.Value ? "Attuned" : "Not attuned") + (string.IsNullOrWhiteSpace(secondary) ? "" : "\n" + secondary);
         if (marker != null && context.Assistance?.HoverTransport(marker, title) == true) return;
         context.Chrome.Reveal(ImGui.GetTime());
         var scale = context.GlobalScale;
@@ -21,7 +24,7 @@ public static class HoverCardDrawing
         var margin = new Vector2(8 * scale);
         var available = Vector2.Max(new Vector2(1), viewport.Size - margin * 2);
         var padding = new Vector2(12 * scale);
-        var swatch = context.Config.HoverCardSwatch && category.HasValue ? 24 * scale : 0;
+        var swatch = (context.Config.HoverCardSwatch && category.HasValue ? 24 * scale : 0) + (attuned.HasValue ? 18 * scale : 0);
         var titleSize = 14 * scale; var secondarySize = 12 * scale;
         using var titleFont = context.GetChromeFont(titleSize, ChromeFontRole.Title)?.Push();
         var font = ImGui.GetFont();
@@ -41,7 +44,9 @@ public static class HoverCardDrawing
         MapWindowDrawing.DrawSurface(list, position, position + size, GratisTheme.CardRadius * scale, fade, surfaceOpacity: 1);
         list.PushClipRect(position, position + size, true);
         var text = position + padding + new Vector2(swatch, 0);
-        if (swatch > 0 && category is { } shape) {
+        if (attuned.HasValue) GratisIcons.Draw(list, text + new Vector2(-10, 7) * scale,
+            attuned.Value ? GratisIcons.Unlock : GratisIcons.Lock, GratisTheme.Secondary with { W = fade }, 12 * scale);
+        if (context.Config.HoverCardSwatch && swatch > 0 && category is { } shape) {
             var center = position + padding + new Vector2(7, 7) * scale;
             if (marker != null && MarkerVisual.UseFlatMarker(marker))
                 FlatMarkerDrawing.Symbol(list, center, 7 * scale, marker, fade);

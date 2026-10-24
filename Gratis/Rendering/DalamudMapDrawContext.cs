@@ -74,6 +74,8 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     public override IconSetting GetIconSetting(uint id) => System.IconConfig.IconSettingMap[id];
     public override bool PrepareMarker(MarkerInfo marker)
     {
+        if (Config.IsGratis && Config.AetheryteAttunementStyle)
+            marker.AetheryteAttuned = System.MapWindow.PlacePalette.MarkerAttunement(marker.DataId ?? 0, MarkerIcon.Family(marker));
         if (System.IconConfig.IconSettingMap.TryAdd(marker.IconId, new IconSetting { IconId = marker.IconId })) System.IconConfig.Save();
         if (GetIconSetting(marker.IconId).Hide && (!Config.IsGratis || !MarkerVisibility.IsPriority(marker))) return false;
         if (marker.IsDynamicMarker) {

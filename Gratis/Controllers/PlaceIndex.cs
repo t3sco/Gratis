@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Gratis.Controllers;
 
-public enum PlaceKind { All, Aetheryte, Zone, Quest, Marker, Flag, Pin }
+public enum PlaceKind { All, Aetheryte, Zone, Quest, Marker, Flag, Pin, Action }
 public readonly record struct PlaceAccess(bool Attuned, uint? Cost = null);
 
 public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string Subtitle,
@@ -17,6 +17,7 @@ public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string S
     uint HubId = 0, string Aliases = "", uint Expansion = 0)
 {
     public uint Icon { get; init; }
+    public uint AethernetNameId { get; init; }
     public string SearchName { get; } = PlaceSearch.Normalize(Name);
     public string SearchAliases { get; } = PlaceSearch.Normalize(Aliases);
     public string SearchContext { get; } = PlaceSearch.Normalize(Subtitle);

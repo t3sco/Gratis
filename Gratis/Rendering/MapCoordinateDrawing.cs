@@ -13,8 +13,9 @@ public static class MapCoordinateDrawing
     {
         var context = MapDrawContext.Current;
         if (!context.Config.ShowCoordinateBar) return;
-        if (context.Config.IsGratis && context.Config.StyledCoordinates) {
+        if (context.Config.IsGratis && (context.Config.StyledCoordinates || context.Config.ShowEorzeaTime)) {
             MapWindowDrawing.DrawCoordinates(showCharacter ? character : null, cursor);
+            CoordinateCopy.Draw(showCharacter ? character : null, cursor);
             return;
         }
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));

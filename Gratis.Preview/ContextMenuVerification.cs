@@ -20,6 +20,21 @@ internal sealed class ContextMenuFixture : IContextMenuActions
 internal static class ContextMenuVerification
 {
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
+    public static void Nearest()
+    {
+        var config = PaletteVerification.Config(); config.WindowSize = new(700,600);
+        using var driver = new ScriptedFrameDriver(config,new FrameScript{Width=960,Height=800});
+        var source = new TravelFixture(driver);
+        var assistance = driver.Context.Assistance = new MapAssistance(NullTravelProvider.Instance,source,()=>true,()=>{});
+        driver.Context.ContextMenu.Actions = new ContextMenuFixture();
+        for(var i=0;i<5;i++) driver.Step(new(i*.02));
+        var point=driver.Renderer.WorldToScreen(new(60,0),driver.Window.MapDrawOffset);
+        driver.Step(new(.12,Mouse:point)); driver.Step(new(.14,Right:true)); driver.Step(new(.16,Right:false));
+        var row=driver.Context.ContextMenu.Rows["Show nearest aetheryte"];
+        driver.Step(new(.18,Mouse:row,Left:true)); driver.Step(new(.20,Left:false)); driver.Step(new(.22));
+        Require(driver.Renderer.Spotlight.Active && assistance.Chip?.Destination==TravelFixture.Hub,"explicit nearest action shows native chip even for near targets");
+        Require(source.Teleports==0,"showing transport never invokes teleport");
+    }
     public static void Frames()
     {
         foreach (var circle in new[] { false, true }) {

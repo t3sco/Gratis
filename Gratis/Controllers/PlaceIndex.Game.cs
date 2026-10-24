@@ -24,7 +24,7 @@ using GameMap = FFXIVClientStructs.FFXIV.Client.Game.UI.Map;
 
 namespace Gratis.Controllers;
 
-public sealed class PlaceIndexGame : IPaletteSource, IDisposable
+public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
 {
     [PluginService] private IChatGui Chat { get; set; } = null!;
     private readonly PlaceIndex index = new();
@@ -51,6 +51,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             $"shards={index.Entries.Count(p => p.IsShard)}, markers={index.Entries.Count(p => p.Kind == PlaceKind.Marker)}"),
             error => Service.Log.Error(error, "[PlaceIndex] Sheet build failed"));
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/find", Delegate = Find });
+        RegisterStoryAction();
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/nearest", Delegate = _ => {
             Refresh(); Chat.Print($"[Gratis] nearest map={Context.MapId} player={Context.Player?.ToString() ?? "unavailable on this map"} indexed={Entries.Count()} frame-markers={MapDrawContext.Current.MarkerTargets.Targets.Count}; use /gratis find nearest <thing>");
         } });
@@ -98,7 +99,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
                 }
             }
             aetherytes.Add(new PlaceAetheryteRow(a.RowId, mapId, a.Territory.RowId, name!, a.IsAetheryte,
-                a.AethernetGroup, world, Alias(nameId) + " aetheryte aethernet teleport"));
+                a.AethernetGroup, world, Alias(nameId) + " aetheryte aethernet teleport", a.AethernetName.RowId));
         }
         foreach (var entry in PlaceIndexBuilder.Build(mapRows, aetherytes)) { cancellation.ThrowIfCancellationRequested(); yield return entry; }
         foreach (var map in maps) {
@@ -168,7 +169,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
                 foreach (var marker in quest.MarkerData) {
                     if (marker.MapId == 0) continue;
                     live.Add(new PlaceEntry($"q:{quest.ObjectiveId}:{i++}", PlaceKind.Quest, quest.Label.ToString(), "Active / tracked quest",
-                        marker.MapId, marker.TerritoryTypeId, new Vector2(marker.Position.X, marker.Position.Z)));
+                        marker.MapId, marker.TerritoryTypeId, new Vector2(marker.Position.X, marker.Position.Z)) { Icon = marker.IconId });
                 }
             }
         }
@@ -178,6 +179,8 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
                 flag.Map, flag.Territory, flag.GetCoordinate()));
         }
         if (Pins != null) live.AddRange(Pins());
+        if (Service.ObjectTable.LocalPlayer != null && agent->CurrentMapId != 0)
+            live.Add(new PlaceEntry("action:copy-location", PlaceKind.Action, "Copy my location", "Copy coordinates with map name", agent->CurrentMapId, agent->CurrentTerritoryId));
         static (uint, string, int, int) Key(PlaceEntry entry) => (entry.MapId, entry.SearchName,
             (int)MathF.Round(entry.World?.X ?? 0), (int)MathF.Round(entry.World?.Y ?? 0));
         var known = index.Entries.Where(p => p.Kind == PlaceKind.Marker && p.MapId == lastMap).Select(Key).ToHashSet();
@@ -190,6 +193,7 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
     public unsafe void Show(PlaceEntry place)
     {
         if (!System.SystemConfig.IsGratis || place.MapId == 0) return;
+        if (place.Id == "action:copy-location") { CoordinateShareGame.CopyPlayer(); return; }
         System.ZoneSwitchController?.NotifyUserAction();
         var sameMap = place.MapId == AgentMap.Instance()->CurrentMapId;
         if (AgentMap.Instance()->SelectedMapId != place.MapId) System.IntegrationsController.OpenMap(place.MapId);
@@ -228,5 +232,5 @@ public sealed class PlaceIndexGame : IPaletteSource, IDisposable
             (result.Place.Kind == PlaceKind.Aetheryte ? result.Access.Attuned ? " [Attuned]" : " [Not attuned]" : ""));
     }
 
-    public void Dispose() { index.Dispose(); System.CommandManager.RemoveCommand("/find"); System.CommandManager.RemoveCommand("/nearest"); }
+    public void Dispose() { index.Dispose(); System.CommandManager.RemoveCommand("/find"); System.CommandManager.RemoveCommand("/nearest"); System.CommandManager.RemoveCommand("/msq"); }
 }

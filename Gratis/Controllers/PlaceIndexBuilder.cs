@@ -7,7 +7,7 @@ namespace Gratis.Controllers;
 public sealed record PlaceMapRow(uint Id, uint Territory, string Name, string Region, string Layer = "",
     string Aliases = "", uint Expansion = 0, string ExpansionName = "");
 public sealed record PlaceAetheryteRow(uint Id, uint Map, uint Territory, string Name, bool IsHub,
-    uint Group, Vector2? World = null, string Aliases = "");
+    uint Group, Vector2? World = null, string Aliases = "", uint AethernetNameId = 0);
 
 public static class PlaceIndexBuilder
 {
@@ -31,7 +31,7 @@ public static class PlaceIndexBuilder
             yield return new PlaceEntry($"a:{row.Id}", PlaceKind.Aetheryte, row.Name,
                 Group(map) + (!row.IsHub && hub != null ? " > " + hub.Name : ""),
                 mapId, row.Territory != 0 ? row.Territory : map.Territory, row.World,
-                row.Id, row.IsHub ? row.Id : hub?.Id ?? row.Id, row.Aliases, map.Expansion);
+                row.Id, row.IsHub ? row.Id : hub?.Id ?? row.Id, row.Aliases, map.Expansion) { AethernetNameId = row.AethernetNameId };
         }
     }
 }

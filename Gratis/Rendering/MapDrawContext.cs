@@ -36,14 +36,19 @@ public abstract class MapDrawContext
     public MapAssistance? Assistance { get; set; }
     public EdgePointers EdgePointers { get; } = new();
     public MapMarkerTargets MarkerTargets { get; } = new();
+    public MeasureTool Measure { get; } = new();
+    public MainStoryObjective Story { get; } = new();
     public ChromeVisibility Chrome { get; } = new();
     public BlurDiagnostics Blur { get; } = new();
+    public int HoverCardFrame { get; set; } = -1;
     public MarkerBatch Markers { get; } = new();
     public MarkerVisibility Visibility { get; } = new();
     public virtual bool LensInDuty => false;
     public virtual bool LensGatheringClass => false;
     public virtual bool LensNearNode => false;
     public virtual void SaveConfig() { }
+    public virtual long UnixTimeSeconds => global::System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    public FlagArrivalOverlay FlagArrival { get; } = new();
     public ContextMenu ContextMenu { get; } = new();
     public MapMotion Motion { get; } = new();
     public Spotlight? Spotlight { get; set; }

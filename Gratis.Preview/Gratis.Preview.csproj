@@ -16,6 +16,7 @@
     <None Include="../Gratis/Assets/Fonts/**/*" Link="assets/Fonts/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Gratis/Windows/Settings*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Controllers/ZoneSwitchPolicy.cs" Link="Shared/ZoneSwitchPolicy.cs" />
+    <Compile Include="../Gratis/Controllers/FlagArrivalState.cs" Link="Shared/FlagArrivalState.cs" />
     <Compile Include="../Gratis/Controllers/PlaceIndex.cs;../Gratis/Controllers/PlaceIndexBuilder.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Controllers/NearestPlaces.cs" Link="Shared/NearestPlaces.cs" />
     <Compile Include="../Gratis/Rendering/*.cs" Exclude="../Gratis/Rendering/DalamudMapDrawContext.cs" Link="Shared/%(Filename)%(Extension)" />

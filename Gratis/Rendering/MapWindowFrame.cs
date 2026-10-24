@@ -17,6 +17,9 @@ public interface IMapWindowHost
     double Now { get; }
     bool SettingsOpen { get; }
     bool ShouldFade { get; }
+    bool PlayerMoving => false;
+    bool MapFocused => false;
+    SubZoneLocation? SubZone => null;
     string Title { get; }
     ImGuiWindowFlags Flags { get; set; }
     PaletteOverlay? Palette => null;
@@ -30,7 +33,7 @@ public interface IMapWindowHost
     void DrawContextMenu(Vector2 offset);
 }
 
-public sealed class MapWindowFrame
+public sealed partial class MapWindowFrame
 {
     public Vector2 MapDrawOffset { get; private set; }
     public HoverFlags HoveredFlags { get; private set; }
@@ -38,7 +41,8 @@ public sealed class MapWindowFrame
     private Vector2 lastWindowSize;
     public bool Dragging => isDragStarted;
     public MoveHandleInput MoveHandle { get; } = new();
-    public void PreDraw(IMapWindowHost host) => MoveHandle.PrepareWindow(host);
+    public SubZoneBanner ZoneBanner { get; } = new();
+    public void PreDraw(IMapWindowHost host) { MoveHandle.PrepareWindow(host); PrepareGhost(host); }
     private static bool IsBoundedBy(Vector2 cursor, Vector2 min, Vector2 max) =>
         cursor.X >= min.X && cursor.Y >= min.Y && cursor.X <= max.X && cursor.Y <= max.Y;
 
@@ -46,6 +50,9 @@ public sealed class MapWindowFrame
     {
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
         host.UpdateWindow();
+        ZoneBanner.Update(host.Config, host.SubZone, host.Now);
+        MapDrawContext.Current.Measure.BeginFrame();
+        MapDrawContext.Current.ContextMenu.Measure ??= MapDrawContext.Current.Measure;
         MapDrawContext.Current.Assistance?.Prepare(host.Config);
         host.Palette?.Prepare(host.Config, ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
         var paletteInput = host.Palette?.CapturesInput == true;
@@ -53,7 +60,8 @@ public sealed class MapWindowFrame
         var assistanceInput = MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput;
         var filterInput = host.Config.IsGratis && !MoveHandle.Dragging &&
             (LensDrawing.PointerOver || host.Config.QuickFilterBar && FilterBarDrawing.PointerOver);
-        if (paletteInput || assistanceInput) MoveHandle.Cancel();
+        var measureGesture = MapDrawContext.Current.Measure.WantsGesture(host.Config);
+        if (paletteInput || assistanceInput || measureGesture) MoveHandle.Cancel();
         else if (!filterInput) MoveHandle.Update(host, isDragStarted);
         var moveBlocked = !filterInput && MoveHandle.BlocksMapInput;
         MapDrawContext.Current.WindowMoveInputBlocked = moveBlocked || paletteInput || assistanceInput;
@@ -77,8 +85,11 @@ public sealed class MapWindowFrame
         }
 
         MapDrawOffset = ImGui.GetCursorScreenPos();
-        using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, host.Config.FadePercent, host.ShouldFade);
-        using (var renderChild = FrameScopes.Child("render_child", ImGui.GetContentRegionAvail(), ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar)) {
+        var ghostEnabled = host.Config.IsGratis && host.Config.GhostMode;
+        using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
+            ghostEnabled ? Ghost.Opacity : host.Config.FadePercent, ghostEnabled || host.ShouldFade);
+        using (var renderChild = FrameScopes.Child("render_child", ImGui.GetContentRegionAvail(), ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar |
+            (Ghost.ClickThrough ? ImGuiWindowFlags.NoInputs : ImGuiWindowFlags.None))) {
             if (!renderChild.Visible) return;
             MapShape.Update(ImGui.GetWindowSize());
             if (!host.Config.AcceptedSpoilerWarning) {
@@ -108,7 +119,7 @@ public sealed class MapWindowFrame
                 !moveBlocked && mouseOverFrame, mapFocused, host.PlayerPosition);
             if (host.Config.IsGratis) MapDrawContext.Current.Visibility.BeginFrame(MapDrawContext.Current);
             using (var moveInput = new MoveHandleInput.InputScope(moveBlocked || paletteInput)) {
-            DrawMapElements(host);
+            using (var measureInput = new MoveHandleInput.InputScope(measureGesture)) DrawMapElements(host);
 
             ImGui.SetCursorPos(Vector2.Zero);
             ImGui.Dummy(Vector2.Zero);
@@ -120,15 +131,18 @@ public sealed class MapWindowFrame
             if (!host.Config.IsGratis) DrawFrameEffects();
             MapDrawContext.Current.Trace?.Chrome("title-call");
             MapWindowDrawing.DrawTitleOnMap(host.Title);
+            SubZoneBannerDrawing.Draw(ZoneBanner);
             if (host.Config.IsGratis && host.Config.QuickFilterBar) FilterBarDrawing.Draw();
             else LensDrawing.Draw();
             MapDrawContext.Current.Assistance?.Draw(host);
             MoveHandle.Draw(host.Config);
+            MapDrawContext.Current.Measure.Draw(host, MoveHandle.Geometry);
             MapDrawContext.Current.EdgePointers.Draw(host);
             }
-            MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
+            if (!MapDrawContext.Current.Measure.InputActive) MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.DrawHint(host.Config);
             host.Palette?.Draw(host.Config);
+            DrawGhostHint(host);
         }
 
         if (ImGui.IsItemHovered()) {
@@ -141,6 +155,7 @@ public sealed class MapWindowFrame
     private void DrawMapElements(IMapWindowHost host)
     {
         host.Renderer.DrawBaseTexture();
+        MapDrawContext.Current.FlagArrival.Update(host);
         if (ImGui.IsItemHovered()) {
             HoveredFlags |= HoverFlags.MapTexture;
         }
@@ -192,9 +207,9 @@ public sealed class MapWindowFrame
 
     private void ProcessInputs(IMapWindowHost host)
     {
+        if (host.Config.IsGratis && MapDrawContext.Current.Measure.InputActive) { isDragStarted = false; host.Flags |= ImGuiWindowFlags.NoMove; return; }
         if (host.Config.IsGratis && MapDrawContext.Current.EdgePointers.InputActive) { isDragStarted = false; host.Flags |= ImGuiWindowFlags.NoMove; return; }
-
-        if (host.Config.IsGratis && (MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput)) { isDragStarted = false; return; }
+        if (host.Config.IsGratis && (MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput || CoordinateCopy.InputActive)) { isDragStarted = false; return; }
         if (host.Config.IsGratis && (LensDrawing.InputActive || host.Config.QuickFilterBar && FilterBarDrawing.InputActive)) { isDragStarted = false; return; }
         if (MoveHandle.BlocksMapInput || host.Palette?.CapturesInput == true || host.Palette?.IsOpen == true) {
             isDragStarted = false;

@@ -27,6 +27,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     public ITravelProvider Provider => available ? provider : NullTravelProvider.Instance;
     public ITravelPlaces Places => places;
     public bool InputActive { get; private set; }
+    public bool OverlayOpen => hovered is not null || PinLayer?.CapturesInput == true || PinLayer?.CardVisible == true;
     public string Message { get; private set; } = "";
     public string DestinationName { get; private set; } = "";
     private PlaceEntry? hovered, pending;

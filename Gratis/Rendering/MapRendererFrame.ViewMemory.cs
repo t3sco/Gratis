@@ -31,6 +31,7 @@ public sealed partial class MapRendererFrame
     private void AdvanceRememberedView()
     {
         var config = host.Config;
+        if (!config.IsGratis || !config.RememberMapView) restoringView = null;
         if (restoringView is { } saved && !Spotlight.OwnsViewport) {
             var scale = saved.ResolveScale(config, viewportSize, viewportTextureSize);
             var motion = config.Motion ??= new MotionSettings();

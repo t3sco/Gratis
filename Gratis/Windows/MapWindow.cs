@@ -22,7 +22,7 @@ using Map = Lumina.Excel.Sheets.Map;
 
 namespace Gratis.Windows;
 
-public class MapWindow : Window, Rendering.IMapWindowHost
+public partial class MapWindow : Window, Rendering.IMapWindowHost
 {
     public Vector2 MapDrawOffset => windowFrame.MapDrawOffset;
     public HoverFlags HoveredFlags => windowFrame.HoveredFlags;
@@ -68,6 +68,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
 
     public override void OnOpen()
     {
+        WakeGhost();
         System.MapRenderer.Frame.RestoreMapViewOnOpen();
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
         if (ProcessingCommand) {
@@ -104,6 +105,10 @@ public class MapWindow : Window, Rendering.IMapWindowHost
     double Rendering.IMapWindowHost.Now => ImGui.GetTime();
     bool Rendering.IMapWindowHost.SettingsOpen => System.ConfigWindow.IsOpen;
     bool Rendering.IMapWindowHost.ShouldFade => ShouldFade();
+    unsafe bool Rendering.IMapWindowHost.PlayerMoving => AgentMap.Instance()->IsPlayerMoving;
+    bool Rendering.IMapWindowHost.MapFocused => IsFocused;
+    public void WakeGhost() => windowFrame.Ghost.Wake(ImGui.GetTime());
+    public string GhostDiagnostics() => windowFrame.Ghost.Diagnostics();
     string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName;
     void Rendering.IMapWindowHost.UpdateWindow() { UpdateTitle(); UpdateStyle(); UpdateSizePosition(); }
     void Rendering.IMapWindowHost.SaveWindowPosition() => SystemConfig.Save();
