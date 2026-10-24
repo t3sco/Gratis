@@ -1,0 +1,24 @@
+﻿<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+    <PropertyGroup>
+        <Name>Gratis</Name>
+        <AssemblyName>Gratis</AssemblyName>
+        <InternalName>Gratis</InternalName>
+        <RootNamespace>Gratis</RootNamespace>
+        <Author>MidoriKami, harbingerftw</Author>
+        <Version>3.2.0.0</Version>
+        <Punchline>A more versatile in-game map.</Punchline>
+        <Description>Replaces the in-game map with an ImGui implementation with several additional features.</Description>
+        <RepoUrl>https://example.com/Gratis</RepoUrl>
+        <Tags>map;mapping;overlay;utility</Tags>
+        <CategoryTags>jobs</CategoryTags>
+        <AcceptsFeedback>true</AcceptsFeedback>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\KamiLib\KamiLib.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="TerraFX.Interop.Windows" Private="false"/>
+    </ItemGroup>
+</Project>

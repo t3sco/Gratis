@@ -1,0 +1,161 @@
+﻿using System.Linq;
+using System.Numerics;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.Interop;
+using KamiLib.Extensions;
+using KamiLib.Window;
+using Lumina.Excel.Sheets;
+using Gratis.Windows;
+
+namespace Gratis.Classes.MapWindowComponents;
+
+public unsafe class MapToolbar {
+    public void Draw() {
+        var borderPadding = 2.5f;
+        var toolbarSize = new Vector2(ImGui.GetContentRegionMax().X, 33.0f * ImGuiHelpers.GlobalScale);
+
+        using var childBackgroundStyle =
+            ImRaii.PushColor(ImGuiCol.ChildBg, Vector4.Zero with { W = System.SystemConfig.ToolbarFade });
+        using var toolbarChild = ImRaii.Child("toolbar_child", toolbarSize);
+        if (!toolbarChild) return;
+
+        var cornerInset = MapShape.Current * 0.29f;
+        ImGui.SetCursorPos(new Vector2(borderPadding, borderPadding) * ImGuiHelpers.GlobalScale + new Vector2(cornerInset));
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.ArrowUp, "up", "Open Parent Map")) {
+            using var valueArgs = new RentedAtkValues(1);
+            valueArgs[0].SetInt(5);
+
+            using var returnValue = new RentedAtkValues(1);
+            AgentMap.Instance()->ReceiveEvent(returnValue, valueArgs, 1, 0);
+        }
+
+        ImGui.SameLine();
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.LayerGroup, "layers", "Show Map Layers")) {
+            ImGui.OpenPopup("Gratis_Show_Layers");
+        }
+
+        DrawLayersContextMenu();
+
+        ImGui.SameLine();
+
+        using (var _ = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetStyle().GetColor(ImGuiCol.ButtonActive),
+                   System.SystemConfig.FollowPlayer)) {
+            if (GratisGuiTweaks.IconButton(FontAwesomeIcon.LocationArrow, "follow", "Toggle Follow Player")) {
+                System.SystemConfig.FollowPlayer = !System.SystemConfig.FollowPlayer;
+
+                if (System.SystemConfig.FollowPlayer) {
+                    System.IntegrationsController.OpenOccupiedMap();
+                }
+            }
+        }
+
+        ImGui.SameLine();
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.ArrowsToCircle, "centerPlayer", "Center on Player") &&
+            Service.ObjectTable.LocalPlayer is not null) {
+            if (!System.SystemConfig.FollowPlayer) {
+                System.IntegrationsController.OpenOccupiedMap();
+                System.MapRenderer.CenterOnGameObject(Service.ObjectTable.LocalPlayer);
+            }
+        }
+
+        ImGui.SameLine();
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.MapMarked, "centerMap", "Center on Map")) {
+            System.SystemConfig.FollowPlayer = false;
+            System.MapRenderer.DrawOffset = Vector2.Zero;
+        }
+
+        ImGui.SameLine();
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Search, "search", "Search for Map")) {
+            System.WindowManager.AddWindow(new MapSelectionWindow {
+                SingleSelectionCallback = selection => {
+                    if (selection?.Map != null) {
+                        if (AgentMap.Instance()->SelectedMapId != selection.Map.RowId) {
+                            System.IntegrationsController.OpenMap(selection.Map.RowId);
+                        }
+
+                        if (selection.MarkerLocation is { } location) {
+                            System.SystemConfig.FollowPlayer = false;
+                            System.MapRenderer.DrawOffset = -location + DrawHelpers.GetMapCenterOffsetVector();
+                        }
+                    }
+                },
+            }, WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+        }
+
+        float buttonWidth;
+        using (Service.PluginInterface.UiBuilder.IconFontFixedWidthHandle.Push()) {
+            buttonWidth = ImGui.CalcTextSize(FontAwesomeIcon.Cog.ToIconString()).X + ImGui.GetStyle().FramePadding.X * 2.0f;
+        }
+
+        var buttonCount = System.SystemConfig.HideWindowFrame ? 2 : 1;
+        var rightWidth = buttonWidth * buttonCount + ImGui.GetStyle().ItemSpacing.X * (buttonCount - 1);
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - rightWidth - ImGuiHelpers.GlobalScale * borderPadding - cornerInset);
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Cog, "settings", "Open Settings")) {
+            System.ConfigWindow.UnCollapseOrShow();
+            ImGui.SetWindowFocus(System.ConfigWindow.WindowName);
+        }
+
+        if (!System.SystemConfig.HideWindowFrame) return;
+
+        ImGui.SameLine();
+
+        if (GratisGuiTweaks.IconButton(FontAwesomeIcon.Times, "closeMap", "Close Map")) {
+            System.MapWindow.Close();
+        }
+    }
+
+    private void DrawLayersContextMenu() {
+        using var contextMenu = ImRaii.Popup("Gratis_Show_Layers");
+        if (!contextMenu) return;
+
+        var currentMap = Service.DataManager.GetExcelSheet<Map>().GetRow(AgentMap.Instance()->SelectedMapId);
+        if (currentMap.RowId is 0) return;
+
+        if (currentMap.MapType.RowId == 3) {
+            foreach (var marker in AgentMap.Instance()->MapMarkers) {
+                if (!DrawHelpers.IsRegionIcon(marker.MapMarker.IconId)) continue;
+
+                var label = marker.MapMarker.Subtext.AsDalamudSeString();
+
+                if (ImGui.MenuItem(label.ToString())) {
+                    System.IntegrationsController.OpenMap(marker.DataKey);
+                    System.SystemConfig.FollowPlayer = false;
+                    System.MapRenderer.DrawOffset = Vector2.Zero;
+                }
+            }
+        }
+
+        else {
+            var layers = Service.DataManager.GetExcelSheet<Map>()
+                .Where(eachMap => eachMap.PlaceName.RowId == currentMap.PlaceName.RowId)
+                .Where(eachMap => eachMap.MapIndex != 0)
+                .OrderBy(eachMap => eachMap.MapIndex)
+                .ToList();
+
+            if (layers.Count is 0) {
+                ImGui.Text("No layers for this map");
+            }
+
+            foreach (var layer in layers) {
+                if (ImGui.MenuItem(layer.PlaceNameSub.Value.Name.ExtractText(), "",
+                        AgentMap.Instance()->SelectedMapId == layer.RowId)) {
+                    System.IntegrationsController.OpenMap(layer.RowId);
+                    System.SystemConfig.FollowPlayer = false;
+                    System.MapRenderer.DrawOffset = Vector2.Zero;
+                }
+            }
+        }
+    }
+}
