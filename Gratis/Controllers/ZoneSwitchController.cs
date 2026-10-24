@@ -16,7 +16,7 @@ public sealed unsafe class ZoneSwitchController : IDisposable
     private double nextPoll, stableSince, retryStarted = double.NaN;
     private double lastUserAction = double.NegativeInfinity;
     private long userActionVersion;
-    private bool loggedIn;
+    private bool loggedIn, initialPending;
     private int retries;
     private DateTimeOffset? lastTerritoryChanged;
     private uint lastEventOldTerritory;
@@ -27,15 +27,13 @@ public sealed unsafe class ZoneSwitchController : IDisposable
 
     public ZoneSwitchController()
     {
-        var input = ReadInput();
         loggedIn = Service.ClientState.IsLoggedIn;
-        lastEventTerritory = input.TerritoryId;
-        if (IsReady(input)) Remember(input);
+        lastEventTerritory = Service.ClientState.TerritoryType;
+        initialPending = true;
         Service.ClientState.TerritoryChanged += OnTerritoryChanged;
         Service.ClientState.Login += OnLogin;
         Service.Framework.Update += OnUpdate;
         ZoneDiagnosticCommand.Register(this);
-        if (loggedIn) Request(input.TerritoryId, "reload");
     }
 
     public void Dispose()
@@ -114,6 +112,13 @@ public sealed unsafe class ZoneSwitchController : IDisposable
 
     private void OnUpdate(IFramework framework)
     {
+        if (initialPending) {
+            initialPending = false;
+            var first = ReadInput();
+            lastEventTerritory = first.TerritoryId;
+            if (IsReady(first)) Remember(first);
+            if (loggedIn) Request(first.TerritoryId, "reload");
+        }
         var now = Now;
         if (now < nextPoll) return;
         nextPoll = now + RetryInterval;
