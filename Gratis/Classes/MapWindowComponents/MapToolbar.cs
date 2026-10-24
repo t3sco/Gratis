@@ -40,6 +40,7 @@ public unsafe class MapToolbar {
             }
             case ToolbarAction.CenterPlayer: {
                 if (Service.ObjectTable.LocalPlayer is null) return;
+                System.MapRenderer.LocatePlayer();
 
                 if (!System.SystemConfig.FollowPlayer) {
                     System.IntegrationsController.OpenOccupiedMap();

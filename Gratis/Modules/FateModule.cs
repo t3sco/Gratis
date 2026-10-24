@@ -14,11 +14,12 @@ public class FateModule : ModuleBase {
         if (fateData is null) return false;
 
         var fate = fateData.Value;
+        markerInfo.MotionRevision = (uint)(fate.Value->Progress | (int)fate.Value->State << 8);
         var timeRemaining = fate.GetTimeRemaining();
 
         var levelKind = "Lv. ";
         var level = fate.Value->MaxLevel == 255 ? "??" : fate.Value->Level.ToString();
-        if (fate.Value->EurekaFate == 3) {
+        if (fate.Value->FateMode == 3) {
             levelKind = "\uE037";
         }
 

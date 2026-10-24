@@ -57,7 +57,7 @@ public static class FlatMarkerDrawing
     {
         var context = MapDrawContext.Current;
         var size = context.Config.FlatMarkerSize * (context.Config.IconScale / .5f) * context.GetIconSetting(marker.IconId).Scale * context.GlobalScale;
-        return context.Config.ScaleWithZoom ? size * marker.Scale : size;
+        return size * MarkerVisual.Scale(marker);
     }
 
     internal static bool FitsFeather(MarkerInfo marker) => MapShape.ContainsSymbol(
@@ -75,7 +75,7 @@ public static class FlatMarkerDrawing
         var hitRadius = global::System.MathF.Max(size * .6f + 3 * context.GlobalScale, 8 * context.GlobalScale);
         ImGui.SetCursorScreenPos(center - new Vector2(hitRadius));
         ImGui.Dummy(new Vector2(hitRadius * 2));
-        var hover = HoverAnimation.Progress(Key(marker), ImGui.IsItemHovered());
+        var hover = ImGui.IsItemHovered() ? HoverAnimation.Progress(Key(marker), true) : 0;
         var radius = size * .5f * (1 + .2f * hover);
         var list = ImGui.GetWindowDrawList();
         Shape(list, center, radius, Category(marker), Color(Category(marker)) * context.GetIconSetting(marker.IconId).Color);
@@ -91,13 +91,10 @@ public static class FlatMarkerDrawing
         var dark = ImGui.GetColorU32(GratisTheme.Outline with { W = .35f * alpha });
         var stroke = MapDrawContext.Current.GlobalScale;
         var x = new Vector2(radius, 0); var y = new Vector2(0, radius);
-        void Contour(Vector2[] points, global::System.Action paintFill)
+        void Contour(global::System.ReadOnlySpan<Vector2> points, uint ink, float width)
         {
             foreach (var point in points) list.PathLineTo(point);
-            list.PathStroke(light, ImDrawFlags.Closed, 4 * stroke);
-            paintFill();
-            foreach (var point in points) list.PathLineTo(point);
-            list.PathStroke(dark, ImDrawFlags.Closed, stroke);
+            list.PathStroke(ink, ImDrawFlags.Closed, width);
         }
         switch (category) {
             case MarkerCategory.Transport:
@@ -107,12 +104,16 @@ public static class FlatMarkerDrawing
                 list.AddCircleFilled(center, radius * .32f, fill, 24);
                 break;
             case MarkerCategory.Objective:
-                Contour([center - y, center + x, center + y, center - x],
-                    () => list.AddQuadFilled(center - y, center + x, center + y, center - x, fill));
+                global::System.ReadOnlySpan<Vector2> diamond = stackalloc Vector2[] { center - y, center + x, center + y, center - x };
+                Contour(diamond, light, 4 * stroke);
+                list.AddQuadFilled(center - y, center + x, center + y, center - x, fill);
+                Contour(diamond, dark, stroke);
                 break;
             case MarkerCategory.Link:
-                Contour([center - y, center + x + y, center - x + y],
-                    () => list.AddTriangleFilled(center - y, center + x + y, center - x + y, fill));
+                global::System.ReadOnlySpan<Vector2> triangle = stackalloc Vector2[] { center - y, center + x + y, center - x + y };
+                Contour(triangle, light, 4 * stroke);
+                list.AddTriangleFilled(center - y, center + x + y, center - x + y, fill);
+                Contour(triangle, dark, stroke);
                 break;
             case MarkerCategory.Service:
                 list.AddRect(center - new Vector2(radius), center + new Vector2(radius), light, 2 * stroke, ImDrawFlags.None, 4 * stroke);
@@ -122,12 +123,13 @@ public static class FlatMarkerDrawing
             case MarkerCategory.Party:
                 var arm = radius * .38f;
                 Vector2 P(float px, float py) => center + new Vector2(px, py);
-                Contour([P(-arm, -radius), P(arm, -radius), P(arm, -arm), P(radius, -arm),
+                global::System.ReadOnlySpan<Vector2> cross = stackalloc Vector2[] { P(-arm, -radius), P(arm, -radius), P(arm, -arm), P(radius, -arm),
                     P(radius, arm), P(arm, arm), P(arm, radius), P(-arm, radius),
-                    P(-arm, arm), P(-radius, arm), P(-radius, -arm), P(-arm, -arm)], () => {
-                        list.AddRectFilled(center - new Vector2(radius, arm), center + new Vector2(radius, arm), fill);
-                        list.AddRectFilled(center - new Vector2(arm, radius), center + new Vector2(arm, radius), fill);
-                    });
+                    P(-arm, arm), P(-radius, arm), P(-radius, -arm), P(-arm, -arm) };
+                Contour(cross, light, 4 * stroke);
+                list.AddRectFilled(center - new Vector2(radius, arm), center + new Vector2(radius, arm), fill);
+                list.AddRectFilled(center - new Vector2(arm, radius), center + new Vector2(arm, radius), fill);
+                Contour(cross, dark, stroke);
                 break;
             default:
                 list.AddCircle(center, radius, light, 32, 4 * stroke);

@@ -28,6 +28,7 @@ public unsafe class MapContextMenu
 
             AgentMap.Instance()->FlagMarkerCount = 0;
             AgentMap.Instance()->SetFlagMapMarker(AgentMap.Instance()->SelectedTerritoryId, AgentMap.Instance()->SelectedMapId, scaledResult.X, scaledResult.Y);
+            System.MapRenderer.PingTexturePosition(textureClickLocation);
             AgentChatLog.Instance()->InsertTextCommandParam(1048, false);
         }
 

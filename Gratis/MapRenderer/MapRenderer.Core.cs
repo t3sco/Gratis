@@ -44,27 +44,42 @@ public unsafe partial class MapRenderer : IDisposable
 
     public void CenterOnCoordinate(Vector2 coord)
     {
+        CancelViewportMotion();
         followZoomOffset = Vector2.Zero;
         DrawOffset = CoordinateOffset(coord);
+        PingTexturePosition(new Vector2(1024) - DrawOffset);
     }
 
     private static Vector2 CoordinateOffset(Vector2 coord) => -coord * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetMapOffsetVector();
 
     public void DrawBaseTexture()
     {
+        Rendering.MapDrawContext.Current.Motion.BeginMap(AgentMap.Instance()->SelectedMapId, ImGui.GetTime());
+        FlushPendingPing();
         viewportSize = ImGui.GetContentRegionAvail();
         DrawBackgroundTexture();
     }
 
     public void DrawDynamicElements()
     {
+        var motion = Rendering.MapDrawContext.Current.Motion;
+        using var alpha = new Rendering.MapMotion.AlphaScope(motion.ZoneProgress(ImGui.GetTime()));
         DrawFogOfWar();
         DrawMapMarkers();
+        motion.DrawPings(ImGui.GetWindowPos() + DrawPosition, Scale, ImGui.GetTime());
     }
 
     private void UpdateDrawOffset()
     {
-        DrawPosition = Rendering.ViewportMath.DrawPosition(viewportSize, DrawOffset, Scale);
+        var offset = DrawOffset;
+        var config = System.SystemConfig;
+        var progress = Rendering.MapDrawContext.Current.Motion.ZoneProgress(ImGui.GetTime());
+        if (progress < 1) {
+            offset += new Vector2((1 - progress) * config.Motion.ZoneSlidePixels / Scale, 0);
+            if (config.ClampToMap) offset = new Vector2(1024) - Rendering.ViewportMath.ClampCenter(new Vector2(1024) - offset,
+                viewportSize, viewportTextureSize, Scale, config.MapCircle && config.IsGratis);
+        }
+        DrawPosition = Rendering.ViewportMath.DrawPosition(viewportSize, offset, Scale);
     }
 
     private void DrawBackgroundTexture()
@@ -98,6 +113,7 @@ public unsafe partial class MapRenderer : IDisposable
     {
         PrepareViewport(texture.Size);
         ImGui.SetCursorPos(DrawPosition);
+        using var alpha = new Rendering.MapMotion.AlphaScope(Rendering.MapDrawContext.Current.Motion.ZoneProgress(ImGui.GetTime()));
         Rendering.MapTextureDrawing.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size), Scale);
     }
 
@@ -142,6 +158,8 @@ public unsafe partial class MapRenderer : IDisposable
 
     private void DrawMapMarkers()
     {
+        var markers = Rendering.MapDrawContext.Current.Markers;
+        markers.Begin();
         DrawStaticMapMarkers();
         DrawDynamicMarkers();
         DrawGameObjects();
@@ -149,8 +167,10 @@ public unsafe partial class MapRenderer : IDisposable
         DrawTemporaryMarkers();
         DrawGatheringMarkers();
         DrawFieldMarkers();
+        if (markers.Enabled) DrawFlag();
+        markers.Flush();
         DrawPlayer();
         DrawStaticTextMarkers();
-        DrawFlag();
+        if (!markers.Enabled) DrawFlag();
     }
 }

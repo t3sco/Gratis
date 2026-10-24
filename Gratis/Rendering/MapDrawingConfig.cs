@@ -17,6 +17,13 @@ public class MapDrawingConfig
 
     public void ResetViewport() => ScaleWithFrame = ClampToMap = true;
 
+    public MarkerSettings Markers = new();
+    public void ResetMarkers() => Markers = new MarkerSettings();
+
+    public bool ReduceMotion = false;
+    public MotionSettings Motion = new();
+    public void ResetMotion() { ReduceMotion = false; Motion = new MotionSettings(); }
+
     public int VisualStyle = 0;
     public int MarkerStyle = 1;
     public int HoverCardStyle = 0;
@@ -54,6 +61,8 @@ public class MapDrawingConfig
     }
 
     public bool NeutralFrame = true;
+    public FramePreset FramePreset = FramePreset.Hairline;
+    public void ResetFramePreset() => FramePreset = global::Gratis.Rendering.FramePreset.Hairline;
     public float FlatCornerRadius = 10;
     public float FlatVignette = .08f;
     public bool CompactTitle = true;
@@ -84,6 +93,7 @@ public class MapDrawingConfig
     public void ResetFrameMaterials()
     {
         var defaults = new MapDrawingConfig();
+        ResetFramePreset();
         FeatherEnabled = defaults.FeatherEnabled;
         FeatherWidth = defaults.FeatherWidth;
         RingEnabled = defaults.RingEnabled;

@@ -19,6 +19,10 @@ internal static partial class Program
                 ViewportVerification.Run();
                 return 0;
             }
+            if (args is ["--selftest", "motion"]) {
+                MotionVerification.Run();
+                return 0;
+            }
             var options = Options.Parse(args);
             if (options is null) return 0;
             Run(options);
@@ -33,12 +37,14 @@ internal static partial class Program
     private static unsafe void Run(Options options)
     {
         if (options.Scene == "map-recolor-sheet") { RenderRecolourSheet(options); return; }
+        if (options.Scene == "frame-presets") { RenderFramePresets(options); return; }
         var native = ImGui.CreateContext();
         try {
             var io = ImGui.GetIO();
             io.DisplaySize = new Vector2(options.Width, options.Height);
             io.DisplayFramebufferScale = Vector2.One;
             io.DeltaTime = 1f / 60;
+            if (IsMotionScene(options.Scene)) io.DeltaTime = .025f;
             io.NativePtr->IniFilename = null;
             io.NativePtr->LogFilename = null;
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
@@ -51,6 +57,9 @@ internal static partial class Program
             context.Config.FeatherEnabled = !options.Scene.StartsWith("map-edge-legacy", StringComparison.Ordinal);
             if (options.FeatherWidth is { } featherWidth) context.Config.FeatherWidth = featherWidth;
             context.Config.VisualStyle = options.Scene == "map-classic" ? 1 : 0;
+            if (options.Scene == "motion-reduced") context.Config.ReduceMotion = true;
+            if (options.Frame is { } framePreset) context.Config.FramePreset = framePreset;
+            if (options.Circle is { } circle) context.Config.MapCircle = circle;
             var materialShowcase = options.Scene is "map-glint" or "map-glint-circular" or "glass-card" or "glass-tinted" or "glass-unavailable";
             context.BlurAvailable = options.Scene != "glass-unavailable";
             context.Config.GlassBlur = options.Scene != "glass-tinted";
@@ -76,7 +85,7 @@ internal static partial class Program
             if (options.Scene == "map-circular-nonsquare") mapSize = new Vector2(640, 360);
             if (options.Scene is "chrome-tiny" or "chrome-tiny-circle") mapSize = new Vector2(320, 240);
             var mapPosition = (io.DisplaySize - mapSize) / 2;
-            var mouse = options.Scene == "hover-tooltip" || materialShowcase
+            var mouse = options.Scene == "markers-clustered" ? mapPosition + mapSize / 2 : options.Scene == "hover-tooltip" || materialShowcase
                 ? mapPosition + mapSize * new Vector2(.56f, .53f)
                 : options.Scene is "toolbar" or "glass-toolbar" ? mapPosition + new Vector2(194, 26) : new Vector2(-1000);
             for (var frame = 0; frame < 12; frame++) {
@@ -92,6 +101,8 @@ internal static partial class Program
             Console.WriteLine($"Scene {options.Scene}; native Dear ImGui {ImGui.GetVersion()}; Geist / Noto atlas {atlasWidth}x{atlasHeight}.");
             Console.WriteLine($"Edge mask: {context.Config.FeatherShape}, {context.Config.FeatherWidth}px; map mesh {FeatheredMapDrawing.LastVertexCount} vertices (0 = legacy edge).");
             Console.WriteLine($"Glass: {context.Blurs.Count} CPU box-blur approximations (not Dalamud GPU parity).");
+            if (IsMarkerScene(options.Scene)) VerifyMarkers(context);
+            if (IsMotionScene(options.Scene)) ReportMotion(options.Scene, context);
             if (options.Verify) {
                 MapColourVerification.Run();
                 Verification.Run(context, textures);
@@ -116,17 +127,20 @@ internal static partial class Program
         ImGui.BeginChild("render_child", size, ImGuiChildFlags.None, flags);
         MapShape.Update(ImGui.GetWindowSize());
         var context = MapDrawContext.Current;
+        context.Markers.Begin();
         context.Chrome.Update(context.Config, ImGui.GetTime(), false,
             scene == "chrome-hidden" ? 0 : scene == "chrome-fading" ? .5f : 1);
-        if (!DrawViewportMap(scene, size, map, viewportOff)) {
+        if (!DrawMotionMap(scene, size, map) && !DrawViewportMap(scene, size, map, viewportOff)) {
             var scale = Math.Max(size.X / map.Size.X, size.Y / map.Size.Y) * 1.15f;
             ImGui.SetCursorPos((size - map.Size * scale) / 2);
             MapTextureDrawing.DrawMapImage(map, scale);
         }
         var player = ImGui.GetWindowPos() + size * new Vector2(.45f, .63f);
+        DrawMotionTrail(scene, size, player);
         PlayerDrawing.DrawLookLine(player, .8f, -1.25f);
         PlayerDrawing.DrawPlayerIcon(player, MapDrawContext.Current.GetIcon(60443), .25f, 1);
-        if (scene == "markers") {
+        if (IsMarkerScene(scene)) DrawMarkerScene(scene, size);
+        else if (scene == "markers") {
             for (var row = 0; row < 4; row++)
                 for (var col = 0; col < 6; col++)
                     Marker(size * new Vector2(.09f + col * .16f, .20f + row * .20f), size,
@@ -138,9 +152,11 @@ internal static partial class Program
             Marker(size * new Vector2(.74f, .70f), size, 60071, "Survey objective", 48);
             Marker(new Vector2(5), size, 60012, "Clipping probe", null);
         }
-        Marker(size * new Vector2(.56f, .53f), size, 60071, "The Wanderer's Camp", null,
+        if (!IsMarkerScene(scene)) Marker(size * new Vector2(.56f, .53f), size, 60071, "The Wanderer's Camp", null,
             "Level 50 - Preview marker");
         if (scene.StartsWith("map-recolor-", StringComparison.Ordinal)) DrawRecolourMarkers(size);
+        context.Markers.Flush();
+        DrawMotionPings(scene, size);
         if (scene == "glass-circle") {
             var center = ImGui.GetWindowPos() + size / 2;
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), center - new Vector2(40), center + new Vector2(40), 40);
@@ -171,7 +187,8 @@ internal static partial class Program
         ImGui.EndPopup();
     }
 
-    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth, bool Verify, bool ViewportOff)
+    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth, bool Verify, bool ViewportOff,
+        FramePreset? Frame = null, bool? Circle = null)
     {
         public static Options? Parse(string[] args)
         {
@@ -185,7 +202,7 @@ internal static partial class Program
                 if (args[i] == "--verify") { verify = true; continue; }
                 if (args[i] == "--viewport-off") { viewportOff = true; continue; }
                 if (args[i] is "--help" or "-h") {
-                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes.Concat(ViewportScenes))}> [--out path.png] [--size WxH] [--map image.png] [--feather-width 0..48] [--verify] [--viewport-off]; --selftest viewport");
+                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes.Concat(ViewportScenes).Concat(FrameScenes).Concat(MarkerScenes).Concat(MotionScenes))}> [--out path.png] [--size WxH] [--map image.png] [--feather-width 0..48] [--verify] [--viewport-off]; --selftest viewport|motion");
                     return null;
                 }
                 if (i + 1 >= args.Length) throw new ArgumentException($"Missing value for {args[i]}.");
@@ -208,7 +225,7 @@ internal static partial class Program
                     default: throw new ArgumentException($"Unknown option {key}.");
                 }
             }
-            if (!Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
+            if (!Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
             if (width < 320 || height < 240 || width > 8192 || height > 8192 || (long)width * height > 16777216)
                 throw new ArgumentException("Size must be 320x240 to 8192x8192, with at most 16 megapixels.");
             if (map is not null && (!File.Exists(map) || !Path.GetExtension(map).Equals(".png", StringComparison.OrdinalIgnoreCase)))

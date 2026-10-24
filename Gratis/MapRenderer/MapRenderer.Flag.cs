@@ -15,6 +15,8 @@ public partial class MapRenderer
             {
                 Position = new Vector2(flagMarker.XFloat, flagMarker.YFloat) * Scale * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetCombinedOffsetVector() * Scale,
                 IconId = flagMarker.MapMarker.IconId,
+                Category = Rendering.MarkerCategory.Objective,
+                IsFlag = true,
                 Offset = DrawPosition,
                 Scale = Scale,
             });

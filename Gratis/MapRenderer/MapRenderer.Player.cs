@@ -15,6 +15,11 @@ public partial class MapRenderer
         if (AgentMap.Instance()->SelectedMapId != AgentMap.Instance()->CurrentMapId) return;
 
         if (Service.ObjectTable.LocalPlayer is { } localPlayer) {
+            var motion = Rendering.MapDrawContext.Current.Motion;
+            var texturePosition = localPlayer.GetMapPosition() - DrawHelpers.GetMapOffsetVector() + DrawHelpers.GetMapCenterOffsetVector();
+            if (Rendering.MapMotion.Enabled && System.SystemConfig.Motion.PlayerTrail)
+                motion.Trail.Add(texturePosition, ImGui.GetTime(), System.SystemConfig.Motion.TrailSeconds);
+            motion.DrawTrail(ImGui.GetWindowPos() + DrawPosition, Scale, ImGui.GetTime());
             var position = ImGui.GetWindowPos() +
                            DrawPosition +
                            (localPlayer.GetMapPosition() -

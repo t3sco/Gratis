@@ -69,11 +69,8 @@ public static class MapWindowDrawing
         var rounding = MapShape.Current;
         var drawList = ImGui.GetWindowDrawList();
 
-        if (config.IsGratis && config.NeutralFrame) {
-            if (config.FlatVignette > 0) DrawGradientRing(drawList, min, max, rounding,
-                MathF.Min(max.X - min.X, max.Y - min.Y) * .10f, new Vector4(0, 0, 0, config.FlatVignette), 2);
-            if (!config.RingEnabled) FrameMaterialDrawing.DrawStroke(drawList, min, max, rounding, scale, new Vector4(1, 1, 1, .12f));
-            DrawConicRing(drawList, min, max, rounding);
+        if (config.IsGratis && (config.NeutralFrame || config.FramePreset != FramePreset.Hairline)) {
+            FramePresetDrawing.Draw(drawList, min, max, rounding, config, scale);
             return;
         }
 
@@ -126,7 +123,7 @@ public static class MapWindowDrawing
         }
     }
 
-    private static void DrawGradientRing(ImDrawListPtr drawList, Vector2 min, Vector2 max, float rounding, float depth, Vector4 color, float power)
+    internal static void DrawGradientRing(ImDrawListPtr drawList, Vector2 min, Vector2 max, float rounding, float depth, Vector4 color, float power)
     {
         const int bands = 8;
         var white = ImGui.GetFontTexUvWhitePixel();

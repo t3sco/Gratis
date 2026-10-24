@@ -17,7 +17,8 @@ public unsafe partial class MapRenderer
     {
         if (!wasFollowing || !System.SystemConfig.ClampToMap) followZoomOffset = Vector2.Zero;
         followTargetOffset = CoordinateOffset(new Vector2(obj.Position.X, obj.Position.Z));
-        DrawOffset = followTargetOffset + followZoomOffset;
+        if (!MapMotion.Enabled || !System.SystemConfig.Motion.EaseFollow)
+            DrawOffset = followTargetOffset + followZoomOffset;
     }
 
     private void PrepareViewport(Vector2 textureSize)
@@ -29,18 +30,24 @@ public unsafe partial class MapRenderer
         var circle = config.MapCircle && config.IsGratis;
         var minimum = config.ClampToMap
             ? ViewportMath.MinimumScale(viewportSize, viewportTextureSize, circle) : 0;
+        var previousScale = Scale;
         Scale = viewportZoom.Resolve(viewportSize, Scale, config.ScaleWithFrame, minimum);
+        AdvanceViewportMotion(previousScale, minimum);
         if (config.ClampToMap) {
             var center = ViewportMath.ClampCenter(new Vector2(1024) - DrawOffset,
                 viewportSize, viewportTextureSize, Scale, circle);
-            DrawOffset = new Vector2(1024) - center;
+            var clamped = new Vector2(1024) - center;
+            if (clamped.X != DrawOffset.X) followVelocity.X = 0;
+            if (clamped.Y != DrawOffset.Y) followVelocity.Y = 0;
+            DrawOffset = clamped;
         }
         UpdateDrawOffset();
     }
 
-    public void ZoomViewport(float requestedScale, Vector2 cursorFromCenter)
+    public void ZoomViewport(float requestedScale, Vector2 cursorFromCenter, bool animate = true)
     {
         var config = System.SystemConfig;
+        if (animate && QueueViewportZoom(requestedScale, cursorFromCenter)) return;
         if (!config.ClampToMap) {
             Scale = requestedScale;
             return;
@@ -57,4 +64,13 @@ public unsafe partial class MapRenderer
     }
 
     public Vector2 ViewportSize => viewportSize;
+
+    public void ZoomToCluster(Vector2 localPosition, float scale)
+    {
+        var texturePosition = (localPosition - DrawPosition) / scale;
+        CancelViewportMotion();
+        System.SystemConfig.FollowPlayer = false;
+        ZoomViewport(scale * 1.8f, Vector2.Zero, false);
+        DrawOffset = new Vector2(1024) - texturePosition;
+    }
 }

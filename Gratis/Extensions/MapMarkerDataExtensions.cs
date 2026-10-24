@@ -26,6 +26,7 @@ public static class MapMarkerDataExtensions
             ObjectiveId = marker.ObjectiveId,
             MarkerType = (MarkerType)marker.MarkerType,
             DataId = marker.DataId,
+            IsRelevant = marker.ObjectiveId == 0 || marker.MarkerType != 0 || Rendering.MarkerRelevance.IsActive(marker.ObjectiveId),
         });
     }
 

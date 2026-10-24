@@ -36,6 +36,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 
     public override MapDrawingConfig Config => System.SystemConfig;
     public override MapColourPreset ActiveColourPreset => System.SystemConfig.MapColour?.Preset ?? MapColourPreset.Original;
+    public override void ZoomCluster(Vector2 position, float scale) => System.MapRenderer.ZoomToCluster(position, scale);
     public override float GlobalScale => ImGuiHelpers.GlobalScale;
     public override unsafe float MapSizeFactor => AgentMap.Instance()->SelectedMapSizeFactorFloat;
     public override DrawTexture GetIcon(uint id)

@@ -47,6 +47,8 @@ public partial class MapFunctionsTab : ITabItem
         var configChanged = DrawMapColourSection();
 
         configChanged |= DrawViewportSection();
+        configChanged |= DrawMarkersSection();
+        configChanged |= DrawMotionSection();
 
         ImGuiTweaks.Header("Zoom Options");
         using (ImRaii.PushIndent()) {
@@ -191,7 +193,7 @@ public partial class StyleOptionsTab : ITabItem
                     visual.IconSize = new Rendering.MapDrawingConfig().IconSize;
                     configChanged = true;
                 }
-                configChanged |= ImGui.Checkbox("Neutral hairline frame", ref visual.NeutralFrame);
+                configChanged |= ImGui.Checkbox("Neutral frame", ref visual.NeutralFrame);
                 configChanged |= ImGui.SliderFloat("Gratis corner radius", ref visual.FlatCornerRadius, 0, 80, "%.0f px");
                 configChanged |= ImGui.SliderFloat("Gratis vignette", ref visual.FlatVignette, 0, .3f, "%.2f");
                 configChanged |= ImGui.Checkbox("Compact title chip", ref visual.CompactTitle);
@@ -201,6 +203,7 @@ public partial class StyleOptionsTab : ITabItem
         }
 
         configChanged |= DrawChromeVisibilitySection();
+        configChanged |= DrawFramePresetSection();
 
         ImGuiTweaks.Header("Window Options");
         using (ImRaii.PushIndent()) {
@@ -256,7 +259,8 @@ public partial class StyleOptionsTab : ITabItem
                     configChanged = true;
                 }
             }
-            if (frame.IsGratis && frame.NeutralFrame) ImGui.TextDisabled("Legacy frame controls apply with Neutral hairline frame off.");
+            if (frame.IsGratis && (frame.NeutralFrame || frame.FramePreset != Rendering.FramePreset.Hairline))
+                ImGui.TextDisabled("Legacy frame controls apply with Neutral frame off and Hairline selected.");
             if (!frame.MapCircle) {
                 configChanged |= ImGui.SliderFloat("Corner Rounding", ref frame.MapRounding, 0.0f, 80.0f, "%.0f px");
             }

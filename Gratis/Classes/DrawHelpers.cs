@@ -31,6 +31,10 @@ public class MarkerInfo
     public Action? OnRightClicked { get; set; }
     public Action? OnLeftClicked { get; set; }
     public bool IsDynamicMarker { get; init; }
+    public bool IsRelevant { get; set; } = true;
+    public bool IsTarget { get; init; }
+    public bool IsFlag { get; init; }
+    public uint MotionRevision { get; set; }
 }
 
 public static class DrawHelpers
@@ -78,6 +82,23 @@ public static class DrawHelpers
 
         var context = MapDrawContext.Current;
         if (!context.PrepareMarker(markerInfo)) return;
+        context.Motion.Observe(markerInfo);
+
+        if (context.Markers.Enqueue(markerInfo)) return;
+        DrawPreparedMarker(markerInfo);
+    }
+
+    internal static void DrawPreparedMarker(MarkerInfo markerInfo)
+    {
+        var alpha = MarkerVisual.Alpha(markerInfo);
+        if (alpha < 1) ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * alpha);
+        try { DrawPreparedContents(markerInfo); }
+        finally { if (alpha < 1) ImGui.PopStyleVar(); }
+    }
+
+    private static void DrawPreparedContents(MarkerInfo markerInfo)
+    {
+        var context = MapDrawContext.Current;
 
         if (context.Config.IsGratis && context.Config.MarkerStyle == 1) {
             if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(markerInfo)) return;
@@ -115,7 +136,7 @@ public static class DrawHelpers
     private static bool DrawIcon(MarkerInfo markerInfo)
     {
         var texture = MapDrawContext.Current.GetIcon(markerInfo.IconId);
-        var scale = MapDrawContext.Current.Config.ScaleWithZoom ? markerInfo.Scale : 1.0f;
+        var scale = MarkerVisual.Scale(markerInfo);
 
         var iconScale = MapDrawContext.Current.Config.IconScale;
 
@@ -124,7 +145,7 @@ public static class DrawHelpers
         }
 
         if (IsRegionIcon(markerInfo.IconId)) {
-            scale = markerInfo.Scale;
+            if (!MapDrawContext.Current.Config.IsGratis || !MapDrawContext.Current.Config.Markers.ScaleWithZoom) scale = markerInfo.Scale;
             iconScale = 0.42f;
         }
 

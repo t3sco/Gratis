@@ -43,6 +43,8 @@ public partial class MapRenderer
                             DrawHelpers.GetMapCenterOffsetVector()) * Scale,
                 Offset = DrawPosition,
                 Scale = Scale,
+                IsTarget = player.TargetObject?.EntityId == obj.EntityId,
+                IsRelevant = player.TargetObject?.EntityId == obj.EntityId || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
                 IconId = obj.ObjectKind switch
                 {
                     ObjectKind.Pc when GroupManager.Instance()->MainGroup.MemberCount is 0 && System.SystemConfig.ShowPlayers => 60421,

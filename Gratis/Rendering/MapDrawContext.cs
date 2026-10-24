@@ -33,6 +33,9 @@ public abstract class MapDrawContext
         new DalamudMapDrawContext();
 #endif
     public ChromeVisibility Chrome { get; } = new();
+    public MarkerBatch Markers { get; } = new();
+    public MapMotion Motion { get; } = new();
+    public virtual void ZoomCluster(Vector2 position, float scale) { }
     public abstract MapDrawingConfig Config { get; }
     public abstract float GlobalScale { get; }
     public abstract float MapSizeFactor { get; }
