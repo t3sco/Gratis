@@ -98,7 +98,7 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
         if (!settings.TryGetValue(id, out var setting)) settings[id] = setting = new IconSetting { IconId = id };
         return setting;
     }
-    public override bool PrepareMarker(MarkerInfo marker) => !GetIconSetting(marker.IconId).Hide;
+    public override bool PrepareMarker(MarkerInfo marker) => !GetIconSetting(marker.IconId).Hide || Config.IsGratis && MarkerVisibility.IsPriority(marker);
     public override bool IsRadiusHovered(Vector2 center, float radius) => Vector2.Distance(ImGui.GetMousePos(), center) <= radius && ImGui.IsWindowHovered();
     public override IDisposable? PushLargeFont() => null;
     public override IDrawFont? GetTitleFont(int choice, float size) => choice <= 0 ? null : new Font(fonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);

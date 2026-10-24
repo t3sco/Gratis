@@ -1,0 +1,26 @@
+{
+  "DrawOffset": { "X": 45, "Y": -20 },
+  "Player": { "X": -240, "Y": 120 },
+  "Markers": [
+    { "Icon": 71001, "World": { "X": 320, "Y": -140 }, "Objective": true },
+    { "Icon": 60412, "World": { "X": 0, "Y": 80 } }
+  ],
+  "Frames": [
+    { "Time": 0 },
+    { "Time": 0.1 },
+    { "Time": 0.12, "QuestLink": { "Target": { "X": 320, "Y": -140 }, "MapId": 1, "Icon": 71001 } },
+    { "Time": 0.34, "Screenshot": "framing.png" },
+    { "Time": 0.72, "Redraws": 2, "Screenshot": "pulse.png" },
+    { "Time": 0.8, "Mouse": { "X": 350, "Y": 240 } },
+    { "Time": 0.82, "Left": true },
+    { "Time": 0.88, "Mouse": { "X": 390, "Y": 260 }, "Screenshot": "fading.png" },
+    { "Time": 0.92, "Left": false, "Mouse": { "X": -1000, "Y": -1000 } },
+    { "Time": 1.2 },
+    { "Time": 1.5 },
+    { "Time": 1.8 },
+    { "Time": 2.1, "Screenshot": "restored.png" },
+    { "Time": 2.2, "QuestLink": { "Target": { "X": 320, "Y": -140 }, "MapId": 1, "Icon": 71001 } },
+    { "Time": 2.5 },
+    { "Time": 2.6, "TerritoryId": 2, "Screenshot": "zone-clean.png" }
+  ]
+}

@@ -9,14 +9,14 @@ namespace Gratis.Preview;
 
 internal static partial class Program
 {
-    private static readonly string[] Scenes = ["settings-window", "settings-appearance", "settings-classic", "settings-search", "settings-map", "settings-markers", "settings-chrome", "settings-tools", "settings-advanced", "map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-on", "glass-off", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable", "chrome-hidden", "chrome-visible", "chrome-fading", "map-recolor-midnight", "map-recolor-mono", "map-recolor-blueprint", "map-recolor-sepia", "map-recolor-original", "map-recolor-custom", "map-recolor-sheet"];
+    private static readonly string[] Scenes = ["spotlight", "spotlight-circular", "settings-window", "settings-appearance", "settings-classic", "settings-search", "settings-map", "settings-markers", "settings-chrome", "settings-tools", "settings-advanced", "map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-on", "glass-off", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable", "chrome-hidden", "chrome-visible", "chrome-fading", "map-recolor-midnight", "map-recolor-mono", "map-recolor-blueprint", "map-recolor-sepia", "map-recolor-original", "map-recolor-custom", "map-recolor-sheet"];
 
     public static int Main(string[] args)
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
             if (args is ["--selftest", var test]) return RunSelftests(test);
-            if (TryDiff(args) || TryLiveScene(args) || TryFrameScript(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
+            if (TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             var options = Options.Parse(args);
             if (options is null) return 0;
             Run(options);
@@ -31,7 +31,9 @@ internal static partial class Program
 
     private static unsafe void Run(Options options, bool chromeSelftest = false)
     {
+        if (IsLensScene(options.Scene)) { RenderLensScene(options); return; }
         if (options.Scene.StartsWith("settings-", StringComparison.Ordinal)) { RenderSettings(options); return; }
+        if (options.Scene is "spotlight" or "spotlight-circular") { RenderSpotlightSheet(options); return; }
         if (options.Scene == "player-heading") { RenderHeadingSheet(options); return; }
         if (options.Scene == "map-recolor-sheet") { RenderRecolourSheet(options); return; }
         if (options.Scene == "frame-presets") { RenderFramePresets(options); return; }
@@ -270,7 +272,7 @@ internal static partial class Program
                     default: throw new ArgumentException($"Unknown option {key}.");
                 }
             }
-            if (scene is not ("player-heading" or "player-heading-frame") && !FollowScenes.Contains(scene) && !Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
+            if (!IsLensScene(scene) && scene is not ("player-heading" or "player-heading-frame") && !FollowScenes.Contains(scene) && !Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
             if (width < 320 || height < 240 || width > 8192 || height > 8192 || (long)width * height > 16777216)
                 throw new ArgumentException("Size must be 320x240 to 8192x8192, with at most 16 megapixels.");
             if (map is not null && (!File.Exists(map) || !Path.GetExtension(map).Equals(".png", StringComparison.OrdinalIgnoreCase)))

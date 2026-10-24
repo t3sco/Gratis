@@ -102,6 +102,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
     bool Rendering.IMapWindowHost.ShouldFade => ShouldFade();
     string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName;
     void Rendering.IMapWindowHost.UpdateWindow() { UpdateTitle(); UpdateStyle(); UpdateSizePosition(); }
+    void Rendering.IMapWindowHost.SaveWindowPosition() => SystemConfig.Save();
     void Rendering.IMapWindowHost.DrawSpoilerWarning() => DrawSpoilerWarning();
     void Rendering.IMapWindowHost.DrawToolbar() => mapToolbar.Draw();
     void Rendering.IMapWindowHost.DrawCoordinates(bool hovered, Vector2 offset) => mapCoordinateBar.Draw(hovered, offset);
@@ -113,7 +114,10 @@ public class MapWindow : Window, Rendering.IMapWindowHost
 
     public override void PreDraw()
     {
+        windowFrame.PreDraw(this);
         Rendering.MapDrawContext.Current.Blur.BeginFrame(ImGui.GetFrameCount());
+        if (System.SystemConfig.LockWindow || System.SystemConfig.IsGratis || System.SystemConfig.ClassicMoveHandle)
+            Flags |= ImGuiWindowFlags.NoMove;
         pushedGripColors = 0;
         pushedChromeStyles = System.SystemConfig.IsGratis && System.SystemConfig.NeutralFrame;
         if (pushedChromeStyles) {
@@ -282,6 +286,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
 
     public override unsafe void OnClose()
     {
+        windowFrame.MoveHandle.Cancel();
         AgentMap.Instance()->Hide();
 
         SystemConfig.Save();

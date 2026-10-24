@@ -61,6 +61,10 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig
     public float BlurStrength = 3.0f;
     public bool EnableShiftDragMove = false;
     public bool LockWindow = false;
+    public bool MoveHandle = true;
+    public bool AltDragMovesWindow = true;
+    public bool MoveHandleSnap = true;
+    public bool ClassicMoveHandle = false;
     public float FadePercent = 0.60f;
     public FadeMode FadeMode = FadeMode.WhenUnFocused | FadeMode.WhenMoving;
     public Vector2 WindowPosition = new(1024.0f, 700.0f);

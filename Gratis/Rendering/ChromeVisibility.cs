@@ -11,7 +11,7 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 [Flags]
-public enum ChromeActivity { None = 0, Hover = 1, Drag = 2, Settings = 4, FocusedActiveItem = 8 }
+public enum ChromeActivity { None = 0, Hover = 1, Drag = 2, Settings = 4, FocusedActiveItem = 8, WindowMove = 16 }
 
 public sealed class ChromeVisibility
 {
@@ -48,6 +48,7 @@ public sealed class ChromeVisibility
         if (!double.IsFinite(now)) return;
         if (double.IsFinite(lastUpdate) && now < lastUpdate) clockResets++;
         if (activity.HasFlag(ChromeActivity.Settings)) settingsFrames++;
+        if (activity.HasFlag(ChromeActivity.WindowMove)) Count("window-move");
         var interacting = false;
         foreach (var (flag, name) in ActivityReasons) {
             if ((activity & flag) == 0) continue;
@@ -80,7 +81,7 @@ public sealed class ChromeVisibility
 
     public string TakeDiagnostics(MapDrawingConfig config, double now)
     {
-        foreach (var reason in new[] { "hover", "drag", "settings", "popup", "hovercard", "focused-active-item" })
+        foreach (var reason in new[] { "hover", "drag", "settings", "popup", "hovercard", "focused-active-item", "window-move" })
             reasons.TryAdd(reason, 0);
         var counts = string.Join(",", global::System.Linq.Enumerable.Select(reasons, pair => $"{pair.Key}={pair.Value}"));
         var line = global::System.FormattableString.Invariant($"Progress={Progress:0.000} idle={SecondsSinceActivity(now):0.00}s alpha(title/controls)={ParentAlpha * TitleAlpha(config):0.000}/{ParentAlpha * ControlsAlpha(config):0.000} AutoHide={config.AutoHideChrome} Pin={config.PinChrome} delay={config.ChromeIdleDelay:0.##}s fade={config.ChromeFadeDurationMs:0.##}ms [{counts}] settings-open={settingsFrames} clock-reset={clockResets}");

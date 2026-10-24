@@ -11,7 +11,7 @@ public static class MarkerRelevance
 {
     public static bool IsProtected(Classes.MarkerInfo marker)
     {
-        if (marker.IsTarget || marker.IsFlag || marker.IsTracked || marker.IsHovered || marker.IsObjective ||
+        if (marker.IsTarget || marker.IsFlag || marker.IsTracked || marker.IsHovered || marker.IsSpotlighted || marker.IsObjective ||
             marker.MarkerType is MarkerType.Fate or MarkerType.Stellar)
             return true;
         return MarkerIcon.Family(marker) is not (MarkerIconFamily.Neutral or MarkerIconFamily.Hunt or MarkerIconFamily.Landmark or MarkerIconFamily.Shop or MarkerIconFamily.Mender or

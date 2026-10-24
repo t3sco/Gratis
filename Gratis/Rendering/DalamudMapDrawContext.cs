@@ -51,6 +51,17 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     }
 
     public override MapDrawingConfig Config => System.SystemConfig;
+    public override void SaveConfig() => Data.SystemConfig.Save();
+    public override bool LensInDuty => Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
+    public override bool LensGatheringClass => Service.ObjectTable.LocalPlayer?.ClassJob.RowId is 16 or 17 or 18;
+    public override bool LensNearNode {
+        get {
+            if (Service.ObjectTable.LocalPlayer is not { } player) return false;
+            foreach (var obj in Service.ObjectTable)
+                if (obj.ObjectKind == global::Dalamud.Game.ClientState.Objects.Enums.ObjectKind.GatheringPoint && Vector3.DistanceSquared(player.Position, obj.Position) < 900) return true;
+            return false;
+        }
+    }
     public override MapColourPreset ActiveColourPreset => System.SystemConfig.MapColour?.Preset ?? MapColourPreset.Original;
     public override void ZoomCluster(Vector2 position, float scale) => System.MapRenderer.ZoomToCluster(position, scale);
     public override float GlobalScale => ImGuiHelpers.GlobalScale;
@@ -64,7 +75,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     public override bool PrepareMarker(MarkerInfo marker)
     {
         if (System.IconConfig.IconSettingMap.TryAdd(marker.IconId, new IconSetting { IconId = marker.IconId })) System.IconConfig.Save();
-        if (GetIconSetting(marker.IconId).Hide) return false;
+        if (GetIconSetting(marker.IconId).Hide && (!Config.IsGratis || !MarkerVisibility.IsPriority(marker))) return false;
         if (marker.IsDynamicMarker) {
             foreach (var module in System.Modules) {
                 if (module.ProcessMarker(marker)) break;

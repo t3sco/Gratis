@@ -36,7 +36,14 @@ public abstract class MapDrawContext
     public ChromeVisibility Chrome { get; } = new();
     public BlurDiagnostics Blur { get; } = new();
     public MarkerBatch Markers { get; } = new();
+    public MarkerVisibility Visibility { get; } = new();
+    public virtual bool LensInDuty => false;
+    public virtual bool LensGatheringClass => false;
+    public virtual bool LensNearNode => false;
+    public virtual void SaveConfig() { }
     public MapMotion Motion { get; } = new();
+    public Spotlight? Spotlight { get; set; }
+    public bool WindowMoveInputBlocked { get; set; }
     public virtual void ZoomCluster(Vector2 position, float scale) { }
     public abstract MapDrawingConfig Config { get; }
     public abstract float GlobalScale { get; }

@@ -11,6 +11,16 @@ namespace Gratis.Rendering;
 
 public static class MapWindowDrawing
 {
+    private static int boundsFrame;
+    private static Vector4 titleBounds, coordinateBounds;
+    public static Vector4 TitleBounds => boundsFrame == ImGui.GetFrameCount() ? titleBounds : Vector4.Zero;
+    public static Vector4 CoordinateBounds => boundsFrame == ImGui.GetFrameCount() ? coordinateBounds : Vector4.Zero;
+    private static void RecordBounds(Vector2 min, Vector2 max, bool title)
+    {
+        if (boundsFrame != ImGui.GetFrameCount()) { titleBounds = coordinateBounds = Vector4.Zero; boundsFrame = ImGui.GetFrameCount(); }
+        if (title) titleBounds = new(min.X, min.Y, max.X, max.Y);
+        else coordinateBounds = new(min.X, min.Y, max.X, max.Y);
+    }
     private static (int Frame, uint Window, float Top) coordinateLayout;
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1, float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other)
     {
@@ -256,6 +266,7 @@ public static class MapWindowDrawing
 
         var font = ImGui.GetFont();
         var outline = TitleColor(config.TitleOutlineColor);
+        if (config.IsGratis) RecordBounds(boxMin, boxMax, true);
         var cursorY = boxMin.Y + padding.Y;
         for (var index = 0; index < lines.Count; index++) {
             var line = lines[index];
@@ -323,6 +334,7 @@ public static class MapWindowDrawing
         var x = config.MapCircle ? (window.X - size.X) / 2 : MathF.Max(8 * scale, window.X - inset - size.X);
         var pos = ImGui.GetWindowPos() + new Vector2(x, y);
         var list = ImGui.GetWindowDrawList();
+        RecordBounds(pos, pos + size, true);
         DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Title);
         var text = pos + padding;
         if (region.Length > 0) {
@@ -366,6 +378,7 @@ public static class MapWindowDrawing
             pos.Y -= half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X * .25f));
         }
         coordinateLayout = (ImGui.GetFrameCount(), ImGui.GetID("coordinate-layout"), pos.Y);
+        RecordBounds(pos, pos + size, false);
         ImGui.SetCursorScreenPos(pos);
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();

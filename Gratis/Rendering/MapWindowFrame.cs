@@ -20,6 +20,9 @@ public interface IMapWindowHost
     string Title { get; }
     ImGuiWindowFlags Flags { get; set; }
     void UpdateWindow();
+    MoveWorkArea MoveWorkArea => MoveWorkAreaAt(ImGui.GetMousePos());
+    MoveWorkArea MoveWorkAreaAt(Vector2 point) => MoveHandleScreen.At(point);
+    void SaveWindowPosition() { }
     void DrawSpoilerWarning();
     void DrawToolbar();
     void DrawCoordinates(bool mapHovered, Vector2 offset);
@@ -33,6 +36,8 @@ public sealed class MapWindowFrame
     private bool isDragStarted;
     private Vector2 lastWindowSize;
     public bool Dragging => isDragStarted;
+    public MoveHandleInput MoveHandle { get; } = new();
+    public void PreDraw(IMapWindowHost host) => MoveHandle.PrepareWindow(host);
     private static bool IsBoundedBy(Vector2 cursor, Vector2 min, Vector2 max) =>
         cursor.X >= min.X && cursor.Y >= min.Y && cursor.X <= max.X && cursor.Y <= max.Y;
 
@@ -40,8 +45,11 @@ public sealed class MapWindowFrame
     {
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
         host.UpdateWindow();
+        MoveHandle.Update(host, isDragStarted);
+        MapDrawContext.Current.WindowMoveInputBlocked = MoveHandle.BlocksMapInput;
+        if (MoveHandle.BlocksMapInput) isDragStarted = false;
         if (host.Config.FollowPlayer && host.PlayerPosition is { } player) host.Renderer.FollowPlayer(player);
-        if (host.Config.LockCenterOnMap) {
+        if (host.Config.LockCenterOnMap && !host.Renderer.Spotlight.OwnsViewport) {
             host.Config.FollowPlayer = false;
             host.Renderer.DrawOffset = Vector2.Zero;
         }
@@ -70,10 +78,11 @@ public sealed class MapWindowFrame
 
             var mouseOverFrame = ChromeVisibility.IsMapFrameHovered();
             var activity = ChromeActivity.None;
-            if (mouseOverFrame) activity |= ChromeActivity.Hover;
+            if (MoveHandle.BlocksMapInput) activity |= ChromeActivity.WindowMove;
+            else if (mouseOverFrame) activity |= ChromeActivity.Hover;
             if (isDragStarted) activity |= ChromeActivity.Drag;
             if (host.SettingsOpen) activity |= ChromeActivity.Settings;
-            if (ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows) && ImGui.IsAnyItemActive())
+            if (!MoveHandle.BlocksMapInput && ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows) && ImGui.IsAnyItemActive())
                 activity |= ChromeActivity.FocusedActiveItem;
             MapDrawContext.Current.Chrome.Update(host.Config, host.Now, activity,
                 parentAlpha: ImGui.GetStyle().Alpha);
@@ -85,7 +94,10 @@ public sealed class MapWindowFrame
             var mapFocused = ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows);
             var mapInteracting = isDragStarted || (mouseOverFrame &&
                 (ImGui.IsAnyMouseDown() || ImGui.IsAnyItemActive() || ImGui.GetIO().MouseWheel != 0));
-            host.Renderer.UpdateFollowInteraction(mapInteracting, mouseOverFrame, mapFocused);
+            host.Renderer.UpdateFollowInteraction(!MoveHandle.BlocksMapInput && mapInteracting,
+                !MoveHandle.BlocksMapInput && mouseOverFrame, mapFocused, host.PlayerPosition);
+            using var moveInput = new MoveHandleInput.InputScope(MoveHandle.BlocksMapInput);
+            if (host.Config.IsGratis) MapDrawContext.Current.Visibility.BeginFrame(MapDrawContext.Current);
             DrawMapElements(host);
 
             ImGui.SetCursorPos(Vector2.Zero);
@@ -98,6 +110,8 @@ public sealed class MapWindowFrame
             if (!host.Config.IsGratis) DrawFrameEffects();
             MapDrawContext.Current.Trace?.Chrome("title-call");
             MapWindowDrawing.DrawTitleOnMap(host.Title);
+            LensDrawing.Draw();
+            MoveHandle.Draw(host.Config);
         }
 
         if (ImGui.IsItemHovered()) {
@@ -114,6 +128,7 @@ public sealed class MapWindowFrame
             HoveredFlags |= HoverFlags.MapTexture;
         }
 
+        LensDrawing.DrawMapHint();
         host.Renderer.DrawDynamicElements();
     }
 
@@ -159,12 +174,18 @@ public sealed class MapWindowFrame
 
     private void ProcessInputs(IMapWindowHost host)
     {
+        if (host.Config.IsGratis && LensDrawing.InputActive) { isDragStarted = false; return; }
+        if (MoveHandle.BlocksMapInput) {
+            isDragStarted = false;
+            host.Flags |= ImGuiWindowFlags.NoMove;
+            return;
+        }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
             ImGui.OpenPopup("Gratis_Context_Menu");
         }
         else {
             if (HoveredFlags.Any()) {
-                if (host.Config.EnableShiftDragMove && ImGui.GetIO().KeyShift) {
+                if (!host.Config.LockWindow && host.Config.EnableShiftDragMove && ImGui.GetIO().KeyShift) {
                     host.Flags &= ~ImGuiWindowFlags.NoMove;
                 }
                 else {

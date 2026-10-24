@@ -38,6 +38,7 @@ public class MarkerInfo
     public bool IsTracked { get; init; }
     public bool IsObjective { get; set; }
     public bool IsHovered { get; internal set; }
+    public bool IsSpotlighted { get; internal set; }
     public uint MotionRevision { get; set; }
 }
 
@@ -64,6 +65,19 @@ public static class DrawHelpers
     {
         if (markerInfo.IconId is 0) return;
 
+        var context = MapDrawContext.Current;
+        if (context.Config.IsGratis) {
+            markerInfo.IconId = markerInfo.IconId switch {
+                >= 60483 and <= 60494 when markerInfo.IsObjective || markerInfo.MarkerType is MarkerType.Fate or MarkerType.Stellar => QuestionMarkIcon,
+                60091 => 61731,
+                _ => markerInfo.IconId,
+            };
+            markerInfo.IsSpotlighted = context.Spotlight?.Matches(markerInfo) == true;
+            context.Visibility.BeginFrame(context);
+            if (!context.PrepareMarker(markerInfo) && context.Spotlight?.Matches(markerInfo) != true) return;
+            context.Visibility.Count(markerInfo);
+        }
+
         if (!MapShape.Contains(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos())) return;
 
         if (markerInfo.Position.X < 0.0f || markerInfo.Position.X > 2048.0f * markerInfo.Scale || markerInfo.Position.Y < 0.0f ||
@@ -85,14 +99,15 @@ public static class DrawHelpers
             markerInfo.PrimaryText = () => $"[Debug] IconId: {markerInfo.IconId}";
         }
 
-        var context = MapDrawContext.Current;
-        if (!context.PrepareMarker(markerInfo)) return;
+        if (!context.Config.IsGratis && !context.PrepareMarker(markerInfo)) return;
         if (context.Config.IsGratis) {
             var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
             var half = MarkerVisual.HalfSize(markerInfo);
             markerInfo.IsHovered = ImGui.IsWindowHovered() && ImGui.IsMouseHoveringRect(center - half, center + half, false);
         }
         context.Motion.Observe(markerInfo);
+
+        if (context.Config.IsGratis && context.Visibility.Visual(markerInfo).X <= .001f && !markerInfo.IsSpotlighted) return;
 
         if (context.Markers.Enqueue(markerInfo)) return;
         DrawPreparedMarker(markerInfo);
@@ -101,6 +116,9 @@ public static class DrawHelpers
     internal static void DrawPreparedMarker(MarkerInfo markerInfo)
     {
         var alpha = MarkerVisual.Alpha(markerInfo);
+        alpha *= MapDrawContext.Current.Spotlight?.MarkerAlpha(markerInfo) ?? 1;
+        if (alpha <= .001f) return;
+        SpotlightDrawing.DrawMarkerGlow(markerInfo);
         if (alpha < 1) ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * alpha);
         try { DrawPreparedContents(markerInfo); }
         finally { if (alpha < 1) ImGui.PopStyleVar(); }
@@ -117,8 +135,10 @@ public static class DrawHelpers
         }
         else if (!DrawIcon(markerInfo)) return;
         context.Trace?.DrawnMarkers.Add(markerInfo);
-        ProcessInteractions(markerInfo);
-        DrawTooltip(markerInfo);
+        if (!context.WindowMoveInputBlocked) {
+            ProcessInteractions(markerInfo);
+            DrawTooltip(markerInfo);
+        }
     }
 
     private static unsafe void DrawRadiusUnderlay(MarkerInfo markerInfo)

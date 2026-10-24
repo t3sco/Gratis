@@ -14,6 +14,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 {
     private readonly Gratis.Classes.ScreenshotCapture screenshotCapture;
     private readonly Gratis.Classes.GlassDiagnosticCommand glassDiagnosticCommand;
+    private readonly Gratis.Rendering.LensCommand lensCommand;
 
     public GratisPlugin(IDalamudPluginInterface pluginInterface)
     {
@@ -46,6 +47,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
         screenshotCapture = new Gratis.Classes.ScreenshotCapture();
         glassDiagnosticCommand = new Gratis.Classes.GlassDiagnosticCommand();
+        lensCommand = new Gratis.Rendering.LensCommand();
 
         System.FlagController = new FlagController();
         System.AreaMapController = new AddonAreaMapController();
@@ -85,6 +87,7 @@ public sealed class GratisPlugin : IDalamudPlugin
     {
         screenshotCapture.Dispose();
         glassDiagnosticCommand.Dispose();
+        lensCommand.Dispose();
         System.ZoneSwitchController?.Dispose();
         System.ZoneSwitchController = null;
         System.MapWindow.OnClose();

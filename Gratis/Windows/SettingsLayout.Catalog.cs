@@ -109,6 +109,14 @@ public sealed partial class SettingsLayout
         Add("CenterOnFlag", "Centre on flags");
         Add("CenterOnGathering", "Centre on gathering areas");
         Add("CenterOnQuest", "Centre on quests");
+        Group("Map", "Spotlight", Gratis);
+        Add("QuestSpotlight", "Spotlight quest map links");
+        Add("SpotlightDim", "Map dimming", 0, .85f, "%.2f");
+        Add("SpotlightPulse", "Pulse target icon");
+        Add("SpotlightSeconds", "Spotlight duration", 1, 30, "%.0f s");
+        Add("SpotlightIncludePlayer", "Frame player and target");
+        Add("SpotlightDistanceChip", "Distance chip");
+        Add("SpotlightGuideLine", "Dotted guide line", tip: "Straight guide only; does not calculate a route.");
         Group("Map", "Map labels and fog");
         Add("ShowTextLabels", "Text labels");
         Add("ScaleTextWithZoom", "Scale labels with zoom", when: c => c.ShowTextLabels);
@@ -116,6 +124,12 @@ public sealed partial class SettingsLayout
         Add("SmallAreaTextScale", "Small label size", .5f, 3, "%.2fx", when: c => c.ShowTextLabels);
         Add("ShowFogOfWar", "Fog of war");
 
+        Group("Markers", "Lenses", Gratis);
+        Add("ActiveLens", "Active lens");
+        Add("CustomLenses", "Custom lenses");
+        Add("LensTintsMap", "Lens map tint");
+        Add("LensAuto", "Auto lens", tip: "Opt in to Minimal in duties, Gather near nodes on a gathering class, Explore otherwise.");
+        Add("LensCycleKey", "Lens cycle key");
         Group("Markers", "Visibility and interaction");
         Add("ShowPlayers", "Other players");
         Add("ShowMiscTooltips", "Extra marker tooltips");
@@ -231,6 +245,10 @@ public sealed partial class SettingsLayout
         Group("Advanced", "Window behaviour");
         Add("KeepOpen", "Keep map open");
         Add("LockWindow", "Lock window position");
+        Add("MoveHandle", "Top-edge move handle", when: c => c.IsGratis);
+        Add("ClassicMoveHandle", "Top-edge move handle in Classic", when: c => !c.IsGratis);
+        Add("AltDragMovesWindow", "Alt-drag moves window");
+        Add("MoveHandleSnap", "Snap window while moving", tip: "Double-click the handle to snap/restore. Hold Shift to align to edges and an 8 px grid.");
         Add("EnableShiftDragMove", "Shift-drag moves window");
         Add("NoFocusOnAppear", "Avoid focus on open");
         Add("HideWithGameGui", "Hide with game UI");

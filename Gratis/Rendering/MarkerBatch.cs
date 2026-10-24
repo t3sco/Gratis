@@ -67,8 +67,9 @@ public sealed class MarkerBatch
     public bool Enqueue(MarkerInfo marker)
     {
         if (!collecting) return false;
+        if (MapDrawContext.Current.Visibility.State(MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) != MarkerVisibilityState.Normal) return false;
         if (count == entries.Length) Array.Resize(ref entries, count * 2);
-        var keep = MarkerRelevance.IsProtected(marker);
+        var keep = MarkerRelevance.IsProtected(marker) || MapDrawContext.Current.Spotlight?.Matches(marker) == true;
         entries[count] = new Entry {
             Marker = marker, Center = marker.Position + marker.Offset,
             HalfSize = keep ? MarkerVisual.HalfSize(marker) : Vector2.Zero,
@@ -192,6 +193,9 @@ public sealed class MarkerBatch
             !MapShape.Contains(center + new Vector2(half.X, -half.Y)) ||
             !MapShape.Contains(center + new Vector2(-half.X, half.Y))) return;
         Clusters++;
+        var spotlightOpacity = context.Spotlight?.MarkerAlpha(root.Marker) ?? 1;
+        using var spotlightAlpha = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
+            ImGui.GetStyle().Alpha * spotlightOpacity, spotlightOpacity < 1);
         ImGui.SetCursorScreenPos(center - half);
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();

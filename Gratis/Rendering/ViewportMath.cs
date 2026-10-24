@@ -5,6 +5,44 @@ namespace Gratis.Rendering;
 
 public static class ViewportMath
 {
+    public readonly record struct BoundsFit(float Scale, Vector2 Offset, bool ContainsBoth);
+
+    public static BoundsFit FitBounds(Vector2 a, Vector2 b, Vector2 frame, Vector2 texture,
+        bool circle, bool clamp, float maximum, Vector4 insets)
+    {
+        var minimum = clamp ? MinimumScale(frame, texture, circle) : .05f;
+        maximum = MathF.Max(minimum, maximum);
+        var half = HalfFrame(frame, circle);
+        var safeHalf = Vector2.Max(new Vector2(1), half - new Vector2(
+            MathF.Max(insets.X, insets.Z), MathF.Max(insets.Y, insets.W)));
+        var midpoint = (a + b) / 2;
+        Vector2 Center(float scale) => clamp ? ClampCenter(midpoint, frame, texture, scale, circle) : midpoint;
+        float Score(float scale) {
+            var center = Center(scale);
+            var x = Vector2.Abs(a - center) * scale / safeHalf;
+            var y = Vector2.Abs(b - center) * scale / safeHalf;
+            return circle ? MathF.Max(x.LengthSquared(), y.LengthSquared()) :
+                MathF.Max(MathF.Max(x.X, x.Y), MathF.Max(y.X, y.Y));
+        }
+        if (Score(maximum) <= 1) return new BoundsFit(maximum, new Vector2(1024) - Center(maximum), true);
+        var low = minimum; var high = maximum;
+        if (Score(low) > 1) {
+            for (var i = 0; i < 32; i++) {
+                var left = low + (high - low) / 3;
+                var right = high - (high - low) / 3;
+                if (Score(left) < Score(right)) high = right; else low = left;
+            }
+            low = (low + high) / 2;
+            if (Score(low) > 1) return new BoundsFit(minimum, new Vector2(1024) - Center(minimum), false);
+        }
+        high = maximum;
+        for (var i = 0; i < 32; i++) {
+            var mid = (low + high) / 2;
+            if (Score(mid) <= 1) low = mid; else high = mid;
+        }
+        return new BoundsFit(low, new Vector2(1024) - Center(low), true);
+    }
+
     public static Vector2 DrawPosition(Vector2 frame, Vector2 offset, float scale) =>
         frame / 2 - new Vector2(1024) * scale + offset * scale;
 

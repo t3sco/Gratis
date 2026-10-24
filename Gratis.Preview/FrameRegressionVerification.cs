@@ -131,7 +131,7 @@ internal static class FrameRegressionVerification
             var snapshot = driver.Step(new(.02));
             Require(snapshot.ToolbarBlur == "blurred" && snapshot.TitleBlur == "blurred" && snapshot.CoordinatesBlur == "blurred",
                 $"All chrome must use blur ({segmented}): {snapshot.ToolbarBlur}/{snapshot.TitleBlur}/{snapshot.CoordinatesBlur}");
-            Require(snapshot.Blurred == 4 && snapshot.Refused == 0, driver.Context.Blur.Status(config));
+            Require(snapshot.Blurred >= 4 && snapshot.Blurred == driver.Context.Blurs.Count && snapshot.Refused == 0, driver.Context.Blur.Status(config));
             Require(driver.Context.Blurs[1].List == driver.MapDrawList,
                 "Toolbar blur must use the full map-list surface, outside the child clip");
             if (segmented) Require(driver.Context.Blurs[1].Max - driver.Context.Blurs[1].Min == new Vector2(232, 36), "Blur covers the full toolbar rim");

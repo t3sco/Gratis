@@ -12,13 +12,16 @@ namespace Gratis.Preview;
 internal sealed record ScriptFrame(double Time, Vector2? Mouse = null, bool? Left = null, bool? Right = null,
     float Wheel = 0, bool? Focused = null, bool? Shift = null, bool? Control = null,
     Vector2? Player = null, float? Heading = null, bool? SettingsOpen = null,
-    Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null);
+    Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null, bool? Alt = null, ScriptQuestLink? QuestLink = null, bool Escape = false, uint? TerritoryId = null);
+
+internal sealed record ScriptQuestLink(Vector2? Target, uint MapId, bool SameMap = true, uint? Icon = null);
 
 internal sealed class FrameScript
 {
     public int Width { get; set; } = 960;
     public int Height { get; set; } = 640;
     public float Dpi { get; set; } = 1;
+    public Vector2 ScreenOrigin { get; set; }
     public Vector2? DrawOffset { get; set; }
     public Vector2? PlayerCoordinates { get; set; }
     public Vector2? CursorCoordinates { get; set; }
@@ -43,7 +46,8 @@ internal readonly record struct FrameSnapshot(double Time, int Frame, float Scal
     HoverFlags Hover, int MotionAdvances, int TexturePasses, int Widgets, int IdCollisions,
     int DuplicateChrome, int Blurred, int Refused, string ToolbarBlur, string TitleBlur,
     string CoordinatesBlur, int MarkersDrawn, int QuestsDrawn, int UnknownObjectives,
-    uint MapId, float? PendingZoom, int ClipRefusals, int CircularRefusals, int AlphaRefusals, int ConfigRefusals, int HostRefusals);
+    uint MapId, float? PendingZoom, int ClipRefusals, int CircularRefusals, int AlphaRefusals, int ConfigRefusals, int HostRefusals,
+    Vector2 WindowPosition, Vector2 WindowSize, bool MovingWindow, float HandleVisibility, Vector2 HandleCenter, bool SpotlightActive, float SpotlightOpacity, float SpotlightFitZoom, string SpotlightDecision);
 
 internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, IDisposable
 {
@@ -56,7 +60,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     private readonly DrawTexture map;
     private readonly Action<ToolbarAction> activate;
     private readonly Action layers;
-    private bool focused = true, left, right, shift, control;
+    private bool focused = true, left, right, shift, control, alt;
     private Vector2 mouse = new(-1000), player;
     private float heading;
     private int redraws = 1;
@@ -76,7 +80,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     public double Now { get; private set; }
     public int FrameId => ImGui.GetFrameCount();
     public uint MapId { get; private set; }
-    public ulong MapKey => ((ulong)script.TerritoryId << 32) | MapId;
+    public uint TerritoryId { get; private set; }
+    public ulong MapKey => ((ulong)TerritoryId << 32) | MapId;
     public Vector2? PlayerPosition => player;
     public bool SettingsOpen { get; private set; }
     public bool ShouldFade => Config.FadeMode.HasFlag(FadeMode.Always) ||
@@ -85,6 +90,11 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         Config.FadeMode.HasFlag(FadeMode.WhenMoving) && moving;
     private bool moving;
     public string Title => script.Title;
+    public MoveWorkArea MoveWorkArea => new(script.ScreenOrigin, script.ScreenOrigin + new Vector2(Width, Height));
+    public MoveWorkArea MoveWorkAreaAt(Vector2 point) => MoveWorkArea;
+    public int PositionSaves { get; private set; }
+    public int ContextMenuCalls { get; private set; }
+    public void SaveWindowPosition() => PositionSaves++;
     public ImGuiWindowFlags Flags { get; set; } = ImGuiWindowFlags.NoSavedSettings |
         ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar;
 
@@ -94,19 +104,21 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         Width = script.Width; Height = script.Height;
         if (Width < 320 || Height < 240 || Width > 8192 || Height > 8192 || (long)Width * Height > 16777216)
             throw new ArgumentException("Display must be 320x240 to 8192x8192 with at most 16 megapixels.");
-        if (script.Dpi is not (1 or 2) || !float.IsFinite(script.MapSizeFactor) || script.MapSizeFactor <= 0)
-            throw new ArgumentException("DPI must be 1 or 2 and map size factor must be positive.");
+        if (!float.IsFinite(script.Dpi) || script.Dpi < .5f || script.Dpi > 3 || !float.IsFinite(script.MapSizeFactor) || script.MapSizeFactor <= 0)
+            throw new ArgumentException("DPI must be .5 to 3 and map size factor must be positive.");
         Config = config ?? new SystemConfig {
             AcceptedSpoilerWarning = true, FadeMode = 0,
             WindowPosition = new Vector2(32), WindowSize = new Vector2(640, 480),
         };
         if (!float.IsFinite(Config.WindowSize.X) || !float.IsFinite(Config.WindowSize.Y) || Config.WindowSize.X < 64 || Config.WindowSize.Y < 64)
             throw new ArgumentException("Window size must be finite and at least 64x64.");
-        MapId = script.MapId; player = script.Player; heading = script.Heading;
+        TerritoryId = script.TerritoryId; MapId = script.MapId; player = script.Player; heading = script.Heading;
         previous = MapDrawContext.Current;
         native = ImGuiErrors.CreateContext();
         var io = ImGui.GetIO();
-        io.DisplaySize = new Vector2(Width, Height);
+        if (!float.IsFinite(script.ScreenOrigin.X) || !float.IsFinite(script.ScreenOrigin.Y) || script.ScreenOrigin.X < 0 || script.ScreenOrigin.Y < 0)
+            throw new ArgumentException("Headless ScreenOrigin must be finite and nonnegative; negative desktop bounds are covered by pure geometry tests.");
+        io.DisplaySize = script.ScreenOrigin + new Vector2(Width, Height);
         io.DisplayFramebufferScale = Vector2.One;
         io.DeltaTime = 1f / 60;
         io.NativePtr->IniFilename = null; io.NativePtr->LogFilename = null;
@@ -144,23 +156,29 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         io.DeltaTime = (float)Math.Max(.000001, started ? frame.Time - Now : frame.Time);
         Now = frame.Time; started = true;
         mouse = frame.Mouse ?? mouse; left = frame.Left ?? left; right = frame.Right ?? right;
-        shift = frame.Shift ?? shift; control = frame.Control ?? control;
+        shift = frame.Shift ?? shift; control = frame.Control ?? control; alt = frame.Alt ?? alt;
         focused = frame.Focused ?? focused; SettingsOpen = frame.SettingsOpen ?? SettingsOpen;
         moving = frame.Player is { } next && player != next;
         player = frame.Player ?? player; heading = frame.Heading ?? heading;
         redraws = frame.Redraws ?? redraws; MapId = frame.MapId ?? MapId;
+        TerritoryId = frame.TerritoryId ?? TerritoryId;
+        if (frame.QuestLink is { } quest)
+            Renderer.BeginQuestSpotlight(quest.Target, quest.MapId, quest.SameMap, quest.Icon);
         if (frame.Size is { } size) Config.WindowSize = size;
         io.AddMousePosEvent(mouse.X, mouse.Y);
         io.AddMouseButtonEvent(0, left); io.AddMouseButtonEvent(1, right);
         io.AddMouseWheelEvent(0, frame.Wheel);
+        io.AddKeyEvent(ImGuiKey.Escape, frame.Escape);
         io.AddKeyEvent(ImGuiKey.ModShift, shift); io.AddKeyEvent(ImGuiKey.ModCtrl, control);
+        io.AddKeyEvent(ImGuiKey.ModAlt, alt);
         Context.Blurs.Clear();
         ImGui.NewFrame();
         Context.Blur.BeginFrame(FrameId);
+        Window.PreDraw(this);
         ImGui.SetNextWindowPos(Config.WindowPosition);
         ImGui.SetNextWindowSize(Config.WindowSize);
         if (!focused) {
-            ImGui.SetNextWindowPos(new Vector2(Width - 200, 0));
+            ImGui.SetNextWindowPos(script.ScreenOrigin + new Vector2(Width - 200, 0));
             ImGui.SetNextWindowSize(new Vector2(190, 100));
             ImGui.SetNextWindowFocus();
             ImGui.Begin("script keyboard focus", ImGuiWindowFlags.NoSavedSettings);
@@ -177,6 +195,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         }
         if (Config.UseCustomWindowChrome) Flags |= ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground;
         else Flags &= ~(ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground);
+        if (Config.LockWindow || Config.IsGratis || Config.ClassicMoveHandle) Flags |= ImGuiWindowFlags.NoMove;
         ImGui.Begin("###GratisMapWindow", Flags);
         if (neutral) ImGui.PopStyleVar(3);
         Window.Draw(this);
@@ -199,13 +218,18 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             Context.Blur.SurfaceStatus(GlassSurface.Toolbar), Context.Blur.SurfaceStatus(GlassSurface.Title),
             Context.Blur.SurfaceStatus(GlassSurface.Coordinates), Trace.DrawnMarkers.Count, quests, unknownObjectives,
             MapId, Renderer.viewportMotion.PendingZoom, Context.Blur.Count(BlurRefusal.Clip), Context.Blur.Count(BlurRefusal.Circular),
-            Context.Blur.Count(BlurRefusal.Alpha), Context.Blur.Count(BlurRefusal.Config), Context.Blur.Count(BlurRefusal.Host));
+            Context.Blur.Count(BlurRefusal.Alpha), Context.Blur.Count(BlurRefusal.Config), Context.Blur.Count(BlurRefusal.Host),
+            Config.WindowPosition, Config.WindowSize, Window.MoveHandle.Dragging, Window.MoveHandle.Visibility, Window.MoveHandle.Geometry.Center, Renderer.Spotlight.Active, Renderer.Spotlight.Opacity, Renderer.Spotlight.FitZoom, Renderer.Spotlight.Decision);
     }
 
     public void Save(string path)
     {
         var renderer = new SoftwareRenderer(Width, Height, Textures);
-        renderer.Render(ImGui.GetDrawData(), Context.Blurs);
+        var data = ImGui.GetDrawData();
+        var previousOrigin = data.DisplayPos;
+        data.DisplayPos = script.ScreenOrigin;
+        try { renderer.Render(data, Context.Blurs); }
+        finally { data.DisplayPos = previousOrigin; }
         renderer.Save(path);
     }
 
@@ -254,7 +278,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     }
     public void DrawCoordinates(bool mapHovered, Vector2 offset) =>
         MapCoordinateDrawing.Draw(script.PlayerCoordinates ?? player, true, mapHovered ? script.CursorCoordinates ?? (ImGui.GetMousePos() - offset - Renderer.DrawPosition) / Config.MapScale : null);
-    public void DrawContextMenu(Vector2 offset) { }
+    public void DrawContextMenu(Vector2 offset) => ContextMenuCalls++;
     public void DrawSpoilerWarning() => ImGui.Text("Script requires AcceptedSpoilerWarning in its config.");
     private void Activate(ToolbarAction action)
     {

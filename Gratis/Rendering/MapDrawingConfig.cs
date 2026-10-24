@@ -15,9 +15,23 @@ public class MapDrawingConfig
     public bool ScaleWithFrame = true;
     public bool ClampToMap = true;
 
+    public bool QuestSpotlight = true;
+    public float SpotlightDim = .35f;
+    public bool SpotlightPulse = true;
+    public float SpotlightSeconds = 8;
+    public bool SpotlightIncludePlayer = true;
+    public bool SpotlightDistanceChip = true;
+    public bool SpotlightGuideLine = false;
+
     public void ResetViewport() => ScaleWithFrame = ClampToMap = true;
 
     public MarkerSettings Markers = new();
+    public string ActiveLens = "Explore";
+    public global::System.Collections.Generic.List<Lens> CustomLenses = [];
+    public bool LensTintsMap = false;
+    public bool LensAuto = false;
+    public int LensCycleKey = 0;
+    public MarkerPeekKey PeekKey = MarkerPeekKey.RightAlt;
     public void ResetMarkers() => Markers = new MarkerSettings();
 
     public bool ReduceMotion = false;

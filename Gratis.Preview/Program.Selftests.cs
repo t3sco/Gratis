@@ -9,8 +9,10 @@ internal static partial class Program
         ("diff", ImageDiff.Verify), ("live", VerifyLiveScene),
         ("heading", HeadingVerification.Run), ("marker-classification", MarkerClassificationVerification.Run),
         ("markers", MarkerDeclutterVerification.Run), ("settings", SettingsVerification.Run),
+        ("marker-visibility", MarkerVisibilityVerification.Run),
         ("config", ConfigVerification.Run), ("viewport", ViewportVerification.Run),
-        ("zone", ZoneSwitchVerification.Run),
+        ("zone", ZoneSwitchVerification.Run), ("spotlight-fit", SpotlightVerification.Fit),
+        ("frames-spotlight", SpotlightVerification.Frames),
         ("motion", MotionVerification.Run), ("follow", FollowVerification.Run),
         ("motion-timeline", ViewportMotionVerification.Run), ("map-colour", MapColourVerification.Run),
         ("chrome", () => Run(Options.Parse(["--scene", "chrome-hidden"])!, chromeSelftest: true)),
@@ -20,6 +22,7 @@ internal static partial class Program
         ("frames-pan-return", FrameRegressionVerification.PanReturn), ("frames-glass", FrameRegressionVerification.Glass),
         ("frames-markers", FrameRegressionVerification.Markers), ("frames-allocations", FrameRegressionVerification.Allocations),
         ("frames-instrumentation", FrameRegressionVerification.Instrumentation),
+        ("movehandle", MoveHandleVerification.Maths), ("frames-movehandle", MoveHandleVerification.Frames),
     ];
 
     private static int RunSelftests(string selected)

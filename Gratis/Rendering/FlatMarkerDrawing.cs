@@ -76,6 +76,8 @@ public static class FlatMarkerDrawing
         var hover = ImGui.IsItemHovered() ? HoverAnimation.Progress(Key(marker), true) : 0;
         var radius = size * .5f * (1 + .2f * hover);
         var list = ImGui.GetWindowDrawList();
+        if (context.Visibility.State(MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Loud)
+            list.AddCircle(center, radius + 2 * context.GlobalScale, ImGui.GetColorU32(config.AccentColor with { W = .25f }), 24, context.GlobalScale);
         Symbol(list, center, radius, marker);
         if (hover > 0) list.AddCircle(center, radius + 3 * context.GlobalScale,
             ImGui.GetColorU32(config.AccentColor with { W = hover }), 24, context.GlobalScale);

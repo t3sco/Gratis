@@ -24,7 +24,7 @@ public interface IMapRendererHost
     void DrawTextMarkers();
 }
 
-public sealed class MapRendererFrame(IMapRendererHost host)
+public sealed partial class MapRendererFrame(IMapRendererHost host)
 {
     public float Scale => host.Config.MapScale;
     public Vector2 DrawOffset { get; set; }
@@ -33,6 +33,7 @@ public sealed class MapRendererFrame(IMapRendererHost host)
     private void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") { host.Config.MapScale = value; viewportMotion.Written("scale", writer); }
     public void CenterOnCoordinate(Vector2 position)
     {
+        Spotlight.Cancel("cancelled: explicit centre/zone switch");
         CancelViewportMotion();
         followZoomOffset = Vector2.Zero;
         WriteOffset(host.CoordinateOffset(position));
@@ -49,6 +50,8 @@ public sealed class MapRendererFrame(IMapRendererHost host)
     public void FollowPlayer(Vector2 position)
     {
         followPlayerPosition = position;
+        followTargetOffset = host.CoordinateOffset(position);
+        if (Spotlight.OwnsViewport) return;
         if (host.Config.IsGratis && host.Config.FollowReturnToPlayer) {
             followTargetOffset = host.CoordinateOffset(followPlayerPosition);
             return;
@@ -109,8 +112,13 @@ public sealed class MapRendererFrame(IMapRendererHost host)
 
     private void CancelViewportMotion() => viewportMotion.Cancel();
 
-    public void UpdateFollowInteraction(bool interacting, bool hovered, bool focused)
+    public void UpdateFollowInteraction(bool interacting, bool hovered, bool focused, Vector2? player = null)
     {
+        if (player is { } position) {
+            followPlayerPosition = position;
+            followTargetOffset = host.CoordinateOffset(position);
+        }
+        if (Spotlight.Active && ImGui.IsKeyPressed(ImGuiKey.Escape)) Spotlight.End(host.Now, "escape: restoring viewport");
         followInteracting = interacting;
         followHovered = hovered;
         followFocused = focused;
@@ -118,6 +126,7 @@ public sealed class MapRendererFrame(IMapRendererHost host)
 
     public void InteractWithViewport(bool drag = false)
     {
+        if (Spotlight.OwnsViewport) { Spotlight.End(host.Now, "input: restoring viewport"); return; }
         host.Config.FollowPlayer = viewportMotion.Interact(host.Config, host.Now, drag);
     }
 
@@ -132,6 +141,11 @@ public sealed class MapRendererFrame(IMapRendererHost host)
 
     private void AdvanceViewportMotion()
     {
+        if (Spotlight.Request is { } request) {
+            viewportMotion.SpotlightTargetTexture = new Vector2(1024) - host.CoordinateOffset(request.Target);
+            viewportMotion.SpotlightPlayerTexture = new Vector2(1024) - host.CoordinateOffset(followPlayerPosition);
+            Spotlight.UiScale = MapDrawContext.Current.GlobalScale;
+        }
         var scale = Scale;
         var offset = DrawOffset;
         var mapKey = host.MapKey;
@@ -170,6 +184,7 @@ public sealed class MapRendererFrame(IMapRendererHost host)
 
     public void DrawBaseTexture()
     {
+        MapDrawContext.Current.Spotlight = Spotlight;
         MapDrawContext.Current.Motion.BeginMap(host.MapId, host.Now);
         FlushPendingPing();
         viewportSize = ImGui.GetContentRegionAvail();
@@ -181,7 +196,9 @@ public sealed class MapRendererFrame(IMapRendererHost host)
         var motion = MapDrawContext.Current.Motion;
         using var alpha = new MapMotion.AlphaScope(motion.ZoneProgress(host.Now));
         host.DrawFogOfWar();
+        SpotlightDrawing.DrawMapOverlay(Spotlight, ImGui.GetWindowPos() + DrawPosition, Scale);
         DrawMapMarkers();
+        SpotlightDrawing.DrawDistance(Spotlight, ImGui.GetWindowPos() + DrawPosition, Scale);
         motion.DrawPings(ImGui.GetWindowPos() + DrawPosition, Scale, host.Now);
     }
 
@@ -207,7 +224,9 @@ public sealed class MapRendererFrame(IMapRendererHost host)
         if (markers.Enabled) host.DrawFlag();
         markers.Flush();
         host.DrawPlayer();
-        host.DrawTextMarkers();
+        using (var labelsAlpha = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
+                   ImGui.GetStyle().Alpha * (1 - .6f * Spotlight.Opacity), Spotlight.Opacity > 0))
+            host.DrawTextMarkers();
         if (!markers.Enabled) host.DrawFlag();
     }
 }

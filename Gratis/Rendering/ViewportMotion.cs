@@ -9,6 +9,8 @@ public sealed class ViewportMotion
 {
     public ViewportZoom Zoom { get; } = new();
     public FollowReturn Follow { get; } = new();
+    public Spotlight Spotlight { get; } = new();
+    public Vector2 SpotlightTargetTexture, SpotlightPlayerTexture;
     public float? PendingZoom { get; private set; }
     private Vector2 followVelocity, zoomCursor;
     public Vector2 FollowZoomOffset;
@@ -81,6 +83,15 @@ public sealed class ViewportMotion
         var previousScale = scale;
         scale = Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
         if (scale != previousScale) Written("scale", "resize/bounds");
+        if (Spotlight.Advance(config, mapId, now, LastStep, size, texture,
+                SpotlightTargetTexture, SpotlightPlayerTexture, player, target, interacting, ref scale, ref offset)) {
+            PendingZoom = null;
+            offset = ClampOffset(config, size, texture, scale, offset);
+            Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
+            Written("scale", "spotlight"); Written("offset", "spotlight");
+            if (!Spotlight.OwnsViewport) { Follow.Reset(); Cancel(); FollowZoomOffset = Vector2.Zero; }
+            return;
+        }
         var motion = config.Motion ??= new MotionSettings();
         var enabled = MapMotion.IsEnabled(config);
         var returnEnabled = config.IsGratis && config.FollowReturnToPlayer;

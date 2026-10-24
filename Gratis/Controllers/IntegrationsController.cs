@@ -151,7 +151,7 @@ public unsafe class IntegrationsController : IDisposable
                     break;
             }
 
-            if (System.SystemConfig.AutoZoom)
+            if (System.SystemConfig.AutoZoom && !System.MapRenderer.Frame.Spotlight.OwnsViewport)
             {
                 MapRenderer.MapRenderer.Scale =
                     DrawHelpers.GetMapScaleFactor() * System.SystemConfig.AutoZoomScaleFactor;
@@ -175,6 +175,9 @@ public unsafe class IntegrationsController : IDisposable
             }
         }
 
+        if (targetMapId == 0) targetMapId = agent->SelectedMapId;
+        var spotlightTarget = MapRenderer.MapRenderer.QuestSpotlightTarget(agent, targetMapId);
+
         if (agent->SelectedMapId != targetMapId)
         {
             Service.Log.Debug($"[OpenMap] Opening MapId: {targetMapId}");
@@ -185,7 +188,9 @@ public unsafe class IntegrationsController : IDisposable
             Service.Log.Debug($"[OpenMap] Already in MapId: {targetMapId}, aborting.");
         }
 
-        if (System.SystemConfig.CenterOnQuest)
+        var spotlightStarted = System.MapRenderer.Frame.BeginQuestSpotlight(
+            spotlightTarget.Target, targetMapId, targetMapId == agent->CurrentMapId, spotlightTarget.Icon);
+        if (!spotlightStarted && System.SystemConfig.CenterOnQuest && agent->TempMapMarkerCount > 0)
         {
             ref var targetMarker = ref agent->TempMapMarkers[0].MapMarker;
             CenterOnMarker(targetMarker);
