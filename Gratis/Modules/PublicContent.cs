@@ -18,6 +18,7 @@ public class PublicContent : ModuleBase {
                 : null;
 
         if (container is null) return false;
+        if (System.SystemConfig.IsGratis && markerInfo.DataId is not > 0) return false;
 
         foreach (var e in container.Value.Events) {
             if (e.State != DynamicEventState.Inactive && e.MapMarker.DataId == markerInfo.DataId) {
@@ -44,9 +45,14 @@ public class PublicContent : ModuleBase {
                     default:
                         return false;
                 }
+                if (System.SystemConfig.IsGratis) {
+                    markerInfo.IsObjective = true;
+                    markerInfo.IconFamily = Rendering.MarkerIconFamily.FateSpecial;
+                }
+                return true;
             }
         }
 
-        return true;
+        return !System.SystemConfig.IsGratis;
     }
 }

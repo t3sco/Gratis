@@ -14,7 +14,8 @@
     <PackageReference Include="SkiaSharp" Version="3.119.4" />
     <None Include="assets/**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../Gratis/Assets/Fonts/**/*" Link="assets/Fonts/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Gratis/Windows/Settings*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Rendering/*.cs" Exclude="../Gratis/Rendering/DalamudMapDrawContext.cs" Link="Shared/%(Filename)%(Extension)" />
-    <Compile Include="../Gratis/Classes/DrawHelpers.cs;../Gratis/Classes/MapShape.cs;../Gratis/Classes/MarkerType.cs;../Gratis/Data/IconSetting.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../Gratis/Classes/DrawHelpers.cs;../Gratis/Classes/MapShape.cs;../Gratis/Classes/MarkerType.cs;../Gratis/Data/IconSetting.cs;../Gratis/Data/SystemConfig.cs" Link="Shared/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

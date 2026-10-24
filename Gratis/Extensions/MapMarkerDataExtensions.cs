@@ -11,6 +11,7 @@ public static class MapMarkerDataExtensions
     public static void Draw(this MapMarkerData marker, Vector2 offset, float scale)
     {
         if ((marker.Flags & 1) == 1) return;
+        var questObjective = marker.ObjectiveId != 0 && Rendering.MarkerRelevance.IsActive(marker.ObjectiveId);
 
         DrawHelpers.DrawMapMarker(new MarkerInfo
         {
@@ -24,9 +25,10 @@ public static class MapMarkerDataExtensions
             PrimaryText = () => GetMarkerPrimaryText(marker),
             IsDynamicMarker = true,
             ObjectiveId = marker.ObjectiveId,
+            IsObjective = questObjective,
             MarkerType = (MarkerType)marker.MarkerType,
             DataId = marker.DataId,
-            IsRelevant = marker.ObjectiveId == 0 || marker.MarkerType != 0 || Rendering.MarkerRelevance.IsActive(marker.ObjectiveId),
+            IsRelevant = marker.ObjectiveId == 0 || marker.MarkerType != 0 || questObjective,
         });
     }
 

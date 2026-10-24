@@ -14,10 +14,11 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
     public override MapColourPreset ActiveColourPreset => ColourPreset;
-    public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1)
+    public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false)
     {
         if (!BlurAvailable || !float.IsFinite(radius) || radius <= 0) return false;
-        Blurs.Add(new BackdropBlur((nint)list.NativePtr, list.IdxBuffer.Size, min, max, rounding, radius, Math.Clamp(opacity, 0, 1)));
+        Blur.Attempt(BlurDiagnostics.Strength(radius, Math.Clamp(opacity, 0, 1)));
+        Blurs.Add(new BackdropBlur((nint)list.NativePtr, prepend ? 0 : list.IdxBuffer.Size, min, max, rounding, radius, Math.Clamp(opacity, 0, 1)));
         return true;
     }
 
@@ -29,7 +30,8 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
         MapVignette = .65f, MapGlowPulse = 0, ConeSize = 150,
     };
-    public override float GlobalScale => 1;
+    public float DpiScale { get; set; } = 1;
+    public override float GlobalScale => DpiScale;
     public override float MapSizeFactor => 1;
 
     private readonly Dictionary<int, ImFontPtr> iconFonts = [];
@@ -47,7 +49,7 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
             var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
             if (File.Exists(iconPath)) {
                 iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
-                for (var size = 12; size <= 24; size++)
+                for (var size = 8; size <= 48; size++)
                     iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, default, iconRanges.AddrOfPinnedObject());
             }
         }
@@ -56,7 +58,7 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDispo
                 ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
                 ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
             };
-            foreach (var size in new[] { 12, 14 })
+            foreach (var size in DpiScale == 1 ? new[] { 12, 14 } : new[] { 12, 14, 24, 28 })
                 chromeFonts[(role, size)] = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", filename), size);
         }
     }

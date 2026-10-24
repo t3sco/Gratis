@@ -106,9 +106,10 @@ public class MapWindow : Window
             HoveredFlags |= HoverFlags.Window;
         }
 
-        if (System.SystemConfig.BlurBackground) {
+        if (!System.SystemConfig.IsGratis && System.SystemConfig.BlurBackground) {
             var blurMin = ImGui.GetCursorScreenPos();
-            ImGuiHelpers.PrependBlurBehind(ImGui.GetWindowDrawList(), blurMin, blurMin + ImGui.GetContentRegionAvail(), System.SystemConfig.BlurStrength, MapShape.Rounding(ImGui.GetContentRegionAvail()), Vector4.Zero, Vector4.Zero, 0.0f);
+            Rendering.MapWindowDrawing.DrawWindowBackgroundBlur(ImGui.GetWindowDrawList(), blurMin, blurMin + ImGui.GetContentRegionAvail(),
+                MapShape.Rounding(ImGui.GetContentRegionAvail()), true, System.SystemConfig.BlurStrength);
         }
 
         MapDrawOffset = ImGui.GetCursorScreenPos();
@@ -121,16 +122,27 @@ public class MapWindow : Window
                 return;
             }
 
-            var mouseOverWindow = ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
-            Rendering.MapDrawContext.Current.Chrome.Update(System.SystemConfig, ImGui.GetTime(),
-                mouseOverWindow || isDragStarted || System.ConfigWindow.IsOpen ||
-                ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsAnyItemActive());
+            var mouseOverFrame = Rendering.ChromeVisibility.IsMapFrameHovered();
+            var activity = Rendering.ChromeActivity.None;
+            if (mouseOverFrame) activity |= Rendering.ChromeActivity.Hover;
+            if (isDragStarted) activity |= Rendering.ChromeActivity.Drag;
+            if (System.ConfigWindow.IsOpen) activity |= Rendering.ChromeActivity.Settings;
+            if (ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows) && ImGui.IsAnyItemActive())
+                activity |= Rendering.ChromeActivity.FocusedActiveItem;
+            Rendering.MapDrawContext.Current.Chrome.Update(System.SystemConfig, ImGui.GetTime(), activity,
+                parentAlpha: ImGui.GetStyle().Alpha);
+            if (System.SystemConfig.IsGratis) {
+                var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                Rendering.MapWindowDrawing.DrawWindowBackgroundBlur(ImGui.GetWindowDrawList(), min, max, MapShape.Current,
+                    System.SystemConfig.BlurBackground, System.SystemConfig.BlurStrength);
+            }
             DrawMapElements();
 
             ImGui.SetCursorPos(Vector2.Zero);
+            if (System.SystemConfig.IsGratis) DrawFrameEffects();
             DrawToolbar();
             DrawCoordinateBar();
-            DrawFrameEffects();
+            if (!System.SystemConfig.IsGratis) DrawFrameEffects();
             DrawTitleOnMap();
         }
 
@@ -184,6 +196,7 @@ public class MapWindow : Window
 
     public override void PreDraw()
     {
+        Rendering.MapDrawContext.Current.Blur.BeginFrame(ImGui.GetFrameCount());
         pushedGripColors = 0;
         pushedChromeStyles = System.SystemConfig.IsGratis && System.SystemConfig.NeutralFrame;
         if (pushedChromeStyles) {
@@ -212,7 +225,8 @@ public class MapWindow : Window
 
     private bool ShouldShowToolbar()
     {
-        if (System.SystemConfig.IsGratis && (System.SystemConfig.AutoHideChrome || System.SystemConfig.PinChrome)) return true;
+        if (System.SystemConfig.IsGratis && (System.SystemConfig.AutoHideChrome || System.SystemConfig.PinChrome))
+            return Rendering.MapDrawContext.Current.Chrome.ControlsAlpha(System.SystemConfig) * ImGui.GetStyle().Alpha >= .05f;
         if (isDragStarted) return false;
         if (System.SystemConfig.ShowToolbarOnHover && HoveredFlags.Any()) return true;
         if (System.SystemConfig.AlwaysShowToolbar) return true;
@@ -451,6 +465,7 @@ public class MapWindow : Window
 
     private void RegisterCommands()
     {
+        ChromeDiagnosticCommand.Register();
         System.CommandManager.RegisterCommand(new ToggleCommandHandler
         {
             UseShowHideText = true,

@@ -2,8 +2,9 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Numerics;
-using Dalamud.Interface;
+#if !GRATIS_PREVIEW
 using KamiLib.Configuration;
+#endif
 
 namespace Gratis.Data;
 
@@ -50,8 +51,8 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig
     public CenterTarget CenterOnOpen = CenterTarget.Disabled;
     public bool ShowRadar = true;
     public bool ShowRadarInDuties = false;
-    public Vector4 RadarColor = KnownColor.Gray.Vector() with { W = 0.10f };
-    public Vector4 RadarOutlineColor = KnownColor.Gray.Vector() with { W = 0.30f };
+    public Vector4 RadarColor = ColorVector(KnownColor.Gray) with { W = 0.10f };
+    public Vector4 RadarOutlineColor = ColorVector(KnownColor.Gray) with { W = 0.30f };
     public bool HideWindowBackground = false;
     public bool BlurBackground = false;
     public float BlurStrength = 3.0f;
@@ -87,7 +88,9 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig
 
     public bool SuppressNativeMapOpenSound = true;
 
+#if !GRATIS_PREVIEW
     public static SystemConfig Load() => Service.PluginInterface.LoadConfigFile<SystemConfig>("System.config.json");
 
     public static void Save() => Service.PluginInterface.SaveConfigFile("System.config.json", System.SystemConfig);
+#endif
 }

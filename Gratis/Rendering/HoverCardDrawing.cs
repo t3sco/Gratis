@@ -10,7 +10,7 @@ namespace Gratis.Rendering;
 
 public static class HoverCardDrawing
 {
-    public static void Draw(string key, string title, string? secondary = null, MarkerCategory? category = null)
+    public static void Draw(string key, string title, string? secondary = null, MarkerCategory? category = null, Classes.MarkerInfo? marker = null)
     {
         var context = MapDrawContext.Current;
         context.Chrome.Reveal(ImGui.GetTime());
@@ -40,8 +40,17 @@ public static class HoverCardDrawing
         MapWindowDrawing.DrawSurface(list, position, position + size, GratisTheme.CardRadius * scale, fade, surfaceOpacity: 1);
         list.PushClipRect(position, position + size, true);
         var text = position + padding + new Vector2(swatch, 0);
-        if (swatch > 0 && category is { } shape)
-            FlatMarkerDrawing.Shape(list, position + padding + new Vector2(7, 7) * scale, 6 * scale, shape, FlatMarkerDrawing.Color(shape), fade);
+        if (swatch > 0 && category is { } shape) {
+            var center = position + padding + new Vector2(7, 7) * scale;
+            if (marker != null && MarkerVisual.UseFlatMarker(marker))
+                FlatMarkerDrawing.Symbol(list, center, 7 * scale, marker, fade);
+            else if (marker != null) {
+                var icon = context.GetIcon(marker.IconId);
+                list.AddImage(icon.Handle, center - new Vector2(8 * scale), center + new Vector2(8 * scale),
+                    Vector2.Zero, Vector2.One, ImGui.GetColorU32(context.GetIconSetting(marker.IconId).Color with { W = fade }));
+            }
+            else FlatMarkerDrawing.Shape(list, center, 6 * scale, shape, FlatMarkerDrawing.Color(shape), fade);
+        }
         list.AddText(font, titleSize, text, ImGui.GetColorU32(GratisTheme.Primary with { W = fade }), title, wrap);
         if (!string.IsNullOrEmpty(secondary)) {
             using var secondaryFont = context.GetChromeFont(secondarySize, ChromeFontRole.Body)?.Push();

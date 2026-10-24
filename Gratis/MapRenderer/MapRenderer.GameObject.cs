@@ -32,6 +32,9 @@ public partial class MapRenderer
 
         foreach (var obj in Service.ObjectTable.Reverse()) {
             if (!obj.IsTargetable) continue;
+            if (System.SystemConfig.IsGratis && obj.EntityId == player.EntityId) continue;
+            if (System.SystemConfig.IsGratis && obj.ObjectKind == ObjectKind.BattleNpc &&
+                obj.SubKind != (int)BattleNpcSubKind.Pet) continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInParty(obj.EntityId)) continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInAlliance(obj.EntityId)) continue;
             if (Vector3.Distance(obj.Position, player.Position) >= 150.0f) continue;
@@ -43,6 +46,13 @@ public partial class MapRenderer
                             DrawHelpers.GetMapCenterOffsetVector()) * Scale,
                 Offset = DrawPosition,
                 Scale = Scale,
+                IconFamily = obj.ObjectKind switch {
+                    ObjectKind.Pc => Rendering.MarkerIconFamily.Player,
+                    ObjectKind.BattleNpc when obj.SubKind == (int)BattleNpcSubKind.Pet => Rendering.MarkerIconFamily.Pet,
+                    ObjectKind.BattleNpc or ObjectKind.EventNpc => Rendering.MarkerIconFamily.Neutral,
+                    ObjectKind.Treasure => Rendering.MarkerIconFamily.Treasure,
+                    _ => Rendering.MarkerIconFamily.Auto,
+                },
                 IsTarget = player.TargetObject?.EntityId == obj.EntityId,
                 IsRelevant = player.TargetObject?.EntityId == obj.EntityId || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
                 IconId = obj.ObjectKind switch
@@ -59,7 +69,9 @@ public partial class MapRenderer
                     ObjectKind.EventObj when IsAetherCurrent(obj) => 60653,
                     _ => 0
                 },
-                PrimaryText = () => GetTooltipForGameObject(obj),
+                PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString() : GetTooltipForGameObject(obj),
+                SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
+                    ? $"{character.ClassJob.Value.Abbreviation.ExtractText()} · Lv. {character.Level}" : null,
             });
         }
     }

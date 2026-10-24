@@ -64,7 +64,6 @@ public class MapDrawingConfig
     public FramePreset FramePreset = FramePreset.Hairline;
     public void ResetFramePreset() => FramePreset = global::Gratis.Rendering.FramePreset.Hairline;
     public float FlatCornerRadius = 10;
-    public float FlatVignette = .08f;
     public bool CompactTitle = true;
     public bool StyledCoordinates = true;
     public int FrameFont = 0;
@@ -82,11 +81,11 @@ public class MapDrawingConfig
     public float RingIntensity = .55f;
     public bool RingRotate = true;
     public float RingRotationSpeed = 6;
-    public bool GlassEnabled = false;
+    public bool GlassEnabled = true;
     public bool GlassBlur = true;
     public float GlassBlurRadius = 12;
-    public float GlassTintOpacity = .02f;
-    public float GlassHighlight = .34f;
+    public float GlassTintOpacity = .04f;
+    public float GlassHighlight = .50f;
     public bool GlassGrain = false;
     public float GlassGrainIntensity = .018f;
 
@@ -171,7 +170,7 @@ public class MapDrawingConfig
     [JsonIgnore]
     public bool DebugMode = false;
 
-    private static Vector4 ColorVector(KnownColor color)
+    protected static Vector4 ColorVector(KnownColor color)
     {
         var value = Color.FromKnownColor(color);
         return new Vector4(value.R, value.G, value.B, value.A) / 255.0f;

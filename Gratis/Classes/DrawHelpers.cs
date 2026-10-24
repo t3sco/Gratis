@@ -22,6 +22,7 @@ public class MarkerInfo
     public uint? DataId { get; set; }
     public MarkerType MarkerType { get; set; }
     public MarkerCategory Category { get; set; }
+    public MarkerIconFamily IconFamily { get; set; }
     public uint IconId { get; set; }
     public Func<string?>? PrimaryText { get; set; }
     public Func<string?>? SecondaryText { get; set; }
@@ -34,6 +35,9 @@ public class MarkerInfo
     public bool IsRelevant { get; set; } = true;
     public bool IsTarget { get; init; }
     public bool IsFlag { get; init; }
+    public bool IsTracked { get; init; }
+    public bool IsObjective { get; set; }
+    public bool IsHovered { get; internal set; }
     public uint MotionRevision { get; set; }
 }
 
@@ -68,7 +72,8 @@ public static class DrawHelpers
 
         markerInfo.IconId = markerInfo.IconId switch
         {
-            >= 60483 and <= 60494 => QuestionMarkIcon,
+            >= 60483 and <= 60494 when !MapDrawContext.Current.Config.IsGratis || markerInfo.IsObjective ||
+                markerInfo.MarkerType is MarkerType.Fate or MarkerType.Stellar => QuestionMarkIcon,
 
             60091 => 61731,
 
@@ -82,6 +87,11 @@ public static class DrawHelpers
 
         var context = MapDrawContext.Current;
         if (!context.PrepareMarker(markerInfo)) return;
+        if (context.Config.IsGratis) {
+            var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
+            var half = MarkerVisual.HalfSize(markerInfo);
+            markerInfo.IsHovered = ImGui.IsWindowHovered() && ImGui.IsMouseHoveringRect(center - half, center + half, false);
+        }
         context.Motion.Observe(markerInfo);
 
         if (context.Markers.Enqueue(markerInfo)) return;
@@ -100,7 +110,7 @@ public static class DrawHelpers
     {
         var context = MapDrawContext.Current;
 
-        if (context.Config.IsGratis && context.Config.MarkerStyle == 1) {
+        if (MarkerVisual.UseFlatMarker(markerInfo)) {
             if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(markerInfo)) return;
             DrawRadiusUnderlay(markerInfo);
             if (!FlatMarkerDrawing.Draw(markerInfo)) return;
@@ -242,10 +252,12 @@ public static class DrawHelpers
             if (markerInfo.PrimaryText?.Invoke() is { Length: > 0 } primaryText) {
                 if (MapDrawContext.Current.Config.IsGratis && MapDrawContext.Current.Config.HoverCardStyle == 0) {
                     var category = FlatMarkerDrawing.Category(markerInfo);
+                    var label = FlatMarkerDrawing.Label(markerInfo);
                     var secondary = markerInfo.SecondaryText?.Invoke();
                     HoverCardDrawing.Draw(FlatMarkerDrawing.Key(markerInfo), primaryText,
-                        string.IsNullOrWhiteSpace(secondary) ? FlatMarkerDrawing.Label(category) : $"{FlatMarkerDrawing.Label(category)}\n{secondary}",
-                        category);
+                        PlayerDrawing.IsPlayerMarker(markerInfo) ? secondary :
+                            string.IsNullOrWhiteSpace(secondary) ? label : $"{label}\n{secondary}",
+                        category, markerInfo);
                     return;
                 }
 #if GRATIS_PREVIEW

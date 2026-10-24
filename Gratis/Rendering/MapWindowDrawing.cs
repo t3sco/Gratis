@@ -12,24 +12,24 @@ namespace Gratis.Rendering;
 public static class MapWindowDrawing
 {
     private static (int Frame, uint Window, float Top) coordinateLayout;
-    public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1, float? surfaceOpacity = null)
+    public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1, float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other)
     {
-        var config = MapDrawContext.Current.Config;
+        var context = MapDrawContext.Current;
+        var config = context.Config;
+        context.Blur.BeginFrame(ImGui.GetFrameCount());
         var glass = config.IsGratis && config.GlassEnabled;
         var effectiveAlpha = alpha * ImGui.GetStyle().Alpha;
-        if (effectiveAlpha < 1 / 255f) return;
-        var size = max - min;
-        var circular = MathF.Abs(size.X - size.Y) < .01f && radius >= MathF.Min(size.X, size.Y) / 2;
-        var clipMin = list.GetClipRectMin();
-        var clipMax = list.GetClipRectMax();
-        var canBlur = glass && config.GlassBlur && effectiveAlpha > 0 && !circular &&
-            size.X > 0 && size.Y > 0 && min.X >= clipMin.X && min.Y >= clipMin.Y && max.X <= clipMax.X && max.Y <= clipMax.Y;
-        var blurred = canBlur && MapDrawContext.Current.TryBlurBehind(list, min, max, radius,
-            Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48) * MapDrawContext.Current.GlobalScale, effectiveAlpha);
+        if (!float.IsFinite(effectiveAlpha) || effectiveAlpha < 1 / 255f) {
+            context.Blur.Refuse(BlurRefusal.Alpha, surface);
+            return;
+        }
+        var blurred = TrySurfaceBlur(list, min, max, radius,
+            Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48) * context.GlobalScale,
+            effectiveAlpha, glass && config.GlassBlur, surface: surface);
         var opacity = surfaceOpacity ?? GratisTheme.Surface.W;
         if (glass) {
-            var minimum = FrameMaterialDrawing.GlassBackingOpacity(config);
-            opacity = blurred ? minimum : MathF.Max(surfaceOpacity ?? .96f, MathF.Max(.96f, minimum));
+            var minimum = surfaceOpacity >= 1 ? FrameMaterialDrawing.GlassBackingOpacity(config) : FrameMaterialDrawing.GlassChromeOpacity(config);
+            opacity = blurred ? minimum : MathF.Max(.84f, minimum);
         }
         list.AddRectFilled(min, max, ImGui.GetColorU32(GratisTheme.Surface with { W = opacity * alpha }), radius);
         if (glass) {
@@ -39,6 +39,32 @@ public static class MapWindowDrawing
         var stroke = MapDrawContext.Current.GlobalScale;
         list.AddRect(min + new Vector2(.5f * stroke), max - new Vector2(.5f * stroke), ImGui.GetColorU32(GratisTheme.Border with { W = GratisTheme.Border.W * alpha }), radius, ImDrawFlags.None, stroke);
     }
+
+    public static bool DrawWindowBackgroundBlur(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, bool enabled, float strength) =>
+        TrySurfaceBlur(list, min, max, rounding, Math.Clamp(float.IsFinite(strength) ? strength : 3, .05f, 8) * 4,
+            ImGui.GetStyle().Alpha, enabled, prepend: true, surface: GlassSurface.Window);
+
+    private static bool TrySurfaceBlur(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float alpha, bool enabled, bool prepend = false, GlassSurface surface = GlassSurface.Other)
+    {
+        var context = MapDrawContext.Current;
+        var diagnostics = context.Blur;
+        diagnostics.BeginFrame(ImGui.GetFrameCount());
+        if (!enabled || radius <= 0) return diagnostics.Refuse(BlurRefusal.Config, surface);
+        if (!float.IsFinite(alpha) || alpha < 1 / 255f) return diagnostics.Refuse(BlurRefusal.Alpha, surface);
+        var clippedMin = Vector2.Max(min, list.GetClipRectMin());
+        var clippedMax = Vector2.Min(max, list.GetClipRectMax());
+        if (clippedMin.X >= clippedMax.X || clippedMin.Y >= clippedMax.Y) return diagnostics.Refuse(BlurRefusal.Clip, surface);
+        var size = max - min;
+        if (MathF.Abs(size.X - size.Y) < .01f && rounding >= MathF.Min(size.X, size.Y) / 2 &&
+            (clippedMin != min || clippedMax != max)) return diagnostics.Refuse(BlurRefusal.Circular, surface);
+        rounding = Math.Clamp(rounding, 0, MathF.Min(clippedMax.X - clippedMin.X, clippedMax.Y - clippedMin.Y) / 2);
+        if (!context.TryBlurBehind(list, clippedMin, clippedMax, rounding, radius, alpha, prepend)) return diagnostics.Refuse(BlurRefusal.Host, surface);
+        diagnostics.Recorded(surface);
+        return true;
+    }
+
+    private static Vector4 ChromeSecondary => MapDrawContext.Current.Config.GlassEnabled
+        ? new Vector4(.78f, .78f, .78f, 1) : GratisTheme.Secondary;
 
     public static Vector2 ToolbarOffset(int count)
     {
@@ -158,6 +184,7 @@ public static class MapWindowDrawing
         if (!config.ShowTitleOnMap || (!config.IsGratis && !config.HideWindowFrame)) return;
 
         using var chromeAlpha = new ChromeVisibility.AlphaScope(config.IsGratis, MapDrawContext.Current.Chrome.TitleAlpha(config));
+        if (!chromeAlpha.Visible) return;
         uint TitleColor(Vector4 color) => config.IsGratis ? ImGui.GetColorU32(color) : ImGui.ColorConvertFloat4ToU32(color);
         var idIndex = title.IndexOf("###");
         if (idIndex >= 0) title = title[..idIndex];
@@ -294,11 +321,11 @@ public static class MapWindowDrawing
         var x = config.MapCircle ? (window.X - size.X) / 2 : MathF.Max(8 * scale, window.X - inset - size.X);
         var pos = ImGui.GetWindowPos() + new Vector2(x, y);
         var list = ImGui.GetWindowDrawList();
-        DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
+        DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Title);
         var text = pos + padding;
         if (region.Length > 0) {
             using var secondaryFont = context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push();
-            list.AddText(ImGui.GetFont(), 12 * scale, text, ImGui.GetColorU32(GratisTheme.Secondary), region, wrap);
+            list.AddText(ImGui.GetFont(), 12 * scale, text, ImGui.GetColorU32(ChromeSecondary), region, wrap);
             text.Y += secondary.Y + 4 * scale;
         }
         list.AddText(font, 14 * scale, text, ImGui.GetColorU32(GratisTheme.Primary), name, wrap);
@@ -312,6 +339,7 @@ public static class MapWindowDrawing
         var area = areaMax - areaMin;
         if (context.Config.IsGratis && (area.X < 360 * context.GlobalScale || area.Y < 300 * context.GlobalScale)) return;
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
+        if (!chromeAlpha.Visible) return;
         var scale = MapDrawContext.Current.GlobalScale;
         using var coordinateFont = MapDrawContext.Current.GetChromeFont(14 * scale, ChromeFontRole.Coordinates)?.Push();
         var font = ImGui.GetFont();
@@ -339,7 +367,7 @@ public static class MapWindowDrawing
         ImGui.SetCursorScreenPos(pos);
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();
-        DrawSurface(list, pos, pos + size, GratisTheme.ButtonRadius * scale);
+        DrawSurface(list, pos, pos + size, GratisTheme.ButtonRadius * scale, surface: GlassSurface.Coordinates);
         var start = pos + new Vector2(12, 8) * scale;
         for (var index = 0; index < text.Length; index++) {
             var glyph = text[index].ToString();
@@ -347,7 +375,7 @@ public static class MapWindowDrawing
             var glyphSize = numeric ? fontSize : 12 * scale;
             var width = DrawBinding.MeasureText(glyphSize, glyph).X;
             var advance = Advance(text[index]);
-            list.AddText(font, glyphSize, start + new Vector2((advance - width) / 2, (fontSize - glyphSize) / 2), ImGui.GetColorU32(numeric ? GratisTheme.Primary : GratisTheme.Secondary), glyph);
+            list.AddText(font, glyphSize, start + new Vector2((advance - width) / 2, (fontSize - glyphSize) / 2), ImGui.GetColorU32(numeric ? GratisTheme.Primary : ChromeSecondary), glyph);
             start.X += advance;
         }
     }

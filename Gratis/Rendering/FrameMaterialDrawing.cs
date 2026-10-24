@@ -106,10 +106,17 @@ internal static class FrameMaterialDrawing
     }
 
     internal static float GlassTint(MapDrawingConfig config) =>
-        Math.Clamp(float.IsFinite(config.GlassTintOpacity) ? config.GlassTintOpacity : .02f, 0, .08f);
+        Math.Clamp(float.IsFinite(config.GlassTintOpacity) ? config.GlassTintOpacity : .04f, 0, .08f);
 
     internal static float GlassGrain(MapDrawingConfig config) => config.GlassGrain
         ? Math.Clamp(float.IsFinite(config.GlassGrainIntensity) ? config.GlassGrainIntensity : .018f, 0, .04f) : 0;
+
+    internal static float GlassChromeOpacity(MapDrawingConfig config)
+    {
+        var film = 1 - (1 - GlassTint(config)) * (1 - GlassGrain(config));
+        var limit = (76 / 255f - film) / (1 - film);
+        return Math.Clamp((1 - limit) / (1 - GratisTheme.Surface.Z), .78f, 1);
+    }
 
     internal static float GlassBackingOpacity(MapDrawingConfig config)
     {

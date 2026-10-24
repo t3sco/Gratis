@@ -33,6 +33,7 @@ public abstract class MapDrawContext
         new DalamudMapDrawContext();
 #endif
     public ChromeVisibility Chrome { get; } = new();
+    public BlurDiagnostics Blur { get; } = new();
     public MarkerBatch Markers { get; } = new();
     public MapMotion Motion { get; } = new();
     public virtual void ZoomCluster(Vector2 position, float scale) { }
@@ -50,5 +51,5 @@ public abstract class MapDrawContext
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }
     public virtual MapColourPreset ActiveColourPreset => MapColourPreset.Original;
-    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1) => false;
+    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false) => false;
 }

@@ -13,6 +13,7 @@ namespace Gratis;
 public sealed class GratisPlugin : IDalamudPlugin
 {
     private readonly Gratis.Classes.ScreenshotCapture screenshotCapture;
+    private readonly Gratis.Classes.GlassDiagnosticCommand glassDiagnosticCommand;
 
     public GratisPlugin(IDalamudPluginInterface pluginInterface)
     {
@@ -44,6 +45,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.WindowManager.AddWindow(System.MapWindow, WindowFlags.RequireLoggedIn);
 
         screenshotCapture = new Gratis.Classes.ScreenshotCapture();
+        glassDiagnosticCommand = new Gratis.Classes.GlassDiagnosticCommand();
 
         System.FlagController = new FlagController();
         System.AreaMapController = new AddonAreaMapController();
@@ -81,6 +83,7 @@ public sealed class GratisPlugin : IDalamudPlugin
     public void Dispose()
     {
         screenshotCapture.Dispose();
+        glassDiagnosticCommand.Dispose();
         System.MapWindow.OnClose();
         System.WindowManager.Dispose();
         System.IntegrationsController.Dispose();

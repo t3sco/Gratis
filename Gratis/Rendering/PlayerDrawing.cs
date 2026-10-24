@@ -11,6 +11,23 @@ namespace Gratis.Rendering;
 
 public static class PlayerDrawing
 {
+    public static bool IsPlayerMarker(MarkerInfo marker) => MarkerIcon.Family(marker) is
+        MarkerIconFamily.Party or MarkerIconFamily.Alliance or MarkerIconFamily.Player;
+
+    public static void DrawDot(ImDrawListPtr list, Vector2 center, float radius, MarkerIconFamily family, Vector4 tint, float alpha = 1)
+    {
+        var context = MapDrawContext.Current;
+        var scale = context.GlobalScale;
+        var party = family == MarkerIconFamily.Party;
+        var color = (party ? context.Config.AccentColor : family == MarkerIconFamily.Alliance
+            ? context.Config.PartyMarkerColor : Vector4.One) * tint;
+        radius *= family == MarkerIconFamily.Player ? .35f : .5f;
+        list.AddCircleFilled(center, radius, ImGui.GetColorU32(color with { W = color.W * alpha }), 24);
+        var outline = party ? Vector4.One : GratisTheme.Outline;
+        list.AddCircle(center, radius + .75f * scale,
+            ImGui.GetColorU32(outline with { W = outline.W * tint.W * alpha }), 24, 1.5f * scale);
+    }
+
     public static void DrawLookLine(Vector2 position, float scale, float angle)
     {
         var config = MapDrawContext.Current.Config;
@@ -75,6 +92,7 @@ public static class PlayerDrawing
         scale *= MapDrawContext.Current.Config.PlayerIconScale;
 
         if (MapDrawContext.Current.Config is { IsGratis: true, FlatPlayer: true } config) {
+            if (!float.IsFinite(scale) || scale <= 0) return;
             scale *= MapDrawContext.Current.GlobalScale;
             if (!MapShape.ContainsSymbol(position, new Vector2(13 * scale))) return;
             var forward = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
@@ -88,7 +106,7 @@ public static class PlayerDrawing
             list.AddTriangleFilled(tip, left, notch, color);
             list.AddTriangleFilled(tip, notch, right, color);
             var outline = ImGui.GetColorU32(Vector4.One);
-            var stroke = 1.5f * MapDrawContext.Current.GlobalScale;
+            var stroke = 1.5f * MapDrawContext.Current.GlobalScale * MathF.Min(1, MathF.Max(0, config.PlayerIconScale));
             list.AddLine(tip, left, outline, stroke); list.AddLine(left, notch, outline, stroke);
             list.AddLine(notch, right, outline, stroke); list.AddLine(right, tip, outline, stroke);
             if (config.PlayerInnerHighlight) list.AddLine(tip - forward * 3 * scale, notch + forward * 2 * scale, ImGui.GetColorU32(new Vector4(1, 1, 1, .7f)), scale);

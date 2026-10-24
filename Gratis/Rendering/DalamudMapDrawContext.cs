@@ -15,24 +15,40 @@ namespace Gratis.Rendering;
 
 internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 {
-    private bool blurUnavailable;
+    private bool loggedBlurSuccess;
+    private bool loggedBlurFailure;
 
-    public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1)
+    public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false)
     {
-        if (blurUnavailable || !float.IsFinite(radius) || radius <= 0 || opacity <= 0) return false;
+        var frame = ImGui.GetFrameCount();
+        if (!Blur.CanAttempt(frame) || !float.IsFinite(radius) || radius <= 0 || !float.IsFinite(opacity) || opacity < 1 / 255f) return false;
+        var strength = BlurDiagnostics.Strength(radius, Math.Clamp(opacity, 0, 1));
+        Blur.Attempt(strength);
         try {
-            AddHostBlur(list, min, max, rounding, Math.Clamp(radius * opacity / 8, .0001f, 8));
+            AddHostBlur(list, min, max, rounding, strength, prepend);
+            Blur.Succeeded();
+            if (!loggedBlurSuccess) {
+                loggedBlurSuccess = true;
+                Service.Log.Information($"[Gratis] First blur callback recorded (strength {strength:0.##}); /gratis glass reports recording status, not GPU completion.");
+            }
             return true;
         }
-        catch (Exception) {
-            blurUnavailable = true;
+        catch (Exception error) {
+            Blur.Failed(error, frame);
+            if (!loggedBlurFailure) {
+                loggedBlurFailure = true;
+                Service.Log.Information($"[Gratis] First blur recording failure; using tinted glass and retrying after 120 frames: {Blur.LastException}");
+            }
             return false;
         }
     }
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    private static void AddHostBlur(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float strength) =>
-        ImGuiHelpers.AddBlurBehind(list, min, max, strength, rounding, Vector4.Zero, Vector4.Zero, 0);
+    private static void AddHostBlur(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float strength, bool prepend)
+    {
+        if (prepend) ImGuiHelpers.PrependBlurBehind(list, min, max, strength, rounding, Vector4.Zero, Vector4.Zero, 0);
+        else ImGuiHelpers.AddBlurBehind(list, min, max, strength, rounding, Vector4.Zero, Vector4.Zero, 0);
+    }
 
     public override MapDrawingConfig Config => System.SystemConfig;
     public override MapColourPreset ActiveColourPreset => System.SystemConfig.MapColour?.Preset ?? MapColourPreset.Original;
@@ -105,7 +121,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 
     public override IDrawFont? GetIconFont(float size)
     {
-        if (!Config.IsGratis || iconFontFailed) return null;
+        if (iconFontFailed) return null;
         var pixels = Math.Clamp((int)MathF.Round(size), 8, 96);
         if (!iconFonts.TryGetValue(pixels, out var handle)) {
             handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {

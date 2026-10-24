@@ -14,7 +14,6 @@ public static class TempMapMarkerExtensions
             Offset = offset,
             Scale = scale,
             IconId = marker.MapMarker.IconId,
-            Category = Rendering.MarkerCategory.Objective,
             IsDynamicMarker = true,
             Radius = marker.MapMarker.Scale,
             PrimaryText = () => marker.TooltipText.ToString(),

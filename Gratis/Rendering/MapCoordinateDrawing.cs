@@ -18,6 +18,7 @@ public static class MapCoordinateDrawing
             return;
         }
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
+        if (!chromeAlpha.Visible) return;
         var size = new Vector2(DrawBinding.ContentRegionMax().X, 20 * context.GlobalScale);
         ImGui.SetCursorPos(DrawBinding.ContentRegionMax() - size);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero with { W = context.Config.CoordinateBarFade });

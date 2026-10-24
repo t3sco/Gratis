@@ -13,6 +13,8 @@ dotnet run --project Gratis.Preview -c Release -- --scene map-feather
 dotnet run --project Gratis.Preview -c Release -- --scene map-feather-circular
 dotnet run --project Gratis.Preview -c Release -- --scene map-edge-legacy
 dotnet run --project Gratis.Preview -c Release -- --scene map-edge-legacy-circular
+dotnet run --project Gratis.Preview -c Release -- --scene glass-on --verify
+dotnet run --project Gratis.Preview -c Release -- --scene glass-off
 dotnet run --project Gratis.Preview -c Release -- --scene glass-toolbar
 dotnet run --project Gratis.Preview -c Release -- --scene glass-card --verify
 dotnet run --project Gratis.Preview -c Release -- --scene glass-tinted
@@ -36,14 +38,15 @@ The legacy rect / circle outputs match 66e6227 byte-for-byte (SHA256 respectivel
 Glass scenes enable the tint, grain and host blur capability. `glass-card` hovers a
 marker and exercises all four chrome surfaces; `glass-toolbar` hovers Settings.
 `glass-tinted` disables blur; `glass-unavailable` simulates an unavailable host API.
-Their PNGs must match. `glass-circle` adds an actual circular surface: it stays tinted
-while the three ordinary rounded-rect surfaces still blur. Rounded-rect cards on a
-circular map are supported; the entire map is never blurred by the glass option.
+Their PNGs must match. `glass-on` and `glass-off` share an identical fixture.
+`glass-circle` adds a fully visible circle, supported by a rounded-square host mask.
+Partially clipped circles use tint; chrome glass never blurs the whole map.
+See [glass diagnostics and defaults](../docs/GLASS.md).
 
 Harness blur is a **CPU box-blur approximation** of the already-drawn backdrop at
 the surface's index position, using an immutable padded snapshot and a rounded mask.
 No callbacks or sentinel textures are emitted. Dalamud owns the live blur kernel;
-the radius UI is nominal (12px maps to host strength 1.5 at 1×), not pixel parity.
+the radius UI is nominal (12px maps to host strength 3 at 1×), not pixel parity.
 `--verify` runs 36 independent analytic mask/UV cases, including partial images and
 16-bit vertex rollover. It also checks blur confinement, mean change <2%, reduced
 high-frequency energy, material reset and settled secondary-text contrast >=4.5:1
@@ -114,3 +117,23 @@ API has no separate opacity argument. Classic ignores these settings entirely.
 
 `--verify` also checks chrome timing/easing, minima, reveal/pin/reset/Classic,
 Lucide glyph bounds at 12/16/24px, hidden blur suppression, and a first-hover click.
+
+
+Settings UI uses the same linked `SystemConfig`, `SettingsLayout`, catalog and ImGui
+rows in both hosts. Render `_preview/settings-window.png` with:
+
+```powershell
+dotnet run --project Gratis.Preview -c Release -- --scene settings-window --verify
+dotnet run --project Gratis.Preview -c Release -- --selftest config
+dotnet run --project Gratis.Preview -c Release -- --selftest settings
+```
+
+Other settings fixtures: `settings-classic`, `settings-search`, `settings-map`,
+`settings-markers`, `settings-chrome`, `settings-tools`, `settings-advanced`.
+The config selftest reads the old MappyGlass saved System.config.json when present;
+it never writes to that directory. It checks retained fields, ignored removed fields,
+new defaults and round-trip compatibility using the plugin's serializer options.
+Settings checks cover search, 37 Classic-only controls and scoped resets. Game-owned
+marker controls are labelled placeholders; game tool buttons are disabled in preview.
+Their shared placement renders, while the exact game adapters need an in-game check.
+See [the settings audit](../docs/SETTINGS_AUDIT.md) for every field and its reader.

@@ -14,6 +14,7 @@ public static class MapToolbarDrawing
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu) {
         var context = MapDrawContext.Current;
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
+        if (!chromeAlpha.Interactive) return;
         if (context.Config.IsGratis && context.Config.SegmentedToolbar) {
             DrawSegmented(activate, drawLayersContextMenu);
             return;
@@ -21,10 +22,15 @@ public static class MapToolbarDrawing
         var borderPadding = 2.5f;
         var toolbarSize = new Vector2(DrawBinding.ContentRegionMax().X, 33.0f * context.GlobalScale);
 
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero with { W = context.Config.ToolbarFade });
+        var surfaceList = ImGui.GetWindowDrawList();
+        var surfaceOrigin = ImGui.GetCursorScreenPos();
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, context.Config.IsGratis ? Vector4.Zero : Vector4.Zero with { W = context.Config.ToolbarFade });
         var visible = ImGui.BeginChild("toolbar_child", toolbarSize);
         try {
             if (!visible) return;
+
+            if (context.Config.IsGratis) MapWindowDrawing.DrawSurface(surfaceList, surfaceOrigin, surfaceOrigin + toolbarSize,
+                GratisTheme.CardRadius * context.GlobalScale, surface: GlassSurface.Toolbar);
 
             var cornerInset = MapShape.Current * 0.29f;
             ImGui.SetCursorPos(new Vector2(borderPadding, borderPadding) * context.GlobalScale + new Vector2(cornerInset));
@@ -113,13 +119,16 @@ public static class MapToolbarDrawing
         var width = (count * 28 + 8) * scale;
         var offset = MapWindowDrawing.ToolbarOffset(count);
         ImGui.SetCursorPos(offset);
+        var surfaceList = ImGui.GetWindowDrawList();
+        var surfaceOrigin = ImGui.GetCursorScreenPos();
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
         var visible = ImGui.BeginChild("toolbar_child", new Vector2(width, 36 * scale));
         try {
             if (!visible) return;
             var origin = ImGui.GetWindowPos();
             var list = ImGui.GetWindowDrawList();
-            MapWindowDrawing.DrawSurface(list, origin, origin + new Vector2(width, 36 * scale), 18 * scale);
+            MapWindowDrawing.DrawSurface(surfaceList, surfaceOrigin, surfaceOrigin + new Vector2(width, 36 * scale), 18 * scale,
+                surface: GlassSurface.Toolbar);
             for (var index = 0; index < count; index++) {
                 var (action, tooltip) = Buttons[compact ? index == 0 ? 2 : index + 5 : index];
                 var min = origin + new Vector2(4 + index * 28, 4) * scale;

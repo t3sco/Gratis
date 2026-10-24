@@ -14,19 +14,17 @@ public static class FlatMarkerDrawing
 {
     public static MarkerCategory Category(MarkerInfo marker)
     {
-        if (marker.Category != MarkerCategory.Auto) return marker.Category;
-        if (marker.MarkerType is MarkerType.Fate or MarkerType.Stellar) return MarkerCategory.Objective;
-        return marker.IconId switch {
-            60430 or 60453 or 60454 => MarkerCategory.Transport,
-            60403 or 60421 or 60444 or 60961 => MarkerCategory.Party,
-            60401 or 60402 or 60422 or 60424 or 60071 => MarkerCategory.Objective,
-            >= 60501 and <= 60520 => MarkerCategory.Objective,
-            >= 71000 and < 76000 => MarkerCategory.Objective,
-            >= 60004 and <= 60039 or 60091 or 61731 => MarkerCategory.Service,
-            _ when DrawHelpers.IsRegionIcon(marker.IconId) => MarkerCategory.Link,
-            _ => MarkerCategory.Poi,
-        };
+        return MarkerIcon.Category(MarkerIcon.Family(marker));
     }
+
+    public static string Label(MarkerInfo marker) => MarkerIcon.Family(marker) switch {
+        MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or
+        MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial => "FATE / event",
+        MarkerIconFamily.Flag => "Flag",
+        MarkerIconFamily.Treasure => "Treasure",
+        MarkerIconFamily.Gathering or MarkerIconFamily.Botany or MarkerIconFamily.Fishing => "Gathering",
+        _ => Label(Category(marker)),
+    };
 
     public static string Label(MarkerCategory category) => category switch {
         MarkerCategory.Transport => "Aetheryte / transport",
@@ -78,10 +76,31 @@ public static class FlatMarkerDrawing
         var hover = ImGui.IsItemHovered() ? HoverAnimation.Progress(Key(marker), true) : 0;
         var radius = size * .5f * (1 + .2f * hover);
         var list = ImGui.GetWindowDrawList();
-        Shape(list, center, radius, Category(marker), Color(Category(marker)) * context.GetIconSetting(marker.IconId).Color);
+        Symbol(list, center, radius, marker);
         if (hover > 0) list.AddCircle(center, radius + 3 * context.GlobalScale,
             ImGui.GetColorU32(config.AccentColor with { W = hover }), 24, context.GlobalScale);
         return true;
+    }
+
+    public static void Symbol(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker, float alpha = 1)
+    {
+        if (MarkerIcon.Family(marker) is MarkerIconFamily.Neutral or MarkerIconFamily.Hunt) {
+            var scale = MapDrawContext.Current.GlobalScale;
+            var neutral = GratisTheme.Secondary * MapDrawContext.Current.GetIconSetting(marker.IconId).Color;
+            radius *= .42f;
+            list.AddCircle(center, radius, ImGui.GetColorU32(new Vector4(1, 1, 1, .55f * alpha)), 24, 4 * scale);
+            list.AddCircleFilled(center, radius, ImGui.GetColorU32(neutral with { W = neutral.W * alpha }), 24);
+            list.AddCircle(center, radius, ImGui.GetColorU32(GratisTheme.Outline with { W = .35f * alpha }), 24, scale);
+            return;
+        }
+        if (PlayerDrawing.IsPlayerMarker(marker)) {
+            PlayerDrawing.DrawDot(list, center, radius, MarkerIcon.Family(marker), MapDrawContext.Current.GetIconSetting(marker.IconId).Color, alpha);
+            return;
+        }
+        var color = Color(Category(marker)) * MapDrawContext.Current.GetIconSetting(marker.IconId).Color;
+        if (MapDrawContext.Current.Config.Markers.IconStyle != MarkerIconStyle.Shapes &&
+            ContextualMarkerDrawing.Draw(list, center, radius, marker, color, alpha)) return;
+        Shape(list, center, radius, Category(marker), color, alpha);
     }
 
     public static void Shape(ImDrawListPtr list, Vector2 center, float radius, MarkerCategory category, Vector4 color, float alpha = 1)
@@ -121,15 +140,8 @@ public static class FlatMarkerDrawing
                 list.AddRect(center - new Vector2(radius), center + new Vector2(radius), dark, 2 * stroke, ImDrawFlags.None, stroke);
                 break;
             case MarkerCategory.Party:
-                var arm = radius * .38f;
-                Vector2 P(float px, float py) => center + new Vector2(px, py);
-                global::System.ReadOnlySpan<Vector2> cross = stackalloc Vector2[] { P(-arm, -radius), P(arm, -radius), P(arm, -arm), P(radius, -arm),
-                    P(radius, arm), P(arm, arm), P(arm, radius), P(-arm, radius),
-                    P(-arm, arm), P(-radius, arm), P(-radius, -arm), P(-arm, -arm) };
-                Contour(cross, light, 4 * stroke);
-                list.AddRectFilled(center - new Vector2(radius, arm), center + new Vector2(radius, arm), fill);
-                list.AddRectFilled(center - new Vector2(arm, radius), center + new Vector2(arm, radius), fill);
-                Contour(cross, dark, stroke);
+                list.AddCircleFilled(center, radius * .5f, fill, 24);
+                list.AddCircle(center, radius * .5f + .75f * stroke, light, 24, 1.5f * stroke);
                 break;
             default:
                 list.AddCircle(center, radius, light, 32, 4 * stroke);

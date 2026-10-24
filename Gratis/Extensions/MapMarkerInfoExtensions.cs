@@ -26,6 +26,13 @@ public static class MapMarkerInfoExtensions {
             Radius = marker.MapMarker.Scale,
             RadiusColor = KnownColor.MediumPurple.Vector(),
             IconId = marker.MapMarker.IconId,
+            IconFamily = marker.DataType switch {
+                1 => Rendering.MarkerIconFamily.Exit,
+                2 => Rendering.MarkerIconFamily.Duty,
+                3 => Rendering.MarkerIconFamily.Aetheryte,
+                4 => Rendering.MarkerIconFamily.Aethernet,
+                _ => Rendering.MarkerIconFamily.Auto,
+            },
             Category = marker.DataType switch {
                 1 or 2 => Rendering.MarkerCategory.Link,
                 3 or 4 => Rendering.MarkerCategory.Transport,

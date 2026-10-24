@@ -62,6 +62,7 @@ internal static class Verification
         }
         VerifyBlur(context, textures);
         VerifyContrast(c);
+        GlassVerification.Run(context);
         c.FeatherEnabled = false; c.FeatherWidth = 48; c.GlassBlur = false; c.GlassBlurRadius = 48;
         c.ResetFrameMaterials();
         Require(c.FeatherEnabled && c.FeatherWidth == 6 && c.GlassBlur && c.GlassBlurRadius == 12, "Material reset failed.");
