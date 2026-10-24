@@ -60,11 +60,14 @@ internal sealed class SoftwareRenderer(int width, int height, Textures textures)
         new Vector4(Background.Red, Background.Green, Background.Blue, Background.Alpha) / 255.0f, checked(width * height)).ToArray();
 
     public int Triangles { get; private set; }
+    public int BlurCount { get; private set; }
+    internal Vector4 Pixel(int x, int y) => pixels[y * width + x];
 
-    public unsafe void Render(ImDrawDataPtr data)
+    public unsafe void Render(ImDrawDataPtr data, IReadOnlyList<BackdropBlur>? blurs = null)
     {
         for (var listIndex = 0; listIndex < data.CmdListsCount; listIndex++) {
             var list = data.CmdLists[listIndex];
+            var pending = new Queue<BackdropBlur>((blurs ?? []).Where(b => b.List == (nint)list.NativePtr).OrderBy(b => b.IndexOffset));
             for (var commandIndex = 0; commandIndex < list.CmdBuffer.Size; commandIndex++) {
                 var command = list.CmdBuffer[commandIndex];
                 if (command.UserCallback != 0) {
@@ -80,6 +83,9 @@ internal sealed class SoftwareRenderer(int width, int height, Textures textures)
                 var maxY = Math.Clamp((int)MathF.Ceiling(clipMax.Y - .5f), 0, height);
                 for (uint index = 0; index + 2 < command.ElemCount; index += 3) {
                     var i = checked((int)(command.IdxOffset + index));
+                    while (pending.TryPeek(out var blur) && blur.IndexOffset <= i) {
+                        Blur(pending.Dequeue(), data.DisplayPos, data.FramebufferScale);
+                    }
                     var offset = checked((int)command.VtxOffset);
                     var a = *list.VtxBuffer[offset + list.IdxBuffer[i]].NativePtr;
                     var b = *list.VtxBuffer[offset + list.IdxBuffer[i + 1]].NativePtr;
@@ -91,7 +97,54 @@ internal sealed class SoftwareRenderer(int width, int height, Textures textures)
                     Triangles++;
                 }
             }
+            while (pending.TryDequeue(out var blur)) Blur(blur, data.DisplayPos, data.FramebufferScale);
         }
+    }
+
+    private void Blur(BackdropBlur request, Vector2 displayPos, Vector2 scale)
+    {
+        var min = (request.Min - displayPos) * scale;
+        var max = (request.Max - displayPos) * scale;
+        var x0 = Math.Clamp((int)MathF.Floor(min.X), 0, width);
+        var x1 = Math.Clamp((int)MathF.Ceiling(max.X), 0, width);
+        var y0 = Math.Clamp((int)MathF.Floor(min.Y), 0, height);
+        var y1 = Math.Clamp((int)MathF.Ceiling(max.Y), 0, height);
+        if (x0 >= x1 || y0 >= y1) return;
+        var radius = Math.Clamp((int)MathF.Ceiling(request.Radius * scale.X), 1, 128);
+        var rounding = request.Rounding * scale.X;
+        var kernel = radius * 2 + 1;
+        var sy0 = Math.Max(0, y0 - radius);
+        var sy1 = Math.Min(height, y1 + radius);
+        var span = x1 - x0;
+        var horizontal = new Vector4[span * (sy1 - sy0)];
+        for (var y = sy0; y < sy1; y++) {
+            var sum = Vector4.Zero;
+            for (var x = x0 - radius; x <= x0 + radius; x++) sum += pixels[y * width + Math.Clamp(x, 0, width - 1)];
+            for (var x = x0; x < x1; x++) {
+                horizontal[(y - sy0) * span + x - x0] = sum / kernel;
+                sum += pixels[y * width + Math.Clamp(x + radius + 1, 0, width - 1)] -
+                       pixels[y * width + Math.Clamp(x - radius, 0, width - 1)];
+            }
+        }
+        var center = (min + max) / 2;
+        var half = (max - min) / 2;
+        rounding = Math.Clamp(rounding, 0, MathF.Min(half.X, half.Y));
+        for (var x = x0; x < x1; x++) {
+            var sum = Vector4.Zero;
+            for (var y = y0 - radius; y <= y0 + radius; y++)
+                sum += horizontal[(Math.Clamp(y, 0, height - 1) - sy0) * span + x - x0];
+            for (var y = y0; y < y1; y++) {
+                var q = Vector2.Abs(new Vector2(x + .5f, y + .5f) - center) - half + new Vector2(rounding);
+                var distance = Vector2.Max(q, Vector2.Zero).Length() + MathF.Min(MathF.Max(q.X, q.Y), 0) - rounding;
+                var coverage = Math.Clamp(.5f - distance, 0, 1);
+                ref var target = ref pixels[y * width + x];
+                target = Vector4.Lerp(target, sum / kernel, coverage);
+                if (y + 1 < y1)
+                    sum += horizontal[(Math.Clamp(y + radius + 1, 0, height - 1) - sy0) * span + x - x0] -
+                           horizontal[(Math.Clamp(y - radius, 0, height - 1) - sy0) * span + x - x0];
+            }
+        }
+        BlurCount++;
     }
 
     private static float Edge(Vector2 a, Vector2 b, Vector2 p) =>

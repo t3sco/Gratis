@@ -79,11 +79,12 @@ public static class DrawHelpers
         var context = MapDrawContext.Current;
         if (!context.PrepareMarker(markerInfo)) return;
 
-        DrawRadiusUnderlay(markerInfo);
         if (context.Config.IsGratis && context.Config.MarkerStyle == 1) {
+            if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(markerInfo)) return;
+            DrawRadiusUnderlay(markerInfo);
             if (!FlatMarkerDrawing.Draw(markerInfo)) return;
         }
-        else DrawIcon(markerInfo);
+        else if (!DrawIcon(markerInfo)) return;
         ProcessInteractions(markerInfo);
         DrawTooltip(markerInfo);
     }
@@ -94,6 +95,7 @@ public static class DrawHelpers
 
         var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
         var radius = markerRadius * markerInfo.Scale * MapDrawContext.Current.MapSizeFactor;
+        if (!MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale))) return;
         var fillColor = ImGui.GetColorU32(markerInfo.RadiusColor with { W = MapDrawContext.Current.Config.AreaColor.W });
         var radiusColor = ImGui.GetColorU32(markerInfo.RadiusOutlineColor with { W = MapDrawContext.Current.Config.AreaOutlineColor.W });
 
@@ -110,7 +112,7 @@ public static class DrawHelpers
         ImGui.GetWindowDrawList().AddCircle(center, radius, radiusColor, 0, 3.0f);
     }
 
-    private static void DrawIcon(MarkerInfo markerInfo)
+    private static bool DrawIcon(MarkerInfo markerInfo)
     {
         var texture = MapDrawContext.Current.GetIcon(markerInfo.IconId);
         var scale = MapDrawContext.Current.Config.ScaleWithZoom ? markerInfo.Scale : 1.0f;
@@ -129,7 +131,9 @@ public static class DrawHelpers
         ImGui.SetCursorPos(markerInfo.Position + markerInfo.Offset - texture.Size * iconScale / 2.0f * scale * MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Scale);
         var cursorScreenPos = ImGui.GetCursorScreenPos();
         var iconSize = texture.Size * scale * iconScale * MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Scale;
+        if (!MapShape.ContainsSymbol(cursorScreenPos + iconSize / 2, iconSize / 2)) return false;
 
+        DrawRadiusUnderlay(markerInfo);
         ImGui.Image(texture.Handle, iconSize, Vector2.Zero, Vector2.One, MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Color);
 
         if (DebugMode) {
@@ -141,6 +145,7 @@ public static class DrawHelpers
 
             ImGui.GetWindowDrawList().AddRect(cursorScreenPos, cursorScreenPos + iconSize, ImGui.GetColorU32(new Vector4(1, 0, 0, 1)), 3.0f);
         }
+        return true;
     }
 
 #if !GRATIS_PREVIEW
@@ -156,6 +161,10 @@ public static class DrawHelpers
         var drawPosition = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos() - textSize / 2.0f;
 
         drawPosition = new Vector2(MathF.Round(drawPosition.X), MathF.Round(drawPosition.Y));
+        if (!MapShape.ContainsSymbol(drawPosition + textSize / 2, textSize / 2 + Vector2.One)) {
+            ImGui.SetWindowFontScale(1.0f);
+            return;
+        }
 
         if (MapDrawContext.Current.Config.DebugMode) {
             ImGui.GetWindowDrawList().AddCircleFilled(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos(), 5.0f, ImGui.GetColorU32(new Vector4(1, 0, 0, 1)));
@@ -202,7 +211,8 @@ public static class DrawHelpers
             var center = markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos();
             var radius = sameRadius * markerInfo.Scale * MapDrawContext.Current.MapSizeFactor;
 
-            if (MapDrawContext.Current.IsRadiusHovered(center, radius)) {
+            if ((MapShape.FeatherWidth <= 0 || MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale)) &&
+                MapShape.Contains(ImGui.GetMousePos())) && MapDrawContext.Current.IsRadiusHovered(center, radius)) {
                 isActivatedViaRadius = true;
             }
         }

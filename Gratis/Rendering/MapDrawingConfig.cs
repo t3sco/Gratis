@@ -29,11 +29,59 @@ public class MapDrawingConfig
     public float SoftConeLength = 110;
     public float SoftConeOpacity = .35f;
     public bool SegmentedToolbar = true;
+    public float IconSize = 16;
     public bool NeutralFrame = true;
     public float FlatCornerRadius = 10;
     public float FlatVignette = .08f;
     public bool CompactTitle = true;
     public bool StyledCoordinates = true;
+    public int FrameFont = 0;
+    public bool FeatherEnabled = true;
+    public float FeatherWidth = 6;
+    // FeatherShape is derived from MapCircle / MapShape.Rounding; no second shape to desynchronize.
+    [JsonIgnore] public string FeatherShape => MapCircle ? "Circle" : "Rounded rectangle";
+    public bool RingEnabled = true;
+    public float RingThickness = 2;
+    public Vector4 RingColorA = new(1, 1, 1, .12f);
+    public Vector4 RingColorB = new(1, 1, 1, .12f);
+    public Vector4 RingAccentColor = new(1, 1, 1, .95f);
+    public float RingAngle = -90;
+    public float RingSweepWidth = 70;
+    public float RingIntensity = .55f;
+    public bool RingRotate = true;
+    public float RingRotationSpeed = 6;
+    public bool GlassEnabled = false;
+    public bool GlassBlur = true;
+    public float GlassBlurRadius = 12;
+    public float GlassTintOpacity = .02f;
+    public float GlassHighlight = .34f;
+    public bool GlassGrain = false;
+    public float GlassGrainIntensity = .018f;
+
+    public void ResetFrameMaterials()
+    {
+        var defaults = new MapDrawingConfig();
+        FeatherEnabled = defaults.FeatherEnabled;
+        FeatherWidth = defaults.FeatherWidth;
+        RingEnabled = defaults.RingEnabled;
+        RingThickness = defaults.RingThickness;
+        RingColorA = defaults.RingColorA;
+        RingColorB = defaults.RingColorB;
+        RingAccentColor = defaults.RingAccentColor;
+        RingAngle = defaults.RingAngle;
+        RingSweepWidth = defaults.RingSweepWidth;
+        RingIntensity = defaults.RingIntensity;
+        RingRotate = defaults.RingRotate;
+        RingRotationSpeed = defaults.RingRotationSpeed;
+        GlassEnabled = defaults.GlassEnabled;
+        GlassBlur = defaults.GlassBlur;
+        GlassBlurRadius = defaults.GlassBlurRadius;
+        GlassTintOpacity = defaults.GlassTintOpacity;
+        GlassHighlight = defaults.GlassHighlight;
+        GlassGrain = defaults.GlassGrain;
+        GlassGrainIntensity = defaults.GlassGrainIntensity;
+    }
+
     [JsonIgnore] public bool IsGratis => VisualStyle == 0;
     [JsonIgnore] public bool UseCustomWindowChrome => HideWindowFrame || (IsGratis && NeutralFrame);
 

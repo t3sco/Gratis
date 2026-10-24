@@ -11,9 +11,29 @@ namespace Gratis.Rendering;
 
 public static class MapWindowDrawing
 {
+    private static (int Frame, uint Window, float Top) coordinateLayout;
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1, float? surfaceOpacity = null)
     {
-        list.AddRectFilled(min, max, ImGui.GetColorU32(GratisTheme.Surface with { W = (surfaceOpacity ?? GratisTheme.Surface.W) * alpha }), radius);
+        var config = MapDrawContext.Current.Config;
+        var glass = config.IsGratis && config.GlassEnabled;
+        var size = max - min;
+        var circular = MathF.Abs(size.X - size.Y) < .01f && radius >= MathF.Min(size.X, size.Y) / 2;
+        var clipMin = list.GetClipRectMin();
+        var clipMax = list.GetClipRectMax();
+        var canBlur = glass && config.GlassBlur && alpha > 0 && !circular &&
+            size.X > 0 && size.Y > 0 && min.X >= clipMin.X && min.Y >= clipMin.Y && max.X <= clipMax.X && max.Y <= clipMax.Y;
+        var blurred = canBlur && MapDrawContext.Current.TryBlurBehind(list, min, max, radius,
+            Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48) * MapDrawContext.Current.GlobalScale);
+        var opacity = surfaceOpacity ?? GratisTheme.Surface.W;
+        if (glass) {
+            var minimum = FrameMaterialDrawing.GlassBackingOpacity(config);
+            opacity = blurred ? minimum : MathF.Max(surfaceOpacity ?? .96f, MathF.Max(.96f, minimum));
+        }
+        list.AddRectFilled(min, max, ImGui.GetColorU32(GratisTheme.Surface with { W = opacity * alpha }), radius);
+        if (glass) {
+            FrameMaterialDrawing.DrawGlass(list, min, max, radius, alpha);
+            return;
+        }
         var stroke = MapDrawContext.Current.GlobalScale;
         list.AddRect(min + new Vector2(.5f * stroke), max - new Vector2(.5f * stroke), ImGui.GetColorU32(GratisTheme.Border with { W = GratisTheme.Border.W * alpha }), radius, ImDrawFlags.None, stroke);
     }
@@ -50,8 +70,8 @@ public static class MapWindowDrawing
         if (config.IsGratis && config.NeutralFrame) {
             if (config.FlatVignette > 0) DrawGradientRing(drawList, min, max, rounding,
                 MathF.Min(max.X - min.X, max.Y - min.Y) * .10f, new Vector4(0, 0, 0, config.FlatVignette), 2);
-            drawList.AddRect(min + new Vector2(.5f * scale), max - new Vector2(.5f * scale),
-                ImGui.GetColorU32(new Vector4(1, 1, 1, .12f)), MathF.Max(0, rounding - .5f * scale), ImDrawFlags.None, scale);
+            if (!config.RingEnabled) FrameMaterialDrawing.DrawStroke(drawList, min, max, rounding, scale, new Vector4(1, 1, 1, .12f));
+            DrawConicRing(drawList, min, max, rounding);
             return;
         }
 
@@ -68,9 +88,21 @@ public static class MapWindowDrawing
         }
 
         if (config.MapBorder) {
-            var half = config.MapBorderThickness * scale * 0.5f;
-            drawList.AddRect(min + new Vector2(half), max - new Vector2(half), ImGui.ColorConvertFloat4ToU32(config.MapBorderColor), MathF.Max(0.0f, rounding - half), ImDrawFlags.None, config.MapBorderThickness * scale);
+            if (config.IsGratis) FrameMaterialDrawing.DrawStroke(drawList, min, max, rounding,
+                config.MapBorderThickness * scale, config.MapBorderColor);
+            else {
+                var half = config.MapBorderThickness * scale * 0.5f;
+                drawList.AddRect(min + new Vector2(half), max - new Vector2(half), ImGui.ColorConvertFloat4ToU32(config.MapBorderColor), MathF.Max(0.0f, rounding - half), ImDrawFlags.None, config.MapBorderThickness * scale);
+            }
         }
+        if (config.IsGratis) DrawConicRing(drawList, min, max, rounding);
+    }
+
+    private static void DrawConicRing(ImDrawListPtr list, Vector2 min, Vector2 max, float radius)
+    {
+        var context = MapDrawContext.Current;
+        if (context.Config.RingEnabled) FrameMaterialDrawing.DrawStroke(list, min, max, radius,
+            context.Config.RingThickness * context.GlobalScale, Vector4.One, context.Config);
     }
 
     private static readonly global::System.Collections.Generic.List<Vector2> ringOuter = [];
@@ -80,7 +112,8 @@ public static class MapWindowDrawing
     {
         points.Clear();
         radius = MathF.Max(0.0f, MathF.Min(radius, MathF.Min(max.X - min.X, max.Y - min.Y) * 0.5f));
-        const int segments = 10;
+        var segments = MapDrawContext.Current.Config.IsGratis
+            ? FrameMaterialDrawing.ArcSegments(MapShape.Current, MathF.PI / 2) : 10;
         var centers = new[] { new Vector2(min.X + radius, min.Y + radius), new Vector2(max.X - radius, min.Y + radius), new Vector2(max.X - radius, max.Y - radius), new Vector2(min.X + radius, max.Y - radius) };
         for (var corner = 0; corner < 4; corner++) {
             var startAngle = MathF.PI * (1.0f + corner * 0.5f);
@@ -220,30 +253,43 @@ public static class MapWindowDrawing
 
     private static void DrawCompactTitle(string title)
     {
-        var scale = MapDrawContext.Current.GlobalScale;
+        var context = MapDrawContext.Current;
+        var scale = context.GlobalScale;
         var parts = title.Split(" - ", global::System.StringSplitOptions.RemoveEmptyEntries | global::System.StringSplitOptions.TrimEntries);
         if (parts.Length == 0) return;
         var name = parts[^1];
         var region = parts.Length > 1 ? string.Join(" / ", parts[..^1]) : "";
+        using var titleFont = context.GetChromeFont(14 * scale, ChromeFontRole.Chip)?.Push();
         var font = ImGui.GetFont();
         var window = ImGui.GetWindowSize();
         var wrap = MathF.Max(1, MathF.Min(280 * scale, window.X - 40 * scale));
         var primary = DrawBinding.MeasureText(14 * scale, name, wrap);
-        var secondary = DrawBinding.MeasureText(12 * scale, region, wrap);
+        Vector2 secondary;
+        using (context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push())
+            secondary = DrawBinding.MeasureText(12 * scale, region, wrap);
         var size = new Vector2(MathF.Max(primary.X, secondary.X) + 24 * scale, primary.Y + (region.Length > 0 ? secondary.Y + 4 * scale : 0) + 16 * scale);
         var config = MapDrawContext.Current.Config;
         var count = config.UseCustomWindowChrome ? 8 : 7;
-        var y = config.MapCircle ? ToolbarOffset(count).Y + 48 * scale : 8 * scale;
+        var y = 8 * scale;
+        if (config.MapCircle) {
+            var half = window.X / 2;
+            var rimInset = half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X / 4));
+            var bottom = coordinateLayout.Frame == ImGui.GetFrameCount() && coordinateLayout.Window == ImGui.GetID("coordinate-layout")
+                ? coordinateLayout.Top - ImGui.GetWindowPos().Y : window.Y - rimInset;
+            y = MathF.Max(8 * scale, bottom - size.Y - 8 * scale);
+        }
         if (!config.MapCircle && size.X + (count * 28 + 32) * scale > window.X) y = 52 * scale;
         var inset = 8 * scale;
         var radius = MapShape.Current;
         if (y < radius) inset += radius - MathF.Sqrt(MathF.Max(0, radius * radius - (radius - y) * (radius - y)));
-        var pos = ImGui.GetWindowPos() + new Vector2(MathF.Max(8 * scale, window.X - inset - size.X), y);
+        var x = config.MapCircle ? (window.X - size.X) / 2 : MathF.Max(8 * scale, window.X - inset - size.X);
+        var pos = ImGui.GetWindowPos() + new Vector2(x, y);
         var list = ImGui.GetWindowDrawList();
         DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
         var text = pos + new Vector2(12, 8) * scale;
         if (region.Length > 0) {
-            list.AddText(font, 12 * scale, text, ImGui.GetColorU32(GratisTheme.Secondary), region, wrap);
+            using var secondaryFont = context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push();
+            list.AddText(ImGui.GetFont(), 12 * scale, text, ImGui.GetColorU32(GratisTheme.Secondary), region, wrap);
             text.Y += secondary.Y + 4 * scale;
         }
         list.AddText(font, 14 * scale, text, ImGui.GetColorU32(GratisTheme.Primary), name, wrap);
@@ -253,23 +299,28 @@ public static class MapWindowDrawing
     {
         if (character is null && cursor is null) return;
         var scale = MapDrawContext.Current.GlobalScale;
+        using var coordinateFont = MapDrawContext.Current.GetChromeFont(14 * scale, ChromeFontRole.Coordinates)?.Push();
         var font = ImGui.GetFont();
         var fontSize = 14 * scale;
         var digit = DrawBinding.MeasureText(fontSize, "0").X;
         string Format(Vector2 point) => global::System.FormattableString.Invariant($"{point.X,4:F1} / {point.Y,4:F1}");
-        var left = character is { } player ? "PLAYER  " + Format(player) : "";
-        var right = cursor is { } mouse ? "CURSOR  " + Format(mouse) : "";
-        var text = left + (left.Length > 0 && right.Length > 0 ? "    |    " : "") + right;
-        var size = new Vector2(text.Length * digit + 24 * scale, 36 * scale);
+        var left = character is { } player ? "PLAYER " + Format(player) : "";
+        var right = cursor is { } mouse ? "CURSOR " + Format(mouse) : "";
+        var text = left + (left.Length > 0 && right.Length > 0 ? "  |  " : "") + right;
+        float Advance(char glyph) => char.IsDigit(glyph) || glyph == '.' ? digit :
+            glyph == ' ' ? 3 * scale : DrawBinding.MeasureText(12 * scale, glyph.ToString()).X;
+        float TextWidth(string value) { var width = 0f; foreach (var glyph in value) width += Advance(glyph); return width; }
+        var size = new Vector2(TextWidth(text) + 24 * scale, 36 * scale);
         var window = ImGui.GetWindowSize();
         if (size.X > window.X - 32 * scale && left.Length > 0) {
-            text = left; size.X = text.Length * digit + 24 * scale;
+            text = left; size.X = TextWidth(text) + 24 * scale;
         }
         var pos = ImGui.GetWindowPos() + new Vector2((window.X - size.X) / 2, window.Y - size.Y - 8 * scale);
         if (MapDrawContext.Current.Config.MapCircle) {
             var half = window.X * .5f;
             pos.Y -= half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X * .25f));
         }
+        coordinateLayout = (ImGui.GetFrameCount(), ImGui.GetID("coordinate-layout"), pos.Y);
         ImGui.SetCursorScreenPos(pos);
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();
@@ -280,7 +331,9 @@ public static class MapWindowDrawing
             var numeric = char.IsDigit(text[index]) || text[index] == '.';
             var glyphSize = numeric ? fontSize : 12 * scale;
             var width = DrawBinding.MeasureText(glyphSize, glyph).X;
-            list.AddText(font, glyphSize, start + new Vector2(index * digit + (digit - width) / 2, (fontSize - glyphSize) / 2), ImGui.GetColorU32(numeric ? GratisTheme.Primary : GratisTheme.Secondary), glyph);
+            var advance = Advance(text[index]);
+            list.AddText(font, glyphSize, start + new Vector2((advance - width) / 2, (fontSize - glyphSize) / 2), ImGui.GetColorU32(numeric ? GratisTheme.Primary : GratisTheme.Secondary), glyph);
+            start.X += advance;
         }
     }
 }

@@ -13,8 +13,27 @@ using MathF = global::System.MathF;
 
 namespace Gratis.Rendering;
 
-internal sealed class DalamudMapDrawContext : MapDrawContext
+internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 {
+    private bool blurUnavailable;
+
+    public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius)
+    {
+        if (blurUnavailable || !float.IsFinite(radius) || radius <= 0) return false;
+        try {
+            AddHostBlur(list, min, max, rounding, Math.Clamp(radius / 8, .05f, 8));
+            return true;
+        }
+        catch (Exception) {
+            blurUnavailable = true;
+            return false;
+        }
+    }
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void AddHostBlur(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float strength) =>
+        ImGuiHelpers.AddBlurBehind(list, min, max, strength, rounding, Vector4.Zero, Vector4.Zero, 0);
+
     public override MapDrawingConfig Config => System.SystemConfig;
     public override float GlobalScale => ImGuiHelpers.GlobalScale;
     public override unsafe float MapSizeFactor => AgentMap.Instance()->SelectedMapSizeFactorFloat;
@@ -44,6 +63,72 @@ internal sealed class DalamudMapDrawContext : MapDrawContext
     }
     public override IDrawFont? GetTitleFont(int choice, float size) => GetNativeTitleFont(choice, size) is { } font ? new Font(font) : null;
     private readonly global::System.Collections.Generic.Dictionary<(int Choice, int Size), global::Dalamud.Interface.ManagedFontAtlas.IFontHandle> titleFonts = [];
+
+    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role)
+    {
+        if (!Config.IsGratis) return null;
+        if (Config.FrameFont == 2) return GetTitleFont(2, size);
+        var fallback = GetNativeTitleFont(1, size)!;
+        if (Config.FrameFont != 0) return new Font(fallback);
+
+        var pixels = Math.Max(8, (int)MathF.Round(size));
+        var key = (10 + (int)role, pixels);
+        if (!titleFonts.TryGetValue(key, out var handle)) {
+            var filename = role switch {
+                ChromeFontRole.Title => "Geist-SemiBold.ttf",
+                ChromeFontRole.Chip => "Geist-Medium.ttf",
+                ChromeFontRole.Coordinates => "GeistMono-Regular.ttf",
+                _ => "Geist-Regular.ttf",
+            };
+            handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
+                var config = new SafeFontConfig { SizePx = pixels };
+                try {
+                    using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream($"Gratis.Assets.Fonts.{filename}")
+                        ?? throw new global::System.IO.FileNotFoundException(filename);
+                    var geist = toolkit.AddFontFromStream(stream, config, false, filename);
+                    config.MergeFont = geist;
+                }
+                catch (Exception error) {
+                    Service.Log.Warning(error, "Geist font unavailable; using Noto.");
+                }
+                toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, config);
+            }));
+            titleFonts[key] = handle;
+        }
+        return new Font(handle.Available ? handle : fallback);
+    }
+
+    private readonly global::System.Collections.Generic.Dictionary<int, IFontHandle> iconFonts = [];
+    private bool iconFontFailed;
+
+    public override IDrawFont? GetIconFont(float size)
+    {
+        if (!Config.IsGratis || iconFontFailed) return null;
+        var pixels = Math.Clamp((int)MathF.Round(size), 8, 96);
+        if (!iconFonts.TryGetValue(pixels, out var handle)) {
+            handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
+                try {
+                    using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream("Gratis.Assets.Fonts.Lucide.lucide.ttf")
+                        ?? throw new global::System.IO.FileNotFoundException("Lucide");
+                    toolkit.AddFontFromStream(stream, new SafeFontConfig { SizePx = pixels, GlyphRanges = GratisIcons.GlyphRanges }, false, "Lucide");
+                }
+                catch (Exception error) {
+                    iconFontFailed = true;
+                    Service.Log.Warning(error, "Lucide font unavailable; using primitive icons.");
+                }
+            }));
+            iconFonts[pixels] = handle;
+        }
+        return !iconFontFailed && handle.Available ? new Font(handle) : null;
+    }
+
+    public void Dispose()
+    {
+        foreach (var font in titleFonts.Values) font.Dispose();
+        titleFonts.Clear();
+        foreach (var font in iconFonts.Values) font.Dispose();
+        iconFonts.Clear();
+    }
 
     private static readonly global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize[][] GameFontPresets = [
         [global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis96, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis12, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis14, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis18, global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis36],

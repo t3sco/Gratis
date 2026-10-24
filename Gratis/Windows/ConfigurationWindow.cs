@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
@@ -184,6 +184,11 @@ public class StyleOptionsTab : ITabItem
                 configChanged |= ImGui.SliderFloat("Soft cone length", ref visual.SoftConeLength, 0, 200, "%.0f px");
                 configChanged |= ImGui.SliderFloat("Soft cone opacity", ref visual.SoftConeOpacity, 0, .5f, "%.2f");
                 configChanged |= ImGui.Checkbox("Segmented toolbar", ref visual.SegmentedToolbar);
+                configChanged |= ImGui.SliderFloat("Icon Size", ref visual.IconSize, 12, 24, "%.0f px");
+                if (ImGui.Button("Reset Icon Size")) {
+                    visual.IconSize = new Rendering.MapDrawingConfig().IconSize;
+                    configChanged = true;
+                }
                 configChanged |= ImGui.Checkbox("Neutral hairline frame", ref visual.NeutralFrame);
                 configChanged |= ImGui.SliderFloat("Gratis corner radius", ref visual.FlatCornerRadius, 0, 80, "%.0f px");
                 configChanged |= ImGui.SliderFloat("Gratis vignette", ref visual.FlatVignette, 0, .3f, "%.2f");
@@ -210,6 +215,43 @@ public class StyleOptionsTab : ITabItem
         using (ImRaii.PushIndent()) {
             var frame = System.SystemConfig;
             configChanged |= ImGui.Checkbox("Circular Map", ref frame.MapCircle);
+            if (frame.IsGratis) {
+                configChanged |= ImGui.Combo("Font", ref frame.FrameFont, "Geist\0Noto\0Game\0");
+                ImGui.TextUnformatted("Edge mask");
+                configChanged |= ImGui.Checkbox("Feather map edge", ref frame.FeatherEnabled);
+                if (frame.FeatherEnabled) configChanged |= ImGui.SliderFloat("Feather width", ref frame.FeatherWidth, 0, 48, "%.0f px");
+                ImGui.TextDisabled($"Shape: {frame.FeatherShape} (follows frame)");
+                ImGui.TextUnformatted("Ring / edge highlight");
+                configChanged |= ImGui.Checkbox("Conic ring", ref frame.RingEnabled);
+                if (frame.RingEnabled) {
+                    configChanged |= ImGui.SliderFloat("Ring thickness", ref frame.RingThickness, .5f, 8, "%.1f px");
+                    configChanged |= ImGui.ColorEdit4("Ring colour A", ref frame.RingColorA, ImGuiColorEditFlags.AlphaBar);
+                    configChanged |= ImGui.ColorEdit4("Ring colour B", ref frame.RingColorB, ImGuiColorEditFlags.AlphaBar);
+                    configChanged |= ImGui.ColorEdit4("Ring accent stop", ref frame.RingAccentColor, ImGuiColorEditFlags.AlphaBar);
+                    configChanged |= ImGui.SliderFloat("Angle offset", ref frame.RingAngle, -180, 180, "%.0f deg");
+                    configChanged |= ImGui.SliderFloat("Highlight sweep width", ref frame.RingSweepWidth, 5, 180, "%.0f deg");
+                    configChanged |= ImGui.SliderFloat("Sweep lightness", ref frame.RingIntensity, 0, 1, "%.2f");
+                    configChanged |= ImGui.Checkbox("Slow ring rotation", ref frame.RingRotate);
+                    if (frame.RingRotate) configChanged |= ImGui.SliderFloat("Rotation speed", ref frame.RingRotationSpeed, -20, 20, "%.1f deg/s");
+                }
+                ImGui.TextUnformatted("Glass surfaces");
+                configChanged |= ImGui.Checkbox("Glass tint and edge light", ref frame.GlassEnabled);
+                if (frame.GlassEnabled) {
+                    configChanged |= ImGui.Checkbox("Glass backdrop blur", ref frame.GlassBlur);
+                    if (frame.GlassBlur) {
+                        configChanged |= ImGui.SliderFloat("Glass blur radius", ref frame.GlassBlurRadius, 0, 48, "%.0f px");
+                        ImGui.TextDisabled("Nominal radius; Dalamud controls the blur kernel. Circles use tinted glass.");
+                    }
+                    configChanged |= ImGui.SliderFloat("Frosted white tint", ref frame.GlassTintOpacity, 0, .08f, "%.3f");
+                    configChanged |= ImGui.SliderFloat("Glass hairline / top highlight", ref frame.GlassHighlight, 0, .6f, "%.2f");
+                    configChanged |= ImGui.Checkbox("Subtle grain", ref frame.GlassGrain);
+                    if (frame.GlassGrain) configChanged |= ImGui.SliderFloat("Grain intensity", ref frame.GlassGrainIntensity, 0, .04f, "%.3f");
+                }
+                if (ImGui.Button("Reset Edge Mask, Ring and Glass to Defaults")) {
+                    frame.ResetFrameMaterials();
+                    configChanged = true;
+                }
+            }
             if (frame.IsGratis && frame.NeutralFrame) ImGui.TextDisabled("Legacy frame controls apply with Neutral hairline frame off.");
             if (!frame.MapCircle) {
                 configChanged |= ImGui.SliderFloat("Corner Rounding", ref frame.MapRounding, 0.0f, 80.0f, "%.0f px");

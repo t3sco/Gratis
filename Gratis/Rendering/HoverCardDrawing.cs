@@ -20,11 +20,14 @@ public static class HoverCardDrawing
         var available = Vector2.Max(new Vector2(1), viewport.Size - margin * 2);
         var padding = new Vector2(12 * scale);
         var swatch = context.Config.HoverCardSwatch && category.HasValue ? 24 * scale : 0;
-        var font = ImGui.GetFont();
         var titleSize = 14 * scale; var secondarySize = 12 * scale;
+        using var titleFont = context.GetChromeFont(titleSize, ChromeFontRole.Title)?.Push();
+        var font = ImGui.GetFont();
         var wrap = Math.Max(1, Math.Min(300 * scale, available.X - padding.X * 2 - swatch));
         var primaryBounds = DrawBinding.MeasureText(titleSize, title, wrap);
-        var secondaryBounds = string.IsNullOrEmpty(secondary) ? Vector2.Zero : DrawBinding.MeasureText(secondarySize, secondary, wrap);
+        Vector2 secondaryBounds;
+        using (context.GetChromeFont(secondarySize, ChromeFontRole.Body)?.Push())
+            secondaryBounds = string.IsNullOrEmpty(secondary) ? Vector2.Zero : DrawBinding.MeasureText(secondarySize, secondary, wrap);
         var size = new Vector2(Math.Max(primaryBounds.X, secondaryBounds.X) + swatch, primaryBounds.Y + (secondaryBounds.Y > 0 ? 4 * scale + secondaryBounds.Y : 0)) + padding * 2;
         size = Vector2.Min(size, available);
         var position = ImGui.GetMousePos() + new Vector2(24, 24 + 4 * (1 - fade)) * scale;
@@ -32,14 +35,21 @@ public static class HoverCardDrawing
             position.Y = ImGui.GetMousePos().Y - size.Y - 24 * scale;
         position = Vector2.Clamp(position, viewport.Pos + margin, viewport.Pos + viewport.Size - margin - size);
         var list = ImGui.GetForegroundDrawList();
+        DrawBinding.PushFontTexture(list);
         MapWindowDrawing.DrawSurface(list, position, position + size, GratisTheme.CardRadius * scale, fade, surfaceOpacity: 1);
         list.PushClipRect(position, position + size, true);
         var text = position + padding + new Vector2(swatch, 0);
         if (swatch > 0 && category is { } shape)
             FlatMarkerDrawing.Shape(list, position + padding + new Vector2(7, 7) * scale, 6 * scale, shape, FlatMarkerDrawing.Color(shape), fade);
         list.AddText(font, titleSize, text, ImGui.GetColorU32(GratisTheme.Primary with { W = fade }), title, wrap);
-        if (!string.IsNullOrEmpty(secondary)) list.AddText(font, secondarySize, text + new Vector2(0, primaryBounds.Y + 4 * scale),
-            ImGui.GetColorU32(GratisTheme.Secondary with { W = fade }), secondary, wrap);
+        if (!string.IsNullOrEmpty(secondary)) {
+            using var secondaryFont = context.GetChromeFont(secondarySize, ChromeFontRole.Body)?.Push();
+            DrawBinding.PushFontTexture(list);
+            list.AddText(ImGui.GetFont(), secondarySize, text + new Vector2(0, primaryBounds.Y + 4 * scale),
+                ImGui.GetColorU32(GratisTheme.Secondary with { W = fade }), secondary, wrap);
+            DrawBinding.PopTexture(list);
+        }
         list.PopClipRect();
+        DrawBinding.PopTexture(list);
     }
 }

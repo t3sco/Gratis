@@ -1,4 +1,4 @@
-﻿using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.GameFonts;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiLib.Classes;
@@ -87,6 +87,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.AreaMapController.Dispose();
         System.FlagController.Dispose();
         System.MapRenderer.Dispose();
+        (Rendering.MapDrawContext.Current as global::System.IDisposable)?.Dispose();
 
         Service.PluginInterface.UiBuilder.OpenMainUi -= OpenMapWindow;
     }

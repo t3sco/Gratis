@@ -52,12 +52,21 @@ public static class FlatMarkerDrawing
 
     internal static string Key(MarkerInfo marker) => $"{ImGui.GetID("flat-marker")}/{marker.IconId}/{marker.Position.X}/{marker.Position.Y}";
 
+    private static float Size(MarkerInfo marker)
+    {
+        var context = MapDrawContext.Current;
+        var size = context.Config.FlatMarkerSize * (context.Config.IconScale / .5f) * context.GetIconSetting(marker.IconId).Scale * context.GlobalScale;
+        return context.Config.ScaleWithZoom ? size * marker.Scale : size;
+    }
+
+    internal static bool FitsFeather(MarkerInfo marker) => MapShape.ContainsSymbol(
+        marker.Position + marker.Offset + ImGui.GetWindowPos(), new Vector2(Size(marker) * .6f + 3 * MapDrawContext.Current.GlobalScale));
+
     public static bool Draw(MarkerInfo marker)
     {
         var context = MapDrawContext.Current;
         var config = context.Config;
-        var size = config.FlatMarkerSize * (config.IconScale / .5f) * context.GetIconSetting(marker.IconId).Scale * context.GlobalScale;
-        if (config.ScaleWithZoom) size *= marker.Scale;
+        var size = Size(marker);
         var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
         var extent = new Vector2(size * .6f + 3 * context.GlobalScale);
         if (!MapShape.Contains(center - extent) || !MapShape.Contains(center + extent) ||

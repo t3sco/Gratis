@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Gratis.Classes;
 #if GRATIS_PREVIEW
 using ImGuiNET;
 #else
@@ -13,6 +14,10 @@ public static class PlayerDrawing
     public static void DrawLookLine(Vector2 position, float scale, float angle)
     {
         var config = MapDrawContext.Current.Config;
+        var extent = config.IsGratis && config.FlatPlayer
+            ? config.SoftConeLength * (config.ScalePlayerCone ? 1 : scale) * MapDrawContext.Current.GlobalScale
+            : config.ConeSize * (config.ScalePlayerCone ? 1 : scale);
+        if (!MapShape.ContainsSymbol(position, new Vector2(extent))) return;
         if (config.IsGratis && config.FlatPlayer) {
             DrawSoftCone(position, config.SoftConeLength * (config.ScalePlayerCone ? 1 : scale) * MapDrawContext.Current.GlobalScale, angle);
             return;
@@ -71,6 +76,7 @@ public static class PlayerDrawing
 
         if (MapDrawContext.Current.Config is { IsGratis: true, FlatPlayer: true } config) {
             scale *= MapDrawContext.Current.GlobalScale;
+            if (!MapShape.ContainsSymbol(position, new Vector2(13 * scale))) return;
             var forward = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
             var side = new Vector2(-forward.Y, forward.X);
             var tip = position + forward * 11 * scale;
@@ -90,6 +96,7 @@ public static class PlayerDrawing
         }
 
         var vectors = GetRotationVectors(angle, position, texture.Size / 2.0f * scale);
+        foreach (var point in vectors) if (!MapShape.ContainsSymbol(point, Vector2.Zero)) return;
 
         ImGui.GetWindowDrawList().AddImageQuad(texture.Handle, vectors[0], vectors[1], vectors[2], vectors[3]);
     }

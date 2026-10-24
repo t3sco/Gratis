@@ -9,7 +9,7 @@ namespace Gratis.Preview;
 
 internal static class Program
 {
-    private static readonly string[] Scenes = ["map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic"];
+    private static readonly string[] Scenes = ["map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable"];
 
     public static int Main(string[] args)
     {
@@ -39,10 +39,20 @@ internal static class Program
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             ImGui.StyleColorsDark();
             var textures = new Textures();
-            var context = new PreviewContext(textures);
+            using var context = new PreviewContext(textures);
             MapDrawContext.Current = context;
-            context.Config.MapCircle = options.Scene == "map-circular";
+            context.Config.MapCircle = options.Scene is "map-circular" or "map-glint-circular" or "map-feather-circular" or "map-edge-legacy-circular";
+            context.Config.FeatherEnabled = !options.Scene.StartsWith("map-edge-legacy", StringComparison.Ordinal);
+            if (options.FeatherWidth is { } featherWidth) context.Config.FeatherWidth = featherWidth;
             context.Config.VisualStyle = options.Scene == "map-classic" ? 1 : 0;
+            var materialShowcase = options.Scene is "map-glint" or "map-glint-circular" or "glass-card" or "glass-tinted" or "glass-unavailable";
+            context.BlurAvailable = options.Scene != "glass-unavailable";
+            context.Config.GlassBlur = options.Scene != "glass-tinted";
+            if (materialShowcase || options.Scene == "map-classic" || options.Scene.StartsWith("glass-", StringComparison.Ordinal)) {
+                context.Config.GlassEnabled = true;
+                context.Config.GlassGrain = true;
+                context.Config.RingRotate = true;
+            }
             if (context.Config.IsGratis) context.Config.ScaleWithZoom = false;
             context.BuildFonts(Path.Combine(AppContext.BaseDirectory, "assets", "NotoSans-Regular.ttf"));
             io.Fonts.GetTexDataAsRGBA32(out nint atlasPixels, out var atlasWidth, out var atlasHeight, out _);
@@ -56,19 +66,23 @@ internal static class Program
             if (options.Scene == "toolbar") mapSize.Y = Math.Min(mapSize.Y, 320);
             if (context.Config.MapCircle) mapSize = new Vector2(Math.Min(mapSize.X, mapSize.Y));
             var mapPosition = (io.DisplaySize - mapSize) / 2;
-            var mouse = options.Scene == "hover-tooltip"
+            var mouse = options.Scene == "hover-tooltip" || materialShowcase
                 ? mapPosition + mapSize * new Vector2(.56f, .53f)
-                : options.Scene == "toolbar" ? mapPosition + new Vector2(194, 26) : new Vector2(-1000);
+                : options.Scene is "toolbar" or "glass-toolbar" ? mapPosition + new Vector2(194, 26) : new Vector2(-1000);
             for (var frame = 0; frame < 12; frame++) {
+                context.Blurs.Clear();
                 io.AddMousePosEvent(mouse.X, mouse.Y);
                 ImGui.NewFrame();
                 DrawScene(options.Scene, mapPosition, mapSize, mapTexture);
                 ImGui.Render();
             }
             var renderer = new SoftwareRenderer(options.Width, options.Height, textures);
-            renderer.Render(ImGui.GetDrawData());
+            renderer.Render(ImGui.GetDrawData(), context.Blurs);
             renderer.Save(options.Output);
-            Console.WriteLine($"Scene {options.Scene}; native Dear ImGui {ImGui.GetVersion()}; Noto Sans atlas {atlasWidth}x{atlasHeight}.");
+            Console.WriteLine($"Scene {options.Scene}; native Dear ImGui {ImGui.GetVersion()}; Geist / Noto atlas {atlasWidth}x{atlasHeight}.");
+            Console.WriteLine($"Edge mask: {context.Config.FeatherShape}, {context.Config.FeatherWidth}px; map mesh {FeatheredMapDrawing.LastVertexCount} vertices (0 = legacy edge).");
+            Console.WriteLine($"Glass: {context.Blurs.Count} CPU box-blur approximations (not Dalamud GPU parity).");
+            if (options.Verify) Verification.Run(context, textures);
         }
         finally { ImGui.DestroyContext(native); }
     }
@@ -107,11 +121,16 @@ internal static class Program
         }
         Marker(size * new Vector2(.56f, .53f), size, 60071, "The Wanderer's Camp", null,
             "Level 50 - Preview marker");
+        if (scene == "glass-circle") {
+            var center = ImGui.GetWindowPos() + size / 2;
+            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), center - new Vector2(40), center + new Vector2(40), 40);
+        }
         ImGui.SetCursorPos(Vector2.Zero);
         MapToolbarDrawing.Draw(_ => { }, DrawFakeLayers);
         MapWindowDrawing.DrawFrameEffects();
+        if (MapDrawContext.Current.Config.IsGratis) MapCoordinateDrawing.Draw(new Vector2(18.4f, 23.7f), true,
+            scene is "hover-tooltip" or "map-glint" or "map-glint-circular" or "glass-card" or "glass-tinted" or "glass-unavailable" ? new Vector2(22.6f, 19.2f) : null);
         MapWindowDrawing.DrawTitleOnMap("Eorzea - La Noscea - Middle La Noscea###GratisMapWindow");
-        if (MapDrawContext.Current.Config.IsGratis) MapCoordinateDrawing.Draw(new Vector2(18.4f, 23.7f), true, scene == "hover-tooltip" ? new Vector2(22.6f, 19.2f) : null);
         ImGui.EndChild();
         ImGui.End();
     }
@@ -132,16 +151,19 @@ internal static class Program
         ImGui.EndPopup();
     }
 
-    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map)
+    private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth, bool Verify)
     {
         public static Options? Parse(string[] args)
         {
             var scene = "map-default";
             string? output = null, map = null;
+            float? featherWidth = null;
+            var verify = false;
             var width = 1280; var height = 800;
             for (var i = 0; i < args.Length; i++) {
+                if (args[i] == "--verify") { verify = true; continue; }
                 if (args[i] is "--help" or "-h") {
-                    Console.WriteLine("dotnet run --project Gratis.Preview -- --scene <map-default|map-circular|hover-tooltip|markers|toolbar|map-classic> --out <path.png> [--size WxH] [--map image.png]");
+                    Console.WriteLine($"dotnet run --project Gratis.Preview -- --scene <{string.Join('|', Scenes)}> [--out path.png] [--size WxH] [--map image.png] [--feather-width 0..48] [--verify]");
                     return null;
                 }
                 if (i + 1 >= args.Length) throw new ArgumentException($"Missing value for {args[i]}.");
@@ -150,6 +172,11 @@ internal static class Program
                     case "--scene": scene = value; break;
                     case "--out": output = value; break;
                     case "--map": map = value; break;
+                    case "--feather-width":
+                        if (!float.TryParse(value, out var feather) || !float.IsFinite(feather) || feather < 0 || feather > 48)
+                            throw new ArgumentException("Feather width must be 0..48.");
+                        featherWidth = feather;
+                        break;
                     case "--size": {
                         var parts = value.Split('x', 'X');
                         if (parts.Length != 2 || !int.TryParse(parts[0], out width) || !int.TryParse(parts[1], out height))
@@ -167,7 +194,7 @@ internal static class Program
             if (output is not null && !Path.GetExtension(output).Equals(".png", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("--out must have a .png extension.");
             output ??= Path.Combine(ProjectRoot(), "_preview", scene + ".png");
-            return new Options(scene, output, width, height, map);
+            return new Options(scene, output, width, height, map, featherWidth, verify);
         }
 
         private static string ProjectRoot()

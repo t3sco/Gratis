@@ -24,8 +24,25 @@ public static class MapShape
 
     public static void Update(Vector2 size) => Current = Rounding(size);
 
+    public static float FeatherWidth => MapDrawContext.Current.Config is { IsGratis: true, FeatherEnabled: true } config
+        ? Math.Clamp(float.IsFinite(config.FeatherWidth) ? config.FeatherWidth : 6, 0, 48) * MapDrawContext.Current.GlobalScale : 0;
+
+    public static bool ContainsSymbol(Vector2 center, Vector2 halfSize)
+    {
+        if (FeatherWidth <= 0) return true;
+        var min = ImGui.GetWindowPos();
+        var max = min + ImGui.GetWindowSize();
+        var radius = Rounding(max - min);
+        var feather = FeatherWidth;
+        return FeatheredMapDrawing.Depth(center - halfSize, min, max, radius) >= feather &&
+               FeatheredMapDrawing.Depth(center + halfSize, min, max, radius) >= feather &&
+               FeatheredMapDrawing.Depth(center + new Vector2(halfSize.X, -halfSize.Y), min, max, radius) >= feather &&
+               FeatheredMapDrawing.Depth(center + new Vector2(-halfSize.X, halfSize.Y), min, max, radius) >= feather;
+    }
+
     public static bool Contains(Vector2 screenPoint)
     {
+        if (FeatherWidth > 0) return ContainsSymbol(screenPoint, Vector2.Zero);
         if (Current <= 0.0f) return true;
 
         var min = ImGui.GetWindowPos();

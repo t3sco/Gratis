@@ -6,11 +6,23 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal sealed class PreviewContext(Textures textures) : MapDrawContext
+internal readonly record struct BackdropBlur(nint List, int IndexOffset, Vector2 Min, Vector2 Max, float Rounding, float Radius);
+
+internal sealed class PreviewContext(Textures textures) : MapDrawContext, IDisposable
 {
+    public List<BackdropBlur> Blurs { get; } = [];
+    public bool BlurAvailable { get; set; } = true;
+    public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius)
+    {
+        if (!BlurAvailable || !float.IsFinite(radius) || radius <= 0) return false;
+        Blurs.Add(new BackdropBlur((nint)list.NativePtr, list.IdxBuffer.Size, min, max, rounding, radius));
+        return true;
+    }
+
     private readonly Dictionary<uint, DrawTexture> icons = [];
     private readonly Dictionary<uint, IconSetting> settings = [];
     private readonly Dictionary<int, ImFontPtr> fonts = [];
+    private readonly Dictionary<(ChromeFontRole Role, int Size), ImFontPtr> chromeFonts = [];
     public override MapDrawingConfig Config { get; } = new() {
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
         MapVignette = .65f, MapGlowPulse = 0, ConeSize = 150,
@@ -18,11 +30,33 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext
     public override float GlobalScale => 1;
     public override float MapSizeFactor => 1;
 
+    private readonly Dictionary<int, ImFontPtr> iconFonts = [];
+    private global::System.Runtime.InteropServices.GCHandle iconRanges;
+    public void Dispose() { if (iconRanges.IsAllocated) iconRanges.Free(); }
+    public override IDrawFont? GetIconFont(float size) => !Config.IsGratis || iconFonts.Count == 0 ? null :
+        new Font(iconFonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);
+
     public void BuildFonts(string path)
     {
         var atlas = ImGui.GetIO().Fonts;
         atlas.AddFontFromFileTTF(path, 18);
         foreach (var size in new[] { 14, 18 }) fonts[size] = atlas.AddFontFromFileTTF(path, size);
+        if (Config.IsGratis) {
+            var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
+            if (File.Exists(iconPath)) {
+                iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
+                for (var size = 12; size <= 24; size++)
+                    iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, default, iconRanges.AddrOfPinnedObject());
+            }
+        }
+        foreach (var role in Enum.GetValues<ChromeFontRole>()) {
+            var filename = role switch {
+                ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
+                ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
+            };
+            foreach (var size in new[] { 12, 14 })
+                chromeFonts[(role, size)] = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", filename), size);
+        }
     }
 
     public override DrawTexture GetIcon(uint id)
@@ -63,6 +97,9 @@ internal sealed class PreviewContext(Textures textures) : MapDrawContext
     public override bool IsRadiusHovered(Vector2 center, float radius) => Vector2.Distance(ImGui.GetMousePos(), center) <= radius && ImGui.IsWindowHovered();
     public override IDisposable? PushLargeFont() => null;
     public override IDrawFont? GetTitleFont(int choice, float size) => choice <= 0 ? null : new Font(fonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);
+    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role) => !Config.IsGratis ? null :
+        Config.FrameFont != 0 ? GetTitleFont(Config.FrameFont == 2 ? 0 : 1, size) :
+        new Font(chromeFonts.Where(x => x.Key.Role == role).OrderBy(x => Math.Abs(x.Key.Size - size)).First().Value);
 
     private sealed class Font(ImFontPtr font) : IDrawFont
     {

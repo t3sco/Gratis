@@ -2,7 +2,9 @@ using System;
 using System.Numerics;
 using Gratis.Classes;
 using Gratis.Data;
-#if !GRATIS_PREVIEW
+#if GRATIS_PREVIEW
+using ImGuiNET;
+#else
 using Dalamud.Bindings.ImGui;
 #endif
 
@@ -20,6 +22,7 @@ public interface IDrawFont
 }
 
 public enum ToolbarAction { Parent, Layers, Follow, CenterPlayer, CenterMap, Search, Settings, Close }
+public enum ChromeFontRole { Body, Chip, Title, Coordinates }
 
 public abstract class MapDrawContext
 {
@@ -38,6 +41,9 @@ public abstract class MapDrawContext
     public abstract bool IsRadiusHovered(Vector2 center, float radius);
     public abstract IDisposable? PushLargeFont();
     public abstract IDrawFont? GetTitleFont(int choice, float size);
+    public abstract IDrawFont? GetChromeFont(float size, ChromeFontRole role);
+    public virtual IDrawFont? GetIconFont(float size) => null;
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }
+    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius) => false;
 }

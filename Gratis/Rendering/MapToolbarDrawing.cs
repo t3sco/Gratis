@@ -143,6 +143,8 @@ public static class MapToolbarDrawing
 
     private static void DrawGlyph(ImDrawListPtr list, Vector2 center, ToolbarAction action, Vector4 color, float scale, bool following)
     {
+        if (GratisIcons.Draw(list, center, GratisIcons.ForAction(action, following), color,
+            Math.Clamp(MapDrawContext.Current.Config.IconSize, 12, 24) * scale)) return;
         var ink = ImGui.GetColorU32(color);
         var stroke = 1.5f * scale;
         Vector2 P(float x, float y) => center + new Vector2(x, y) * scale;
