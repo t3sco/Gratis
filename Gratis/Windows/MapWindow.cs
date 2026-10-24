@@ -29,6 +29,9 @@ public class MapWindow : Window, Rendering.IMapWindowHost
     public bool ProcessingCommand { get; set; }
 
     private readonly Rendering.MapWindowFrame windowFrame = new();
+    public PlaceIndexGame PlacePalette { get; } = new();
+    Rendering.PaletteOverlay Rendering.IMapWindowHost.Palette => PlacePalette.Overlay;
+    public void OpenPalette() { if (System.SystemConfig.IsGratis && System.SystemConfig.Palette) PlacePalette.Overlay.Open(); }
     private uint lastMapId;
     private uint lastAreaPlaceNameId;
     private uint lastSubAreaPlaceNameId;
@@ -93,7 +96,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
         }
     }
 
-    protected override void DrawContents() => windowFrame.Draw(this);
+    protected override void DrawContents() { windowFrame.Draw(this); PlacePalette.CaptureGameKeys(); }
     SystemConfig Rendering.IMapWindowHost.Config => System.SystemConfig;
     Rendering.MapRendererFrame Rendering.IMapWindowHost.Renderer => System.MapRenderer.Frame;
     Vector2? Rendering.IMapWindowHost.PlayerPosition => Service.ObjectTable.LocalPlayer is { } player ? new Vector2(player.Position.X, player.Position.Z) : null;
@@ -222,7 +225,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
             Flags &= ~ImGuiWindowFlags.NoBackground;
         }
 
-        if (Service.KeyState[VirtualKey.ESCAPE] && IsFocused && !IsMapLocked()) {
+        if (!PlacePalette.Overlay.IsOpen && !PlacePalette.Overlay.CapturesInput && Service.KeyState[VirtualKey.ESCAPE] && IsFocused && !IsMapLocked()) {
             AgentMap.Instance()->Hide();
         }
 
@@ -287,6 +290,7 @@ public class MapWindow : Window, Rendering.IMapWindowHost
     public override unsafe void OnClose()
     {
         windowFrame.MoveHandle.Cancel();
+        if (PlacePalette.Overlay.IsOpen) PlacePalette.Overlay.Close(false);
         AgentMap.Instance()->Hide();
 
         SystemConfig.Save();

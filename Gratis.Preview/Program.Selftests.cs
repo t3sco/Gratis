@@ -6,7 +6,10 @@ internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
         ("imgui-errors", ImGuiErrorVerification.Run),
+        ("travel-provider", TravelVerification.Provider), ("frames-travel", TravelVerification.Frames),
         ("diff", ImageDiff.Verify), ("live", VerifyLiveScene),
+        ("palette-ranking", PaletteVerification.Ranking), ("palette-index", PaletteVerification.Index),
+        ("frames-palette", PaletteVerification.Frames),
         ("heading", HeadingVerification.Run), ("marker-classification", MarkerClassificationVerification.Run),
         ("markers", MarkerDeclutterVerification.Run), ("settings", SettingsVerification.Run),
         ("marker-visibility", MarkerVisibilityVerification.Run),

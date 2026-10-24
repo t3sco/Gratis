@@ -12,7 +12,8 @@ namespace Gratis.Preview;
 internal sealed record ScriptFrame(double Time, Vector2? Mouse = null, bool? Left = null, bool? Right = null,
     float Wheel = 0, bool? Focused = null, bool? Shift = null, bool? Control = null,
     Vector2? Player = null, float? Heading = null, bool? SettingsOpen = null,
-    Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null, bool? Alt = null, ScriptQuestLink? QuestLink = null, bool Escape = false, uint? TerritoryId = null);
+    Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null, bool? Alt = null, ScriptQuestLink? QuestLink = null, bool Escape = false, uint? TerritoryId = null,
+    ImGuiKey[]? Keys = null, string? Text = null);
 
 internal sealed record ScriptQuestLink(Vector2? Target, uint MapId, bool SameMap = true, uint? Icon = null);
 
@@ -21,6 +22,7 @@ internal sealed class FrameScript
     public int Width { get; set; } = 960;
     public int Height { get; set; } = 640;
     public float Dpi { get; set; } = 1;
+    public bool Palette { get; set; }
     public Vector2 ScreenOrigin { get; set; }
     public Vector2? DrawOffset { get; set; }
     public Vector2? PlayerCoordinates { get; set; }
@@ -66,6 +68,9 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     private int redraws = 1;
     private bool started;
     private readonly FrameScript script;
+    private ImGuiKey[] pressedKeys = [];
+    public PaletteFixture? PlaceSource { get; private set; }
+    public PaletteOverlay? Palette => PlaceSource?.Overlay;
     public Textures Textures { get; } = new();
     public PreviewContext Context { get; }
     public MapWindowFrame Window { get; } = new();
@@ -138,6 +143,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             id = Textures.Add(texture.Width, texture.Height, MapColour.Apply(texture.Pixels, Config.MapColour.Parameters));
         map = new DrawTexture(id, new Vector2(texture.Width, texture.Height));
         Renderer = new MapRendererFrame(this) { DrawOffset = script.DrawOffset ?? Vector2.Zero };
+        if (script.Palette) PlaceSource = new PaletteFixture(this);
         activate = Activate;
         layers = DrawLayers;
         foreach (var marker in script.Markers) {
@@ -171,6 +177,10 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         io.AddKeyEvent(ImGuiKey.Escape, frame.Escape);
         io.AddKeyEvent(ImGuiKey.ModShift, shift); io.AddKeyEvent(ImGuiKey.ModCtrl, control);
         io.AddKeyEvent(ImGuiKey.ModAlt, alt);
+        foreach (var key in pressedKeys) io.AddKeyEvent(key, false);
+        pressedKeys = frame.Keys ?? [];
+        foreach (var key in pressedKeys) io.AddKeyEvent(key, true);
+        if (frame.Text is { } text) io.AddInputCharactersUTF8(text);
         Context.Blurs.Clear();
         ImGui.NewFrame();
         Context.Blur.BeginFrame(FrameId);
@@ -283,6 +293,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     private void Activate(ToolbarAction action)
     {
         switch (action) {
+            case ToolbarAction.Search: if (Config.IsGratis && Config.Palette) Palette?.Open(); break;
             case ToolbarAction.Follow: Config.FollowPlayer = !Config.FollowPlayer; break;
             case ToolbarAction.Settings: SettingsOpen = !SettingsOpen; break;
             case ToolbarAction.CenterPlayer: Renderer.CenterOnCoordinate(player); break;

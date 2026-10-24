@@ -7,13 +7,20 @@ using KamiLib.Configuration;
 
 namespace Gratis.Rendering;
 
-public class MapDrawingConfig
+public partial class MapDrawingConfig
 #if !GRATIS_PREVIEW
     : CharacterConfiguration
 #endif
 {
     public bool ScaleWithFrame = true;
     public bool ClampToMap = true;
+
+    public bool Palette = true;
+    public string PaletteShortcut = "Ctrl+K";
+    public bool PaletteTeleportButton = true;
+    public bool PaletteShowUnattuned = true;
+    public int PaletteMaxResults = 8;
+    public bool PaletteHintSeen = false;
 
     public bool QuestSpotlight = true;
     public float SpotlightDim = .35f;

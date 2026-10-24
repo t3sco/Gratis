@@ -40,6 +40,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
         System.ConfigWindow = new ConfigurationWindow();
         System.MapWindow = new MapWindow();
+        Rendering.MapDrawContext.Current.Assistance = TravelIntegration.Assistance;
 
         System.WindowManager = new WindowManager(Service.PluginInterface);
         System.WindowManager.AddWindow(System.ConfigWindow, WindowFlags.IsConfigWindow | WindowFlags.RequireLoggedIn);
@@ -91,6 +92,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.ZoneSwitchController?.Dispose();
         System.ZoneSwitchController = null;
         System.MapWindow.OnClose();
+        System.MapWindow.PlacePalette.Dispose();
         System.WindowManager.Dispose();
         System.IntegrationsController.Dispose();
         System.AreaMapController.Dispose();

@@ -54,6 +54,10 @@ public unsafe class MapToolbar {
                 break;
             }
             case ToolbarAction.Search: {
+                if (System.SystemConfig.IsGratis && System.SystemConfig.Palette) {
+                    System.MapWindow.OpenPalette();
+                    break;
+                }
                 System.WindowManager.AddWindow(new MapSelectionWindow {
                     SingleSelectionCallback = selection => {
                         if (selection?.Map != null) {

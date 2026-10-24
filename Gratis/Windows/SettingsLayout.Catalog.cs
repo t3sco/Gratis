@@ -81,6 +81,9 @@ public sealed partial class SettingsLayout
             tip: "Angular pulse speed; the renderer applies a factor of two.");
         Add("MapVignette", "Edge vignette");
 
+        Group("Map", "Travel", Gratis);
+        Add("TravelActions", "Lifestream travel actions", tip: "Available when Lifestream is loaded. Enabled on first detection.");
+        Add("TravelConfirmGil", "Confirm travel cost", 0, 10000, "%.0f gil");
         Group("Map", "Viewport");
         Add("ScaleWithFrame", "Scale with frame", tip: "Uses the shorter side; resizing preserves your zoom.");
         Add("ClampToMap", "Clamp to map", tip: "Keep the viewport inside the map texture, including near an edge.");
@@ -97,6 +100,12 @@ public sealed partial class SettingsLayout
         Add("ZoomSpeed", "Wheel zoom step", .001f, .5f, "%.3f / tick");
         Add("AutoZoom", "Auto zoom");
         Add("AutoZoomScaleFactor", "Auto zoom factor", .2f, 1, "%.2fx", when: c => c.AutoZoom);
+        Group("Map", "Place search", Gratis);
+        Add("Palette", "Command palette");
+        Add("PaletteShortcut", "Search shortcut", tip: "Ctrl+K by default; supports Ctrl, Shift, Alt and a letter, for example Ctrl+Shift+P.");
+        Add("PaletteTeleportButton", "Allow palette teleports", tip: "Show locations with Enter. Alt+Enter teleports only when attuned and the game permits it.");
+        Add("PaletteShowUnattuned", "Show unattuned aetherytes");
+        Add("PaletteMaxResults", "Visible search rows", 1, 12, "%.0f");
         Group("Map", "On open");
         Add("FollowOnOpen", "Follow player on open");
         Add("CenterOnOpen", "Centre on open", choices: "Disabled|Player|Map");

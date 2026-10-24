@@ -16,7 +16,7 @@ internal static partial class Program
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
             if (args is ["--selftest", var test]) return RunSelftests(test);
-            if (TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
+            if (TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args) || TryPaletteScene(args) || TryTravelScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             var options = Options.Parse(args);
             if (options is null) return 0;
             Run(options);
