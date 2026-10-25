@@ -9,6 +9,7 @@ public static class GratisTheme
     public const float Gap = 8;
     public const float ControlHeight = 36;
     public const float ToolbarHeight = 44;
+    public const float ToolbarCenterMargin = 32;
     public const float TextSize = 14;
     public const float SmallTextSize = 12;
     public const float IconSize = 18;

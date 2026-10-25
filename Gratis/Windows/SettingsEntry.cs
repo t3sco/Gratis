@@ -54,8 +54,16 @@ public sealed class SettingsEntry
     }
 
     public object Value(SystemConfig config) => fields[^1].GetValue(Owner(config))!;
-    public void Set(SystemConfig config, object value) => fields[^1].SetValue(Owner(config), value);
-    public void Reset(SystemConfig config, SystemConfig defaults) => Set(config, Value(defaults));
+    public void Set(SystemConfig config, object value)
+    {
+        fields[^1].SetValue(Owner(config), value);
+        if (Path == "ToolbarAnchor") config.ToolbarAnchorExplicit = true;
+    }
+    public void Reset(SystemConfig config, SystemConfig defaults)
+    {
+        Set(config, Value(defaults));
+        if (Path == "ToolbarAnchor") config.ToolbarAnchorExplicit = defaults.ToolbarAnchorExplicit;
+    }
 
     public bool Draw(SystemConfig config)
     {

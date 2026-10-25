@@ -28,6 +28,9 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     private readonly Dictionary<uint, IconSetting> settings = [];
     private readonly Dictionary<int, ImFontPtr> fonts = [];
     private readonly Dictionary<(ChromeFontRole Role, int Size), ImFontPtr> chromeFonts = [];
+    private readonly Dictionary<ImFontPtr, Font> textFontScopes = [];
+    private ImFontPtr defaultTextFont;
+    public bool TextFontsReady { get; set; } = true;
     public override MapDrawingConfig Config { get; } = config ?? new() {
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
         MapVignette = .65f, MapGlowPulse = 0, ConeSize = 150,
@@ -65,13 +68,16 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     {
         var atlas = ImGui.GetIO().Fonts;
         var fontConfig = ImGuiNative.ImFontConfig_ImFontConfig();
-        fontConfig->OversampleH = 2;
+        fontConfig->OversampleH = 1;
         fontConfig->OversampleV = 1;
         fontConfig->PixelSnapH = 1;
         try {
-            atlas.AddFontFromFileTTF(path, 18);
-            foreach (var size in Config.IsGratis && Config.FrameFont != 0 ? TextDrawing.Sizes : new[] { 14, 18 })
+            defaultTextFont = atlas.AddFontFromFileTTF(path, 18);
+            textFontScopes[defaultTextFont] = new Font(defaultTextFont);
+            foreach (var size in Config.IsGratis && Config.FrameFont != 0 ? TextDrawing.Sizes : new[] { 14, 18 }) {
                 fonts[size] = atlas.AddFontFromFileTTF(path, size, Config.IsGratis ? new ImFontConfigPtr(fontConfig) : default);
+                textFontScopes[fonts[size]] = new Font(fonts[size]);
+            }
             if (Config.IsGratis) {
                 var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
                 if (File.Exists(iconPath)) {
@@ -87,9 +93,11 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
                     ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
                     ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
                 };
-                foreach (var size in Config.IsGratis ? TextDrawing.Sizes : DpiScale == 1 ? new[] { 12, 14 } : new[] { 12, 14, 24, 28 })
+                foreach (var size in Config.IsGratis ? TextDrawing.Sizes : DpiScale == 1 ? new[] { 12, 14 } : new[] { 12, 14, 24, 28 }) {
                     chromeFonts[(role, size)] = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", filename), size,
                         Config.IsGratis ? new ImFontConfigPtr(fontConfig) : default);
+                    textFontScopes[chromeFonts[(role, size)]] = new Font(chromeFonts[(role, size)]);
+                }
             }
         }
         finally { ImGuiNative.ImFontConfig_destroy(fontConfig); }
@@ -132,10 +140,23 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public override bool PrepareMarker(MarkerInfo marker) => !GetIconSetting(marker.IconId).Hide || Config.IsGratis && MarkerVisibility.IsPriority(marker);
     public override bool IsRadiusHovered(Vector2 center, float radius) => Vector2.Distance(ImGui.GetMousePos(), center) <= radius && ImGui.IsWindowHovered();
     public override IDisposable? PushLargeFont() => null;
-    public override IDrawFont? GetTitleFont(int choice, float size) => choice <= 0 ? null : new Font(fonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);
-    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role) => !Config.IsGratis ? null :
-        Config.FrameFont != 0 ? GetTitleFont(Config.FrameFont == 2 ? 0 : 1, size) :
-        new Font(chromeFonts.Where(x => x.Key.Role == role).OrderBy(x => Math.Abs(x.Key.Size - size)).First().Value);
+    public override IDisposable PushDefaultTextFont() => textFontScopes[defaultTextFont].Push();
+    public override IDrawFont? GetTitleFont(int choice, float size)
+    {
+        if (choice <= 0) return null;
+        var nearest = -1;
+        foreach (var entry in fonts)
+            if (nearest < 0 || Math.Abs(entry.Key - size) < Math.Abs(nearest - size)) nearest = entry.Key;
+        return nearest >= 0 ? textFontScopes[fonts[nearest]] : textFontScopes[defaultTextFont];
+    }
+    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role)
+    {
+        if (!Config.IsGratis) return null;
+        if (!TextFontsReady) return textFontScopes[defaultTextFont];
+        if (Config.FrameFont != 0) return GetTitleFont(Config.FrameFont == 2 ? 0 : 1, size);
+        return chromeFonts.TryGetValue((role, TextDrawing.PixelSize(size)), out var font)
+            ? textFontScopes[font] : textFontScopes[defaultTextFont];
+    }
 
     private sealed class Font(ImFontPtr font) : IDrawFont
     {

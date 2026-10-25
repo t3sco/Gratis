@@ -20,15 +20,17 @@ internal static class ChromeLayoutVerification
 
     public static void Layout()
     {
+        ToolbarMigration();
+        ToolbarPlacement();
         var c = JsonSerializer.Deserialize<SystemConfig>("{}", new JsonSerializerOptions { IncludeFields = true })!;
-        Require(c.ChromeScale == 1 && !c.RestoreOpacityOnHover && c.ToolbarAnchor == ChromeAnchor.TopLeft &&
+        Require(c.ChromeScale == 1 && !c.RestoreOpacityOnHover && c.ToolbarAnchor == ChromeAnchor.TopCenter &&
             c.FilterBarAnchor == ChromeAnchor.BottomLeft && c.LocationAnchor == ChromeAnchor.BottomRight &&
             c.CoordinateAnchor == ChromeAnchor.BottomRight && c.TravelCardAnchor == ChromeAnchor.TopCenter, "Old configs acquire layout defaults");
         SetAnchors(c, ChromeAnchor.TopRight); c.ChromeScale = 1.4f; c.RestoreOpacityOnHover = true;
         var restored = JsonSerializer.Deserialize<SystemConfig>(JsonSerializer.Serialize(c, ScriptedFrameDriver.Json), ScriptedFrameDriver.Json)!;
         Require(restored.TravelCardAnchor == ChromeAnchor.TopRight && restored.ChromeScale == 1.4f && restored.RestoreOpacityOnHover, "Layout settings round trip");
         SettingsLayout.Reset(c, "Chrome & motion");
-        Require(c.ToolbarAnchor == ChromeAnchor.TopLeft && c.LocationAnchor == ChromeAnchor.BottomRight && c.ChromeScale == 1 && !c.RestoreOpacityOnHover, "Section reset restores layout and hover settings");
+        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && c.LocationAnchor == ChromeAnchor.BottomRight && c.ChromeScale == 1 && !c.RestoreOpacityOnHover, "Section reset restores layout and hover settings");
         foreach (var a in Enum.GetValues<ChromeAnchor>()) {
             var min = new Vector2(14); var max = new Vector2(626, 466); var size = new Vector2(100, 36);
             var first = ChromeLayout.Resolve(min, max, size, a, [], 8);
@@ -71,6 +73,69 @@ internal static class ChromeLayoutVerification
             !ChromeLayout.Overlap(MapWindowDrawing.TitleBounds, MapWindowDrawing.CoordinateBounds) &&
             MapWindowDrawing.CoordinateBounds.Y < c.WindowPosition.Y + c.WindowSize.Y / 2, "Alternate title/coordinate styles honour anchors too");
         Console.WriteLine("Chrome layout: legacy/default/reset settings; six anchors; 144 live layouts across sizes, scales and shapes; inset, collision and bottom-row alignment.");
+    }
+
+    private static void ToolbarMigration()
+    {
+        foreach (var json in new[] { "{}", "{\"ToolbarAnchor\":0}", "{\"ToolbarAnchor\":\"TopLeft\"}",
+            "{\"ToolbarAnchor\":\"TopLeft\",\"ToolbarAnchorExplicit\":false}" }) {
+            var old = JsonSerializer.Deserialize<SystemConfig>(json, ScriptedFrameDriver.Json)!;
+            Require(old.ToolbarAnchor == ChromeAnchor.TopCenter && !old.ToolbarAnchorExplicit, "Missing and unmarked old Top-left anchors migrate to Top-centre");
+        }
+        var c = JsonSerializer.Deserialize<SystemConfig>("{\"ToolbarAnchor\":\"BottomRight\"}", ScriptedFrameDriver.Json)!;
+        Require(c.ToolbarAnchor == ChromeAnchor.BottomRight, "Other legacy anchors are preserved");
+        var picker = SettingsLayout.Entries.Single(e => e.Path == "ToolbarAnchor");
+        picker.Set(c, ChromeAnchor.TopLeft);
+        var saved = JsonSerializer.Deserialize<SystemConfig>(JsonSerializer.Serialize(c, ScriptedFrameDriver.Json), ScriptedFrameDriver.Json)!;
+        Require(saved.ToolbarAnchorExplicit && saved.ToolbarAnchor == ChromeAnchor.TopLeft, "Explicit Top-left picker choice persists across reload");
+        picker.Reset(c, new SystemConfig());
+        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && !c.ToolbarAnchorExplicit, "Picker reset restores new default and clears explicit choice");
+        picker.Set(c, ChromeAnchor.TopRight); c.ResetChromeLayout();
+        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && !c.ToolbarAnchorExplicit, "Layout reset clears explicit choice");
+        picker.Set(c, ChromeAnchor.TopLeft); SettingsLayout.Reset(c, "Chrome & motion");
+        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && !c.ToolbarAnchorExplicit, "Section reset clears explicit choice");
+        foreach (var path in new[] { "ToolbarAnchor", "FilterBarAnchor", "LocationAnchor", "CoordinateAnchor", "TravelCardAnchor" })
+            Require(SettingsLayout.Find(c, "Chrome & motion", "").Any(e => e.Path == path), "All five anchor pickers remain in settings");
+    }
+
+    private static void ToolbarPlacement()
+    {
+        foreach (var dpi in new[] { 1f, 2f }) {
+            var c = Config(new Vector2(780, 600) * dpi);
+            using var driver = new ScriptedFrameDriver(c, new FrameScript { Width = (int)(1440 * dpi), Height = (int)(960 * dpi), Dpi = dpi });
+            var travel = driver.Context.Assistance = new MapAssistance(NullTravelProvider.Instance, new TravelFixture(driver), () => true, () => { });
+            double time = 0;
+            foreach (var scale in new[] { .8f, 1f, 1.5f })
+            foreach (var segmented in new[] { false, true })
+            foreach (var width in new[] { 320f, 340f, 360f, 780f, 1280f }) {
+                c.ChromeScale = scale; c.SegmentedToolbar = segmented;
+                c.LocationAnchor = ChromeAnchor.TopLeft; c.CoordinateAnchor = ChromeAnchor.TopRight;
+                travel.OfferContextTarget(new(new(400, 0), 1, SpotlightSource.Quest), time);
+                driver.Step(new(time += .04, Size: new Vector2(width, 600) * dpi)); driver.Step(new(time += .04));
+                var toolbar = MapToolbarDrawing.LastBounds; var handle = driver.Window.MoveHandle.Geometry;
+                var totalScale = dpi * scale; var inset = MathF.Ceiling(GratisTheme.Inset * totalScale);
+                var centered = width * dpi - 2 * inset >= (8 * GratisTheme.ControlHeight + 8 + 2 * (GratisTheme.ToolbarCenterMargin - GratisTheme.Inset)) * totalScale;
+                Require(Valid(toolbar), $"Toolbar fits at {width}/{scale}/{dpi}");
+                Require(MapToolbarDrawing.EffectiveAnchor == (centered ? ChromeAnchor.TopCenter : ChromeAnchor.TopLeft), "Narrow toolbar falls back to Top-left");
+                Require(toolbar.Y >= handle.HitMax.Y + GratisTheme.Gap * totalScale - .01f &&
+                    !ChromeLayout.Overlap(toolbar, new(handle.HitMin.X, handle.HitMin.Y, handle.HitMax.X, handle.HitMax.Y)), "Toolbar clears the entire move-handle hit zone with a fixed scaled gap");
+                if (centered) {
+                    Require(MathF.Abs((toolbar.X + toolbar.Z) / 2 - (c.WindowPosition.X + width * dpi / 2)) < .01f, "Toolbar is horizontally centred");
+                    Require(toolbar.X >= c.WindowPosition.X + GratisTheme.ToolbarCenterMargin * totalScale - .01f &&
+                        toolbar.Z <= c.WindowPosition.X + width * dpi - GratisTheme.ToolbarCenterMargin * totalScale + .01f, "Centred toolbar has comfortable side margins");
+                }
+                else Require(MathF.Abs(toolbar.X - c.WindowPosition.X - inset) < .01f, "Narrow fallback uses usual left inset");
+                var surfaces = new[] { toolbar, MapWindowDrawing.TitleBounds, MapWindowDrawing.CoordinateBounds, FilterBarDrawing.LastBounds, travel.ChipBounds };
+                for (var i = 0; i < surfaces.Length; i++) for (var j = i + 1; j < surfaces.Length; j++)
+                    Require(!ChromeLayout.Overlap(surfaces[i], surfaces[j]), $"Toolbar and corner/centre chrome do not overlap at {width}/{scale}/{dpi}");
+                if (width >= 780) Require(Valid(travel.ChipBounds) && travel.ChipBounds.Y >= toolbar.W + GratisTheme.Gap * totalScale - .01f,
+                    "Another Top-centre element stacks below the toolbar");
+            }
+            c.ToolbarAnchor = ChromeAnchor.TopLeft; c.ToolbarAnchorExplicit = true;
+            driver.Step(new(time += .04, Size: new Vector2(1280, 800) * dpi));
+            Require(MapToolbarDrawing.EffectiveAnchor == ChromeAnchor.TopLeft, "Explicit Top-left never auto-centres");
+        }
+        Console.WriteLine("Toolbar placement: migration, explicit choices/reset, 60 live width/scale/DPI/style layouts, handle clearance, narrow fallback and centre/corner collisions.");
     }
 
     public static void HoverFade()

@@ -264,15 +264,16 @@ public static class DrawHelpers
 
     private static void DrawCrispText(MarkerInfo marker, string text)
     {
-        using var font = MapDrawContext.Current.GetChromeFont(96 * marker.Scale, ChromeFontRole.Body)?.Push();
-        var size = TextDrawing.Measure(text);
+        var pixels = 96 * marker.Scale;
+        using var font = MapDrawContext.Current.GetChromeFont(pixels, ChromeFontRole.Body)?.Push();
+        var size = TextDrawing.Measure(text, pixels: pixels);
         var position = TextDrawing.Snap(marker.Position + marker.Offset + ImGui.GetWindowPos() - size / 2);
         if (!MapShape.ContainsSymbol(position + size / 2, size / 2 + Vector2.One)) return;
         var list = ImGui.GetWindowDrawList();
         for (var x = -1; x <= 1; x++)
             for (var y = -1; y <= 1; y++)
-                if (x != 0 || y != 0) TextDrawing.Draw(list, position + new Vector2(x, y), ImGui.GetColorU32(new Vector4(0, 0, 0, .9f)), text);
-        TextDrawing.Draw(list, position, ImGui.GetColorU32(Vector4.One), text);
+                if (x != 0 || y != 0) TextDrawing.Draw(list, position + new Vector2(x, y), ImGui.GetColorU32(new Vector4(0, 0, 0, .9f)), text, pixels: pixels);
+        TextDrawing.Draw(list, position, ImGui.GetColorU32(Vector4.One), text, pixels: pixels);
     }
 
     private static void ProcessInteractions(MarkerInfo markerInfo)

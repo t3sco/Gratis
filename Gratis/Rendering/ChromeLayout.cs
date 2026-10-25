@@ -17,6 +17,7 @@ public static class ChromeLayout
     private static readonly List<(string Id, Vector4 Bounds, ChromeAnchor Anchor)> occupied = [];
     private static int frame = -1;
     private static MapDrawContext? context;
+    private static Vector4 handleBounds;
     public static (Vector2 Min, Vector2 Max) SafeBounds()
     {
         var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
@@ -33,6 +34,13 @@ public static class ChromeLayout
     {
         if (frame == ImGui.GetFrameCount() && ReferenceEquals(context, MapDrawContext.Current)) return;
         frame = ImGui.GetFrameCount(); context = MapDrawContext.Current; occupied.Clear();
+        handleBounds = Vector4.Zero;
+        if (context.Config.IsGratis && context.Config is Gratis.Data.SystemConfig { MoveHandle: true }) {
+            var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            var handle = MoveHandleMath.Geometry(min, max, context.Config.MapCircle, context.GlobalScale);
+            handleBounds = new(handle.HitMin.X, handle.HitMin.Y, handle.HitMax.X, handle.HitMax.Y);
+            occupied.Add(("move-handle", handleBounds, ChromeAnchor.TopCenter));
+        }
     }
     public static bool Overlap(Vector4 a, Vector4 b) => a.Z > a.X && a.W > a.Y && b.Z > b.X && b.W > b.Y &&
         a.X < b.Z && a.Z > b.X && a.Y < b.W && a.W > b.Y;
@@ -61,6 +69,8 @@ public static class ChromeLayout
     public static Vector4 Place(string id, Vector2 size, ChromeAnchor anchor)
     {
         Begin(); var (min, max) = SafeBounds(); var gap = GratisTheme.Gap * GratisTheme.ChromeScale;
+        if (id == "toolbar" && anchor <= ChromeAnchor.TopRight && handleBounds != Vector4.Zero)
+            min.Y = MathF.Max(min.Y, MathF.Ceiling(handleBounds.W + gap));
         occupied.RemoveAll(p => p.Id == id);
         obstacles.Clear(); foreach (var item in occupied) obstacles.Add(item.Bounds);
         if (id == "location") {

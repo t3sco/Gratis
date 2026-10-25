@@ -93,54 +93,101 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     {
         public IDisposable Push() => handle.Push();
     }
-    public override IDrawFont? GetTitleFont(int choice, float size) => GetNativeTitleFont(choice, size) is { Available: true } font ? new Font(font) : null;
-    private readonly global::System.Collections.Generic.Dictionary<(int Choice, int Size), global::Dalamud.Interface.ManagedFontAtlas.IFontHandle> titleFonts = [];
+    private readonly FontAtlasBudget fontBudget = new();
+    private readonly global::System.Collections.Generic.Dictionary<(int Choice, int Size), IFontHandle> titleFonts = [];
+    private readonly global::System.Collections.Generic.Dictionary<IFontHandle, TextFont> textDrawFonts = [];
+    private DefaultTextFont? defaultText;
     private bool fontFailureLogged;
-
-    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role)
+    private int defaultFallbacks;
+    private IDrawFont DefaultText => defaultText ??= new DefaultTextFont(this);
+    private sealed class DefaultTextFont(DalamudMapDrawContext owner) : IDrawFont
     {
-        try { return GetChromeFontCore(size, role); }
-        catch (Exception error) {
-            if (!fontFailureLogged) {
-                fontFailureLogged = true;
-                Service.Log.Warning(error, "Font atlas unavailable; retaining the current native font.");
+        public IDisposable Push() { owner.defaultFallbacks++; return Service.PluginInterface.UiBuilder.DefaultFontHandle.Push(); }
+    }
+    private sealed class TextFont(DalamudMapDrawContext owner, IFontHandle handle) : IDrawFont
+    {
+        public string Validity = "not-checked";
+        public int Fallbacks;
+        public unsafe IDisposable Push()
+        {
+            IDisposable? pushed = null;
+            try {
+                using var locked = handle.TryLock(out _);
+                if (locked is not null && handle.LoadException is null) {
+                    pushed = handle.Push();
+                    if (ImGui.GetFont().Handle == locked.ImFont.Handle && DrawBinding.ValidTextFont(ImGui.GetFont())) {
+                        Validity = "valid";
+                        return pushed;
+                    }
+                    pushed.Dispose();
+                    pushed = null;
+                    Validity = "invalid-font/texture/ASCII";
+                }
+                else Validity = "pending/failed";
             }
-            return null;
+            catch (Exception error) {
+                pushed?.Dispose();
+                Validity = "failed:" + error.GetType().Name;
+                owner.LogFontFailure(error);
+            }
+            Fallbacks++;
+            return owner.DefaultText.Push();
         }
     }
-
-    private IDrawFont? GetChromeFontCore(float size, ChromeFontRole role)
+    private IDrawFont GuardText(IFontHandle? handle)
+    {
+        if (handle is null) return DefaultText;
+        if (!textDrawFonts.TryGetValue(handle, out var cached)) textDrawFonts[handle] = cached = new TextFont(this, handle);
+        return cached;
+    }
+    public override IDisposable PushDefaultTextFont() => DefaultText.Push();
+    public override IDrawFont? GetTitleFont(int choice, float size)
+    {
+        try {
+            var handle = GetNativeTitleFont(choice, size);
+            return Config.IsGratis ? GuardText(handle) : handle is { Available: true } ? new Font(handle) : null;
+        }
+        catch (Exception error) { LogFontFailure(error); return Config.IsGratis ? DefaultText : null; }
+    }
+    public override IDrawFont? GetChromeFont(float size, ChromeFontRole role)
     {
         if (!Config.IsGratis) return null;
-        if (Config.FrameFont == 2) return GetTitleFont(2, size);
-        var fallback = GetNativeTitleFont(1, size)!;
-        if (Config.FrameFont != 0) return fallback.Available ? new Font(fallback) : null;
-
+        try { return GetChromeFontCore(size, role); }
+        catch (Exception error) {
+            LogFontFailure(error);
+            return DefaultText;
+        }
+    }
+    private void LogFontFailure(Exception error)
+    {
+        if (fontFailureLogged) return;
+        fontFailureLogged = true;
+        Service.Log.Warning(error, "Sized text unavailable; using the default Dalamud UI font.");
+    }
+    private IDrawFont GetChromeFontCore(float size, ChromeFontRole role)
+    {
+        if (Config.FrameFont != 0) return GuardText(GetNativeTitleFont(Config.FrameFont == 2 ? 2 : 1, size));
         var pixels = TextDrawing.PixelSize(size);
         var key = (10 + (int)role, pixels);
         if (!titleFonts.TryGetValue(key, out var handle)) {
-            var filename = role switch {
-                ChromeFontRole.Title => "Geist-SemiBold.ttf",
-                ChromeFontRole.Chip => "Geist-Medium.ttf",
-                ChromeFontRole.Coordinates => "GeistMono-Regular.ttf",
-                _ => "Geist-Regular.ttf",
-            };
-            handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
-                var config = new SafeFontConfig { SizePx = pixels, OversampleH = 2, OversampleV = 1, PixelSnapH = true };
-                try {
-                    using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream($"Gratis.Assets.Fonts.{filename}")
-                        ?? throw new global::System.IO.FileNotFoundException(filename);
-                    var geist = toolkit.AddFontFromStream(stream, config, false, filename);
-                    config.MergeFont = geist;
-                }
-                catch (Exception error) {
-                    Service.Log.Warning(error, "Geist font unavailable; using Noto.");
-                }
-                toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, config);
-            }));
+            if (!fontBudget.Reserve(key.Item1, pixels, FontAtlasBudget.TextGlyphs)) return DefaultText;
+            handle = CreateTextFont(pixels, role);
             titleFonts[key] = handle;
         }
-        return handle.Available ? new Font(handle) : fallback.Available ? new Font(fallback) : null;
+        return GuardText(handle);
+    }
+    private IFontHandle CreateTextFont(int pixels, ChromeFontRole role)
+    {
+        var filename = role switch {
+            ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
+            ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
+        };
+        return Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
+            using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream($"Gratis.Assets.Fonts.{filename}")
+                ?? throw new global::System.IO.FileNotFoundException(filename);
+            toolkit.Font = toolkit.AddFontFromStream(stream,
+                new SafeFontConfig { SizePx = pixels, OversampleH = 1, OversampleV = 1, PixelSnapH = true, GlyphRanges = FontAtlasBudget.TextRanges }, false, filename);
+        }));
     }
 
     private readonly global::System.Collections.Generic.Dictionary<int, IFontHandle> iconFonts = [];
@@ -152,6 +199,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
         if (iconFontFailed) return null;
         var pixels = TextDrawing.PixelSize(size);
         if (!iconFonts.ContainsKey(pixels)) {
+            if (!fontBudget.Reserve(100, pixels, GratisIcons.GlyphRanges.Length / 2)) return NearestIconFont(pixels);
             try { CreateIconFont(pixels); }
             catch (Exception error) {
                 iconFontFailed = true;
@@ -159,6 +207,11 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
                 return null;
             }
         }
+        return NearestIconFont(pixels);
+    }
+
+    private IDrawFont? NearestIconFont(int pixels)
+    {
         var nearest = -1;
         foreach (var entry in iconFonts)
             if (entry.Value.Available && (nearest < 0 || Math.Abs(entry.Key - pixels) < Math.Abs(nearest - pixels))) nearest = entry.Key;
@@ -171,7 +224,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
             try {
                 using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream("Gratis.Assets.Fonts.Lucide.lucide.ttf")
                     ?? throw new global::System.IO.FileNotFoundException("Lucide");
-                toolkit.AddFontFromStream(stream, new SafeFontConfig { SizePx = pixels, OversampleH = 2, OversampleV = 1, PixelSnapH = true, GlyphRanges = GratisIcons.GlyphRanges }, false, "Lucide");
+                toolkit.AddFontFromStream(stream, new SafeFontConfig { SizePx = pixels, OversampleH = 1, OversampleV = 1, PixelSnapH = true, GlyphRanges = GratisIcons.GlyphRanges }, false, "Lucide");
             }
             catch (Exception error) {
                 iconFontFailed = true;
@@ -194,6 +247,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     {
         foreach (var font in titleFonts.Values) font.Dispose();
         titleFonts.Clear();
+        textDrawFonts.Clear();
         foreach (var font in iconFonts.Values) font.Dispose();
         iconFonts.Clear();
         iconDrawFonts.Clear();
@@ -215,11 +269,8 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
             var size = snap ? TextDrawing.PixelSize(sizePx) : Math.Max(8, (int)(sizePx + 0.5f));
             var notoKey = (snap ? 20 : 1, size);
             if (!titleFonts.TryGetValue(notoKey, out var notoHandle)) {
-                notoHandle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
-                    var config = new SafeFontConfig { SizePx = size };
-                    if (snap) { config.OversampleH = 2; config.OversampleV = 1; config.PixelSnapH = true; }
-                    toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, config);
-                }));
+                if (!fontBudget.Reserve(notoKey.Item1, size, FontAtlasBudget.TextGlyphs)) return null;
+                notoHandle = CreateNotoFont(size, snap);
                 titleFonts[notoKey] = notoHandle;
             }
 
@@ -239,6 +290,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
 
         var key = (fontChoice, (int)best);
         if (!titleFonts.TryGetValue(key, out var handle)) {
+            if (!fontBudget.Reserve(fontChoice, (int)best, 0)) return null;
             handle = Service.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(new global::Dalamud.Interface.GameFonts.GameFontStyle(best));
             titleFonts[key] = handle;
         }
@@ -246,10 +298,24 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
         return handle;
     }
 
-    public override string TextDiagnostics() => base.TextDiagnostics() +
-        $" atlasReady={(global::System.Linq.Enumerable.Count(titleFonts.Values, x => x.Available))}/{titleFonts.Count}" +
-        $" requested=[{string.Join(",", titleFonts.Keys)}] lucide={iconFonts.Count} oversample=2x1 pixelSnapH=true";
+    private IFontHandle CreateNotoFont(int size, bool snap) =>
+        Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
+            var config = new SafeFontConfig { SizePx = size };
+            if (snap) { config.GlyphRanges = FontAtlasBudget.TextRanges; config.OversampleH = 1; config.OversampleV = 1; config.PixelSnapH = true; }
+            toolkit.Font = toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, config);
+        }));
 
+    public override string TextDiagnostics()
+    {
+        var message = new global::System.Text.StringBuilder(base.TextDiagnostics());
+        message.Append($" handles={titleFonts.Count + iconFonts.Count}/{FontAtlasBudget.MaximumHandles} reserved={fontBudget.Count} estimatedArea={fontBudget.EstimatedArea}/{FontAtlasBudget.MaximumArea}px budgetWarning={fontBudget.Denied > 0} denied={fontBudget.Denied} defaultFallbacks={defaultFallbacks} oversample=1x1 neverEvict=true");
+        foreach (var pair in titleFonts) {
+            textDrawFonts.TryGetValue(pair.Value, out var font);
+            var ranges = pair.Key.Choice == 1 ? "legacy" : pair.Key.Choice is >= 2 and <= 5 ? "game-bitmap" : "0020-024F,2000-206F";
+            message.Append($"; text({pair.Key.Choice},{pair.Key.Size}) built={pair.Value.Available} loadError={pair.Value.LoadException?.GetType().Name ?? "none"} ranges={ranges} validity={font?.Validity ?? "not-checked"} fallbacks={font?.Fallbacks ?? 0}");
+        }
+        return message.Append("; ").Append(IconFontDiagnostics()).ToString();
+    }
 
     private static FontAwesomeIcon Icon(ToolbarAction action) => action switch {
         ToolbarAction.Parent => FontAwesomeIcon.ArrowUp,

@@ -5,6 +5,7 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("font-safety", FontSafetyVerification.Run),
         ("marker-icon-fallback", MarkerFallbackVerification.Run),
         ("chrome-layout", ChromeLayoutVerification.Layout),
         ("frames-hover-opacity", ChromeLayoutVerification.HoverFade),

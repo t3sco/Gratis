@@ -9,6 +9,29 @@ namespace Gratis.Rendering;
 
 internal static class DrawBinding
 {
+    public static unsafe bool ValidTextFont(ImFontPtr font)
+    {
+#if GRATIS_PREVIEW
+        if (font.NativePtr == null || font.ContainerAtlas.NativePtr == null || font.ContainerAtlas.TexID == 0) return false;
+#else
+        if (font.Handle == null || font.ContainerAtlas.Handle == null || font.ContainerAtlas.Textures.Size == 0) return false;
+        var atlas = font.ContainerAtlas;
+        if (atlas.TextureIndexCommon < 0 || atlas.TextureIndexCommon >= atlas.Textures.Size || atlas.Textures[atlas.TextureIndexCommon].TexID == default) return false;
+#endif
+        foreach (var codepoint in "Am0?") {
+            if (!TryGlyphBounds(font, codepoint, out var bounds)) return false;
+#if GRATIS_PREVIEW
+            var glyph = (float*)font.FindGlyphNoFallback(codepoint).NativePtr;
+            var uv = new Vector4(glyph[6], glyph[7], glyph[8], glyph[9]);
+#else
+            var glyph = font.FindGlyphNoFallback(codepoint);
+            var uv = new Vector4(glyph->U0, glyph->V0, glyph->U1, glyph->V1);
+#endif
+            if (!FontAtlasBudget.ValidGlyph(font.FontSize, bounds, uv)) return false;
+        }
+        return true;
+    }
+
     public static void PushTexture(ImDrawListPtr list, DrawTexture texture) =>
         list.PushTextureID(texture.Handle);
 

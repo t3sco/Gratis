@@ -66,6 +66,7 @@ public abstract class MapDrawContext
     public abstract IDisposable? PushLargeFont();
     public abstract IDrawFont? GetTitleFont(int choice, float size);
     public abstract IDrawFont? GetChromeFont(float size, ChromeFontRole role);
+    public virtual IDisposable? PushDefaultTextFont() => null;
     public virtual IDrawFont? GetIconFont(float size) => null;
     public virtual bool TryIconGlyphBounds(char glyph, out Vector4 bounds) => DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out bounds);
     public virtual string IconFontDiagnostics() => "icon-fonts=host-unavailable";

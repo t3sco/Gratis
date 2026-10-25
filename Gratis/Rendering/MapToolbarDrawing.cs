@@ -12,6 +12,7 @@ namespace Gratis.Rendering;
 public static class MapToolbarDrawing
 {
     public static Vector4 LastBounds { get; private set; }
+    public static ChromeAnchor EffectiveAnchor { get; private set; }
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu) {
         LastBounds = Vector4.Zero;
         var context = MapDrawContext.Current;
@@ -118,12 +119,19 @@ public static class MapToolbarDrawing
         var area = areaMax - areaMin;
         var (safeMin, safeMax) = ChromeLayout.SafeBounds();
         var available = safeMax.X - safeMin.X;
+        var fullCount = context.Config.UseCustomWindowChrome ? 8 : 7;
+        var fullWidth = (fullCount * GratisTheme.ControlHeight + 8) * scale;
+        var centerAllowance = 2 * (GratisTheme.ToolbarCenterMargin - GratisTheme.Inset) * scale;
+        EffectiveAnchor = context.Config.ToolbarAnchor == ChromeAnchor.TopCenter && available < fullWidth + centerAllowance
+            ? ChromeAnchor.TopLeft : context.Config.ToolbarAnchor;
         var compact = available < 8 * GratisTheme.ControlHeight * scale + 8 * scale || area.Y < 280 * scale;
         var count = compact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : context.Config.UseCustomWindowChrome ? 8 : 7;
         if (available < (count * GratisTheme.ControlHeight + 8) * scale) count = 2;
         var width = context.Config.SegmentedToolbar ? (count * GratisTheme.ControlHeight + 8) * scale : available;
+        if (!context.Config.SegmentedToolbar && EffectiveAnchor == ChromeAnchor.TopCenter)
+            width -= centerAllowance;
         var height = GratisTheme.ToolbarHeight * scale;
-        var bounds = ChromeLayout.Place("toolbar", new Vector2(width, height), context.Config.ToolbarAnchor);
+        var bounds = ChromeLayout.Place("toolbar", new Vector2(width, height), EffectiveAnchor);
         if (bounds == Vector4.Zero) return;
         var surfaceList = ImGui.GetWindowDrawList();
         var surfaceOrigin = ChromeLayout.Position(bounds);
