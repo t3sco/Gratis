@@ -33,8 +33,7 @@ public partial class MapRenderer
         foreach (var obj in Service.ObjectTable.Reverse()) {
             if (!obj.IsTargetable) continue;
             if (System.SystemConfig.IsGratis && obj.EntityId == player.EntityId) continue;
-            if (System.SystemConfig.IsGratis && obj.ObjectKind == ObjectKind.BattleNpc &&
-                obj.SubKind != (int)BattleNpcSubKind.Pet) continue;
+            if (System.SystemConfig.IsGratis && obj.ObjectKind == ObjectKind.BattleNpc) continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInParty(obj.EntityId)) continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInAlliance(obj.EntityId)) continue;
             if (Vector3.Distance(obj.Position, player.Position) >= 150.0f) continue;

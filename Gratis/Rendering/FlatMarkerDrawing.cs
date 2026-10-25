@@ -49,7 +49,8 @@ public static class FlatMarkerDrawing
         return config.IsGratis ? MapColour.MarkerColour(color, MapDrawContext.Current.ActiveColourPreset) : color;
     }
 
-    internal static string Key(MarkerInfo marker) => $"{ImGui.GetID("flat-marker")}/{marker.IconId}/{marker.Position.X}/{marker.Position.Y}";
+    internal static string Key(MarkerInfo marker) =>
+        $"{ImGui.GetID("flat-marker")}/{marker.IconId}/{(int)marker.MarkerType}/{marker.ObjectiveId}/{marker.DataId}";
 
     private static float Size(MarkerInfo marker)
     {
