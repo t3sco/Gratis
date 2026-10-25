@@ -32,6 +32,8 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     public string DestinationName { get; private set; } = "";
     private PlaceEntry? hovered, pending;
     private Vector2 anchor;
+    private PlaceEntry? retainedTravel;
+    private Vector4 retainedTravelBounds;
     private double cardCreated, cardUntil, cardDrawn;
     private bool playerMoving;
     private Vector2? anchorWorld;
@@ -74,7 +76,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         if (hovered?.Id == match.Id && TravelReady) return true;
         var reason = !places.Access(match).Attuned ? "Not yet attuned" : UnavailableReason;
         if (reason.Length == 0 && match.IsShard && !available) reason = "Lifestream unavailable";
-        ImGui.SetTooltip(match.Name + (reason.Length > 0 ? " · " + reason : ""));
+        UiMotion.TooltipText(match.Name + (reason.Length > 0 ? " · " + reason : ""));
         return true;
     }
 
@@ -174,37 +176,49 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         });
     }
 
+    private void DismissTravel() { hovered = pending = null; panelBounds.Clear(); InputActive = PinLayer?.CapturesInput == true; }
     private void DrawTravelCard(IMapWindowHost host)
     {
         CardMin = CardMax = Vector2.Zero;
-        if (hovered == null || !CanOffer(hovered)) return;
-        if (anchorWorld is { } world) anchor = host.Renderer.WorldToScreen(world, ImGui.GetWindowPos());
-        var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
-        var size = new Vector2(MathF.Min(332 * s, max.X - min.X), (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 168 : 136) * s);
-        if (size.X < 230 * s) return;
-        var bounds = ChromeLayout.PlacePopover("hover-travel", size, anchor);
-        if (bounds == Vector4.Zero) return;
-        var pos = ChromeLayout.Position(bounds);
-        if (DismissPopover(bounds, cardCreated)) { hovered = pending = null; return; }
-        var over = ImGui.IsMouseHoveringRect(pos, pos + size, false);
-        if (over || pending != null) cardUntil += Math.Max(0, host.Now - cardDrawn);
-        cardDrawn = host.Now;
-        if (host.Now > cardUntil) { hovered = pending = null; return; }
-        CardMin = pos; CardMax = pos + size;
-        DrawPointer(bounds, anchor);
+        var open = hovered != null && CanOffer(hovered);
+        if (open && (host.Now > cardUntil || retainedTravelBounds != Vector4.Zero && DismissPopover(retainedTravelBounds, cardCreated))) {
+            DismissTravel(); open = false;
+        }
+        var place = open ? hovered : retainedTravel;
+        if (place == null) return;
+        var s = GratisTheme.ChromeScale;
+        var bounds = retainedTravelBounds;
+        if (open) {
+            if (anchorWorld is { } world) anchor = host.Renderer.WorldToScreen(world, ImGui.GetWindowPos());
+            var (min, max) = ChromeLayout.SafeBounds();
+            var requested = new Vector2(MathF.Min(332 * s, max.X - min.X),
+                (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 168 : 136) * s);
+            if (requested.X < 230 * s) return;
+            bounds = ChromeLayout.PlacePopover("hover-travel", requested, anchor);
+            if (bounds == Vector4.Zero) return;
+            retainedTravel = place; retainedTravelBounds = bounds;
+            var over = ImGui.IsMouseHoveringRect(new(bounds.X, bounds.Y), new(bounds.Z, bounds.W), false);
+            if (over || pending != null) cardUntil += Math.Max(0, host.Now - cardDrawn);
+            cardDrawn = host.Now;
+            CardMin = new(bounds.X, bounds.Y); CardMax = new(bounds.Z, bounds.W);
+        }
+        var alpha = UiMotion.Visibility(ImGui.GetID("##travel-card"), open);
+        if (!open && alpha <= .001f) { retainedTravel = null; return; }
+        var pos = ChromeLayout.Position(bounds); var size = new Vector2(bounds.Z - bounds.X, bounds.W - bounds.Y);
+        using (var pointer = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), anchor, alpha, Vector2.Zero)) DrawPointer(bounds, anchor);
         Panel("##travel-card", pos, size, () => {
-            CardHeading(hovered.IsShard ? "Aethernet" : "Aetheryte", hovered.Name,
-                hovered.IsShard ? "" : places.Access(hovered).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable", hovered.Subtitle);
-            ImGui.BeginDisabled(host.Now <= cardCreated);
-            if (PrimaryTravelButton(pending?.Id == hovered.Id ? $"Confirm {pendingCost:N0} gil" : "Teleport", GratisIcons.Compass))
-                Request(hovered, pending?.Id == hovered.Id);
+            CardHeading(place.IsShard ? "Aethernet" : "Aetheryte", place.Name,
+                place.IsShard ? "" : places.Access(place).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable", place.Subtitle);
+            ImGui.BeginDisabled(!open || host.Now <= cardCreated);
+            if (PrimaryTravelButton(pending?.Id == place.Id ? $"Confirm {pendingCost:N0} gil" : "Teleport", GratisIcons.Compass))
+                Request(place, pending?.Id == place.Id);
             ImGui.EndDisabled();
             TravelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
             ImGui.SameLine(0, GratisTheme.Gap * s);
-            if (QuietButton("Dismiss")) hovered = pending = null;
+            if (QuietButton("Dismiss")) DismissTravel();
             if (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal)) ImGui.TextWrapped(Message);
             DrawTimer(pos, size, (float)(cardUntil - host.Now), host.Config.ReduceMotion);
-        });
+        }, interactive: open, pivot: anchor);
     }
 
     private static bool DismissPopover(Vector4 bounds, double created) => ImGui.IsKeyPressed(ImGuiKey.Escape) ||
@@ -273,6 +287,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var size = new Vector2(ImGui.CalcTextSize(text).X + 16 * s, GratisTheme.ControlHeight * s);
         var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Control(list, pos, pos + size);
         ChromeControls.Feedback(list, pos, pos + size);
         list.AddText(pos + new Vector2(8 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Secondary), text);
         return clicked;
@@ -286,6 +301,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var size = new Vector2(textSize.X + 38 * s, GratisTheme.ControlHeight * s);
         var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Control(list, min, min + size);
         list.AddRectFilled(min, min + size, ImGui.GetColorU32(new Vector4(.25f, .48f, .56f, ImGui.IsItemHovered() ? .5f : .27f)), 5 * s);
         GratisIcons.Draw(list, min + new Vector2(13 * s, size.Y / 2), icon, GratisTheme.Transport, 14 * s);
         ChromeControls.Feedback(list, min, min + size, fill: false);
@@ -300,6 +316,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var size = new Vector2(ImGui.CalcTextSize(text).X + 40 * s, GratisTheme.ControlHeight * s);
         var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Control(list, min, min + size);
         var ink = GratisTheme.Surface with { W = 1 };
         list.AddRectFilled(min, min + size, ImGui.GetColorU32(GratisTheme.Crystal with { W = ImGui.IsItemHovered() ? 1 : .94f }), GratisTheme.ButtonRadius * s);
         ChromeControls.Feedback(list, min, min + size, fill: false);
@@ -316,9 +333,10 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         return Vector2.Clamp(position, min + margin, Vector2.Max(min + margin, max - size - margin));
     }
 
-    internal void Panel(string id, Vector2 pos, Vector2 size, Action content, bool scroll = false)
+    internal void Panel(string id, Vector2 pos, Vector2 size, Action content, bool scroll = false, bool interactive = true, Vector2? pivot = null)
     {
-        panelBounds.Add((pos, pos + size));
+        if (interactive) panelBounds.Add((pos, pos + size));
+        var alpha = UiMotion.Visibility(ImGui.GetID(id), interactive);
         var s = GratisTheme.ChromeScale;
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var cursor = ImGui.GetCursorPos();
@@ -331,16 +349,21 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(.25f, .48f, .56f, .26f));
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         try {
-            var flags = ImGuiWindowFlags.NoBackground | (scroll ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+            var flags = ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoScrollWithMouse | (scroll ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoScrollbar) | (interactive ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoInputs);
 #if GRATIS_PREVIEW
             var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.AlwaysUseWindowPadding, flags);
 #else
             var visible = ImGui.BeginChild(id, size, false, flags | ImGuiWindowFlags.AlwaysUseWindowPadding);
 #endif
             if (visible) {
+                using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pivot ?? pos, alpha,
+                    UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero, UiMotion.Full ? .97f + .03f * alpha : 1);
+                if (scroll) UiMotion.Scroll();
+                ImGui.BeginDisabled(!interactive);
                 MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.CardRadius * s, surfaceOpacity: 1);
                 content();
-                if (ImGui.IsWindowHovered() || ImGui.IsWindowFocused() && ImGui.IsAnyItemActive()) { InputActive = true; MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime()); }
+                ImGui.EndDisabled();
+                if (interactive && (ImGui.IsWindowHovered() || ImGui.IsWindowFocused() && ImGui.IsAnyItemActive())) { InputActive = true; MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime()); }
             }
             ImGui.EndChild();
             ImGui.SetCursorPos(cursor); ImGui.Dummy(Vector2.Zero);

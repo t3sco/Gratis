@@ -4,11 +4,11 @@
         <AssemblyName>Gratis</AssemblyName>
         <InternalName>Gratis</InternalName>
         <RootNamespace>Gratis</RootNamespace>
-        <Author>MidoriKami, harbingerftw</Author>
-        <Version>3.2.0.0</Version>
-        <Punchline>A more versatile in-game map.</Punchline>
-        <Description>Replaces the in-game map with an ImGui implementation with several additional features.</Description>
-        <RepoUrl>https://example.com/Gratis</RepoUrl>
+        <Author>t3sco (based on Mappy by MidoriKami, harbingerftw)</Author>
+        <Version>0.1.0.0</Version>
+        <Punchline>A flat, minimal, quality-of-life-packed map.</Punchline>
+        <Description>Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.</Description>
+        <RepoUrl>https://github.com/t3sco/Gratis</RepoUrl>
         <Tags>map;mapping;overlay;utility</Tags>
         <CategoryTags>jobs</CategoryTags>
         <AcceptsFeedback>true</AcceptsFeedback>

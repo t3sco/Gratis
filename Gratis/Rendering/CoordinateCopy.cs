@@ -41,7 +41,7 @@ public static class CoordinateCopy
             if (ImGui.InvisibleButton(id, width)) context.ContextMenu.Copy(CoordinateShare.Text(value,
                 ImGui.GetIO().KeyShift ? context.ContextMenu.Actions?.MapName : null));
             if (ImGui.IsItemHovered() || ImGui.IsItemActive()) { inputFrame = ImGui.GetFrameCount(); inputContext = context; }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip(id.Contains("cursor", StringComparison.Ordinal) ? "Copy cursor coordinates · Shift: include map name" : "Copy player coordinates · Shift: include map name");
+            if (ImGui.IsItemHovered()) UiMotion.TooltipText(id.Contains("cursor", StringComparison.Ordinal) ? "Copy cursor coordinates · Shift: include map name" : "Copy player coordinates · Shift: include map name");
         }
         void Target(string id, Vector4 bounds, Vector2? value)
         {

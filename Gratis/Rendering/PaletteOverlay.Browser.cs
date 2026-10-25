@@ -26,17 +26,17 @@ public sealed partial class PaletteOverlay
         var width = ImGui.GetContentRegionAvail().X;
         var columns = PaletteBrowser.Columns(width, scale);
         var count = expansion == null ? expansions.Length : results.Length;
-        var horizontal = (ImGui.IsKeyPressed(ImGuiKey.RightArrow) ? 1 : 0) - (ImGui.IsKeyPressed(ImGuiKey.LeftArrow) ? 1 : 0);
-        var vertical = (ImGui.IsKeyPressed(ImGuiKey.DownArrow) ? 1 : 0) - (ImGui.IsKeyPressed(ImGuiKey.UpArrow) ? 1 : 0);
+        var horizontal = (IsOpen && ImGui.IsKeyPressed(ImGuiKey.RightArrow) ? 1 : 0) - (IsOpen && ImGui.IsKeyPressed(ImGuiKey.LeftArrow) ? 1 : 0);
+        var vertical = (IsOpen && ImGui.IsKeyPressed(ImGuiKey.DownArrow) ? 1 : 0) - (IsOpen && ImGui.IsKeyPressed(ImGuiKey.UpArrow) ? 1 : 0);
         var previous = browserSelection;
         browserSelection = PaletteBrowser.Navigate(browserSelection, count, columns, horizontal, vertical);
-        if (ImGui.IsKeyPressed(ImGuiKey.Home)) browserSelection = 0;
-        if (ImGui.IsKeyPressed(ImGuiKey.End)) browserSelection = Math.Max(0, count - 1);
-        if (ImGui.IsKeyPressed(ImGuiKey.PageDown)) browserSelection = Math.Min(count - 1, browserSelection + columns * 2);
-        if (ImGui.IsKeyPressed(ImGuiKey.PageUp)) browserSelection = Math.Max(0, browserSelection - columns * 2);
+        if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.Home)) browserSelection = 0;
+        if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.End)) browserSelection = Math.Max(0, count - 1);
+        if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.PageDown)) browserSelection = Math.Min(count - 1, browserSelection + columns * 2);
+        if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.PageUp)) browserSelection = Math.Max(0, browserSelection - columns * 2);
         if (previous != browserSelection) scrollSelection = true;
-        if (expansion != null && ImGui.IsKeyPressed(ImGuiKey.Backspace, false)) { BrowseExpansion(null); return; }
-        if (count > 0 && ImGui.IsKeyPressed(ImGuiKey.Enter, false)) {
+        if (expansion != null && IsOpen && ImGui.IsKeyPressed(ImGuiKey.Backspace, false)) { BrowseExpansion(null); return; }
+        if (count > 0 && IsOpen && ImGui.IsKeyPressed(ImGuiKey.Enter, false)) {
             if (expansion == null) BrowseExpansion(expansions[browserSelection].Id);
             else if (ImGui.GetIO().KeyAlt && config.PaletteTeleportButton) Teleport(results[browserSelection].Place, false);
             else Activate(results[browserSelection].Place);
@@ -48,7 +48,7 @@ public sealed partial class PaletteOverlay
             var nearby = results.Where(p => p.Distance != null && p.Place.Kind == PlaceKind.Aetheryte).OrderBy(p => p.Distance).FirstOrDefault();
             if (nearby.Place != null) DrawQuickPlace(nearby, "Nearest aetheryte", config, scale);
             else {
-                if (ImGui.Button("Nearest aetheryte", new Vector2(-1, GratisTheme.ControlHeight * scale))) SetQuery("nearest aetheryte");
+                if (ChromeControls.TextButton("Nearest aetheryte", new Vector2(-1, GratisTheme.ControlHeight * scale))) SetQuery("nearest aetheryte");
             }
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push()) {
                 foreach (var label in new[] { "Market board", "Inn" }) {
@@ -78,10 +78,13 @@ public sealed partial class PaletteOverlay
             var clicked = ImGui.InvisibleButton("##card", cardSize);
             var hovered = ImGui.IsItemHovered();
             if (hovered && ImGui.GetIO().MouseDelta.LengthSquared() > 0) browserSelection = i;
-            if (previous != browserSelection && i == browserSelection) ImGui.SetScrollHereY();
+            if (previous != browserSelection && i == browserSelection) UiMotion.ScrollToItem();
             if (i == 0) FirstCardCenter = position + cardSize / 2;
             var cover = expansion == null ? expansions[i].Cover : results[i].Place;
             if (ImGui.IsItemVisible()) {
+                UiMotion.ItemId("##card");
+                using var entrance = UiMotion.Surface("##card-enter", position, IsOpen, i < 8 ? i * .02f : 0);
+                using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
                 var title = expansion == null ? expansions[i].Name : PaletteBrowser.Name(results[i], results);
                 var subtitle = expansion == null ? $"{expansions[i].Zones} zone{(expansions[i].Zones == 1 ? "" : "s")} · {expansions[i].Places} places"
                     : cover.Kind == PlaceKind.Aetheryte ? results[i].Access.Attuned ? "AETHERYTE · Attuned" : "AETHERYTE · Not yet attuned" : "ZONE · " + cover.Subtitle.Split('>').Last().Trim();
@@ -112,7 +115,7 @@ public sealed partial class PaletteOverlay
             place.MapId == context.MapId && context.Player is { } player && place.World is { } world ? Vector2.Distance(player, world) : null), place.Name, config, scale);
         if (recentQueries.Count > 0) {
             Section("Recent searches", scale, GratisIcons.Search);
-            foreach (var text in recentQueries.Take(3)) if (ImGui.Button(text, new Vector2(-1, GratisTheme.ControlHeight * scale))) SetQuery(text);
+            foreach (var text in recentQueries.Take(3)) if (ChromeControls.TextButton(text, new Vector2(-1, GratisTheme.ControlHeight * scale))) SetQuery(text);
         }
     }
 

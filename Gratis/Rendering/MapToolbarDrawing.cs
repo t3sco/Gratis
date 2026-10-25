@@ -14,6 +14,11 @@ public static class MapToolbarDrawing
     public static Vector4 LastBounds { get; private set; }
     public static ChromeAnchor EffectiveAnchor { get; private set; }
     public static bool MapMenuOpen { get; private set; }
+    public static Vector4 ClosingSearchBounds { get; private set; }
+    public static bool SearchExitPointerOver => ClosingSearchBounds != Vector4.Zero &&
+        ImGui.IsMouseHoveringRect(new(ClosingSearchBounds.X, ClosingSearchBounds.Y), new(ClosingSearchBounds.Z, ClosingSearchBounds.W), false);
+    private static bool compactDuringSearch;
+    private static MapDrawContext? searchContext;
     public static Vector4 WindowBounds { get; private set; }
     public static Vector4[] ButtonBounds { get; } = new Vector4[FullButtonCount];
     public static Vector4[] GlyphBounds { get; } = new Vector4[FullButtonCount];
@@ -22,6 +27,7 @@ public static class MapToolbarDrawing
     public static float CollapsedWidth(int count) => count * GratisTheme.ControlHeight + 8 + Math.Max(0, count - (count <= 3 ? 1 : 2)) * DividerSpace;
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu, PaletteOverlay? palette = null) {
         LastBounds = Vector4.Zero;
+        ClosingSearchBounds = Vector4.Zero;
         Array.Clear(ButtonBounds); Array.Clear(GlyphBounds); Array.Clear(DividerBounds);
         var windowPos = ImGui.GetWindowPos(); var windowSize = ImGui.GetWindowSize();
         WindowBounds = new(windowPos.X, windowPos.Y, windowPos.X + windowSize.X, windowPos.Y + windowSize.Y);
@@ -117,6 +123,7 @@ public static class MapToolbarDrawing
 
     public const int FullButtonCount = 6;
     private const string MapMenu = "Gratis_Map_Controls";
+    private static readonly string[] ButtonIds = ["##gratis-Search", "##gratis-Lens", "##gratis-Filters", "##gratis-Follow", "##gratis-Settings", "##gratis-Close"];
     private static readonly (string Id, ToolbarAction Action, string Tooltip)[] Buttons = [
         ("Search", ToolbarAction.Search, "Search places"), ("Lens", ToolbarAction.Layers, "Lenses & map layers"),
         ("Filters", ToolbarAction.CenterMap, "Filters"), ("Follow", ToolbarAction.Follow, "Follow player"),
@@ -141,6 +148,9 @@ public static class MapToolbarDrawing
         var collapsedCount = collapsedCompact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : fullCount;
         if (available < CollapsedWidth(collapsedCount) * scale) collapsedCount = 2;
         var compact = available < fullWidth + targetSearchWidth || area.Y < 280 * scale;
+        if (!ReferenceEquals(searchContext, context)) { searchContext = context; compactDuringSearch = compact; }
+        if (searching) compactDuringSearch = compact;
+        else if (searchWidth > 1) compact = compactDuringSearch;
         var count = compact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : fullCount;
         if (available < CollapsedWidth(count) * scale + targetSearchWidth) count = 2;
         searchWidth = MathF.Min(searchWidth, MathF.Max(0, available - CollapsedWidth(count) * scale));
@@ -188,30 +198,35 @@ public static class MapToolbarDrawing
                 var active = action == ToolbarAction.Follow && context.Config.FollowPlayer || id == "Lens" &&
                     (ImGui.IsPopupOpen(MapMenu) || ImGui.IsPopupOpen("Gratis_Show_Layers")) || id == "Filters" && FilterBarDrawing.PopoverOpen;
                 ImGui.SetCursorScreenPos(min);
-                var buttonId = $"##gratis-{id}";
+                var buttonId = ButtonIds[buttonIndex];
                 context.Trace?.Widget(ImGui.GetID(buttonId));
                 var clicked = ChromeControls.Button(buttonId, new Vector2(GratisTheme.ControlHeight * scale));
                 var hovered = ImGui.IsItemHovered();
-                var lift = HoverAnimation.Progress($"toolbar/{ImGui.GetID(id)}", hovered);
-                if (active || lift > 0) list.AddRectFilled(min, min + new Vector2(GratisTheme.ControlHeight * scale),
-                    ImGui.GetColorU32(active ? context.Config.AccentColor with { W = .12f } : new Vector4(1, 1, 1, .06f * lift)), GratisTheme.ButtonRadius * scale);
+                using var press = UiMotion.Control(list, min, min + buttonSize);
+                var lift = UiMotion.Value(UiMotion.Item, 1, hovered ? 1 : 0, initial: 0);
+                var chosen = UiMotion.Value(UiMotion.Item, 6, active ? 1 : 0);
+                if (chosen > 0 || lift > 0) list.AddRectFilled(min, min + new Vector2(GratisTheme.ControlHeight * scale),
+                    ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .06f * lift), context.Config.AccentColor with { W = .12f }, chosen)), GratisTheme.ButtonRadius * scale);
                 ChromeControls.Feedback(list, min, min + new Vector2(GratisTheme.ControlHeight * scale), fill: false);
                 DrawToolbarGlyph(list, min + buttonSize / 2, buttonIndex, action, active ? context.Config.AccentColor : GratisTheme.Primary, scale);
-                if (id == "Settings" && TweakNews.HasUnseen(context.Config))
-                    list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale, ImGui.GetColorU32(GratisTheme.WarmAccent));
+                var news = UiMotion.Value(UiMotion.Item, 14, id == "Settings" && TweakNews.HasUnseen(context.Config) ? 1 : 0, InterfaceMotionTokens.Standard, initial: 0);
+                if (news > 0)
+                    list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale, ImGui.GetColorU32(GratisTheme.WarmAccent with { W = news }));
                 if (id == "Filters" && FilterBarDrawing.ActiveCount > 0)
                     list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale, ImGui.GetColorU32(GratisTheme.WarmAccent));
                 ChromeControls.Tooltip(tooltip, windowBounds: WindowBounds);
                 if (clicked) {
                     if (id == "Lens") ImGui.OpenPopup(MapMenu);
                     else if (id == "Filters") {
-                        if (context.Config.QuickFilterBar) FilterBarDrawing.TogglePopover(); else context.OpenFilterSettings();
+                        FilterBarDrawing.TogglePopover();
                     }
                     else if (id == "Search" && palette?.IsOpen == true) palette.Close();
                     else activate(action);
                 }
                 x += buttonSize.X;
-                if (id == "Search" && searchWidth > 0 && palette?.IsOpen == true) {
+                if (id == "Search" && searchWidth > 1 && palette != null) {
+                    if (!searching) ClosingSearchBounds = new(origin.X + x, origin.Y + 4 * scale,
+                        origin.X + x + searchWidth, origin.Y + 4 * scale + buttonSize.Y);
                     palette.DrawInline(origin + new Vector2(x, 4 * scale), new Vector2(searchWidth, buttonSize.Y));
                     x += searchWidth;
                 }
@@ -256,10 +271,16 @@ public static class MapToolbarDrawing
         var layers = false;
         using var style = new ChromePopupStyle();
         using var font = context.GetChromeFont(GratisTheme.TextSize * GratisTheme.ChromeScale, ChromeFontRole.Body)?.Push();
-        if (!ImGui.BeginPopup(MapMenu)) return;
-        MapMenuOpen = true;
+        var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
+        var size = Vector2.Min(new Vector2(240, 240) * s, max - min);
+        var b = ChromePopoverMath.Place(ButtonBounds[1], size, min, max, GratisTheme.Gap * s);
+        var popup = UiMotion.Popup(MapMenu, !ImGui.IsKeyPressed(ImGuiKey.Escape, false), new(b.X, b.Y), size,
+            ImGuiWindowFlags.NoScrollWithMouse);
+        if (!popup.Visible) return;
+        try {
+        UiMotion.Scroll();
+        MapMenuOpen = popup.Interactive;
         context.Chrome.Reveal(ImGui.GetTime());
-        if (ImGui.IsKeyPressed(ImGuiKey.Escape, false)) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); return; }
         ImGui.SetNextItemWidth(200 * GratisTheme.ChromeScale);
         if (LensDrawing.DrawSelector(context.Config)) context.SaveConfig();
         ImGui.Separator();
@@ -267,7 +288,7 @@ public static class MapToolbarDrawing
         if (NavigationItem("Centre map", GratisIcons.LayoutGrid)) { activate(ToolbarAction.CenterMap); ImGui.CloseCurrentPopup(); }
         if (NavigationItem("Parent map", GratisIcons.ArrowUp)) { activate(ToolbarAction.Parent); ImGui.CloseCurrentPopup(); }
         if (NavigationItem("Map layers", GratisIcons.Layers)) { layers = true; ImGui.CloseCurrentPopup(); }
-        ImGui.EndPopup();
+        } finally { popup.Dispose(); }
         if (layers) activate(ToolbarAction.Layers);
     }
 

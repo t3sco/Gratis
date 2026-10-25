@@ -212,7 +212,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
                 var center=min+new Vector2(18*s);
                 ImGui.GetWindowDrawList().AddCircleFilled(center,8*s,ImGui.GetColorU32(Colours[i]),20);
                 if(colour==i) ImGui.GetWindowDrawList().AddCircle(center,12*s,ImGui.GetColorU32(GratisTheme.Primary),24,s);
-                if(ImGui.IsItemHovered()) ImGui.SetTooltip(ColourNames[i]);
+                if(ImGui.IsItemHovered()) UiMotion.TooltipText(ColourNames[i]);
             }
             ImGui.Spacing();
             var primary=importing?"Import pin":"Save pin";

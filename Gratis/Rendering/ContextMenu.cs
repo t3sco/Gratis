@@ -68,7 +68,7 @@ public sealed partial class ContextMenu
             MapShape.Contains(ImGui.GetMousePos()) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             Open(host, ImGui.GetMousePos(), origin, candidateFrame == ImGui.GetFrameCount() ? candidate : null);
         if (IsOpen && map != host.Renderer.ViewedMapId) { IsOpen = false; current = []; }
-        if (IsOpen) DrawPopup(host);
+        if (current.Count > 0) DrawPopup(host);
         DrawToast();
     }
     private void DrawPopup(IMapWindowHost host)
@@ -88,15 +88,20 @@ public sealed partial class ContextMenu
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, Vector4.Zero);
         try {
-            if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) { IsOpen = false; return; }
-            Capture(); context.Chrome.Reveal(host.Now);
+            using var popup = UiMotion.Popup(Popup, IsOpen && !ImGui.IsKeyPressed(ImGuiKey.Escape, false), Min, size,
+                ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings);
+            if (!popup.Visible) { IsOpen = false; return; }
+            IsOpen = CapturesInput = popup.Interactive;
+            if (popup.Interactive) Capture(); context.Chrome.Reveal(host.Now);
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, GratisTheme.CardRadius * s, surfaceOpacity: 1);
-            if (ImGui.IsKeyPressed(ImGuiKey.Escape, false) || current.Count == 0) { Close(); ImGui.EndPopup(); return; }
-            if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) selected = (selected + 1) % current.Count;
-            if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) selected = (selected + current.Count - 1) % current.Count;
-            var enter = ImGui.IsKeyPressed(ImGuiKey.Enter, false);
-            var navigating = ImGui.IsKeyPressed(ImGuiKey.UpArrow) || ImGui.IsKeyPressed(ImGuiKey.DownArrow);
-            ImGui.BeginChild("##context-actions", new Vector2(0, MathF.Max(1, size.Y - 12 * s - footerHeight)));
+            if (current.Count == 0) { if (popup.Interactive) Close(); return; }
+            if (popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.DownArrow)) selected = (selected + 1) % current.Count;
+            if (popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.UpArrow)) selected = (selected + current.Count - 1) % current.Count;
+            var enter = popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.Enter, false);
+            var navigating = popup.Interactive && (ImGui.IsKeyPressed(ImGuiKey.UpArrow) || ImGui.IsKeyPressed(ImGuiKey.DownArrow));
+            UiMotion.Child("##context-actions", new Vector2(0, MathF.Max(1, size.Y - 12 * s - footerHeight)), ImGuiWindowFlags.NoScrollWithMouse | (popup.Interactive ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoInputs));
+            UiMotion.Scroll();
+            using var rowsMotion = UiMotion.Surface("##context-rows-motion", Min, popup.Interactive);
             for (var i = 0; i < current.Count; i++) {
                 var item = current[i]; var pos = ImGui.GetCursorScreenPos();
                 var width = MathF.Max(1, ImGui.GetContentRegionAvail().X);
@@ -107,8 +112,13 @@ public sealed partial class ContextMenu
                 Rows[item.Label] = pos + new Vector2(width / 2, rowHeight / 2);
                 var hovered = ImGui.IsItemHovered();
                 if (hovered && ImGui.GetIO().MouseDelta != Vector2.Zero) selected = i;
-                if (navigating && i == selected) ImGui.SetScrollHereY();
+                if (navigating && i == selected) UiMotion.ScrollToItem();
                 var list = ImGui.GetWindowDrawList();
+                using var control = UiMotion.Control(list, pos, pos + new Vector2(width, rowHeight));
+                if (i == selected && enabled) {
+                    var highlight = UiMotion.Selection("##context-highlight", pos);
+                    list.AddRectFilled(highlight, highlight + new Vector2(width, rowHeight), ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .08f }), GratisTheme.ButtonRadius * s);
+                }
                 ChromeControls.Feedback(list, pos, pos + new Vector2(width, rowHeight), i == selected && enabled);
                 GratisIcons.Draw(list, pos + new Vector2(18 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary, GratisTheme.IconSize * s);
                 var keycap = i == selected && enabled && item.Children == null && width > 220 * s ? ChromeControls.KeycapSize("Enter") : Vector2.Zero;
@@ -129,7 +139,6 @@ public sealed partial class ContextMenu
                 ImGui.Separator();
                 ChromeControls.Hints(("Up/Down", ""), ("Enter", "Select"), ("Esc", "Close"));
             }
-            ImGui.EndPopup();
         }
         finally { ImGui.PopStyleColor(); ImGui.PopStyleVar(3); }
         if (details.Length > 0) {
@@ -149,11 +158,13 @@ public sealed partial class ContextMenu
     private void Close() { swallowEscape = ImGui.IsKeyDown(ImGuiKey.Escape); IsOpen = false; ImGui.CloseCurrentPopup(); }
     private void DrawToast()
     {
-        if (toast.Length == 0 || ImGui.GetTime() >= toastUntil) return;
+        var alpha = UiMotion.Visibility(ImGui.GetID("##toast-motion"), toast.Length > 0 && ImGui.GetTime() < toastUntil);
+        if (alpha <= .001f) return;
         var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         var size = ImGui.CalcTextSize(toast) + new Vector2(24, 16) * s;
         var pos = MapAssistance.ConstrainPanel(ImGui.GetWindowPos() + new Vector2((ImGui.GetWindowWidth() - size.X) / 2, ImGui.GetWindowHeight() - 112 * s), size);
+        using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pos, alpha, UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero);
         MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, 8 * s, surfaceOpacity: 1);
         ImGui.GetWindowDrawList().AddText(pos + new Vector2(12, 8) * s, ImGui.GetColorU32(GratisTheme.Primary), toast);
     }

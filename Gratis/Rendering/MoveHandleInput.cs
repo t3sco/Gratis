@@ -120,7 +120,7 @@ public sealed class MoveHandleInput
         BlocksMapInput |= held;
         if (!ImGui.IsMouseDown(ImGuiMouseButton.Left)) held = false;
         if ((Hovered || altReady || shiftReady || Dragging) && !config.LockWindow) ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-        if (Hovered && config.LockWindow) ImGui.SetTooltip("Window position is locked. Unlock it in Advanced settings to move the map.");
+        if (Hovered && config.LockWindow) UiMotion.TooltipText("Window position is locked. Unlock it in Advanced settings to move the map.");
         var topHover = overWindow && mouse.X >= min.X && mouse.X <= max.X && mouse.Y >= min.Y && mouse.Y <= min.Y + 16 * scale;
         var targetVisibility = Enabled(config) && (topHover || Hovered || Dragging || context.Chrome.ControlsAlpha(config) > .05f);
         var dt = double.IsFinite(lastTime) ? Math.Max(0, host.Now - lastTime) : 0;

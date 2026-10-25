@@ -42,7 +42,8 @@ public sealed partial class SettingsLayout
 #if GRATIS_PREVIEW
         TestRows.Clear(); TestNavigation = new(navStart.X, navStart.Y, navStart.X + navWidth, navStart.Y + available.Y);
 #endif
-        if (ImGui.BeginChild("settings-navigation", new Vector2(navWidth, available.Y))) {
+        if (UiMotion.Child("settings-navigation", new Vector2(navWidth, available.Y), ImGuiWindowFlags.NoScrollWithMouse)) {
+            UiMotion.Scroll();
             if (!compactNav) using (SettingsTheme.Font(12)) {
                 ImGui.TextColored(GratisTheme.Secondary, "SETTINGS");
             }
@@ -50,16 +51,23 @@ public sealed partial class SettingsLayout
             foreach (var index in NavigationOrder) {
                 start = ImGui.GetCursorScreenPos();
                 var size = new Vector2(navWidth - 4 * scale, 36 * scale);
-                if (ImGui.Selectable($"##section-{index}", SelectedSection == index, ImGuiSelectableFlags.None, size)) {
+                ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);
+                ImGui.PushStyleColor(ImGuiCol.HeaderHovered, Vector4.Zero);
+                ImGui.PushStyleColor(ImGuiCol.HeaderActive, Vector4.Zero);
+                if (ImGui.Selectable(NavigationIds[index], SelectedSection == index, ImGuiSelectableFlags.None, size)) {
                     SelectedSection = index; Search = "";
                 }
+                ImGui.PopStyleColor(3);
+                UiMotion.ItemId(NavigationIds[index]);
                 var selected = SelectedSection == index;
                 var nav = ImGui.GetWindowDrawList();
                 if (selected) {
-                    nav.AddRectFilled(start, start + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)), 4 * scale);
-                    nav.AddRectFilled(start + new Vector2(0, 8) * scale, start + new Vector2(2, 28) * scale,
+                    var indicator = UiMotion.Selection("##settings-indicator", start);
+                    nav.AddRectFilled(indicator, indicator + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)), 4 * scale);
+                    nav.AddRectFilled(indicator + new Vector2(0, 8) * scale, indicator + new Vector2(2, 28) * scale,
                         ImGui.GetColorU32(GratisTheme.WarmAccent), scale);
                 }
+                ChromeControls.Feedback(nav, start, start + size, fill: true, scale: scale);
                 GratisIcons.Draw(nav, start + new Vector2(18, 18) * scale, SectionIcons[index],
                     selected ? GratisTheme.WarmAccent : GratisTheme.Secondary, 16 * scale);
                 if (compactNav) ChromeControls.Tooltip(SectionLabel(Sections[index]), scale: scale);
@@ -73,11 +81,16 @@ public sealed partial class SettingsLayout
 #if GRATIS_PREVIEW
         var testContent = ImGui.GetCursorScreenPos(); TestContent = new(testContent.X, testContent.Y, testContent.X + ImGui.GetContentRegionAvail().X, testContent.Y + available.Y);
 #endif
-        if (ImGui.BeginChild("settings-content", new Vector2(0, available.Y))) {
-            var tweaksPage = Sections[SelectedSection] == "Tweaks";
+        var contentSection = UiMotion.Page("##settings-page", SelectedSection, out var pageAlpha, out var pageInput);
+        if (UiMotion.Child("settings-content", new Vector2(0, available.Y),
+            ImGuiWindowFlags.NoScrollWithMouse | (pageInput ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoInputs))) {
+            UiMotion.Scroll();
+            using var pageMotion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), pageAlpha,
+                UiMotion.Full ? new Vector2((1 - pageAlpha) * 6 * scale, 0) : Vector2.Zero);
+            var tweaksPage = Sections[contentSection] == "Tweaks";
             if (tweaksPage) changed |= DrawTweaks(config);
             var sections = tweaksPage ? Array.Empty<string>() :
-                string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
+                string.IsNullOrWhiteSpace(Search) ? new[] { Sections[contentSection] } : Sections;
             var found = false;
             foreach (var section in sections) {
                 var entries = Find(config, section, Search);
@@ -108,7 +121,7 @@ public sealed partial class SettingsLayout
                             $"Hold {config.PeekKey} to peek. Quests, FATEs and other priority markers stay visible until their group is explicitly muted.");
                         ImGui.TreePop();
                     }
-                    if (ImGui.Button("Clear temporary filters", new Vector2(0, 36 * scale))) MapDrawContext.Current.Visibility.ResetFilters();
+                    if (ChromeControls.TextButton("Clear temporary filters", new Vector2(0, 36 * scale))) MapDrawContext.Current.Visibility.ResetFilters();
                 }
                 ImGui.Spacing();
                 if (section == "Markers" && MarkerOptionsMatch(Search) && drawExtension is not null)
@@ -146,13 +159,14 @@ public sealed partial class SettingsLayout
                         ImGui.GetColorU32(GratisTheme.Border), GratisTheme.CardRadius * scale);
                     ImGui.Spacing();
                 }
-                if (section == "Map" && string.IsNullOrWhiteSpace(Search) && ImGui.Button("Marker declutter settings")) SelectedSection = 2;
+                if (section == "Map" && string.IsNullOrWhiteSpace(Search) && ChromeControls.TextButton("Marker declutter settings")) SelectedSection = 2;
                 if (extension && drawExtension is not null) changed |= drawExtension(section, Search);
                 ImGui.Spacing(); ImGui.PopID();
             }
             if (!found && !tweaksPage) SettingsTheme.Helper("No settings match. Try another name or change the visual style.");
         }
         ImGui.EndChild();
+        UiMotion.DrawTooltipTail();
         return changed;
     }
 }

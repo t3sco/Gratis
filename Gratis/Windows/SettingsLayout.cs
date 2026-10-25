@@ -100,7 +100,7 @@ public sealed partial class SettingsLayout
                     if (ImGui.SmallButton("Reset section")) {
                         Reset(config, section); resetExtension?.Invoke(section); changed = true;
                     }
-                    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Restore this section for the current style. Per-icon overrides have individual resets.");
+                    if (ImGui.IsItemHovered()) UiMotion.TooltipText("Restore this section for the current style. Per-icon overrides have individual resets.");
                     ImGui.Separator();
                     if (section == "Markers" && config.IsGratis && MarkerOptionsMatch(Search) && drawExtension is not null)
                         changed |= drawExtension("Marker options", Search);
@@ -117,13 +117,13 @@ public sealed partial class SettingsLayout
                                 ImGui.TableNextRow(); ImGui.TableNextColumn();
                                 ImGui.AlignTextToFramePadding();
                                 ImGui.TextUnformatted(entry.Label);
-                                if (entry.Tooltip is { } tip && ImGui.IsItemHovered()) ImGui.SetTooltip(tip);
+                                if (entry.Tooltip is { } tip && ImGui.IsItemHovered()) UiMotion.TooltipText(tip);
                                 ImGui.TableNextColumn(); ImGui.SetNextItemWidth(-1);
                                 var enabled = entry.Enabled(config);
                                 ImGui.BeginDisabled(!enabled);
                                 changed |= entry.Draw(config);
                                 ImGui.EndDisabled();
-                                if (entry.Tooltip is { } valueTip && ImGui.IsItemHovered()) ImGui.SetTooltip(valueTip);
+                                if (entry.Tooltip is { } valueTip && ImGui.IsItemHovered()) UiMotion.TooltipText(valueTip);
                                 ImGui.PopID();
                             }
                             ImGui.EndTable();

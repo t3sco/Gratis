@@ -34,7 +34,9 @@ public sealed partial class MapWindowFrame
 
     private void DrawGhostHint(IMapWindowHost host)
     {
-        if (!host.Config.IsGratis || !host.Config.GhostMode || host.Now >= hintUntil) return;
+        if (!host.Config.IsGratis) return;
+        var alpha = UiMotion.Visibility(ImGui.GetID("##ghost-coach"), host.Config.GhostMode && host.Now < hintUntil);
+        if (alpha <= .001f) return;
         const string text = "Ghost mode: hover the map to restore input";
         var scale = GratisTheme.ChromeScale;
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
@@ -43,6 +45,7 @@ public sealed partial class MapWindowFrame
         if (bounds == Vector4.Zero) return;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
+        using var motion = new UiMotion.VisualScope(list, pos, alpha, UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * scale) : Vector2.Zero);
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
         list.AddText(pos + new Vector2(12, 8) * scale, ImGui.GetColorU32(GratisTheme.Primary), text);
     }

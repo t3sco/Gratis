@@ -40,27 +40,27 @@ public static class SettingsWindowPresets
             ImGui.PushStyleColor(ImGuiCol.Button, ReferenceEquals(editing, preset) ? GratisTheme.WarmAccent with { W = .2f } : GratisTheme.Surface);
             var start = ImGui.GetCursorScreenPos();
             var height = ImGui.GetFrameHeight();
-            if (ImGui.Button("##preset-chip", new Vector2(chipWidth, height))) { editing = preset; name = preset.Name; }
+            if (ChromeControls.TextButton("##preset-chip", new Vector2(chipWidth, height))) { editing = preset; name = preset.Name; }
             ImGui.GetWindowDrawList().AddText(start + new Vector2(ImGui.GetStyle().FramePadding.X, (height - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), label);
             ImGui.PopStyleColor();
             ChromeControls.Tooltip(preset.Name);
             ImGui.PopID();
         }
         ImGui.BeginDisabled(settings.Presets.Count >= WindowPresetSettings.Limit);
-        if (ImGui.Button("Save current as preset", new Vector2(width, 0))) changed |= controller.SaveCurrent(config);
+        if (ChromeControls.TextButton("Save current as preset", new Vector2(width, 0))) changed |= controller.SaveCurrent(config);
         ImGui.EndDisabled();
         if (editing != null && settings.Find(editing.Slot) == editing) {
             ImGui.SetNextItemWidth(width);
             ImGui.InputText("##window-preset-name", ref name, 80);
-            if (ImGui.Button("Apply preset", new Vector2(width, 0))) controller.Request(editing.Slot);
+            if (ChromeControls.TextButton("Apply preset", new Vector2(width, 0))) controller.Request(editing.Slot);
             var half = MathF.Max(1, (width - ImGui.GetStyle().ItemSpacing.X) / 2);
-            if (ImGui.Button("Rename", new Vector2(half, 0))) {
+            if (ChromeControls.TextButton("Rename", new Vector2(half, 0))) {
                 editing.Name = WindowPresetSettings.CleanName(name, editing.Slot); name = editing.Name; changed = true;
             }
             ImGui.SameLine();
-            if (ImGui.Button("Delete", new Vector2(half, 0))) { changed |= settings.Delete(editing.Slot); editing = null; }
+            if (ChromeControls.TextButton("Delete", new Vector2(half, 0))) { changed |= settings.Delete(editing.Slot); editing = null; }
         }
-        if (ImGui.Button("Reset window presets", new Vector2(width, 0))) {
+        if (ChromeControls.TextButton("Reset window presets", new Vector2(width, 0))) {
             config.WindowPresets = new(); editing = null; controller.Cancel(); changed = true;
         }
         if (changed) controller.Changed();

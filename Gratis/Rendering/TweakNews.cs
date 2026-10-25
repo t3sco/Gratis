@@ -15,6 +15,7 @@ public sealed record TweakRelease(string Version, string Date, IReadOnlyList<str
 public static class TweakNews
 {
     public static IReadOnlyList<TweakRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new TweakRelease("3.2.2", "2026-10-25", Array.AsReadOnly(new[] { "interface-motion" }), "One consistent motion language for controls, popovers, scrolling and hover opacity."),
         new TweakRelease("3.2.1", "2026-10-25", Array.AsReadOnly(new[] { "location-card", "coordinates-card" }),
             "Centre your location and coordinates together, with selectable area detail and player/cursor rows."),
         new TweakRelease("3.2.0", "2026-10-25", Array.AsReadOnly(new[] {

@@ -30,7 +30,7 @@ public sealed class TweakDefinition
             var field = type.GetField(part) ?? throw new ArgumentException($"Unknown tweak binding: {path}");
             type = field.FieldType; return field;
         }).ToArray();
-        if (type != typeof(bool)) throw new ArgumentException($"Tweaks must be independent toggles: {path}");
+        if (type != typeof(bool) && type != typeof(InterfaceAnimationMode)) throw new ArgumentException($"Tweaks must be independent toggles: {path}");
         Default = Get(new SystemConfig());
     }
 
@@ -41,7 +41,7 @@ public sealed class TweakDefinition
             if (owner is null) return Default;
             owner = field.GetValue(owner);
         }
-        return (bool)owner!;
+        return owner is InterfaceAnimationMode motion ? motion != InterfaceAnimationMode.Off : (bool)owner!;
     }
 
     public void Set(SystemConfig config, bool value)
@@ -52,10 +52,12 @@ public sealed class TweakDefinition
             if (next is null) { next = Activator.CreateInstance(field.FieldType)!; field.SetValue(owner, next); }
             owner = next;
         }
-        fields[^1].SetValue(owner, value);
+        fields[^1].SetValue(owner, fields[^1].FieldType == typeof(InterfaceAnimationMode)
+            ? value ? InterfaceAnimationMode.Full : InterfaceAnimationMode.Off : value);
         if (ConfigPath == nameof(MapDrawingConfig.TravelActions)) config.TravelActionsInitialized = true;
     }
-    public bool IsModified(SystemConfig config) => Get(config) != Default;
+    public bool IsModified(SystemConfig config) => ConfigPath == "InterfaceAnimations"
+        ? config.InterfaceAnimations != InterfaceAnimationMode.Full : Get(config) != Default;
     public void Reset(SystemConfig config) => Set(config, Default);
 
     internal int Rank(string search)
@@ -127,6 +129,7 @@ public static class TweakCatalog
         Add("context-menu", "Display", GratisIcons.LayoutGrid, "Context menu", "Open map actions with a right-click.", "GratisContextMenu");
         Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag inertia", "Let a released map pan glide gently to a stop.", "Motion.PanInertia", "Chrome & motion", "Motion");
         Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion", "Use immediate movement and suppress decorative animation.", "ReduceMotion");
+        Add("interface-motion", "Display", GratisIcons.Sparkles, "Interface animations", "Ease map controls, popovers and list scrolling. Configure the amount and speed.", "InterfaceAnimations", "Chrome & motion", "Motion");
         Add("location-card", "Display", GratisIcons.MapPin, "Location card", "Show your zone and area together; choose how much detail to include.", "ShowTitleOnMap", "Chrome & motion", "title");
         Add("coordinates-card", "Display", GratisIcons.Crosshair, "Player and cursor coordinates", "Keep player and cursor positions together in a compact card.", "ShowCoordinateBar", "Chrome & motion", "coordinates");
         Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzea time chip", "Show Eorzea time beside map coordinates.", "ShowEorzeaTime", "Chrome & motion", "coordinates");

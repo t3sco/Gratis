@@ -7,6 +7,7 @@ internal static partial class Program
 {
     private static bool TryChromeLayoutScene(string[] args)
     {
+        if (TryAnimationScene(args)) return true;
         if (TryChromeThreeScene(args)) return true;
         var at = Array.IndexOf(args, "--scene");
         if (at < 0 || at + 1 >= args.Length || args[at + 1] is not ("chrome-decluttered" or "toolbar-lens-menu" or "chrome-travel-timer" or "filters-empty" or "filters-solo" or "toolbar-top-centre" or "toolbar-narrow" or "toolbar-scaled" or "toolbar-top-centre-collision" or "chrome-layout-small" or "chrome-layout-normal" or "chrome-layout-large" or "chrome-layout-anchors" or "chrome-quest-travel" or "filters-collapsed" or "filters-expanded" or "filters-small-collapsed" or "filters-small-expanded" or "filters-always-expanded" or "filters-small-always-expanded")) return false;

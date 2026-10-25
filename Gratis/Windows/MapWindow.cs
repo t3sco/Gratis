@@ -298,7 +298,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
 
             using (ImRaii.PushStyle(ImGuiStyleVar.Alpha, 1.0f)) {
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
-                    ImGui.SetTooltip("Hold Shift + Control while clicking activate button");
+                    Rendering.UiMotion.TooltipText("Hold Shift + Control while clicking activate button");
                 }
             }
         }

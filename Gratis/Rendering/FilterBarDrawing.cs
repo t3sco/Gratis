@@ -118,10 +118,12 @@ public static class FilterBarDrawing
         ImGui.SetNextWindowPos(new(bounds.X, bounds.Y));
         ImGui.SetNextWindowSize(size);
         using var style = new ChromePopupStyle(transparent: true);
-        if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) return;
-        if (close || ImGui.IsKeyPressed(ImGuiKey.Escape, false)) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); return; }
-        LastBounds = PopoverBounds = bounds;
-        PopoverOpen = InputActive = true; popupFrame = ImGui.GetFrameCount(); context.Chrome.Reveal(ImGui.GetTime());
+        using var popup = UiMotion.Popup(Popup, !close && !ImGui.IsKeyPressed(ImGuiKey.Escape, false),
+            new(bounds.X, bounds.Y), size, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoScrollWithMouse);
+        if (!popup.Visible) return;
+        UiMotion.Scroll();
+        if (popup.Interactive) LastBounds = PopoverBounds = bounds;
+        PopoverOpen = InputActive = popup.Interactive; if (popup.Interactive) popupFrame = ImGui.GetFrameCount(); context.Chrome.Reveal(ImGui.GetTime());
         MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowPos() + size, GratisTheme.CardRadius * s);
         var origin = ImGui.GetCursorScreenPos(); var index = 0;
         for (var i = 0; i < MarkerVisibility.GroupCount; i++) {
@@ -139,7 +141,6 @@ public static class FilterBarDrawing
             ImGui.TextWrapped("Click mute · Ctrl/Alt solo · Right loud/quiet");
             ImGui.PopStyleColor();
         }
-        ImGui.EndPopup();
     }
 
     private static void DrawChip(MarkerGroup group, Vector2 pos, Vector2 size)
@@ -156,6 +157,7 @@ public static class FilterBarDrawing
             if (ImGui.GetIO().KeyAlt || ImGui.GetIO().KeyCtrl) model.Solo(group); else model.Toggle(group);
         }
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Control(list, pos, pos + size);
         ChromeControls.Feedback(list, pos, pos + size, state == MarkerVisibilityState.Loud);
         var ink = GratisTheme.FilterTints[index];
         ink = state == MarkerVisibilityState.Hidden ? GratisTheme.Secondary : ink;
@@ -164,17 +166,19 @@ public static class FilterBarDrawing
         GratisIcons.Draw(list, pos + size / 2, glyph, ink, GratisTheme.IconSize * s);
         var indicator = pos + size - new Vector2(7 * s);
         list.AddCircleFilled(indicator, 5 * s, ImGui.GetColorU32(GratisTheme.Surface with { W = 1 }), 16);
-        if (state == MarkerVisibilityState.Hidden)
-            list.AddLine(indicator - new Vector2(2.5f * s, 0), indicator + new Vector2(2.5f * s, 0), ImGui.GetColorU32(GratisTheme.Secondary), s);
-        else if (index == SoloGroup) {
-            list.AddCircle(indicator, 3 * s, ImGui.GetColorU32(GratisTheme.WarmAccent), 12, s);
-            list.AddCircleFilled(indicator, s, ImGui.GetColorU32(GratisTheme.WarmAccent), 8);
+        var mute = UiMotion.Value(UiMotion.Item, 18, state == MarkerVisibilityState.Hidden ? 1 : 0);
+        var solo = UiMotion.Value(UiMotion.Item, 19, index == SoloGroup ? 1 : 0);
+        var quiet = UiMotion.Value(UiMotion.Item, 20, state == MarkerVisibilityState.Quiet ? 1 : 0);
+        var normal = UiMotion.Value(UiMotion.Item, 21, state != MarkerVisibilityState.Hidden && state != MarkerVisibilityState.Quiet && index != SoloGroup ? 1 : 0);
+        if (mute > .001f) list.AddLine(indicator - new Vector2(2.5f * s, 0), indicator + new Vector2(2.5f * s, 0), ImGui.GetColorU32(GratisTheme.Secondary with { W = mute }), s);
+        if (solo > .001f) {
+            list.AddCircle(indicator, 3 * s, ImGui.GetColorU32(GratisTheme.WarmAccent with { W = solo }), 12, s);
+            list.AddCircleFilled(indicator, s, ImGui.GetColorU32(GratisTheme.WarmAccent with { W = solo }), 8);
         }
-        else if (state == MarkerVisibilityState.Quiet)
-            list.AddCircle(indicator, 2.5f * s, ImGui.GetColorU32(GratisTheme.Secondary), 12, s);
-        else {
-            list.AddLine(indicator + new Vector2(-2, 0) * s, indicator + new Vector2(0, 2) * s, ImGui.GetColorU32(GratisTheme.WarmAccent), s);
-            list.AddLine(indicator + new Vector2(0, 2) * s, indicator + new Vector2(3, -2) * s, ImGui.GetColorU32(GratisTheme.WarmAccent), s);
+        if (quiet > .001f) list.AddCircle(indicator, 2.5f * s, ImGui.GetColorU32(GratisTheme.Secondary with { W = quiet }), 12, s);
+        if (normal > .001f) {
+            list.AddLine(indicator + new Vector2(-2, 0) * s, indicator + new Vector2(0, 2) * s, ImGui.GetColorU32(GratisTheme.WarmAccent with { W = normal }), s);
+            list.AddLine(indicator + new Vector2(0, 2) * s, indicator + new Vector2(3, -2) * s, ImGui.GetColorU32(GratisTheme.WarmAccent with { W = normal }), s);
         }
         if (state == MarkerVisibilityState.Loud)
             list.AddLine(pos + new Vector2(8 * s, size.Y - s), pos + new Vector2(size.X - 8 * s, size.Y - s), ImGui.GetColorU32(GratisTheme.WarmAccent), s);

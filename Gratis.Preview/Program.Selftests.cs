@@ -5,6 +5,11 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("interface-motion", InterfaceMotionVerification.Maths),
+        ("interface-scroll", InterfaceMotionVerification.Scroll),
+        ("interface-motion-config", InterfaceMotionVerification.Config),
+        ("frames-interface-motion", InterfaceMotionVerification.Frames),
+        ("frames-unfade", InterfaceMotionVerification.Unfade),
         ("chrome-three", ChromeThreeVerification.State),
         ("frames-bottom-cards", ChromeThreeVerification.BottomRow),
         ("frames-travel-input", ChromeThreeVerification.TravelInput),

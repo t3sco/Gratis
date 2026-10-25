@@ -82,7 +82,7 @@ public sealed class EdgePointers
             if (label.Length > 0) TextDrawing.Draw(list, point + new Vector2(-half.X + 25 * s, -TextDrawing.Measure(label).Y / 2), colour, label);
             if (context.WindowMoveInputBlocked || host.Palette?.IsOpen == true || !ImGui.IsWindowHovered()) continue;
             if (!ImGui.IsMouseHoveringRect(point - half, point + half, false)) continue;
-            InputActive = true; ImGui.SetTooltip(target.Name);
+            InputActive = true; UiMotion.TooltipText(target.Name);
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) host.Renderer.BeginSpotlight(new(target.World, host.Renderer.ViewedMapId, target.Source, Icon: target.Icon));
         }
     }

@@ -57,6 +57,8 @@ public sealed partial class MapWindowFrame
     {
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
         host.UpdateWindow();
+        if (host.Config.IsGratis) UiMotion.Begin();
+        UiMotion.IncludeGhost(Ghost.AnimationActive, Ghost.AnimationKeys);
         ZoneBanner.Update(host.Config, host.SubZone, host.Now);
         MapDrawContext.Current.Measure.BeginFrame();
         MapDrawContext.Current.ContextMenu.Measure ??= MapDrawContext.Current.Measure;
@@ -93,10 +95,14 @@ public sealed partial class MapWindowFrame
 
         MapDrawOffset = ImGui.GetCursorScreenPos();
         var ghostEnabled = host.Config.IsGratis && host.Config.GhostMode;
-        using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
-            ghostEnabled ? Ghost.Opacity : host.Config.FadePercent, ghostEnabled || host.ShouldFade && !(host.Config.IsGratis && host.Config.RestoreOpacityOnHover &&
-                ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) &&
-                ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false)));
+        var restoreHover = host.Config.IsGratis && host.Config.RestoreOpacityOnHover &&
+            ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
+        var fadedTarget = host.ShouldFade && !restoreHover ? host.Config.FadePercent : 1;
+        var opacity = ghostEnabled ? Ghost.Opacity : host.Config.IsGratis && host.Config.RestoreOpacityOnHover
+            ? UiMotion.Value(ImGui.GetID("##hover-unfade"), 9, fadedTarget,
+                restoreHover ? InterfaceMotionTokens.HoverEnter : InterfaceMotionTokens.HoverExit, opacity: true)
+            : host.ShouldFade ? host.Config.FadePercent : 1;
+        using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, opacity, host.Config.IsGratis || host.ShouldFade);
         using (var renderChild = FrameScopes.Child("render_child", ImGui.GetContentRegionAvail(), ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar |
             (Ghost.ClickThrough ? ImGuiWindowFlags.NoInputs : ImGuiWindowFlags.None))) {
             if (!renderChild.Visible) return;
@@ -154,6 +160,8 @@ public sealed partial class MapWindowFrame
             host.Palette?.DrawHint(host.Config);
             host.Palette?.Draw(host.Config);
             DrawGhostHint(host);
+            HoverCardDrawing.DrawTail();
+            UiMotion.DrawTooltipTail();
         }
 
         if (ImGui.IsItemHovered()) {
@@ -286,7 +294,7 @@ public sealed partial class MapWindowFrame
         if (ImGui.GetWindowSize() == lastWindowSize) {
             var pressed = host.Config.IsGratis ? ImGui.IsMouseClicked(ImGuiMouseButton.Left) &&
                 ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem) &&
-                !HoveredFlags.HasFlag(HoverFlags.Toolbar) : ImGui.IsItemClicked(ImGuiMouseButton.Left);
+                (!HoveredFlags.HasFlag(HoverFlags.Toolbar) || MapToolbarDrawing.SearchExitPointerOver) : ImGui.IsItemClicked(ImGuiMouseButton.Left);
             if (pressed && !isDragStarted) {
                 isDragStarted = true;
                 host.Renderer.InteractWithViewport(true);

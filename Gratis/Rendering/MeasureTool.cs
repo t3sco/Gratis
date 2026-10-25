@@ -93,7 +93,7 @@ public sealed partial class MeasureTool : IContextMenuMeasure
             if (Dragging && !ImGui.IsMouseDown(ImGuiMouseButton.Left) || awaitingEnd && click && !began && overMap) Dragging = awaitingEnd = false;
         }
         if (Active && Dragging && (!focused || blocked)) { Dragging = false; InputActive = true; }
-        if (Active) DrawRuler(host);
+        if (Active) DrawRuler(host); else DrawLabelExit();
     }
     public string Diagnostics() => $"measure enabled={MapDrawContext.Current.Config.MeasureTool} active={Active} dragging={Dragging} map={MapId} start={Start} end={End} distance={Distance:0.0}y snapped={StartSnapped}/{EndSnapped}";
 }

@@ -12,6 +12,7 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout
 {
+    private static readonly string[] NavigationIds = ["##section-0", "##section-1", "##section-2", "##section-3", "##section-4", "##section-5", "##section-6", "##section-7"];
     private static readonly int[] NavigationOrder = [7, 0, 1, 2, 6, 3, 4, 5];
     internal static string SectionLabel(string section) => section switch {
         "Chrome & motion" => "Controls & motion", "Modules / tools" => "Tools", _ => section,
@@ -86,9 +87,9 @@ public sealed partial class SettingsLayout
                 ImGui.SetCursorScreenPos(new(cellStart.X + cellWidth - 36 * s, cellStart.Y));
             }
             ImGui.SetNextItemWidth(-1);
-            ImGui.BeginDisabled(!entry.Enabled(config));
-            ImGui.BeginGroup(); changed |= entry.Draw(config); ImGui.EndGroup();
-            ImGui.EndDisabled();
+            using (var disabled = UiMotion.Disabled("##setting-enabled", entry.Enabled(config))) {
+                ImGui.BeginGroup(); changed |= entry.Draw(config); ImGui.EndGroup();
+            }
             if (entry.Tooltip is { } valueTip) ChromeControls.Tooltip(valueTip, scale: s);
 #if GRATIS_PREVIEW
             var controlMin = ImGui.GetItemRectMin(); var controlMax = ImGui.GetItemRectMax();

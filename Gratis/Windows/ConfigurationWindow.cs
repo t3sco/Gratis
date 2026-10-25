@@ -103,7 +103,8 @@ public sealed class IconConfigurationTab
     {
         if (!ImGui.CollapsingHeader("Per-icon overrides")) return;
         ImGui.TextDisabled("Select an observed game icon to override it.");
-        if (ImGui.BeginChild("icon-list", new Vector2(62, 270))) {
+        if (Rendering.UiMotion.Child("icon-list", new Vector2(62, 270), System.SystemConfig.IsGratis ? ImGuiWindowFlags.NoScrollWithMouse : ImGuiWindowFlags.None)) {
+            if (System.SystemConfig.IsGratis) Rendering.UiMotion.Scroll();
             foreach (var (iconId, settings) in System.IconConfig.IconSettingMap.OrderBy(pair => pair.Key)) {
                 if (iconId == 0 || DrawHelpers.IsDisallowedIcon(iconId)) continue;
                 var start = ImGui.GetCursorScreenPos();
@@ -111,12 +112,13 @@ public sealed class IconConfigurationTab
                     currentSetting = settings;
                 var texture = Service.TextureProvider.GetFromGameIcon(iconId).GetWrapOrEmpty();
                 ImGui.GetWindowDrawList().AddImage(texture.Handle, start, start + new Vector2(32));
-                if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Marker #{iconId}");
+                if (ImGui.IsItemHovered()) Rendering.UiMotion.TooltipText($"Marker #{iconId}");
             }
         }
         ImGui.EndChild();
         ImGui.SameLine();
-        if (ImGui.BeginChild("icon-options", new Vector2(0, 270)) && currentSetting is { } setting) {
+        if (Rendering.UiMotion.Child("icon-options", new Vector2(0, 270), System.SystemConfig.IsGratis ? ImGuiWindowFlags.NoScrollWithMouse : ImGuiWindowFlags.None) && currentSetting is { } setting) {
+            if (System.SystemConfig.IsGratis) Rendering.UiMotion.Scroll();
             ImGui.TextUnformatted($"Marker #{setting.IconId}");
             var changed = ImGui.Checkbox("Hide icon", ref setting.Hide);
             changed |= ImGui.Checkbox("Allow tooltip", ref setting.AllowTooltip);

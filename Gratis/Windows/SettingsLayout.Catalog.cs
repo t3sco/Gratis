@@ -203,7 +203,7 @@ public sealed partial class SettingsLayout
         Group("Chrome & motion", "Chrome visibility", Gratis);
         Add("GhostMode", "Ghost mode", tip: "Fade and pass clicks to the game while moving. Hover or focus restores input. Overrides legacy window fading.");
         Add("GhostOpacity", "Ghost opacity", .05f, 1, "%.2f", when: c => c.GhostMode);
-        Add("GhostRestoreDelay", "Stationary restore delay", 0, 5, "%.1f s", when: c => c.GhostMode);
+        Add("GhostRestoreDelay", "Stationary input delay", 0, 5, "%.1f s", when: c => c.GhostMode, tip: "Only delays click-through after stopping. Hover restores input immediately; hover opacity never waits.");
         Add("AutoHideChrome", "Auto-hide chrome", tip: "Hover or interact to reveal the title, toolbar and coordinates.");
         Add("PinChrome", "Pin chrome");
         Add("RestoreOpacityOnHover", "Restore full opacity on hover", tip: "Restore ordinary faded-map opacity while hovered. Ghost mode already restores opacity and input.");
@@ -274,6 +274,8 @@ public sealed partial class SettingsLayout
         Add("HoverCardStyle", "Hover card style", choices: "Gratis|Classic");
         Add("HoverCardSwatch", "Marker swatch", when: c => c.HoverCardStyle == 0);
         Group("Chrome & motion", "Motion", Gratis);
+        Add("InterfaceAnimations", "Interface animations", choices: "Full|Reduced|Off");
+        Add("AnimationSpeed", "Animation speed", .5f, 1.5f, "%.2fx", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("ReduceMotion", "Reduce motion");
         Add("FlagArrival", "Flag arrival notification");
         Add("FlagArrivalRadius", "Flag arrival radius", 1, 40, "%.1f yalms");

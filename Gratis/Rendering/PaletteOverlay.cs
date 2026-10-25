@@ -52,14 +52,10 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     public Vector4 FieldBounds { get; private set; }
     public Vector4 ClearBounds { get; private set; }
     private float inlineWidth;
-    private double widthTime;
     public float InlineWidth(float scale)
     {
-        var now = ImGui.GetTime();
-        var target = IsOpen ? 240 : 0;
-        var elapsed = Math.Clamp(now - widthTime, 0, .1); widthTime = now;
-        inlineWidth = MapDrawContext.Current.Config.ReduceMotion ? target
-            : target + (inlineWidth - target) * MathF.Exp(-(float)elapsed / .09f);
+        inlineWidth = UiMotion.Value(ImGui.GetID("##inline-search-width"), 12, IsOpen ? 240 : 0,
+            InterfaceMotionTokens.Standard, InterfaceCurve.Spring, initial: 0);
         if (IsOpen) inlineWidth = MathF.Max(96, inlineWidth);
         else if (inlineWidth < 1) inlineWidth = 0;
         return inlineWidth * scale;
@@ -70,6 +66,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         var s = GratisTheme.ChromeScale;
         FieldBounds = new(position.X, position.Y, position.X + size.X, position.Y + size.Y);
         ClearBounds = Vector4.Zero;
+        ImGui.BeginDisabled(!IsOpen);
+        using var fieldMotion = UiMotion.Surface("##inline-field-enter", position, IsOpen);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.SetCursorScreenPos(position);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
@@ -86,8 +84,20 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         ClearBounds = new(clearPos.X, clearPos.Y, clearPos.X + clearSize, clearPos.Y + size.Y);
         if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y), windowBounds: MapToolbarDrawing.WindowBounds)) SetQuery("");
         Search(MapDrawContext.Current.Config);
+        ImGui.EndDisabled();
     }
     private PlaceResult[] results = [];
+    private PlaceResult[] previousResults = [];
+    private PaletteExpansion[] previousExpansions = [];
+    private uint? previousExpansion;
+    private bool previousHome;
+    private int viewRevision;
+    private void RememberView()
+    {
+        previousResults = results; previousExpansions = expansions; previousExpansion = expansion;
+        previousHome = string.IsNullOrWhiteSpace(searched) && searchedScope == 0;
+        viewRevision++;
+    }
     private int windowPresetRevision = -1;
     private WindowPresetSettings? windowPresetSettings;
     private readonly List<string> recentQueries = [];
@@ -100,7 +110,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     public Vector2 FirstResultCenter { get; private set; }
     public Vector2 ConfirmationCenter { get; private set; }
     private bool Home => string.IsNullOrWhiteSpace(query) && scope == 0;
-    public void BrowseExpansion(uint? id) { expansion = id; browserSelection = 0; revision = -1; scrollSelection = false; focusSearch = true; }
+    public void BrowseExpansion(uint? id) { RememberView(); expansion = id; browserSelection = 0; revision = -1; scrollSelection = false; focusSearch = true; }
 
 
     public void Open(string text = "")
@@ -147,6 +157,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         }
         if (searched == query && searchedScope == scope && revision == source.Revision && context == source.Context
             && showUnattuned == config.PaletteShowUnattuned) return;
+        if (searched != query || searchedScope != scope) RememberView();
         if (searched != query) browserSelection = 0;
         if (searched != query || searchedScope != scope) { selected = 0; scrollSelection = true; confirming = null; message = ""; }
         searched = query; searchedScope = scope; revision = source.Revision; context = source.Context;

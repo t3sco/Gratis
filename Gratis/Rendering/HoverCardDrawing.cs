@@ -10,16 +10,37 @@ namespace Gratis.Rendering;
 
 public static class HoverCardDrawing
 {
+    private static MapDrawContext? owner;
+    private static string lastKey = "", lastTitle = "";
+    private static string? lastSecondary;
+    private static MarkerCategory? lastCategory;
+    private static Classes.MarkerInfo? lastMarker;
+    private static int seen = -2;
+    private static bool tail;
+    private static Vector2 mouse;
+    private const uint MotionId = 0xfac31102;
+    public static void DrawTail()
+    {
+        if (!ReferenceEquals(owner, MapDrawContext.Current) || seen == ImGui.GetFrameCount() || lastKey.Length == 0) return;
+        if (UiMotion.Visibility(MotionId, false) <= .001f) { lastKey = ""; return; }
+        tail = true;
+        try { Draw(lastKey, lastTitle, lastSecondary, lastCategory, lastMarker); }
+        finally { tail = false; }
+    }
     public static void Draw(string key, string title, string? secondary = null, MarkerCategory? category = null, Classes.MarkerInfo? marker = null)
     {
         var context = MapDrawContext.Current;
-        context.HoverCardFrame = ImGui.GetFrameCount();
+        if (!tail) context.HoverCardFrame = ImGui.GetFrameCount();
         var attuned = AetheryteAttunement.Status(context.Config, marker);
-        if (attuned.HasValue) secondary = (attuned.Value ? "Attuned" : "Not yet attuned") + (string.IsNullOrWhiteSpace(secondary) ? "" : "\n" + secondary);
-        if (marker != null && context.Assistance?.HoverTransport(marker, title) == true) return;
+        if (attuned.HasValue && !tail) secondary = (attuned.Value ? "Attuned" : "Not yet attuned") + (string.IsNullOrWhiteSpace(secondary) ? "" : "\n" + secondary);
+        if (!tail && marker != null && context.Assistance?.HoverTransport(marker, title) == true) return;
+        if (!tail) {
+            owner = context; lastKey = key; lastTitle = title; lastSecondary = secondary; lastCategory = category; lastMarker = marker;
+            seen = ImGui.GetFrameCount(); mouse = ImGui.GetMousePos();
+        }
         context.Chrome.Reveal(ImGui.GetTime());
         var scale = GratisTheme.ChromeScale;
-        var fade = HoverAnimation.Progress("card/" + key, true);
+        var fade = UiMotion.Visibility(MotionId, !tail);
         var viewport = ImGui.GetWindowViewport();
         var margin = new Vector2(GratisTheme.Inset * scale);
         var available = Vector2.Max(new Vector2(1), viewport.Size - margin * 2);
@@ -35,9 +56,9 @@ public static class HoverCardDrawing
             secondaryBounds = string.IsNullOrEmpty(secondary) ? Vector2.Zero : DrawBinding.MeasureText(secondarySize, secondary, wrap);
         var size = new Vector2(Math.Max(primaryBounds.X, secondaryBounds.X) + swatch, primaryBounds.Y + (secondaryBounds.Y > 0 ? 4 * scale + secondaryBounds.Y : 0)) + padding * 2;
         size = Vector2.Min(size, available);
-        var position = ImGui.GetMousePos() + new Vector2(24, 24 + 4 * (1 - fade)) * scale;
+        var position = mouse + new Vector2(24, 24 + (UiMotion.Full ? 4 * (1 - fade) : 0)) * scale;
         if (position.Y + size.Y > viewport.Pos.Y + viewport.Size.Y - margin.Y)
-            position.Y = ImGui.GetMousePos().Y - size.Y - 24 * scale;
+            position.Y = mouse.Y - size.Y - 24 * scale;
         position = Vector2.Clamp(position, viewport.Pos + margin, viewport.Pos + viewport.Size - margin - size);
         var list = ImGui.GetForegroundDrawList();
         DrawBinding.PushFontTexture(list);

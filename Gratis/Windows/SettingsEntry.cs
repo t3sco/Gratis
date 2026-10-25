@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using Gratis.Data;
+using Gratis.Rendering;
 #if GRATIS_PREVIEW
 using ImGuiNET;
 #else
@@ -24,6 +25,7 @@ public sealed class SettingsEntry
     private readonly float minimum, maximum;
     private readonly string format;
     private readonly string[]? choices;
+    private string[]? enumNames;
 
     public SettingsEntry(string section, string group, string path, string label,
         float min = 0, float max = 1, string format = "%.2f", string? choices = null,
@@ -95,7 +97,7 @@ public sealed class SettingsEntry
                     number = (int)numeric;
                 }
                 else changed = choices is null ? ImGui.SliderInt("##value", ref number, (int)minimum, (int)maximum)
-                    : ImGui.Combo("##value", ref number, choices, choices.Length);
+                    : config.IsGratis ? ChromeControls.Combo("##value", ref number, choices) : ImGui.Combo("##value", ref number, choices, choices.Length);
                 value = number; break;
             case FadeMode mode:
                 var selected = (int)mode;
@@ -111,9 +113,9 @@ public sealed class SettingsEntry
                 }
                 value = (FadeMode)selected; break;
             case Enum option:
-                var names = choices ?? Enum.GetNames(option.GetType());
+                var names = choices ?? (enumNames ??= Enum.GetNames(option.GetType()));
                 var index = Convert.ToInt32(option);
-                changed = ImGui.Combo("##value", ref index, names, names.Length);
+                changed = config.IsGratis ? ChromeControls.Combo("##value", ref index, names) : ImGui.Combo("##value", ref index, names, names.Length);
                 value = Enum.ToObject(option.GetType(), index); break;
             case Vector2 vector:
                 if (config.IsGratis) {

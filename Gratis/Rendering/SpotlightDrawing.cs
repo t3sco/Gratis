@@ -121,6 +121,7 @@ internal static class SpotlightDrawing
         var center = origin + (spotlight.TargetTexture + spotlight.PlayerTexture) * .5f * zoom + new Vector2(0, 25) * scale;
         if (!Fits(center, half + new Vector2(2))) return;
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Surface("##spotlight-distance", center, spotlight.Active);
         MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.CardRadius * scale, spotlight.Opacity, surfaceOpacity: 1);
         TextDrawing.Draw(list, center - half + new Vector2(12 * scale, (half.Y * 2 - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
     }

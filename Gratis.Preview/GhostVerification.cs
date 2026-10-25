@@ -17,8 +17,8 @@ internal static class GhostVerification
         g.Update(c, 1, true, false, false, false); Check(g.ClickThrough && g.Opacity == 1, "immediate click-through, visual ease starts");
         g.Update(c, 1.3, true, false, false, false); Check(MathF.Abs(g.Opacity - .35f) < .0001f, "coarse timestep settles");
         g.Update(c, 1.31, true, true, false, false); Check(!g.ClickThrough, "rect hover restores input immediately");
-        g.Update(c, 1.37, true, true, false, false); Check(g.Opacity > .6f && g.Opacity < .8f, "half restoration");
-        g.Update(c, 1.6, true, true, false, false); Check(g.Opacity == 1, "120ms restoration");
+        g.Update(c, 1.37, true, true, false, false); Check(g.Opacity > .8f && g.Opacity < .95f, "fast eased restoration");
+        g.Update(c, 1.6, true, true, false, false); Check(g.Opacity == 1, "140ms restoration");
         g.Update(c, 2, true, false, true, false); Check(!g.ClickThrough, "focus");
         g.Update(c, 3, true, false, false, true); Check(!g.ClickThrough, "popup/drag/palette/card");
         g.Update(c, 4, true, false, false, false, true); Check(!g.ClickThrough, "interaction");

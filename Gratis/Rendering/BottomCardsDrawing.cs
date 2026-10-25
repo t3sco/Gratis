@@ -98,7 +98,7 @@ public static class BottomCardsDrawing
         using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
             list.AddText(pos + new Vector2(12 * s, LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), ChromeControls.FitLabel(LocationPrimary, size.X - 24 * s));
         ImGui.SetCursorScreenPos(pos); ImGui.Dummy(size);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip(LocationSecondary.Length > 0 ? LocationSecondary + " · " + LocationPrimary : LocationPrimary);
+        if (ImGui.IsItemHovered()) UiMotion.TooltipText(LocationSecondary.Length > 0 ? LocationSecondary + " · " + LocationPrimary : LocationPrimary);
     }
     public static void DrawCoordinates(Vector2? player, Vector2? cursor)
     {

@@ -72,7 +72,8 @@ public static class FlatMarkerDrawing
         var hitRadius = MarkerVisual.HalfSize(marker).X;
         ImGui.SetCursorScreenPos(center - new Vector2(hitRadius));
         ImGui.Dummy(new Vector2(hitRadius * 2));
-        var hover = ImGui.IsItemHovered() ? HoverAnimation.Progress(Key(marker), true) : 0;
+        var identity = unchecked((uint)global::System.HashCode.Combine(ImGui.GetID("flat-marker"), marker.IconId, marker.MarkerType, marker.ObjectiveId, marker.DataId));
+        var hover = UiMotion.Hover(identity, ImGui.IsItemHovered());
         var radius = size * .5f * (1 + .2f * hover);
         var list = ImGui.GetWindowDrawList();
         if (context.Visibility.State(MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Loud)

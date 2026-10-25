@@ -15,9 +15,11 @@ namespace Gratis.Windows;
 public sealed class SettingsTheme
 {
     private readonly bool active;
+    private readonly UiMotion.PolicyScope motionPolicy;
     private readonly IDisposable? font;
     private SettingsTheme(SystemConfig config)
     {
+        motionPolicy = UiMotion.Policy(config);
         active = config.IsGratis;
         if (!active) return;
         font = Font(14);
@@ -73,6 +75,7 @@ public sealed class SettingsTheme
     public static SettingsTheme Push(SystemConfig config) => new(config);
     public void Pop()
     {
+        motionPolicy.Dispose();
         if (!active) return;
         ImGui.PopStyleColor(30);
         ImGui.PopStyleVar(14);
@@ -101,12 +104,17 @@ public sealed class SettingsTheme
         var changed = ImGui.Button(id, new Vector2(width, height));
         ImGui.PopStyleVar();
         if (changed) value = !value;
+        if (!ImGui.IsItemVisible()) return changed;
+        UiMotion.ItemId(id);
+        var selected = UiMotion.Value(UiMotion.Item, 10, value ? 1 : 0, InterfaceMotionTokens.Standard, InterfaceCurve.Spring);
         var list = ImGui.GetWindowDrawList();
+        using var motion = UiMotion.Control(list, start, start + new Vector2(width, height));
+        ChromeControls.Feedback(list, start, start + new Vector2(width, height), fill: false);
         var track = start + new Vector2(0, (height - 20 * scale) / 2);
         var end = track + new Vector2(36, 20) * scale;
-        list.AddRectFilled(track, end, ImGui.GetColorU32(value ? accent : new Vector4(1, 1, 1, .12f)), 10 * scale);
+        list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), accent, selected)), 10 * scale);
         list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), 10 * scale);
-        list.AddCircleFilled(track + new Vector2(value ? 26 : 10, 10) * scale, 6 * scale,
+        list.AddCircleFilled(track + new Vector2(10 + 16 * selected, 10) * scale, 6 * scale,
             ImGui.GetColorU32(GratisTheme.Primary));
         if (label is not null) list.AddText(start + new Vector2(44 * scale, (height - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(GratisTheme.Primary), label);
@@ -139,14 +147,18 @@ public sealed class SettingsTheme
         else changed = ImGui.SliderFloat(id, ref value, min, max, format);
         ImGui.PopStyleVar();
         ImGui.PopStyleColor(6);
+        UiMotion.ItemId(id);
         var height = ImGui.GetItemRectSize().Y;
         var list = ImGui.GetWindowDrawList();
+        ChromeControls.Feedback(list, start, start + new Vector2(trackWidth, height), fill: false);
         if (!ImGui.IsItemActive() || !ImGui.GetIO().WantTextInput) {
             list.AddRectFilled(start + new Vector2(2 * scale), start + new Vector2(trackWidth - 2 * scale, height - 2 * scale),
                 ImGui.ColorConvertFloat4ToU32(GratisTheme.Surface with { W = 1 }));
             var left = start + new Vector2(6 * scale, height / 2);
             var right = start + new Vector2(trackWidth - 6 * scale, height / 2);
-            var knob = Vector2.Lerp(left, right, Math.Clamp((value - min) / (max - min), 0, 1));
+            var fraction = Math.Clamp((value - min) / (max - min), 0, 1);
+            var eased = UiMotion.Value(UiMotion.Item, 11, fraction, InterfaceMotionTokens.Micro, InterfaceCurve.Spring);
+            var knob = Vector2.Lerp(left, right, ImGui.IsItemActive() ? fraction : eased);
             list.AddLine(left, right, ImGui.GetColorU32(new Vector4(1, 1, 1, .14f)), 2 * scale);
             list.AddLine(left, knob, ImGui.GetColorU32(accent), 2 * scale);
             list.AddCircleFilled(knob, 4 * scale, ImGui.GetColorU32(accent));

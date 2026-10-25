@@ -61,7 +61,7 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/motion",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.TakeMotionDiagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.TakeMotionDiagnostics() + " " + Rendering.UiMotion.Diagnostics()),
         });
     }
 }
