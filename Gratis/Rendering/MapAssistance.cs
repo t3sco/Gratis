@@ -229,7 +229,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         return Vector2.Clamp(position, min + margin, Vector2.Max(min + margin, max - size - margin));
     }
 
-    internal void Panel(string id, Vector2 pos, Vector2 size, Action content)
+    internal void Panel(string id, Vector2 pos, Vector2 size, Action content, bool scroll = false)
     {
         panelBounds.Add((pos, pos + size));
         var s = GratisTheme.ChromeScale;
@@ -244,7 +244,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(.25f, .48f, .56f, .26f));
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         try {
-            const ImGuiWindowFlags flags = ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+            var flags = ImGuiWindowFlags.NoBackground | (scroll ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
 #if GRATIS_PREVIEW
             var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.AlwaysUseWindowPadding, flags);
 #else

@@ -180,10 +180,9 @@ public static class MapToolbarDrawing
                 if (id == "Lens") {
                     DrawMapMenu(activate);
                     if (ImGui.IsPopupOpen("Gratis_Show_Layers")) context.Chrome.Reveal(ImGui.GetTime());
-                    ImGui.PushStyleColor(ImGuiCol.PopupBg, GratisTheme.Surface);
-                    ImGui.PushStyleColor(ImGuiCol.Border, GratisTheme.Border);
+                    using var menuStyle = new ChromePopupStyle();
+                    using var menuFont = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Body)?.Push();
                     drawLayersContextMenu();
-                    ImGui.PopStyleColor(2);
                 }
             }
         }
@@ -203,12 +202,23 @@ public static class MapToolbarDrawing
         ImGui.SetNextItemWidth(200 * GratisTheme.ChromeScale);
         if (LensDrawing.DrawSelector(context.Config)) context.SaveConfig();
         ImGui.Separator();
-        if (ImGui.MenuItem("Locate player")) activate(ToolbarAction.CenterPlayer);
-        if (ImGui.MenuItem("Centre map")) activate(ToolbarAction.CenterMap);
-        if (ImGui.MenuItem("Parent map")) activate(ToolbarAction.Parent);
-        if (ImGui.MenuItem("Map layers...")) layers = true;
+        if (NavigationItem("Locate player", GratisIcons.LocateFixed)) { activate(ToolbarAction.CenterPlayer); ImGui.CloseCurrentPopup(); }
+        if (NavigationItem("Centre map", GratisIcons.LayoutGrid)) { activate(ToolbarAction.CenterMap); ImGui.CloseCurrentPopup(); }
+        if (NavigationItem("Parent map", GratisIcons.ArrowUp)) { activate(ToolbarAction.Parent); ImGui.CloseCurrentPopup(); }
+        if (NavigationItem("Map layers", GratisIcons.Layers)) { layers = true; ImGui.CloseCurrentPopup(); }
         ImGui.EndPopup();
         if (layers) activate(ToolbarAction.Layers);
+    }
+
+    private static bool NavigationItem(string label, char glyph)
+    {
+        var s = GratisTheme.ChromeScale; var pos = ImGui.GetCursorScreenPos();
+        var size = new Vector2(MathF.Max(200 * s, ImGui.GetContentRegionAvail().X), GratisTheme.ControlHeight * s);
+        var clicked = ChromeControls.Button("##navigation-" + label, size);
+        var list = ImGui.GetWindowDrawList(); ChromeControls.Feedback(list, pos, pos + size);
+        GratisIcons.Draw(list, pos + new Vector2(16 * s, size.Y / 2), glyph, GratisTheme.Secondary, GratisTheme.IconSize * s);
+        list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), label);
+        return clicked;
     }
 
     private static void DrawGlyph(ImDrawListPtr list, Vector2 center, ToolbarAction action, Vector4 color, float scale, bool following)

@@ -17,7 +17,9 @@ internal static class ReportVerification
             : new[] { ("Fonts", "handles=8/16 estimatedArea=80000/4194304 budgetWarning=False defaultFallbacks=2"),
                 ("Marker paths", "glyph+plate=20 shape=0"), ("Glass", "blurUnavailable=False"), ("Chrome", "progress=1"),
                 ("Motion", "min/max/fit=.25/4/.77 markerScale=.77"), ("Zone", "selected=1/999"),
-                ("Spotlight", "source=Quest"), ("Lens", "auto=False"), ("Viewport", "zoom=.77 window=540x1030") };
+                ("Spotlight", "source=Quest"), ("Lens", "auto=False"), ("Viewport", "zoom=.77 window=540x1030"),
+                ("Camera", "cameraAngle=-30 characterAngle=90 source=Camera fallback=False"),
+                ("Arrow smoothing", "raw=90 smoothed=30 tau=.25 level=Medium reduceMotion=False resetCount=1 lastReset=initial-sample AdvanceCallsPerFrame=1") };
     }
     private static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
     public static void Run()
@@ -32,7 +34,7 @@ internal static class ReportVerification
         var report = DiagnosticReport.Build(new Fake(buffer));
         Check(report.Contains("| FitSmallRoomsToContent | **false** | true |") && report.Contains("commit: eebb39d12345"), "Report must highlight non-default settings and retain commit");
         Check(!report.Contains("Secret Player") && !report.Contains("1234567890123456") && !report.Contains("C:\\Users"), "Report must omit names, filesystem paths and identity numbers");
-        foreach (var name in new[] { "Fonts", "Marker paths", "Glass", "Chrome", "Motion", "Zone", "Spotlight", "Lens", "Viewport" })
+        foreach (var name in new[] { "Fonts", "Marker paths", "Glass", "Chrome", "Motion", "Zone", "Spotlight", "Lens", "Viewport", "Camera", "Arrow smoothing" })
             Check(report.Contains("### " + name), "Missing report state " + name);
         var huge = DiagnosticReport.WithScreenshot(DiagnosticReport.Build(new Fake(buffer, true)), "Unavailable: map closed.");
         Check(huge.Length <= DiagnosticReport.MaximumCharacters && Encoding.UTF8.GetByteCount(huge) <= DiagnosticReport.MaximumCharacters * 3 && huge.Contains("truncated"), "Report must remain bounded");

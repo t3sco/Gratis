@@ -30,16 +30,16 @@ public sealed partial class MeasureTool
             }
         var first = host.Renderer.WorldToMapCoordinates(Start); var second = host.Renderer.WorldToMapCoordinates(End);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
-        var text = FormattableString.Invariant($"{Distance:0.0}y  ·  ({first.X:0.0}, {first.Y:0.0}) to ({second.X:0.0}, {second.Y:0.0})");
-        var size = ImGui.CalcTextSize(text) + new Vector2(16, 10) * s;
-        var center = (clippedA + clippedB) / 2;
-        var safeMin = min + new Vector2(8 * s); var safeMax = max - new Vector2(8 * s);
-        if (host.Config.MapCircle) { var inset = (max - min) * .14644661f; safeMin += inset; safeMax -= inset; }
+        var text = FormattableString.Invariant($"{Distance:0.0} yalms");
+        var size = new Vector2(ImGui.CalcTextSize(text).X + 48 * s, GratisTheme.ControlHeight * s);
+        var center = (clippedA + clippedB) / 2 + new Vector2(0, 28 * s);
+        var (safeMin, safeMax) = ChromeLayout.SafeBounds();
         if (size.X > safeMax.X - safeMin.X || size.Y > safeMax.Y - safeMin.Y) return;
         var pos = Vector2.Clamp(center - size / 2, safeMin, safeMax - size);
         ChipMin = pos; ChipMax = pos + size;
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s, surfaceOpacity: 1);
-        list.AddText(pos + new Vector2(8, 5) * s, ImGui.GetColorU32(GratisTheme.Primary), text);
-        if (ImGui.IsMouseHoveringRect(pos, pos + size, false)) ImGui.SetTooltip("Ruler · right-click to copy distance · Esc clears");
+        GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Crosshair, GratisTheme.Crystal, GratisTheme.IconSize * s);
+        list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
+        if (ImGui.IsMouseHoveringRect(pos, pos + size, false)) ImGui.SetTooltip(FormattableString.Invariant($"({first.X:0.0}, {first.Y:0.0}) → ({second.X:0.0}, {second.Y:0.0}) · Right-click to copy"));
     }
 }

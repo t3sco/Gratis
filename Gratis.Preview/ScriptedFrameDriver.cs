@@ -14,7 +14,7 @@ internal sealed record ScriptFrame(double Time, Vector2? Mouse = null, bool? Lef
     Vector2? Player = null, float? Heading = null, bool? SettingsOpen = null,
     Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null, bool? Alt = null, ScriptQuestLink? QuestLink = null, bool Escape = false, uint? TerritoryId = null,
     ImGuiKey[]? Keys = null, string? Text = null, bool? Moving = null, bool MapKey = false,
-    SubZoneLocation? SubZone = null, long? UnixTime = null);
+    SubZoneLocation? SubZone = null, long? UnixTime = null, float? CameraYaw = null);
 
 internal sealed record ScriptQuestLink(Vector2? Target, uint MapId, bool SameMap = true, uint? Icon = null);
 
@@ -38,6 +38,7 @@ internal sealed class FrameScript
     public float MapSizeFactor { get; set; } = 1;
     public Vector2 Player { get; set; }
     public float Heading { get; set; } = .25f;
+    public float? CameraYaw { get; set; }
     public string Title { get; set; } = "Eorzea - La Noscea - Middle La Noscea###GratisMapWindow";
     public List<ScriptMarker> Markers { get; set; } = [];
     public List<ScriptFrame> Frames { get; set; } = [];
@@ -76,6 +77,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     private bool focused = true, left, right, shift, control, alt;
     private Vector2 mouse = new(-1000), player;
     private float heading;
+    private float? cameraYaw;
+    public PlayerOrientation PlayerOrientation { get; } = new();
     private int redraws = 1;
     private bool started;
     private readonly FrameScript script;
@@ -132,7 +135,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         };
         if (!float.IsFinite(Config.WindowSize.X) || !float.IsFinite(Config.WindowSize.Y) || Config.WindowSize.X < 64 || Config.WindowSize.Y < 64)
             throw new ArgumentException("Window size must be finite and at least 64x64.");
-        TerritoryId = script.TerritoryId; MapId = script.MapId; player = script.Player; heading = script.Heading;
+        TerritoryId = script.TerritoryId; MapId = script.MapId; player = script.Player; heading = script.Heading; cameraYaw = script.CameraYaw;
         previous = MapDrawContext.Current;
         native = ImGuiErrors.CreateContext();
         var io = ImGui.GetIO();
@@ -183,6 +186,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         moving = frame.Moving ?? (frame.Player is { } next && player != next);
         if (frame.MapKey) Window.Ghost.Wake(Now);
         player = frame.Player ?? player; heading = frame.Heading ?? heading;
+        cameraYaw = frame.CameraYaw ?? cameraYaw;
         redraws = frame.Redraws ?? redraws; MapId = frame.MapId ?? MapId;
         TerritoryId = frame.TerritoryId ?? TerritoryId;
         subZone = frame.SubZone ?? subZone;
@@ -300,8 +304,10 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     {
         var center = ImGui.GetWindowPos() + Renderer.DrawPosition +
             (new Vector2(1024) - CoordinateOffset(player)) * Config.MapScale;
-        PlayerDrawing.DrawLookLine(center, Config.MapScale, heading);
-        PlayerDrawing.DrawPlayerIcon(center, Context.GetIcon(60443), heading, Config.MapScale);
+        var angle = Config.IsGratis ? PlayerOrientation.Advance(Config, MathF.PI / 2 - heading, cameraYaw, Now,
+            FrameId, MapKey, new Vector3(player.X, 0, player.Y)) : heading;
+        PlayerDrawing.DrawLookLine(center, Config.MapScale, angle);
+        PlayerDrawing.DrawPlayerIcon(center, Context.GetIcon(60443), angle, Config.MapScale);
     }
     public void DrawToolbar()
     {

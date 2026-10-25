@@ -214,6 +214,7 @@ public partial class MapDrawingConfig
     public bool ShowPlayerIcon = true;
     public float PlayerIconScale = 1.0f;
     public PlayerArrowSmoothing PlayerArrowSmoothing = global::Gratis.Rendering.PlayerArrowSmoothing.Medium;
+    public PlayerArrowDirection ArrowPoints = PlayerArrowDirection.Camera;
     [JsonIgnore]
     public bool DebugMode = false;
 

@@ -25,7 +25,7 @@ public sealed class SettingsTheme
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8, 6) * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(12, 6) * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(12, 4) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.CardRadius * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.CardRadius * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * scale);
@@ -92,6 +92,7 @@ public sealed class SettingsTheme
 
     public static bool Toggle(string id, ref bool value, Vector4 accent, string? label = null)
     {
+        accent = GratisTheme.WarmAccent;
         var scale = Scale;
         var start = ImGui.GetCursorScreenPos();
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);

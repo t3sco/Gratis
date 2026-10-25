@@ -52,6 +52,30 @@ internal static class ChromePolishVerification
         Require(places.Teleports == 1, "Reoffered card still teleports only by explicit click");
         config.ReduceMotion = true; Step();
         Require(travel.Chip != null, "Reduce motion retains the travel action without a ticking line");
+        KeyboardAndLabels();
         Console.WriteLine("Chrome polish: six toolbar actions, lens/filter routing, present-only categories, solo cue, compact card baselines, paused expiry, explicit travel and Reduce motion.");
+    }
+
+    private static void KeyboardAndLabels()
+    {
+        var io = ImGui.GetIO(); io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        var focused = false;
+        for (var frame = 0; frame < 5; frame++) {
+            io.AddMousePosEvent(-1000, -1000);
+            ImGui.NewFrame();
+            ImGui.SetNextWindowPos(new(60)); ImGui.SetNextWindowSize(new(240, 140));
+            if (frame == 0) ImGui.SetNextWindowFocus();
+            ImGui.Begin("Chrome keyboard verification", ImGuiWindowFlags.NoSavedSettings);
+            if (frame == 0) ImGui.SetKeyboardFocusHere();
+            var pos = ImGui.GetCursorScreenPos();
+            ChromeControls.Button("##keyboard-action", new(36));
+            focused |= ImGui.IsItemFocused();
+            ChromeControls.Feedback(ImGui.GetWindowDrawList(), pos, pos + new Vector2(36));
+            var full = "The Rising Stones — rendezvous \U0001F30D";
+            var fitted = ChromeControls.FitLabel(full, 100);
+            Require(ImGui.CalcTextSize(fitted).X <= 100 && fitted.EndsWith('\u2026') && !fitted.Any(char.IsSurrogate), "Long labels fit with a complete ellipsis and no split Unicode characters");
+            ImGui.End(); ImGui.Render();
+        }
+        Require(focused, "Custom-drawn chrome participates in native keyboard focus");
     }
 }

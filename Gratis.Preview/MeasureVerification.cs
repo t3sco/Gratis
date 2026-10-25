@@ -49,6 +49,7 @@ internal static class MeasureVerification
             var coordinate=driver.Renderer.WorldToMapCoordinates(start);
             var expected=Vector2.One+(new Vector2(1024)+(start-script.MapOffset)*script.MapSizeFactor)*(41/(2048*script.MapSizeFactor));
             Require(Vector2.Distance(coordinate,expected)<.0001f,"Map coordinates include size factor and offset");
+            Require(measure.ChipMax.Y-measure.ChipMin.Y==GratisTheme.ControlHeight,"Ruler label shares the chrome control height");
             var chip=(measure.ChipMin+measure.ChipMax)/2;
             driver.Step(new(.14,Mouse:chip)); driver.Step(new(.16,Right:true));
             Require(measure.LastCopy.EndsWith('y') && !driver.Context.ContextMenu.IsOpen,"Right-click copies distance without map menu");

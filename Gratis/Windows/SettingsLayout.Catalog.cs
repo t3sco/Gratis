@@ -186,7 +186,8 @@ public sealed partial class SettingsLayout
         Add("ScalePlayerCone", "Keep cone screen size", tip: "Keeps the cone length fixed when zoom changes.");
         Group("Markers", "Gratis player", Gratis);
         Add("FlatPlayer", "Player chevron and soft cone");
-        Add("PlayerArrowSmoothing", "Player arrow smoothing", choices: "Off|Low|Medium|High", tip: "Smooths heading and soft cone; Reduce motion uses the raw heading.");
+        Add("PlayerArrowSmoothing", "Player arrow smoothing", choices: "Off|Low|Medium|High", tip: "Heading and cone lag: Low 0.12s, Medium 0.25s, High 0.50s. Off or Reduce motion uses the raw angle.");
+        Add("ArrowPoints", "Arrow points", choices: "Camera|Character", tip: "Own arrow and view cone share this heading. Camera falls back to character when unavailable.");
         Add("PlayerInnerHighlight", "Chevron highlight", when: c => c.FlatPlayer && c.ShowPlayerIcon);
         Add("SoftConeLength", "Cone length", 0, 200, "%.0f px", when: c => c.FlatPlayer);
         Add("SoftConeOpacity", "Cone opacity", 0, .5f, when: c => c.FlatPlayer);

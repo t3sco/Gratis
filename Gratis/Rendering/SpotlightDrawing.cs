@@ -117,11 +117,11 @@ internal static class SpotlightDrawing
         var scale = GratisTheme.ChromeScale;
         using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
         var label = $"{spotlight.Distance:0} yalms";
-        var half = (ImGui.CalcTextSize(label) + new Vector2(24, 16) * scale) / 2;
+        var half = new Vector2(ImGui.CalcTextSize(label).X + 24 * scale, GratisTheme.ControlHeight * scale) / 2;
         var center = origin + (spotlight.TargetTexture + spotlight.PlayerTexture) * .5f * zoom + new Vector2(0, 25) * scale;
         if (!Fits(center, half + new Vector2(2))) return;
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.CardRadius * scale, spotlight.Opacity, surfaceOpacity: 1);
-        TextDrawing.Draw(list, center - half + new Vector2(12, 8) * scale, ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
+        TextDrawing.Draw(list, center - half + new Vector2(12 * scale, (half.Y * 2 - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
     }
 }

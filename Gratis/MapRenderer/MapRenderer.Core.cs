@@ -41,6 +41,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     public MapRenderer()
     {
+        cameraHeading = new CameraHeadingReader();
         frame = new Rendering.MapRendererFrame(this);
         LoadFogHooks();
     }
@@ -48,6 +49,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     public void Dispose()
     {
         UnloadFogHooks();
+        cameraHeading.Dispose();
         mapColours.Dispose();
         mapContents.Dispose();
         blendedTexture?.Dispose();

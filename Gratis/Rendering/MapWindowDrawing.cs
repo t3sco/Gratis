@@ -351,7 +351,7 @@ public static class MapWindowDrawing
         string Format(Vector2 point) => FormattableString.Invariant($"{point.X:F1} / {point.Y:F1}");
         var left = character is { } player ? Format(player) : "";
         var right = character is null && cursor is { } mouse ? Format(mouse) : "";
-        const string separator = "  ·  ";
+        const string separator = "  \u00b7  ";
         var text = left + (left.Length > 0 && right.Length > 0 ? separator : "") + right;
         if (time.Length > 0) text += (text.Length > 0 ? separator : "") + time;
         var budget = MathF.Min(available.X * .54f, 360 * scale);

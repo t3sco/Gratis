@@ -100,6 +100,7 @@ internal static class PinVerification
 
     public static void Frames()
     {
+        EditorLayouts();
         var config=PaletteVerification.Config(); var saves=0;
         using var driver=new ScriptedFrameDriver(config,new FrameScript{Palette=true});
         var layer=Attach(driver,()=>saves++);
@@ -142,5 +143,24 @@ internal static class PinVerification
         config.Pins=true; config.VisualStyle=1; Step(); Require(layer.Drawn==0,"Classic unchanged");
         Require(saves==4,"add/edit/delete/import each persisted");
         Console.WriteLine("Pins: shared scripted add/edit/delete/import, hover actions, Enter/Esc, palette Spotlight, every lens, explicit mute, declutter, Classic and coordinate conversion verified.");
+    }
+
+    private static void EditorLayouts()
+    {
+        foreach(var size in new[]{new Vector2(360,280),new Vector2(780,600)})
+        foreach(var scale in new[]{1f,1.5f}) {
+            var config=ChromeLayoutVerification.Config(size); config.ChromeScale=scale;
+            using var driver=new ScriptedFrameDriver(config,new FrameScript{Width=1000,Height=800});
+            var layer=Attach(driver); layer.Edit(1,Vector2.Zero); layer.EditText("Rendezvous","Meet at the aetheryte after sunset.",0);
+            driver.Step(new(0)); driver.Step(new(.04));
+            var bounds=layer.EditorBounds; var center=ChromePolishVerification.Center(bounds);
+            Require(bounds.X>=config.WindowPosition.X+14*scale && bounds.Z<=config.WindowPosition.X+size.X-14*scale &&
+                bounds.Y>=config.WindowPosition.Y+14*scale && bounds.W<=config.WindowPosition.Y+size.Y-14*scale,"Editor obeys chrome inset at small/normal sizes and scales");
+            driver.Step(new(.08,Mouse:center)); driver.Step(new(.12,Wheel:-20)); driver.Step(new(.16));
+            foreach(var name in new[]{"Save pin","Cancel"}) {
+                var action=layer.Buttons[name];
+                Require(action.X>bounds.X && action.X<bounds.Z && action.Y>bounds.Y && action.Y<bounds.W,"Editor actions remain reachable after scrolling at small sizes");
+            }
+        }
     }
 }

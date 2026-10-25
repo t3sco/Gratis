@@ -17,16 +17,16 @@ public static class SubZoneBannerDrawing
         var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         using var alpha = new ChromeVisibility.AlphaScope(true, banner.Opacity);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
-        var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        var (min, max) = ChromeLayout.SafeBounds();
         var width = MathF.Max(1, max.X - min.X - 48 * s);
-        var text = banner.Text;
-        while (text.Length > 1 && ImGui.CalcTextSize(text).X > width) text = text[..^1];
-        var size = new Vector2(ImGui.CalcTextSize(text).X + 24 * s, GratisTheme.ControlHeight * s);
+        var text = ChromeControls.FitLabel(banner.Text, width);
+        var size = new Vector2(ImGui.CalcTextSize(text).X + 48 * s, GratisTheme.ControlHeight * s);
         var bounds = ChromeLayout.Place("zone-banner", size, ChromeAnchor.TopCenter);
         if (bounds == Vector4.Zero) return;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
-        list.AddText(pos + new Vector2(12 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
+        GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Compass, GratisTheme.WarmAccent, GratisTheme.IconSize * s);
+        list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
     }
 }

@@ -78,7 +78,8 @@ public sealed partial class ContextMenu
         if (host.Config.MapCircle) { var inset = (max - min) * .14644661f; min += inset; max -= inset; }
         min += new Vector2(GratisTheme.Inset * s); max -= new Vector2(GratisTheme.Inset * s);
         var rowHeight = GratisTheme.ControlHeight * s;
-        var size = Vector2.Min(new Vector2(286 * s, current.Count * rowHeight + 12 * s), Vector2.Max(new Vector2(1), max - min));
+        var footerHeight = max.Y - min.Y >= 3 * rowHeight ? 36 * s : 0;
+        var size = Vector2.Min(new Vector2(306 * s, current.Count * rowHeight + 12 * s + footerHeight), Vector2.Max(new Vector2(1), max - min));
         Min = Vector2.Clamp(anchor, min, Vector2.Max(min, max - size)); Max = Min + size;
         ImGui.SetNextWindowPos(Min); ImGui.SetNextWindowSize(size);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
@@ -94,16 +95,39 @@ public sealed partial class ContextMenu
             if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) selected = (selected + 1) % current.Count;
             if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) selected = (selected + current.Count - 1) % current.Count;
             var enter = ImGui.IsKeyPressed(ImGuiKey.Enter, false);
+            var navigating = ImGui.IsKeyPressed(ImGuiKey.UpArrow) || ImGui.IsKeyPressed(ImGuiKey.DownArrow);
+            ImGui.BeginChild("##context-actions", new Vector2(0, MathF.Max(1, size.Y - 12 * s - footerHeight)));
             for (var i = 0; i < current.Count; i++) {
                 var item = current[i]; var pos = ImGui.GetCursorScreenPos();
-                var clicked = ImGui.InvisibleButton("##context-row-" + i, new Vector2(MathF.Max(1, size.X - 12 * s), rowHeight));
-                Rows[item.Label] = pos + new Vector2((size.X - 12 * s) / 2, rowHeight / 2);
+                var width = MathF.Max(1, ImGui.GetContentRegionAvail().X);
+                var enabled = item.Invoke != null || item.Children != null;
+                ImGui.BeginDisabled(!enabled);
+                var clicked = ChromeControls.Button("##context-row-" + i, new Vector2(width, rowHeight));
+                ImGui.EndDisabled();
+                Rows[item.Label] = pos + new Vector2(width / 2, rowHeight / 2);
                 var hovered = ImGui.IsItemHovered();
                 if (hovered && ImGui.GetIO().MouseDelta != Vector2.Zero) selected = i;
-                if (i == selected) ImGui.GetWindowDrawList().AddRectFilled(pos, pos + new Vector2(size.X - 12 * s, rowHeight), ImGui.GetColorU32(new Vector4(1, 1, 1, .09f)), 5 * s);
-                GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(16 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary, 14 * s);
-                ImGui.GetWindowDrawList().AddText(pos + new Vector2(34 * s, (rowHeight - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), item.Label);
+                if (navigating && i == selected) ImGui.SetScrollHereY();
+                var list = ImGui.GetWindowDrawList();
+                ChromeControls.Feedback(list, pos, pos + new Vector2(width, rowHeight), i == selected && enabled);
+                GratisIcons.Draw(list, pos + new Vector2(18 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary, GratisTheme.IconSize * s);
+                var keycap = i == selected && enabled && item.Children == null && width > 220 * s ? ChromeControls.KeycapSize("Enter") : Vector2.Zero;
+                var reserve = item.Children != null ? 24 * s : keycap.X > 0 ? keycap.X + 16 * s : 8 * s;
+                var displayed = ChromeControls.FitLabel(item.Label, MathF.Max(0, width - 40 * s - reserve));
+                list.AddText(pos + new Vector2(40 * s, (rowHeight - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(enabled ? GratisTheme.Primary : GratisTheme.Secondary), displayed);
+                if (keycap.X > 0) ChromeControls.DrawKeycap(list, pos + new Vector2(width - keycap.X - 8 * s, (rowHeight - keycap.Y) / 2), "Enter");
+                if (item.Children != null) {
+                    var center = pos + new Vector2(width - 16 * s, rowHeight / 2);
+                    list.AddLine(center + new Vector2(-2, -4) * s, center + new Vector2(2, 0) * s, ImGui.GetColorU32(GratisTheme.Secondary), s);
+                    list.AddLine(center + new Vector2(2, 0) * s, center + new Vector2(-2, 4) * s, ImGui.GetColorU32(GratisTheme.Secondary), s);
+                }
+                if (displayed != item.Label) ChromeControls.Tooltip(item.Label);
                 if (enter && selected == i || clicked) { Activate(item); break; }
+            }
+            ImGui.EndChild();
+            if (footerHeight > 0) {
+                ImGui.Separator();
+                ChromeControls.Hints(("Up/Down", ""), ("Enter", "Select"), ("Esc", "Close"));
             }
             ImGui.EndPopup();
         }

@@ -79,7 +79,7 @@ public sealed partial class PaletteOverlay
                     }
                 }
                 Search(config);
-                var footer = size.Y < 240 * scale ? 0 : 34 * scale;
+                var footer = size.Y < 240 * scale ? 0 : (confirming != null ? 56 : 44) * scale;
                 var available = ImGui.GetContentRegionAvail();
                 if (BeginChild("##place-results", new Vector2(0, MathF.Max(1, available.Y - footer)), ImGuiWindowFlags.NoBackground)) {
                     if (Home) DrawBrowser(config, scale);
@@ -87,7 +87,7 @@ public sealed partial class PaletteOverlay
                         NavigateResults(config, size, scale);
                         if (results.Length == 0) {
                             ImGui.Spacing(); ImGui.TextUnformatted(source.Building ? "Indexing places..." : "No places found");
-                            ImGui.TextWrapped("Try a shorter name or choose another filter.");
+                            ImGui.TextWrapped("Try a zone name or choose another filter.");
                         }
                         for (var i = 0; i < results.Length; i++) DrawRow(results[i], i, config, scale, size.X);
                     }
@@ -98,14 +98,16 @@ public sealed partial class PaletteOverlay
                     ImGui.Separator();
                     using var hint = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push();
                     if (confirming is { } target) {
-                        var clicked = ImGui.SmallButton("Confirm teleport");
+                        var clicked = MapAssistance.PrimaryTravelButton("Confirm teleport", GratisIcons.Compass);
                         ConfirmationCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
                         if (clicked) Teleport(target, true);
                         if (size.X > 470 * scale) { ImGui.SameLine(); ImGui.TextDisabled(message); }
                     }
-                    else ImGui.TextDisabled(message.Length > 0 ? message : size.X < 440 * scale ? "Enter select · Esc close · Tab filter"
-                        : Home ? "Arrows explore · Enter select · Type to search · Esc close"
-                        : "Up/Down navigate · Enter show · Alt+Enter teleport · Tab filter");
+                    else if (message.Length > 0) ImGui.TextUnformatted(ChromeControls.FitLabel(message, ImGui.GetContentRegionAvail().X));
+                    else if (size.X < 440 * scale) ChromeControls.Hints(("Enter", "Show"), ("Esc", "Close"), ("Tab", "Filter"));
+                    else if (Home) ChromeControls.Hints(("Up/Down", "Browse"), ("Enter", "Select"), ("Tab", "Filter"), ("Esc", "Close"));
+                    else if (config.PaletteTeleportButton) ChromeControls.Hints(("Enter", "Show"), ("Alt+Enter", "Teleport"), ("Tab", "Filter"), ("Esc", "Close"));
+                    else ChromeControls.Hints(("Up/Down", "Browse"), ("Enter", "Show"), ("Tab", "Filter"), ("Esc", "Close"));
                 }
             }
             ImGui.EndChild();
@@ -156,10 +158,12 @@ public sealed partial class PaletteOverlay
         else DrawKindIcon(result.Place, list, start + new Vector2(21, 26) * scale, GratisTheme.IconSize * scale);
         var textMin = start + new Vector2(imageWidth > 0 ? imageWidth + 18 * scale : 40 * scale, 9 * scale);
         var textMax = start + new Vector2(rowWidth - buttonWidth - 8 * scale, rowHeight);
+        var selectedCap = index == selected && width >= 600 * scale ? ChromeControls.KeycapSize("Enter") : Vector2.Zero;
         list.PushClipRect(textMin, Vector2.Max(textMin + Vector2.One, textMax), true);
-        TextDrawing.Draw(list, textMin, ImGui.GetColorU32(GratisTheme.Primary), PaletteBrowser.Name(result, results));
+        TextDrawing.Draw(list, textMin, ImGui.GetColorU32(GratisTheme.Primary), ChromeControls.FitLabel(PaletteBrowser.Name(result, results), MathF.Max(0, textMax.X - textMin.X - (selectedCap.X > 0 ? selectedCap.X + 8 * scale : 0))));
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push()) {
-            TextDrawing.Draw(list, textMin + new Vector2(0, 23 * scale), ImGui.GetColorU32(GratisTheme.Secondary), PaletteBrowser.Detail(result.Place));
+            var secondaryInk = new Vector4(.72f, .72f, .72f, 1);
+            TextDrawing.Draw(list, textMin + new Vector2(0, 23 * scale), ImGui.GetColorU32(secondaryInk), ChromeControls.FitLabel(PaletteBrowser.Detail(result.Place), textMax.X - textMin.X));
             var status = result.Place.Kind == PlaceKind.Aetheryte ? result.Place.IsShard ? "Aethernet" : result.Access.Attuned ? "Attuned" : "Not yet attuned" : result.Place.Kind.ToString();
             var metadata = result.Distance is { } distance ? $"{distance:0}y away"
                 : result.Place.World is { } world ? $"World X {world.X:0}, Z {world.Y:0}" : "";
@@ -167,9 +171,12 @@ public sealed partial class PaletteOverlay
             var pillSize = TextDrawing.Measure(status) + new Vector2(12, 3) * scale;
             list.AddRectFilled(pillMin, pillMin + pillSize, ImGui.GetColorU32(GratisTheme.Primary with { W = .055f }), pillSize.Y / 2);
             TextDrawing.Draw(list, pillMin + new Vector2(6, 1) * scale, ImGui.GetColorU32(result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned ? GratisTheme.Transport : GratisTheme.Secondary), status);
-            TextDrawing.Draw(list, pillMin + new Vector2(pillSize.X + 8 * scale, scale), ImGui.GetColorU32(GratisTheme.Secondary), metadata);
+            TextDrawing.Draw(list, pillMin + new Vector2(pillSize.X + 8 * scale, scale), ImGui.GetColorU32(secondaryInk), ChromeControls.FitLabel(metadata, MathF.Max(0, textMax.X - pillMin.X - pillSize.X - 8 * scale)));
         }
         list.PopClipRect();
+        if (selectedCap.X > 0) ChromeControls.DrawKeycap(list, new(textMax.X - selectedCap.X, textMin.Y), "Enter");
+        if (hovered) ChromeControls.Tooltip(PaletteBrowser.Name(result, results) +
+            (result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? " · Not yet attuned" : ""), "Enter");
         if (buttonWidth == 0 && rowWidth > 240 * scale) {
             var chevron = start + new Vector2(rowWidth - 13 * scale, rowHeight / 2);
             var colour = ImGui.GetColorU32(GratisTheme.Secondary);
@@ -180,12 +187,6 @@ public sealed partial class PaletteOverlay
             ImGui.SetCursorScreenPos(start + new Vector2(rowWidth - buttonWidth, 21 * scale));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())
                 if (MapAssistance.ActionButton(canTravel ? "Travel here" : result.Access.Cost is { } cost ? $"{cost:N0} gil" : "Teleport", GratisIcons.Compass)) Teleport(result.Place, false);
-        }
-        if (hovered) {
-            ImGui.BeginTooltip();
-            ImGui.TextUnformatted(PaletteBrowser.Name(result, results)); ImGui.TextUnformatted(PaletteBrowser.Detail(result.Place));
-            ImGui.TextUnformatted(result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? "Not attuned · Enter shows this location" : "Enter shows this location");
-            ImGui.EndTooltip();
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, rowHeight + GratisTheme.Grid * scale));
         ImGui.Dummy(Vector2.Zero); ImGui.PopID();

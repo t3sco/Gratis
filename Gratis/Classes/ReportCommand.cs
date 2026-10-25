@@ -71,6 +71,8 @@ internal sealed class ReportCommand : IDisposable
                 yield return ("Glass", ctx.Blur.Status(Settings, false));
                 yield return ("Chrome", ctx.Chrome.TakeDiagnostics(Settings, ImGui.GetTime()));
                 yield return ("Motion", System.MapRenderer.TakeMotionDiagnostics());
+                yield return ("Camera", System.MapRenderer.CameraDiagnostics());
+                yield return ("Arrow smoothing", System.MapRenderer.HeadingDiagnostics());
                 yield return ("Zone", System.ZoneSwitchController?.Diagnostics() ?? "unavailable");
                 yield return ("Spotlight", System.MapRenderer.Frame.Spotlight.Diagnostics());
                 var visibility = ctx.Visibility;

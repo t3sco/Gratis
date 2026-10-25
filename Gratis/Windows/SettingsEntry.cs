@@ -44,7 +44,9 @@ public sealed class SettingsEntry
     public bool Matches(string search) => string.IsNullOrWhiteSpace(search) ||
         search.Split(' ', StringSplitOptions.RemoveEmptyEntries).All(word =>
             Label.Contains(word, StringComparison.OrdinalIgnoreCase) || Path.Contains(word, StringComparison.OrdinalIgnoreCase) ||
-            Group.Contains(word, StringComparison.OrdinalIgnoreCase) || Section.Contains(word, StringComparison.OrdinalIgnoreCase));
+            Group.Contains(word, StringComparison.OrdinalIgnoreCase) || Section.Contains(word, StringComparison.OrdinalIgnoreCase) ||
+            SettingsLayout.RowLabel(this).Contains(word, StringComparison.OrdinalIgnoreCase) ||
+            SettingsLayout.GroupLabel(Group).Contains(word, StringComparison.OrdinalIgnoreCase) || SettingsLayout.SectionLabel(Section).Contains(word, StringComparison.OrdinalIgnoreCase));
 
     private object Owner(SystemConfig config)
     {

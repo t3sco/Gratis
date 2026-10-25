@@ -65,7 +65,9 @@ public static class ChromeControls
         using var style = new ChromePopupStyle();
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale, ChromeFontRole.Body)?.Push();
         ImGui.BeginTooltip();
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MathF.Min(360 * GratisTheme.ChromeScale, ImGui.GetWindowViewport().Size.X - 32 * GratisTheme.ChromeScale));
         ImGui.TextUnformatted(label);
+        ImGui.PopTextWrapPos();
         if (!string.IsNullOrEmpty(shortcut)) { ImGui.SameLine(0, GratisTheme.Gap * GratisTheme.ChromeScale); Hints((shortcut, "")); }
         ImGui.EndTooltip();
     }
@@ -98,11 +100,26 @@ public static class ChromeControls
             var pos = ImGui.GetCursorScreenPos();
             ImGui.Dummy(new Vector2(width, MathF.Max(22 * s, keySize.Y + 4 * s)));
             var list = ImGui.GetWindowDrawList();
-            list.AddRectFilled(pos, pos + new Vector2(cap, 22 * s), ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)), 4 * s);
-            list.AddRect(pos + new Vector2(.5f * s), pos + new Vector2(cap - .5f * s, 21.5f * s), ImGui.GetColorU32(GratisTheme.Border), 4 * s);
-            list.AddText(pos + new Vector2(6 * s, (22 * s - keySize.Y) / 2), ImGui.GetColorU32(GratisTheme.Primary), key);
+            DrawKeycap(list, pos, key);
             if (label.Length > 0) list.AddText(pos + new Vector2(cap + 6 * s, (22 * s - labelSize.Y) / 2), ImGui.GetColorU32(new Vector4(.72f, .72f, .72f, 1)), label);
             first = false;
         }
+    }
+
+    public static Vector2 KeycapSize(string key)
+    {
+        var s = GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push();
+        return new(ImGui.CalcTextSize(key).X + 12 * s, 22 * s);
+    }
+
+    public static void DrawKeycap(ImDrawListPtr list, Vector2 pos, string key)
+    {
+        var s = GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push();
+        var text = ImGui.CalcTextSize(key); var size = new Vector2(text.X + 12 * s, 22 * s);
+        list.AddRectFilled(pos, pos + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)), 4 * s);
+        list.AddRect(pos + new Vector2(.5f * s), pos + size - new Vector2(.5f * s), ImGui.GetColorU32(GratisTheme.Border), 4 * s);
+        list.AddText(pos + new Vector2(6 * s, (size.Y - text.Y) / 2), ImGui.GetColorU32(GratisTheme.Primary), key);
     }
 }

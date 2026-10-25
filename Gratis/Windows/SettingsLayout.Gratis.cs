@@ -23,30 +23,33 @@ public sealed partial class SettingsLayout
         var list = ImGui.GetWindowDrawList();
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(32, 8) * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(32, 11) * scale);
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##settings-search", "Search settings...", ref Search, 128);
         ImGui.PopStyleVar();
-        GratisIcons.Draw(list, start + new Vector2(16, 15) * scale, GratisIcons.Search, GratisTheme.Secondary, 14 * scale);
+        GratisIcons.Draw(list, start + new Vector2(16, 18) * scale, GratisIcons.Search, GratisTheme.Secondary, 14 * scale);
         if (Search.Length > 0) {
             var next = ImGui.GetCursorPos();
-            ImGui.SetCursorScreenPos(start + new Vector2(width - 30 * scale, 3 * scale));
-            if (ImGui.Button("##clear-search", new Vector2(24) * scale)) Search = "";
-            GratisIcons.Draw(list, start + new Vector2(width - 18 * scale, 15 * scale), GratisIcons.X, GratisTheme.Secondary, 12 * scale);
-            ImGui.SetCursorPos(next);
+            ImGui.SetCursorScreenPos(start + new Vector2(width - 36 * scale, 0));
+            if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new Vector2(36) * scale)) Search = "";
+            ImGui.SetCursorPos(next); ImGui.Dummy(Vector2.Zero);
         }
         ImGui.Spacing();
         var available = ImGui.GetContentRegionAvail();
-        var navWidth = 184 * scale;
+        var compactNav = width < 640 * scale;
+        var navWidth = (compactNav ? 44 : 168) * scale;
         var navStart = ImGui.GetCursorScreenPos();
+#if GRATIS_PREVIEW
+        TestRows.Clear(); TestNavigation = new(navStart.X, navStart.Y, navStart.X + navWidth, navStart.Y + available.Y);
+#endif
         if (ImGui.BeginChild("settings-navigation", new Vector2(navWidth, available.Y))) {
-            using (SettingsTheme.Font(12)) {
+            if (!compactNav) using (SettingsTheme.Font(12)) {
                 ImGui.TextColored(GratisTheme.Secondary, "SETTINGS");
             }
             ImGui.Spacing();
-            for (var index = 0; index < Sections.Length; index++) {
+            foreach (var index in NavigationOrder) {
                 start = ImGui.GetCursorScreenPos();
-                var size = new Vector2(navWidth - 12 * scale, 36 * scale);
+                var size = new Vector2(navWidth - 4 * scale, 36 * scale);
                 if (ImGui.Selectable($"##section-{index}", SelectedSection == index, ImGuiSelectableFlags.None, size)) {
                     SelectedSection = index; Search = "";
                 }
@@ -55,17 +58,21 @@ public sealed partial class SettingsLayout
                 if (selected) {
                     nav.AddRectFilled(start, start + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)), 4 * scale);
                     nav.AddRectFilled(start + new Vector2(0, 8) * scale, start + new Vector2(2, 28) * scale,
-                        ImGui.GetColorU32(config.AccentColor), scale);
+                        ImGui.GetColorU32(GratisTheme.WarmAccent), scale);
                 }
                 GratisIcons.Draw(nav, start + new Vector2(18, 18) * scale, SectionIcons[index],
-                    selected ? config.AccentColor : GratisTheme.Secondary, 16 * scale);
-                nav.AddText(start + new Vector2(34 * scale, (size.Y - ImGui.GetFontSize()) / 2),
-                    ImGui.GetColorU32(selected ? GratisTheme.Primary : GratisTheme.Secondary), Sections[index]);
+                    selected ? GratisTheme.WarmAccent : GratisTheme.Secondary, 16 * scale);
+                if (compactNav) ChromeControls.Tooltip(SectionLabel(Sections[index]));
+                else nav.AddText(start + new Vector2(34 * scale, (size.Y - ImGui.GetFontSize()) / 2),
+                    ImGui.GetColorU32(selected ? GratisTheme.Primary : GratisTheme.Secondary), SectionLabel(Sections[index]));
             }
         }
         ImGui.EndChild();
         list.AddLine(navStart + new Vector2(navWidth, 0), navStart + new Vector2(navWidth, available.Y), ImGui.GetColorU32(GratisTheme.Border));
         ImGui.SameLine(0, 12 * scale);
+#if GRATIS_PREVIEW
+        var testContent = ImGui.GetCursorScreenPos(); TestContent = new(testContent.X, testContent.Y, testContent.X + ImGui.GetContentRegionAvail().X, testContent.Y + available.Y);
+#endif
         if (ImGui.BeginChild("settings-content", new Vector2(0, available.Y))) {
             var sections = string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
             var found = false;
@@ -77,27 +84,28 @@ public sealed partial class SettingsLayout
                 ImGui.PushID(section);
                 using (SettingsTheme.Font(14, ChromeFontRole.Title)) {
                     ImGui.AlignTextToFramePadding();
-                    ImGui.TextUnformatted(section);
+                    ImGui.TextUnformatted(SectionLabel(section));
                 }
-                ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.CalcTextSize("Reset section").X - 24 * scale);
-                ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
-                ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-                if (ImGui.Button("Reset section")) { Reset(config, section); resetExtension?.Invoke(section); changed = true; }
-                ImGui.PopStyleColor(); ImGui.PopStyleVar();
-                if (ImGui.IsItemHovered()) ImGui.SetTooltip("Restore this section for the current style. Per-icon overrides have individual resets.");
+                ImGui.SameLine(MathF.Max(ImGui.GetCursorPosX(), ImGui.GetWindowWidth() - 40 * scale));
+                if (ChromeControls.IconButton("##reset-section", GratisIcons.Repeat, "Reset section to defaults", new Vector2(36) * scale)) {
+                    Reset(config, section); resetExtension?.Invoke(section); changed = true;
+                }
                 SettingsTheme.Helper(section switch {
                     "Appearance" => "Make the map feel at home.",
-                    "Map" => "Viewport, navigation and map detail.",
+                    "Map" => "Find your way around Eorzea.",
                     "Markers" => "Choose what stands out on your map.",
-                    "Filters" => "Choose the controls in your filter list. Map markers keep their existing visibility.",
-                    "Chrome & motion" => "Quiet controls. Deliberate movement.",
+                    "Filters" => "Choose the icons in your filter drawer.",
+                    "Chrome & motion" => "Keep the controls close and the map clear.",
                     "Modules / tools" => "Your map's companion tools.",
                     _ => "Window behaviour and diagnostics.",
                 });
                 if (section == "Filters") {
-                    SettingsTheme.Helper("Click: Normal / Muted. Ctrl/Alt-click: Solo (others Quiet). Right-click: Loud / Quiet. " +
-                        $"Hold {config.PeekKey}: Peek. Priority markers stay visible unless you explicitly mute their group.");
-                    if (ImGui.Button("Reset filters to lens")) MapDrawContext.Current.Visibility.ResetFilters();
+                    if (ImGui.TreeNode("How filters work")) {
+                        SettingsTheme.Helper("Click to mute. Ctrl/Alt-click to solo. Right-click for Loud / Quiet. " +
+                            $"Hold {config.PeekKey} to peek. Quests, FATEs and other priority markers stay visible until their group is explicitly muted.");
+                        ImGui.TreePop();
+                    }
+                    if (ImGui.Button("Clear temporary filters", new Vector2(0, 36 * scale))) MapDrawContext.Current.Visibility.ResetFilters();
                 }
                 ImGui.Spacing();
                 if (section == "Markers" && MarkerOptionsMatch(Search) && drawExtension is not null)
@@ -106,36 +114,29 @@ public sealed partial class SettingsLayout
                     var rows = group.Where(entry => entry.Enabled(config) || !string.IsNullOrWhiteSpace(Search)).ToArray();
                     if (rows.Length == 0) continue;
                     if (!string.IsNullOrWhiteSpace(Search)) ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+                    var primary = rows.Where(entry => !FineTune(entry)).ToArray();
+                    var advanced = rows.Where(FineTune).ToArray();
                     bool open;
                     using (SettingsTheme.Font(12)) {
                         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
                         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
-                        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 4) * scale);
-                        open = ImGui.CollapsingHeader(group.Key.ToUpperInvariant(), ImGuiTreeNodeFlags.DefaultOpen);
+                        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 12) * scale);
+                        var heading = ImGui.GetCursorScreenPos();
+                        open = ImGui.CollapsingHeader("##group-" + group.Key, primary.Length > 0 && ExpandedByDefault(group.Key) ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None);
+                        GratisIcons.Draw(ImGui.GetWindowDrawList(), heading + new Vector2(28, 18) * scale, GroupIcon(group.Key), GratisTheme.Secondary, 14 * scale);
+                        ImGui.GetWindowDrawList().AddText(heading + new Vector2(44 * scale, (36 * scale - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Secondary), GroupLabel(group.Key));
                         ImGui.PopStyleVar(2);
                         ImGui.PopStyleColor();
                     }
-                    ImGui.Separator();
                     if (!open) continue;
                     var cardStart = ImGui.GetCursorScreenPos();
-                    if (ImGui.BeginTable($"rows-{group.Key}", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX)) {
-                        ImGui.TableSetupColumn("Setting", ImGuiTableColumnFlags.WidthStretch, 1.1f);
-                        ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1);
-                        foreach (var entry in rows) {
-                            ImGui.PushID(entry.Path);
-                            ImGui.TableNextRow(0, 36 * scale);
-                            ImGui.TableNextColumn();
-                            ImGui.AlignTextToFramePadding();
-                            ImGui.TextUnformatted(entry.Label);
-                            if (entry.Tooltip is { } tip && ImGui.IsItemHovered()) ImGui.SetTooltip(tip);
-                            ImGui.TableNextColumn(); ImGui.SetNextItemWidth(-1);
-                            ImGui.BeginDisabled(!entry.Enabled(config));
-                            changed |= entry.Draw(config);
-                            ImGui.EndDisabled();
-                            if (entry.Tooltip is { } valueTip && ImGui.IsItemHovered()) ImGui.SetTooltip(valueTip);
-                            ImGui.PopID();
+                    changed |= DrawEntryRows(config, primary, "primary-" + group.Key);
+                    if (advanced.Length > 0) {
+                        if (!string.IsNullOrWhiteSpace(Search)) ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+                        if (ImGui.TreeNode("Advanced##" + group.Key)) {
+                            changed |= DrawEntryRows(config, advanced, "advanced-" + group.Key);
+                            ImGui.TreePop();
                         }
-                        ImGui.EndTable();
                     }
                     var bottom = ImGui.GetCursorScreenPos().Y - ImGui.GetStyle().ItemSpacing.Y;
                     ImGui.GetWindowDrawList().AddRect(cardStart, new Vector2(cardStart.X + ImGui.GetContentRegionAvail().X, bottom),

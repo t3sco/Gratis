@@ -11,6 +11,7 @@ internal static partial class Program
 {
     private static unsafe void RenderSettings(Options options)
     {
+        var previousNative = ImGui.GetCurrentContext(); var previous = MapDrawContext.Current;
         var native = ImGuiErrors.CreateContext();
         try {
             var io = ImGui.GetIO();
@@ -22,7 +23,7 @@ internal static partial class Program
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             ImGui.StyleColorsDark();
             var textures = new Textures();
-            using var context = new PreviewContext(textures);
+            using var context = new PreviewContext(textures) { DpiScale = options.Dpi };
             MapDrawContext.Current = context;
             context.BuildFonts(Path.Combine(AppContext.BaseDirectory, "assets", "NotoSans-Regular.ttf"));
             io.Fonts.GetTexDataAsRGBA32(out nint pixels, out var width, out var height, out _);
@@ -37,7 +38,7 @@ internal static partial class Program
                 },
                 Search = options.Scene == "settings-search" ? "zoom" : "",
             };
-            var windowSize = Vector2.Min(io.DisplaySize - new Vector2(32), new Vector2(820, 720));
+            var windowSize = Vector2.Min(io.DisplaySize - new Vector2(32 * options.Dpi), new Vector2(820, 720) * options.Dpi);
             var historyLimit = 10;
             for (var frame = 0; frame < 4; frame++) {
                 ImGui.NewFrame();
@@ -57,6 +58,7 @@ internal static partial class Program
                         }
                         return false;
                     });
+                    if (config.IsGratis) VerifySettingsBounds(layout);
                 }
                 ImGui.End();
                 theme.Pop();
@@ -71,6 +73,28 @@ internal static partial class Program
             Console.WriteLine("Shared settings layout: seven sections, Lucide headers, search, style disclosure and resets. Game extensions are labelled.");
             if (options.Verify) SettingsVerification.Run();
         }
-        finally { ImGuiErrors.DestroyContext(native); }
+        finally { ImGuiErrors.DestroyContext(native); ImGui.SetCurrentContext(previousNative); MapDrawContext.Current = previous; }
+    }
+
+    private static void VerifySettingsBounds(SettingsLayout layout)
+    {
+        if (ChromeLayout.Overlap(layout.TestNavigation, layout.TestContent)) throw new InvalidOperationException("Settings navigation overlaps its content.");
+        foreach (var row in layout.TestRows) {
+            if (ChromeLayout.Overlap(row.Label, row.Control)) throw new InvalidOperationException($"Settings label overlaps its control: {row.Path}");
+            if (row.Label.X < layout.TestContent.X - 1 || row.Label.Z > layout.TestContent.Z + 1 ||
+                row.Control.X < layout.TestContent.X - 1 || row.Control.Z > layout.TestContent.Z + 1)
+                throw new InvalidOperationException($"Settings row overflows the content width: {row.Path}");
+        }
+    }
+
+    internal static void VerifyResponsiveSettings()
+    {
+        foreach (var size in new[] { "360x640", "640x720", "1280x900" })
+        foreach (var scene in new[] { "settings-chrome", "settings-filters", "settings-search" }) {
+            var output = Path.GetFullPath(Path.Combine("_preview", "settings-layout", scene + "-" + size + ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+            RenderSettings(Options.Parse(["--scene", scene, "--size", size, "--out", output])!);
+        }
+        Console.WriteLine("Settings layout: nine real-frame small/normal/large pages; icon rail, stacked fields, labels and controls stay within their columns.");
     }
 }

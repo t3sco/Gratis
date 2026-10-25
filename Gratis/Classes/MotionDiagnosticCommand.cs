@@ -13,6 +13,10 @@ internal sealed class MotionDiagnosticCommand
         var diagnostics = new MotionDiagnosticCommand();
         Service.PluginInterface.Inject(diagnostics);
         System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/camera",
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.CameraDiagnostics()),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/markers",
             Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + Rendering.MapDrawContext.Current.MarkerRendering.Diagnostics()),
         });

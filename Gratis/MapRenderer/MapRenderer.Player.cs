@@ -10,7 +10,10 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer
 {
-    private readonly Rendering.PlayerHeading playerHeading = new();
+    private readonly Rendering.PlayerOrientation playerOrientation = new();
+    private readonly CameraHeadingReader cameraHeading;
+    public string CameraDiagnostics() => playerOrientation.CameraDiagnostics(cameraHeading.Latest.State.ToString());
+    public string HeadingDiagnostics() => playerOrientation.MotionDiagnostics(System.SystemConfig, "ImGui.GetTime");
 
     private unsafe void DrawPlayer()
     {
@@ -30,10 +33,10 @@ public partial class MapRenderer
 
             var config = Rendering.MapDrawContext.Current.Config;
             var raw = -localPlayer.Rotation + MathF.PI / 2.0f;
-            var angle = playerHeading.Advance(raw, ImGui.GetTime(), config.PlayerArrowSmoothing,
-                AgentMap.Instance()->CurrentMapId, localPlayer.Position, config.ReduceMotion || !config.IsGratis);
+            var angle = playerOrientation.Advance(config, localPlayer.Rotation, cameraHeading.Latest.Yaw, ImGui.GetTime(),
+                ImGui.GetFrameCount(), AgentMap.Instance()->CurrentMapId, localPlayer.Position);
             Rendering.PlayerDrawing.DrawLookLine(position, Scale,
-                config is { IsGratis: true, FlatPlayer: true } ? angle : GetCameraRotation());
+                config.IsGratis ? angle : GetCameraRotation());
             DrawPlayerIcon(position, config.IsGratis ? angle : raw);
         }
     }
