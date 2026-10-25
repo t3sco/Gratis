@@ -57,8 +57,8 @@ public sealed class BlurDiagnostics
         if (LastException.Length > 160) LastException = LastException[..157] + "...";
     }
 
-    public string Status(MapDrawingConfig config) => string.Create(CultureInfo.InvariantCulture,
-        $"GlassEnabled={config.GlassEnabled} GlassBlur={config.GlassBlur} blurUnavailable={BlurUnavailable} lastException={LastException}; " +
+    public string Status(MapDrawingConfig config, bool includeExceptionMessage = true) => string.Create(CultureInfo.InvariantCulture,
+        $"GlassEnabled={config.GlassEnabled} GlassBlur={config.GlassBlur} blurUnavailable={BlurUnavailable} lastException={(includeExceptionMessage ? LastException : LastException.Split(':')[0])}; " +
         $"strength={LastStrength:0.##} frame={Frame} blurred={Blurred} refused={Refused} " +
         $"(clip={Count(BlurRefusal.Clip)},circular={Count(BlurRefusal.Circular)},alpha={Count(BlurRefusal.Alpha)},config={Count(BlurRefusal.Config)},host={Count(BlurRefusal.Host)}) " +
         $"toolbar={SurfaceStatus(GlassSurface.Toolbar)} title={SurfaceStatus(GlassSurface.Title)} coordinates={SurfaceStatus(GlassSurface.Coordinates)} window={SurfaceStatus(GlassSurface.Window)}");

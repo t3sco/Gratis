@@ -296,6 +296,7 @@ public static class DrawHelpers
 
     private static unsafe void DrawTooltip(MarkerInfo markerInfo)
     {
+        if (MapDrawContext.Current.ReportCapture) return;
         if (MapDrawContext.Current.GetIconSetting(markerInfo.IconId) is { AllowTooltip: false } && !DebugMode) {
             return;
         }

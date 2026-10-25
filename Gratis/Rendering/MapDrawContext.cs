@@ -33,6 +33,7 @@ public abstract class MapDrawContext
         new DalamudMapDrawContext();
 #endif
     public MapFrameTrace? Trace { get; set; }
+    public bool ReportCapture { get; set; }
     public MapAssistance? Assistance { get; set; }
     public EdgePointers EdgePointers { get; } = new();
     public MapMarkerTargets MarkerTargets { get; } = new();

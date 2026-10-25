@@ -92,7 +92,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
                 if (isHovered) { hover=pin; anchor=center; lastHover=ImGui.GetTime(); }
             }
             Symbol(list,center,13*s*presentation.Y,Colours[pin.Colour],isHovered,presentation.X);
-            if (host.Config.PinLabels==PinLabelMode.Always || host.Config.PinLabels==PinLabelMode.OnHover && isHovered) {
+            if (!context.ReportCapture && (host.Config.PinLabels==PinLabelMode.Always || host.Config.PinLabels==PinLabelMode.OnHover && isHovered)) {
                 using var font=context.GetChromeFont(11*s,ChromeFontRole.Chip)?.Push();
                 var size=TextDrawing.Measure(pin.Title)+new Vector2(12,6)*s;
                 var position=center+new Vector2(19*s,-size.Y/2);
@@ -126,6 +126,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
     public void Draw(IMapWindowHost host,MapAssistance assistance)
     {
         Buttons.Clear(); InputActive=CardVisible=false;
+        if (MapDrawContext.Current.ReportCapture) return;
         if (!host.Config.IsGratis || !host.Config.Pins) { CancelEditor(); hover=null; return; }
         var editorWasOpen=Draft!=null;
         if (Draft==null && ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && !ImGui.GetIO().WantTextInput &&

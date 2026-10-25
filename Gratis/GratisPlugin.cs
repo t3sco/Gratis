@@ -15,10 +15,15 @@ public sealed class GratisPlugin : IDalamudPlugin
     private readonly Gratis.Classes.ScreenshotCapture screenshotCapture;
     private readonly Gratis.Classes.GlassDiagnosticCommand glassDiagnosticCommand;
     private readonly Gratis.Rendering.LensCommand lensCommand;
+    private readonly Gratis.Rendering.ReportLogBuffer reportLogs = new();
+    private readonly Gratis.Classes.ReportPluginLog reportLogger;
+    private readonly Gratis.Classes.ReportCommand reportCommand;
 
     public GratisPlugin(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Service>();
+        reportLogger = new Gratis.Classes.ReportPluginLog(Service.Log, reportLogs);
+        Service.Log = reportLogger;
 
         System.LargeAxisFontHandle = Service.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle
         {
@@ -54,6 +59,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.AreaMapController = new AddonAreaMapController();
         System.IntegrationsController = new IntegrationsController();
         System.ZoneSwitchController = new ZoneSwitchController();
+        reportCommand = new Gratis.Classes.ReportCommand(screenshotCapture, reportLogs);
 
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
@@ -86,6 +92,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
     public void Dispose()
     {
+        reportCommand.Dispose();
         screenshotCapture.Dispose();
         glassDiagnosticCommand.Dispose();
         lensCommand.Dispose();
@@ -101,5 +108,6 @@ public sealed class GratisPlugin : IDalamudPlugin
         (Rendering.MapDrawContext.Current as global::System.IDisposable)?.Dispose();
 
         Service.PluginInterface.UiBuilder.OpenMainUi -= OpenMapWindow;
+        reportLogger.Dispose();
     }
 }

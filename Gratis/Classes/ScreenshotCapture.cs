@@ -28,6 +28,9 @@ public sealed class ScreenshotCapture : IDisposable
     private bool mapOnly;
     private Rect? mapBounds;
     private volatile bool disposed;
+    private string? reportOutput;
+    private Action<bool>? reportCompletion;
+    private Rendering.MapDrawContext? privacyContext;
 
     public ScreenshotCapture()
     {
@@ -42,6 +45,7 @@ public sealed class ScreenshotCapture : IDisposable
         disposed = true;
         Service.PluginInterface.UiBuilder.Draw -= OnDraw;
         System.CommandManager.RemoveCommand(command);
+        CompleteReport(false);
     }
 
     private void Request(params string[] args)
@@ -57,8 +61,30 @@ public sealed class ScreenshotCapture : IDisposable
         }
 
         mapOnly = args.Length == 1;
+        reportOutput = null;
         mapBounds = null;
         Volatile.Write(ref pendingDraw, 1);
+    }
+
+    internal bool RequestReport(string path, Action<bool> completion)
+    {
+        var ctx = Rendering.MapDrawContext.Current;
+        if (disposed || !System.MapWindow.IsOpen || System.MapWindow.PlacePalette.Overlay.IsOpen ||
+            ctx.ContextMenu.CapturesInput || ctx.Assistance?.PinLayer?.CapturesInput == true ||
+            Interlocked.CompareExchange(ref busy, 1, 0) != 0) return false;
+        reportOutput = path; reportCompletion = completion;
+        privacyContext = ctx; ctx.ReportCapture = true;
+        mapOnly = true; mapBounds = null;
+        Volatile.Write(ref pendingDraw, 1);
+        return true;
+    }
+
+    private void CompleteReport(bool success)
+    {
+        if (privacyContext is { } ctx) ctx.ReportCapture = false;
+        privacyContext = null;
+        try { Interlocked.Exchange(ref reportCompletion, null)?.Invoke(success); }
+        catch (Exception error) { Service.Log.Warning(error, "[Gratis] Could not update report screenshot status."); }
     }
 
     private void OnDraw()
@@ -66,6 +92,9 @@ public sealed class ScreenshotCapture : IDisposable
         if (disposed || Volatile.Read(ref pendingDraw) == 0) return;
 
         try {
+            if (reportOutput is not null && (System.MapWindow.PlacePalette.Overlay.IsOpen || Rendering.MapDrawContext.Current.ContextMenu.CapturesInput ||
+                Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput == true))
+                throw new InvalidOperationException("A text-entry overlay opened during report capture.");
             if (pendingDraw == 1) {
                 if (mapOnly) {
                     var map = System.MapWindow;
@@ -142,6 +171,12 @@ public sealed class ScreenshotCapture : IDisposable
             }
 
             if (disposed) return;
+            if (reportOutput is { } reportPath) {
+                Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+                WritePng(reportPath, pixels, client.Right, crop);
+                CompleteReport(true);
+                return;
+            }
             Directory.CreateDirectory(OutputDirectory);
             var timestamped = Path.Combine(OutputDirectory, $"shot-{DateTime.UtcNow:yyyyMMdd-HHmmss-fffffff}.png");
             WritePng(timestamped, pixels, client.Right, crop);
@@ -164,6 +199,7 @@ public sealed class ScreenshotCapture : IDisposable
 
     private void ReportFailure(Exception exception)
     {
+        CompleteReport(false);
         Service.Log.Error(exception, "[Gratis] Screenshot capture failed.");
         Notify($"[Gratis] Screenshot failed: {exception.Message}", true);
     }

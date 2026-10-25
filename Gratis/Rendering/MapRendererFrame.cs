@@ -228,6 +228,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         MapDrawContext.Current.Motion.BeginMap(host.MapId, host.Now);
         FlushPendingPing();
         viewportSize = ImGui.GetContentRegionAvail();
+        if (MapDrawContext.Current.ReportCapture)
+            ImGui.GetWindowDrawList().AddRectFilled(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), 0xff1f1916);
         host.DrawBackgroundTexture();
     }
 
