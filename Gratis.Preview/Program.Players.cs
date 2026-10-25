@@ -5,16 +5,13 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static partial class Program
-{
-    private static void DrawPlayersScene(Vector2 frame)
-    {
+internal static partial class Program {
+    private static void DrawPlayersScene(Vector2 frame) {
         var context = MapDrawContext.Current;
         var origin = ImGui.GetWindowPos();
         var list = ImGui.GetWindowDrawList();
         using var font = context.GetChromeFont(14, ChromeFontRole.Title)?.Push();
-        void Label(Vector2 unit, string text)
-        {
+        void Label(Vector2 unit, string text) {
             var position = origin + frame * unit;
             var bounds = ImGui.CalcTextSize(text);
             list.AddRectFilled(position - new Vector2(6, 3), position + bounds + new Vector2(6, 3),
@@ -48,12 +45,12 @@ internal static partial class Program
         if (ImGui.GetFrameCount() == 1) {
             var probe = origin + frame / 2;
             list.PushClipRect(Vector2.Zero, Vector2.Zero, true);
-            float ArrowWidth(float setting)
-            {
+            float ArrowWidth(float setting) {
                 context.Config.PlayerIconScale = setting;
                 var start = list.VtxBuffer.Size;
                 PlayerDrawing.DrawPlayerIcon(probe, context.GetIcon(60443), .25f, 1);
-                var min = float.MaxValue; var max = float.MinValue;
+                var min = float.MaxValue;
+                var max = float.MinValue;
                 for (var i = start; i < list.VtxBuffer.Size; i++) {
                     min = Math.Min(min, list.VtxBuffer[i].pos.X);
                     max = Math.Max(max, list.VtxBuffer[i].pos.X);
@@ -65,7 +62,8 @@ internal static partial class Program
                 var shrunk = ArrowWidth(.35f);
                 if (!(shrunk > full * .2f && shrunk < full * .5f))
                     throw new InvalidOperationException("Saved player size must shrink the emitted arrow and outline.");
-                Console.WriteLine($"Players: emitted arrow width {full:F2}px -> {shrunk:F2}px at size 0.35; no player cross path.");
+                Console.WriteLine($"Players: emitted arrow width {full:F2}px -> {shrunk:F2}px at size 0.35; no "
+                    + "player cross path.");
             }
             finally { context.Config.PlayerIconScale = saved; list.PopClipRect(); }
         }

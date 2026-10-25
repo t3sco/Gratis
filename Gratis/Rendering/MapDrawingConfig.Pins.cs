@@ -2,10 +2,11 @@ using System.Collections.Generic;
 
 namespace Gratis.Rendering;
 
-public enum PinLabelMode { OnHover, Always, Never }
+public enum PinLabelMode {
+    OnHover, Always, Never
+}
 
-public partial class MapDrawingConfig
-{
+public partial class MapDrawingConfig {
     public bool Pins = true;
     public PinLabelMode PinLabels = PinLabelMode.OnHover;
     public int PinMaxPerMap = 200;

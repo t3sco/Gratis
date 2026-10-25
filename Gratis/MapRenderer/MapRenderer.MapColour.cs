@@ -15,10 +15,13 @@ public unsafe partial class MapRenderer {
     }
 
     private static MapColourPixels LoadMapPixels(string foregroundPath, string? backgroundPath = null) {
-        var foreground = GetTexFile(foregroundPath) ?? throw new InvalidOperationException($"Cannot load map {foregroundPath}");
+        var foreground = GetTexFile(foregroundPath)
+            ?? throw new InvalidOperationException($"Cannot load map {foregroundPath}");
         var fg = foreground.GetRgbaImageData();
-        if (backgroundPath is null) return new MapColourPixels(foreground.Header.Width, foreground.Header.Height, fg);
-        var background = GetTexFile(backgroundPath) ?? throw new InvalidOperationException($"Cannot load map {backgroundPath}");
+        if (backgroundPath is null)
+            return new MapColourPixels(foreground.Header.Width, foreground.Header.Height, fg);
+        var background = GetTexFile(backgroundPath)
+            ?? throw new InvalidOperationException($"Cannot load map {backgroundPath}");
         var bg = background.GetRgbaImageData();
         if (background.Header.Width != foreground.Header.Width || background.Header.Height != foreground.Header.Height)
             throw new InvalidOperationException("Map layer dimensions differ.");

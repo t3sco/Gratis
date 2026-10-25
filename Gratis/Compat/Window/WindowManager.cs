@@ -68,7 +68,10 @@ public class WindowManager : IDisposable {
     }
 
     public void AddWindow(Window window, WindowFlags? windowFlags = null) {
-        if (Windows.Any(existingWindow => string.Equals($"{window.WindowName}##{windowSystem.Namespace}", existingWindow.WindowName, StringComparison.OrdinalIgnoreCase))) return;
+        if (Windows.Any(existingWindow =>
+            string.Equals($"{window.WindowName}##{windowSystem.Namespace}", existingWindow.WindowName,
+                StringComparison.OrdinalIgnoreCase)))
+            return;
 
         window.PluginInterface = pluginInterface;
         window.ParentWindowManager = this;
@@ -82,7 +85,8 @@ public class WindowManager : IDisposable {
 
         window.TitleBarButtons.Add(new TitleBarButton {
             Icon = FontAwesomeIcon.Question,
-            ShowTooltip = () => ImGui.SetTooltip($"Window by {pluginInterface.InternalName}{(window.AdditionalInfoTooltip is not null ? "\n\n" : "")}{window.AdditionalInfoTooltip}"),
+            ShowTooltip = () => ImGui.SetTooltip($"Window by {pluginInterface.InternalName}"
+                + $"{(window.AdditionalInfoTooltip is not null ? "\n\n" : "")}{window.AdditionalInfoTooltip}"),
             IconOffset = new Vector2(3.0f, 1.0f),
             Priority = -1,
         });
@@ -91,7 +95,7 @@ public class WindowManager : IDisposable {
             var isLoggedIn = ClientState.IsLoggedIn;
             var requiresLoggedIn = window.WindowFlags.HasFlag(WindowFlags.RequireLoggedIn);
 
-            if ( !requiresLoggedIn || (requiresLoggedIn && isLoggedIn)) {
+            if (!requiresLoggedIn || (requiresLoggedIn && isLoggedIn)) {
                 window.UnCollapseOrShow();
             }
         }

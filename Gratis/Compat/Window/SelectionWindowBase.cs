@@ -30,7 +30,9 @@ using Dalamud.Interface.Windowing;
 namespace Gratis.Compat.Window;
 
 public abstract class SelectionWindowBase<T> : Window where T : notnull {
-    protected SelectionWindowBase(Vector2 size, bool fixedSize = true, string? alternativeName = null) : base(alternativeName ?? $"{typeof(T).Name} Selection Window", size, fixedSize) {
+    protected SelectionWindowBase(Vector2 size, bool fixedSize = true,
+        string? alternativeName = null) : base(alternativeName ?? $"{typeof(T).Name} Selection Window", size,
+        fixedSize) {
         TitleBarButtons.Add(new TitleBarButton {
             ShowTooltip = () => {
                 ImGui.SetTooltip("Deselect All");
@@ -79,10 +81,13 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
     }
 
     private void TryDrawSearchBox() {
-        if (!ShowFilter) return;
+        if (!ShowFilter)
+            return;
 
-        using var searchChild = ImRaii.Child("searchChild", new Vector2(ImGui.GetContentRegionAvail().X, 30.0f * ImGuiHelpers.GlobalScale));
-        if (!searchChild) return;
+        using var searchChild = ImRaii.Child("searchChild",
+            new Vector2(ImGui.GetContentRegionAvail().X, 30.0f * ImGuiHelpers.GlobalScale));
+        if (!searchChild)
+            return;
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
 
@@ -91,11 +96,13 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
             resetFocus = false;
         }
 
-        if (ImGui.InputTextWithHint("##filterInput", "Search...", ref searchString, 500, ImGuiInputTextFlags.AutoSelectAll)) {
+        if (ImGui.InputTextWithHint("##filterInput", "Search...", ref searchString, 500,
+            ImGuiInputTextFlags.AutoSelectAll)) {
             RefreshSearchResults();
         }
 
-        if ((ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter)) && filteredResults is not null && filteredResults.Count > 0) {
+        if ((ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter))
+            && filteredResults is not null && filteredResults.Count > 0) {
             if (!selected.Contains(filteredResults.First())) {
                 selected.Add(filteredResults.First());
             }
@@ -108,10 +115,12 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
     }
 
     private void DrawResults() {
-        var sectionSize = new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y - 40.0f * ImGuiHelpers.GlobalScale);
+        var sectionSize = new Vector2(ImGui.GetContentRegionAvail().X,
+            ImGui.GetContentRegionAvail().Y - 40.0f * ImGuiHelpers.GlobalScale);
 
         using var searchResults = ImRaii.Child("resultsChild", sectionSize, false, ImGuiWindowFlags.NoMove);
-        if (!searchResults) return;
+        if (!searchResults)
+            return;
 
         if (filteredResults is not null) {
             if (filteredResults.Count != 0) {
@@ -133,7 +142,8 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
 
     private void DrawConfirmCancel() {
         using var confirmationButtons = ImRaii.Child("selectCancel", ImGui.GetContentRegionAvail());
-        if (!confirmationButtons) return;
+        if (!confirmationButtons)
+            return;
 
         ImGuiHelpers.ScaledDummy(5.0f);
 
@@ -158,7 +168,8 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
 
         using var id = ImRaii.PushId(GetElementKey(selectionOption));
 
-        if (ImGui.Selectable("##selectable", selected.Contains(selectionOption), ImGuiSelectableFlags.AllowItemOverlap, selectableSize)) {
+        if (ImGui.Selectable("##selectable", selected.Contains(selectionOption), ImGuiSelectableFlags.AllowItemOverlap,
+            selectableSize)) {
 
             if (selected.Contains(selectionOption)) {
 
@@ -187,9 +198,10 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
 
     private void RefreshSearchResults() {
         Task.Run(() => {
-            filteredResults = SelectionOptions
-                .Where(option => GetFilterStrings(option).Any(stringOption => stringOption.Contains(searchString, StringComparison.InvariantCultureIgnoreCase)) || selected.Contains(option))
-                .ToList();
+            filteredResults = SelectionOptions.Where(option =>
+                GetFilterStrings(option).Any(stringOption =>
+                    stringOption.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
+                || selected.Contains(option)).ToList();
         });
     }
 

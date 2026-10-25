@@ -4,12 +4,10 @@ using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 
-internal sealed class MotionDiagnosticCommand
-{
+internal sealed class MotionDiagnosticCommand {
     [PluginService] private IChatGui ChatGui { get; set; } = null!;
 
-    public static void Register()
-    {
+    public static void Register() {
         var diagnostics = new MotionDiagnosticCommand();
         Service.PluginInterface.Inject(diagnostics);
         System.CommandManager.RegisterCommand(new CommandHandler {
@@ -22,7 +20,8 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/markers",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + Rendering.MapDrawContext.Current.MarkerRendering.Diagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] "
+                + Rendering.MapDrawContext.Current.MarkerRendering.Diagnostics()),
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/text",
@@ -33,7 +32,8 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/attunement",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapWindow.PlacePalette.AttunementDiagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] "
+                + System.MapWindow.PlacePalette.AttunementDiagnostics()),
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/subzone",
@@ -41,7 +41,8 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/measure",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + Rendering.MapDrawContext.Current.Measure.Diagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] "
+                + Rendering.MapDrawContext.Current.Measure.Diagnostics()),
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/ghost",
@@ -53,7 +54,8 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/pointers",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + Rendering.MapDrawContext.Current.EdgePointers.Diagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] "
+                + Rendering.MapDrawContext.Current.EdgePointers.Diagnostics()),
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/spotlight",
@@ -61,7 +63,8 @@ internal sealed class MotionDiagnosticCommand
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/motion",
-            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.TakeMotionDiagnostics() + " " + Rendering.UiMotion.Diagnostics()),
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.TakeMotionDiagnostics() + " "
+                + Rendering.UiMotion.Diagnostics()),
         });
     }
 }

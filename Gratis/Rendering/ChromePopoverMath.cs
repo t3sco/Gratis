@@ -3,10 +3,9 @@ using System.Numerics;
 
 namespace Gratis.Rendering;
 
-public static class ChromePopoverMath
-{
-    public static Vector4 Place(Vector4 anchor, Vector2 requested, Vector2 min, Vector2 max, float gap, bool centered = true)
-    {
+public static class ChromePopoverMath {
+    public static Vector4 Place(Vector4 anchor, Vector2 requested, Vector2 min, Vector2 max, float gap,
+        bool centered = true) {
         var size = Vector2.Min(requested, Vector2.Max(Vector2.One, max - min));
         var below = max.Y - anchor.W - gap;
         var above = anchor.Y - min.Y - gap;

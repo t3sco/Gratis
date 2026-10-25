@@ -20,7 +20,8 @@ using TerraFX.Interop.DirectX;
 namespace Gratis.MapRenderer;
 
 public unsafe partial class MapRenderer {
-    private delegate void ImmediateContextProcessCommands(ImmediateContext* commands, RenderCommandBufferGroup* bufferGroup, uint a3);
+    private delegate void ImmediateContextProcessCommands(ImmediateContext* commands,
+        RenderCommandBufferGroup* bufferGroup, uint a3);
 
     [Signature("E8 ?? ?? ?? ?? 48 8B 4B 30 FF 15 ?? ?? ?? ??", DetourName = nameof(OnImmediateContextProcessCommands))]
     private readonly Hook<ImmediateContextProcessCommands>? immediateContextProcessCommandsHook = null;
@@ -36,7 +37,8 @@ public unsafe partial class MapRenderer {
     private int lastKnownDiscoveryFlags;
     private readonly Stopwatch textureLoadStopwatch = new();
 
-    private static int CurrentDiscoveryFlags => AtkStage.Instance()->GetNumberArrayData(NumberArrayType.AreaMap2)->IntArray[2];
+    private static int CurrentDiscoveryFlags =>
+        AtkStage.Instance()->GetNumberArrayData(NumberArrayType.AreaMap2)->IntArray[2];
 
     private void LoadFogHooks() {
         Service.Hooker.InitializeFromAttributes(this);
@@ -54,12 +56,15 @@ public unsafe partial class MapRenderer {
         }
     }
 
-    private void OnImmediateContextProcessCommands(ImmediateContext* commands, RenderCommandBufferGroup* bufferGroup, uint a3) =>
+    private void OnImmediateContextProcessCommands(ImmediateContext* commands, RenderCommandBufferGroup* bufferGroup,
+        uint a3) =>
+
         HookSafety.ExecuteSafe(() => {
             string? path = null;
             var generation = 0;
             lock (fogGate) {
-                if (!fogDisposed && requestUpdatedMaskingTexture && textureLoadStopwatch is { IsRunning: true, ElapsedMilliseconds: > 200 }) {
+                if (!fogDisposed && requestUpdatedMaskingTexture
+                    && textureLoadStopwatch is { IsRunning: true, ElapsedMilliseconds: > 200 }) {
                     path = requestedFogPath;
                     generation = fogGeneration;
                     requestUpdatedMaskingTexture = false;
@@ -68,17 +73,22 @@ public unsafe partial class MapRenderer {
             }
             if (path is not null) {
                 var mask = GetPrebakedTextureBytes();
-                if (mask is not null) Task.Run(() => LoadFogTexture(path, mask, generation));
+                if (mask is not null)
+                    Task.Run(() => LoadFogTexture(path, mask, generation));
             }
 
             immediateContextProcessCommandsHook!.Original(commands, bufferGroup, a3);
         }, Service.Log, "Exception during OnImmediateContextProcessCommands");
 
     private void DrawFogOfWar() {
-        if (!System.SystemConfig.ShowFogOfWar) return;
-        if (CurrentDiscoveryFlags == AgentMap.Instance()->SelectedMapDiscoveryFlag) return;
-        if (CurrentDiscoveryFlags == -1) return;
-        if (AgentMap.Instance()->SelectedMapBgPath.Length == 0) return;
+        if (!System.SystemConfig.ShowFogOfWar)
+            return;
+        if (CurrentDiscoveryFlags == AgentMap.Instance()->SelectedMapDiscoveryFlag)
+            return;
+        if (CurrentDiscoveryFlags == -1)
+            return;
+        if (AgentMap.Instance()->SelectedMapBgPath.Length == 0)
+            return;
 
         var backgroundPath = $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex";
         var source = backgroundPath + "|" + AgentMap.Instance()->SelectedMapPath.ToString();
@@ -104,7 +114,9 @@ public unsafe partial class MapRenderer {
                 DrawColouredMapImage(fogTexture, $"fog:{fogSource}:{fogGeneration}", () => pixels);
             }
             else {
-                var defaultBackgroundTexture = Service.TextureProvider.GetFromGame($"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex").GetWrapOrEmpty();
+                var defaultBackgroundTexture =
+                    Service.TextureProvider.GetFromGame(
+                        $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex").GetWrapOrEmpty();
 
                 ImGui.SetCursorPos(DrawPosition);
                 DrawColouredMapImage(defaultBackgroundTexture, backgroundPath, () => LoadMapPixels(backgroundPath));
@@ -126,10 +138,13 @@ public unsafe partial class MapRenderer {
     private void UploadFogTexture(IFramework framework) {
         while (fogUploads.TryDequeue(out var upload)) {
             lock (fogGate) {
-                if (fogDisposed || upload.Generation != fogGeneration) continue;
+                if (fogDisposed || upload.Generation != fogGeneration)
+                    continue;
                 try {
                     var pixels = upload.Pixels;
-                    var texture = Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(pixels.Width, pixels.Height), pixels.Rgba);
+                    var texture = Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(pixels.Width,
+                        pixels.Height),
+                        pixels.Rgba);
                     fogTexture?.Dispose();
                     fogTexture = texture;
                     fogPixels = pixels;
@@ -146,13 +161,15 @@ public unsafe partial class MapRenderer {
 
     private void LoadFogTexture(string backgroundPath, byte[] maskingTextureBytes, int generation) {
         try {
-            if (generation != Volatile.Read(ref fogGeneration)) return;
+            if (generation != Volatile.Read(ref fogGeneration))
+                return;
             var pixels = LoadMapPixels(backgroundPath);
             if (pixels.Width != 2048 || pixels.Height != 2048 || maskingTextureBytes.Length < 128 * 128 * 4)
                 throw new InvalidOperationException("Unexpected map fog dimensions.");
             var backgroundBytes = pixels.Rgba;
 
-            for (var index = 0; index < 2048 * 2048; index++) backgroundBytes[index * 4 + 3] = 0;
+            for (var index = 0; index < 2048 * 2048; index++)
+                backgroundBytes[index * 4 + 3] = 0;
             for (var x = 0; x < 128; x++)
                 for (var y = 0; y < 128; y++) {
                     var pixelIndex = (x + y * 128) * 4;
@@ -161,7 +178,8 @@ public unsafe partial class MapRenderer {
                     var greenAmount = maskingTextureBytes[pixelIndex + 1] / 255.0f;
                     var blueAmount = maskingTextureBytes[pixelIndex + 2] / 255.0f;
                     var alphaSum = (byte)(Math.Max(redAmount, Math.Max(greenAmount, blueAmount)) * 255);
-                    if (alphaSum == 0) continue;
+                    if (alphaSum == 0)
+                        continue;
                     const int scaleFactor = 16;
                     for (var xScalar = 0; xScalar < scaleFactor; xScalar++)
                         for (var yScalar = 0; yScalar < scaleFactor; yScalar++) {
@@ -171,7 +189,8 @@ public unsafe partial class MapRenderer {
                 }
             CleanupFogTexture(backgroundBytes, generation);
             lock (fogGate) {
-                if (!fogDisposed && generation == fogGeneration) fogUploads.Enqueue((generation, pixels));
+                if (!fogDisposed && generation == fogGeneration)
+                    fogUploads.Enqueue((generation, pixels));
             }
         }
         catch (Exception error) { LogFogFailure(error); }
@@ -179,13 +198,16 @@ public unsafe partial class MapRenderer {
 
     private static byte[]? GetPrebakedTextureBytes() {
         var addon = Service.GameGui.GetAddonByName<AddonAreaMap>("AreaMap");
-        if (addon is null) return null;
+        if (addon is null)
+            return null;
 
         var componentMap = (void*)Marshal.ReadIntPtr((nint)addon, 0x430);
-        if (componentMap is null) return null;
+        if (componentMap is null)
+            return null;
 
         var texturePointer = (Texture*)Marshal.ReadIntPtr((nint)componentMap, 0x270);
-        if (texturePointer is null) return null;
+        if (texturePointer is null)
+            return null;
 
         var device = (ID3D11Device*)Service.PluginInterface.UiBuilder.DeviceHandle;
         var texture = (ID3D11Texture2D*)texturePointer->D3D11Texture2D;
@@ -199,7 +221,6 @@ public unsafe partial class MapRenderer {
         description.MiscFlags = 0;
         description.CPUAccessFlags = (uint)D3D11_CPU_ACCESS_FLAG.D3D11_CPU_ACCESS_READ;
         description.Usage = D3D11_USAGE.D3D11_USAGE_STAGING;
-
 
         ID3D11Texture2D* stagingTexture;
         if (device->CreateTexture2D(&description, null, &stagingTexture) < 0)
@@ -216,7 +237,6 @@ public unsafe partial class MapRenderer {
             stagingTexture->Release();
             return null;
         }
-
 
         int bufferSize = (int)(description.Height * mapped.RowPitch);
         byte[] pixelData = new byte[bufferSize];
@@ -236,18 +256,21 @@ public unsafe partial class MapRenderer {
         const int blurRadius = 8;
 
         for (var x = 0; x < 2048; x++) {
-            if (generation != Volatile.Read(ref fogGeneration)) return;
+            if (generation != Volatile.Read(ref fogGeneration))
+                return;
             for (var y = 0; y < 2048; y++) {
                 var pixelIndex = (x + y * 2048) * 4;
 
                 var alphaAverage = 0.0f;
                 var numAveraged = 0;
 
-                if (blockyFogBytes[pixelIndex + 3] == 255) continue;
+                if (blockyFogBytes[pixelIndex + 3] == 255)
+                    continue;
 
                 for (var xBlur = -blurRadius; xBlur < -blurRadius + blurRadius * 2; ++xBlur) {
                     var currentX = x + xBlur;
-                    if (currentX is < 0 or >= 2048) continue;
+                    if (currentX is < 0 or >= 2048)
+                        continue;
                     var currentPixelIndex = (currentX + y * 2048) * 4;
 
                     alphaAverage += blockyFogBytes[currentPixelIndex + 3];
@@ -257,7 +280,8 @@ public unsafe partial class MapRenderer {
                 for (var yBlur = -blurRadius; yBlur < -blurRadius + blurRadius * 2; ++yBlur) {
                     var currentY = y + yBlur;
 
-                    if (currentY is < 0 or >= 2048) continue;
+                    if (currentY is < 0 or >= 2048)
+                        continue;
                     var currentPixelIndex = (x + currentY * 2048) * 4;
 
                     alphaAverage += blockyFogBytes[currentPixelIndex + 3];

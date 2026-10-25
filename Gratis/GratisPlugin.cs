@@ -9,8 +9,7 @@ using Gratis.Windows;
 
 namespace Gratis;
 
-public sealed class GratisPlugin : IDalamudPlugin
-{
+public sealed class GratisPlugin : IDalamudPlugin {
     private readonly Gratis.Classes.ScreenshotCapture screenshotCapture;
     private readonly Gratis.Classes.GlassDiagnosticCommand glassDiagnosticCommand;
     private readonly Gratis.Rendering.LensCommand lensCommand;
@@ -19,14 +18,12 @@ public sealed class GratisPlugin : IDalamudPlugin
     private readonly Gratis.Classes.ReportCommand reportCommand;
     private readonly Gratis.Classes.PvpDiagnosticCommand pvpDiagnosticCommand;
 
-    public GratisPlugin(IDalamudPluginInterface pluginInterface)
-    {
+    public GratisPlugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<Service>();
         reportLogger = new Gratis.Classes.ReportPluginLog(Service.Log, reportLogs);
         Service.Log = reportLogger;
 
         System.SystemConfig = SystemConfig.Load();
-        System.IconConfig = IconConfig.Load();
         System.FlagConfig = FlagConfig.Load();
 
         System.Teleporter = new Teleporter(Service.PluginInterface);
@@ -56,26 +53,26 @@ public sealed class GratisPlugin : IDalamudPlugin
 
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
-        System.CommandManager.RegisterCommand(new ToggleCommandHandler
-        {
+        System.CommandManager.RegisterCommand(new ToggleCommandHandler {
             BaseActivationPath = "/fatelist",
-            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<FateListWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn),
+            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<FateListWindow>(WindowFlags.OpenImmediately
+                    | WindowFlags.RequireLoggedIn),
             DisableDelegate = _ => System.WindowManager.GetWindow<FateListWindow>()?.Close(),
             ToggleDelegate = _ => System.WindowManager.GetWindow<FateListWindow>()?.UnCollapseOrToggle(),
         });
 
-        System.CommandManager.RegisterCommand(new ToggleCommandHandler
-        {
+        System.CommandManager.RegisterCommand(new ToggleCommandHandler {
             BaseActivationPath = "/questlist",
-            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<QuestListWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn),
+            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<QuestListWindow>(WindowFlags.OpenImmediately
+                    | WindowFlags.RequireLoggedIn),
             DisableDelegate = _ => System.WindowManager.GetWindow<QuestListWindow>()?.Close(),
             ToggleDelegate = _ => System.WindowManager.GetWindow<QuestListWindow>()?.UnCollapseOrToggle(),
         });
 
-        System.CommandManager.RegisterCommand(new ToggleCommandHandler
-        {
+        System.CommandManager.RegisterCommand(new ToggleCommandHandler {
             BaseActivationPath = "/flaglist",
-            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<FlagHistoryWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn),
+            EnableDelegate = _ => System.WindowManager.OpenOrCreateUnique<FlagHistoryWindow>(WindowFlags.OpenImmediately
+                    | WindowFlags.RequireLoggedIn),
             DisableDelegate = _ => System.WindowManager.GetWindow<FlagHistoryWindow>()?.Close(),
             ToggleDelegate = _ => System.WindowManager.GetWindow<FlagHistoryWindow>()?.UnCollapseOrToggle(),
         });
@@ -83,8 +80,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
     private unsafe void OpenMapWindow() => AgentMap.Instance()->Show();
 
-    public void Dispose()
-    {
+    public void Dispose() {
         pvpDiagnosticCommand.Dispose();
         reportCommand.Dispose();
         screenshotCapture.Dispose();

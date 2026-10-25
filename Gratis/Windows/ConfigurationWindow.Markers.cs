@@ -5,10 +5,8 @@ using Gratis.Rendering;
 
 namespace Gratis.Windows;
 
-public partial class MapFunctionsTab
-{
-    private static bool DrawMarkersSection()
-    {
+public partial class MapFunctionsTab {
+    private static bool DrawMarkersSection() {
         ImGuiHelpers.ScaledDummy(10.0f);
         ImGui.Text("Markers");
         ImGui.Separator();
@@ -17,7 +15,10 @@ public partial class MapFunctionsTab
         var settings = System.SystemConfig.Markers;
         var iconStyle = (int)settings.IconStyle;
         var changed = ImGui.Combo("Marker icons (Gratis)", ref iconStyle, "Icons\0Shapes\0Game\0");
-        if (changed) { settings.IconStyle = (MarkerIconStyle)iconStyle; System.SystemConfig.MarkerStyle = 1; }
+        if (changed) {
+            settings.IconStyle = (MarkerIconStyle)iconStyle;
+            System.SystemConfig.MarkerStyle = 1;
+        }
         changed |= ImGui.Checkbox("Cluster ambient POIs / services (Gratis)", ref settings.Declutter);
         ImGui.TextDisabled("Quests, events, transport, players and tracked / hovered markers stay visible.");
         changed |= ImGui.Checkbox("Zoom-aware marker size (Gratis)", ref settings.ScaleWithZoom);
@@ -26,7 +27,11 @@ public partial class MapFunctionsTab
         changed |= ImGui.SliderFloat("Cluster distance", ref settings.ClusterDistance, 8, 64, "%.0f px");
         changed |= ImGui.Checkbox("Dim irrelevant ambient markers", ref settings.DimIrrelevant);
         changed |= ImGui.SliderFloat("Irrelevant opacity", ref settings.IrrelevantAlpha, .1f, 1, "%.0f");
-        if (ImGui.Button("Reset Markers")) { System.SystemConfig.ResetMarkers(); System.SystemConfig.MarkerStyle = 1; changed = true; }
+        if (ImGui.Button("Reset Markers")) {
+            System.SystemConfig.ResetMarkers();
+            System.SystemConfig.MarkerStyle = 1;
+            changed = true;
+        }
         return changed;
     }
 }

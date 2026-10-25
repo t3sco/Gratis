@@ -4,21 +4,20 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static class ViewportVerification
-{
-    public static void Run()
-    {
+internal static class ViewportVerification {
+    public static void Run() {
         var checks = 0;
-        void Check(bool condition, string name)
-        {
-            if (!condition) throw new InvalidOperationException($"Viewport assertion: {name}");
+        void Check(bool condition, string name) {
+            if (!condition)
+                throw new InvalidOperationException($"Viewport assertion: {name}");
             checks++;
         }
         var serialization = new JsonSerializerOptions { IncludeFields = true };
         var old = JsonSerializer.Deserialize<MapDrawingConfig>("{\"VisualStyle\":1}", serialization)!;
         Check(old.ScaleWithFrame && old.ClampToMap, "old configuration defaults, including Classic");
         old.ScaleWithFrame = old.ClampToMap = false;
-        var saved = JsonSerializer.Deserialize<MapDrawingConfig>(JsonSerializer.Serialize(old, serialization), serialization)!;
+        var saved = JsonSerializer.Deserialize<MapDrawingConfig>(JsonSerializer.Serialize(old, serialization),
+            serialization)!;
         Check(!saved.ScaleWithFrame && !saved.ClampToMap, "explicit false settings survive reload");
         saved.ResetViewport();
         Check(saved.ScaleWithFrame && saved.ClampToMap, "reset defaults");
@@ -36,7 +35,8 @@ internal static class ViewportVerification
             scale = zoom.Resolve(frame, scale, true);
             var originalCorner = center - reference / (2 * referenceScale);
             var resizedCorner = center - frame / (2 * scale);
-            Check(Vector2.Distance(originalCorner, resizedCorner) * scale < .5f, "resize region within 0.5 screen pixels");
+            Check(Vector2.Distance(originalCorner, resizedCorner) * scale < .5f,
+                "resize region within 0.5 screen pixels");
         }
         scale = zoom.Resolve(reference, scale, true);
         Check(scale == referenceScale, "resize returns without accumulated drift");
@@ -52,9 +52,11 @@ internal static class ViewportVerification
         ceiling = limits.Resolve(reference * 2, 60, true);
         Check(ceiling == 40, "user zoom ceiling is frame-relative");
         limits = new ViewportZoom();
-        Check(limits.Resolve(reference * 2, ceiling, true) == 40, "saved effective zoom above 20 reloads without a snap");
+        Check(limits.Resolve(reference * 2, ceiling, true) == 40,
+            "saved effective zoom above 20 reloads without a snap");
         limits = new ViewportZoom();
-        Check(limits.Resolve(reference / 2, .025f, true, 0) == .025f, "saved effective zoom below 0.05 reloads without a snap");
+        Check(limits.Resolve(reference / 2, .025f, true, 0) == .025f,
+            "saved effective zoom below 0.05 reloads without a snap");
 
         var cursor = new Vector2(137, -82);
         var anchored = ViewportMath.ZoomAtCursor(center, cursor, .8f, 1.3f);
@@ -78,8 +80,8 @@ internal static class ViewportVerification
                     center = ViewportMath.ClampCenter(center, frame, texture, next, circle);
                     var half = ViewportMath.HalfFrame(frame, circle) / next;
                     Check(next >= minimum, "minimum zoom covers frame");
-                    Check(center.X - half.X >= -.001f && center.Y - half.Y >= -.001f &&
-                          center.X + half.X <= texture.X + .001f && center.Y + half.Y <= texture.Y + .001f,
+                    Check(center.X - half.X >= -.001f && center.Y - half.Y >= -.001f
+                        && center.X + half.X <= texture.X + .001f && center.Y + half.Y <= texture.Y + .001f,
                         "no void after random pan/zoom/resize");
                     scale = next;
                 }
@@ -105,9 +107,12 @@ internal static class ViewportVerification
             Check(scale == Math.Clamp(requested, .05f, 20), "legacy scale limits");
         }
         Check(Vector2.Distance(ViewportMath.DrawPosition(new Vector2(900, 500), new Vector2(5000, -9000), .37f),
-            new Vector2(1921.12f, -3458.88f)) < .001f, "legacy transform golden coordinates");
+            new Vector2(1921.12f, -3458.88f)) < .001f,
+            "legacy transform golden coordinates");
         Check(ViewportMath.DrawPosition(new Vector2(900, 500), new Vector2(5000, -9000), 1) ==
             new Vector2(4426, -9774), "legacy free pan remains unconstrained");
-        Console.WriteLine($"Viewport selftest passed: {checks} assertions; 1,000 resize cycles and 1,000 random sequences per rect/circle and scaling state; cursor anchor, legacy toggles, config reload/reset.");
+        Console.WriteLine($"Viewport selftest passed: {checks} assertions; 1,000 resize cycles and 1,000 "
+            + "random sequences per rect/circle and scaling state; cursor anchor, legacy "
+            + "toggles, config reload/reset.");
     }
 }

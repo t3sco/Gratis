@@ -5,12 +5,12 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static class ChromeVerification
-{
-    public static void Run(PreviewContext context, Textures textures)
-    {
+internal static class ChromeVerification {
+    public static void Run(PreviewContext context, Textures textures) {
         VerifyTimeline();
-        var config = new MapDrawingConfig();
+        var config = new MapDrawingConfig {
+            ChromeIdleDelay = 1.2f, ChromeFadeDurationMs = 180, ChromeTitleMinAlpha = .35f
+        };
         var state = new ChromeVisibility();
         state.Reveal(10);
         state.Update(config, 11.2, false);
@@ -28,23 +28,32 @@ internal static class ChromeVerification
         config.PinChrome = true;
         state.Update(config, 30, false);
         Near(state.ControlsAlpha(config), 1, "Pin");
-        config.PinChrome = false; config.AutoHideChrome = false;
+        config.PinChrome = false;
+        config.AutoHideChrome = false;
         state.Update(config, 60, false);
         Near(state.ControlsAlpha(config), 1, "Auto-hide disabled");
-        config.AutoHideChrome = true; config.VisualStyle = 1;
+        config.AutoHideChrome = true;
+        config.VisualStyle = 1;
         state.Update(config, 90, false);
         Near(state.ControlsAlpha(config), 1, "Classic bypass");
-        config.VisualStyle = 0; config.ChromeFadeDurationMs = 0;
-        state.Reveal(100); state.Update(config, 102, false);
+        config.VisualStyle = 0;
+        config.ChromeFadeDurationMs = 0;
+        state.Reveal(100);
+        state.Update(config, 102, false);
         Near(state.Progress, 0, "Zero-duration fade");
-        config.ChromeIdleDelay = float.NaN; config.ChromeFadeDurationMs = float.NaN;
-        config.ChromeTitleMinAlpha = float.NaN; config.ChromeControlsMinAlpha = float.NaN;
-        state.Reveal(110); state.Update(config, 112, false);
+        config.ChromeIdleDelay = float.NaN;
+        config.ChromeFadeDurationMs = float.NaN;
+        config.ChromeTitleMinAlpha = float.NaN;
+        config.ChromeControlsMinAlpha = float.NaN;
+        state.Reveal(110);
+        state.Update(config, 112, false);
         Near(state.TitleAlpha(config), .35f, "Invalid saved values");
-        config.AutoHideChrome = false; config.PinChrome = true;
+        config.AutoHideChrome = false;
+        config.PinChrome = true;
         config.ResetChromeVisibility();
-        Require(config.AutoHideChrome && !config.PinChrome && config.ChromeIdleDelay == 1.2f &&
-            config.ChromeFadeDurationMs == 180 && config.ChromeTitleMinAlpha == .35f && config.ChromeControlsMinAlpha == 0,
+        Require(config.AutoHideChrome && !config.PinChrome && config.ChromeIdleDelay == 2.1f
+            && config.ChromeFadeDurationMs == 403 && config.ChromeTitleMinAlpha == .73f
+            && config.ChromeControlsMinAlpha == 0,
             "Chrome reset");
 
         context.Config.VisualStyle = 0;
@@ -54,9 +63,11 @@ internal static class ChromeVerification
             var handle = context.GetIconFont(size);
             Require(handle is not null, "Lucide font missing");
             using var fontScope = handle!.Push();
-            foreach (var codepoint in GratisIcons.GlyphRanges.Where((_, i) => i % 2 == 0 && i < GratisIcons.GlyphRanges.Length - 1)) {
-                Require(DrawBinding.TryGlyphBounds(ImGui.GetFont(), (char)codepoint, out var bounds) &&
-                    bounds.Z > bounds.X && bounds.W > bounds.Y, $"Lucide glyph U+{codepoint:X4} at {size}px");
+            foreach (var codepoint in GratisIcons.GlyphRanges.Where((_, i) => i % 2 == 0
+                && i < GratisIcons.GlyphRanges.Length - 1)) {
+                Require(DrawBinding.TryGlyphBounds(ImGui.GetFont(), (char)codepoint, out var bounds)
+                    && bounds.Z > bounds.X && bounds.W > bounds.Y,
+                    $"Lucide glyph U+{codepoint:X4} at {size}px");
             }
         }
         ImGui.End();
@@ -64,12 +75,15 @@ internal static class ChromeVerification
         VerifyInputAndAlpha(context);
         VerifyFrameHover(context);
         VerifyPixels(context, textures);
-        Console.WriteLine("Chrome selftest passed: timeline/settings/clock/counters, minima/pin/Classic/reset, Lucide glyphs, hidden input pass-through, one-frame hover reveal, toolbar pixels and parent alpha.");
+        Console.WriteLine("Chrome selftest passed: timeline/settings/clock/counters, "
+            + "minima/pin/Classic/reset, Lucide glyphs, hidden input pass-through, one-frame "
+            + "hover reveal, toolbar pixels and parent alpha.");
     }
 
-    private static void VerifyTimeline()
-    {
-        var config = new MapDrawingConfig();
+    private static void VerifyTimeline() {
+        var config = new MapDrawingConfig {
+            ChromeIdleDelay = 1.2f, ChromeFadeDurationMs = 180, ChromeTitleMinAlpha = .35f
+        };
         var state = new ChromeVisibility();
         state.Update(config, 0, ChromeActivity.None);
         state.Update(config, 5, ChromeActivity.None);
@@ -81,13 +95,17 @@ internal static class ChromeVerification
         Near(state.Progress, 1, "Leave retains idle delay");
         state.Update(config, leave + config.ChromeIdleDelay + config.ChromeFadeDurationMs / 2000d, ChromeActivity.None);
         Near(state.Progress, .5f, "Leave half fade");
-        state.Update(config, leave + config.ChromeIdleDelay + config.ChromeFadeDurationMs / 1000d + .001, ChromeActivity.None);
+        state.Update(config, leave + config.ChromeIdleDelay + config.ChromeFadeDurationMs / 1000d + .001,
+            ChromeActivity.None);
         Near(state.Progress, 0, "Leave hides after delay plus fade");
-        for (var frame = 0; frame < 300; frame++) state.Update(config, 8 + frame / 60d, ChromeActivity.Settings);
+        for (var frame = 0; frame < 300; frame++)
+            state.Update(config, 8 + frame / 60d, ChromeActivity.Settings);
         Near(state.Progress, 0, "Settings open for five seconds never reveals");
         Require(state.SecondsSinceActivity(13) > 7.9, "Settings did not reset last activity");
         var diagnostics = state.TakeDiagnostics(config, 13);
-        Require(diagnostics.Contains("hover=1") && diagnostics.Contains("settings=0") && diagnostics.Contains("settings-open=300"), "Reason counters");
+        Require(diagnostics.Contains("hover=1") && diagnostics.Contains("settings=0")
+            && diagnostics.Contains("settings-open=300"),
+            "Reason counters");
         Require(state.TakeDiagnostics(config, 13).Contains("hover=0"), "Diagnostic counts reset");
         Near(state.Progress, 0, "Diagnostic read does not reveal");
         state.Update(config, double.NaN, ChromeActivity.None);
@@ -102,16 +120,23 @@ internal static class ChromeVerification
         state.Reveal(8, "MapContextMenu.cs", "Draw");
         state.Reveal(9, "HoverCardDrawing.cs", "Draw");
         diagnostics = state.TakeDiagnostics(config, 9);
-        Require(diagnostics.Contains("drag=1") && diagnostics.Contains("focused-active-item=1") &&
-            diagnostics.Contains("popup=1") && diagnostics.Contains("hovercard=1") &&
-            diagnostics.Contains("external:MapContextMenu.Draw=1") && diagnostics.Contains("clock-reset=1"), "Named reveal counters");
+        Require(diagnostics.Contains("drag=1") && diagnostics.Contains("focused-active-item=1")
+            && diagnostics.Contains("popup=1") && diagnostics.Contains("hovercard=1")
+            && diagnostics.Contains("external:MapContextMenu.Draw=1") && diagnostics.Contains("clock-reset=1"),
+            "Named reveal counters");
     }
 
-    private static void VerifyInputAndAlpha(PreviewContext context)
-    {
+    private static void VerifyInputAndAlpha(PreviewContext context) {
         var c = context.Config;
-        c.ResetChromeVisibility(); c.MapCircle = false; c.SegmentedToolbar = true;
-        c.HideWindowFrame = true; c.GlassEnabled = true; c.GlassBlur = true;
+        c.ResetChromeVisibility();
+        c.ChromeIdleDelay = 1.2f;
+        c.ChromeFadeDurationMs = 180;
+        c.MapCircle = false;
+        c.FlatCornerRadius = 10;
+        c.SegmentedToolbar = true;
+        c.HideWindowFrame = true;
+        c.GlassEnabled = true;
+        c.GlassBlur = true;
         var io = ImGui.GetIO();
         var trickle = io.ConfigInputTrickleEventQueue;
         io.ConfigInputTrickleEventQueue = false;
@@ -125,10 +150,12 @@ internal static class ChromeVerification
                 ImGui.SetNextWindowPos(new Vector2(28, 24));
                 ImGui.SetNextWindowSize(new Vector2(264, 192));
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-                ImGui.Begin("chrome input verification", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings);
+                ImGui.Begin("chrome input verification",
+                    ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings);
                 ImGui.PopStyleVar();
                 MapShape.Update(ImGui.GetWindowSize());
-                if (step == 0) context.Chrome.Reveal(ImGui.GetTime() - 2);
+                if (step == 0)
+                    context.Chrome.Reveal(ImGui.GetTime() - 2);
                 context.Chrome.Update(c, ImGui.GetTime(), ChromeVisibility.IsMapFrameHovered());
                 if (step == 1) {
                     context.Blurs.Clear();
@@ -136,13 +163,15 @@ internal static class ChromeVerification
                     var start = list.VtxBuffer.Size;
                     using (new ChromeVisibility.AlphaScope(true, context.Chrome.ControlsAlpha(c)))
                         MapWindowDrawing.DrawSurface(list, new Vector2(40, 80), new Vector2(200, 110), 8);
-                    Require(context.Blurs.Count == 0 && list.VtxBuffer.Size == start, "Hidden glass emits no surface or blur");
+                    Require(context.Blurs.Count == 0 && list.VtxBuffer.Size == start,
+                        "Hidden glass emits no surface or blur");
                     Near(context.Chrome.Progress, 0, "Input fixture starts hidden");
                 }
                 MapToolbarDrawing.Draw(action => { if (action == ToolbarAction.Search) activations++; }, () => { });
                 ImGui.End();
                 ImGui.Render();
-                if (step >= 2) Near(context.Chrome.Progress, 1, "Hover reveals before input");
+                if (step >= 2)
+                    Near(context.Chrome.Progress, 1, "Hover reveals before input");
             }
             Require(activations == 1, $"Revealed search click dispatched {activations} times");
             var mapClicks = 0;
@@ -154,12 +183,14 @@ internal static class ChromeVerification
                 ImGui.SetNextWindowPos(new Vector2(28, 24));
                 ImGui.SetNextWindowSize(new Vector2(264, 192));
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-                ImGui.Begin("hidden toolbar pass-through", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings);
+                ImGui.Begin("hidden toolbar pass-through",
+                    ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings);
                 ImGui.PopStyleVar();
                 MapShape.Update(ImGui.GetWindowSize());
                 context.Chrome.Update(c, ImGui.GetTime(), false, step % 2 == 0 ? 0 : .049f);
                 ImGui.SetCursorPos(Vector2.Zero);
-                if (ImGui.InvisibleButton("map click target", ImGui.GetWindowSize())) mapClicks++;
+                if (ImGui.InvisibleButton("map click target", ImGui.GetWindowSize()))
+                    mapClicks++;
                 ImGui.SetCursorPos(Vector2.Zero);
                 MapToolbarDrawing.Draw(_ => hiddenToolbarClicks++, () => { });
                 ImGui.End();
@@ -170,8 +201,7 @@ internal static class ChromeVerification
         finally { io.ConfigInputTrickleEventQueue = trickle; }
     }
 
-    private static void VerifyPixels(PreviewContext context, Textures textures)
-    {
+    private static void VerifyPixels(PreviewContext context, Textures textures) {
         var io = ImGui.GetIO();
         var displaySize = io.DisplaySize;
         io.DisplaySize = new Vector2(360, 260);
@@ -189,7 +219,9 @@ internal static class ChromeVerification
                             ImGui.SetNextWindowPos(new Vector2(28, 24));
                             ImGui.SetNextWindowSize(new Vector2(264, 192));
                             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-                            ImGui.Begin("toolbar pixel verification", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings);
+                            ImGui.Begin("toolbar pixel verification", ImGuiWindowFlags.NoDecoration
+                                    | ImGuiWindowFlags.NoBackground
+                                    | ImGuiWindowFlags.NoSavedSettings);
                             ImGui.PopStyleVar();
                             MapShape.Update(ImGui.GetWindowSize());
                             context.Chrome.Update(context.Config, ImGui.GetTime(), false, progress);
@@ -206,19 +238,24 @@ internal static class ChromeVerification
                             for (var x = 0; x < 360; x++) {
                                 var distance = Vector4.Distance(renderer.Pixel(x, y), background);
                                 energy += distance;
-                                if (distance > 0) pixels++;
+                                if (distance > 0)
+                                    pixels++;
                             }
-                        if (progress == 0) Require(pixels == 0 && context.Blurs.Count == 0, "Hidden toolbar emits zero pixels/blur");
+                        if (progress == 0)
+                            Require(pixels == 0 && context.Blurs.Count == 0, "Hidden toolbar emits zero pixels/blur");
                         energies.Add(energy);
                     }
-                    Require(energies[0] == 0 && energies[1] > 0 && energies[2] > energies[1], $"Toolbar fades visibly (segmented={segmented}, glass={glass}): {string.Join('/', energies)}");
-                    Console.WriteLine($"Toolbar pixels: hidden=0; fade/visible energy={energies[1]:0.0}/{energies[2]:0.0}; segmented={segmented}, glass={glass}.");
+                    Require(energies[0] == 0 && energies[1] > 0 && energies[2] > energies[1],
+                        $"Toolbar fades visibly (segmented={segmented}, glass={glass}): {string.Join('/', energies)}");
+                    Console.WriteLine("Toolbar pixels: hidden=0; fade/visible "
+                        + $"energy={energies[1]:0.0}/{energies[2]:0.0}; segmented={segmented}, glass={glass}.");
                 }
             }
             ImGui.NewFrame();
             ImGui.Begin("parent fade verification");
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, .4f);
-            using (var scope = new ChromeVisibility.AlphaScope(true, .5f)) Near(ImGui.GetStyle().Alpha, .2f, "Chrome multiplies parent fade");
+            using (var scope = new ChromeVisibility.AlphaScope(true, .5f))
+                Near(ImGui.GetStyle().Alpha, .2f, "Chrome multiplies parent fade");
             Near(ImGui.GetStyle().Alpha, .4f, "Parent alpha restored");
             ImGui.PopStyleVar();
             ImGui.End();
@@ -227,8 +264,7 @@ internal static class ChromeVerification
         finally { io.DisplaySize = displaySize; }
     }
 
-    private static void VerifyFrameHover(PreviewContext context)
-    {
+    private static void VerifyFrameHover(PreviewContext context) {
         context.Config.MapCircle = true;
         var io = ImGui.GetIO();
         foreach (var (point, covered, expected) in new[] {
@@ -249,7 +285,8 @@ internal static class ChromeVerification
                     ImGui.SetNextWindowPos(new Vector2(100, 80));
                     ImGui.SetNextWindowSize(new Vector2(160, 100));
                     ImGui.SetNextWindowFocus();
-                    ImGui.Begin("active settings verification", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings);
+                    ImGui.Begin("active settings verification", ImGuiWindowFlags.NoDecoration
+                        | ImGuiWindowFlags.NoSavedSettings);
                     ImGui.SetKeyboardFocusHere();
                     ImGui.InputText("setting", ref text, 32);
                     settingsActive = ImGui.IsItemActive();
@@ -266,11 +303,16 @@ internal static class ChromeVerification
                 ImGui.Render();
             }
             Require(hovered == expected, $"Screen-space map frame hover at {point}, covered={covered}");
-            if (covered) Require(settingsActive && !mapActive, "An active settings item does not count as a map item");
+            if (covered)
+                Require(settingsActive && !mapActive, "An active settings item does not count as a map item");
         }
         context.Config.MapCircle = false;
     }
 
-    private static void Near(float actual, float expected, string label) => Require(MathF.Abs(actual - expected) < .0001f, $"{label}: {actual}, expected {expected}");
-    private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+    private static void Near(float actual, float expected, string label) =>
+        Require(MathF.Abs(actual - expected) < .0001f, $"{label}: {actual}, expected {expected}");
+    private static void Require(bool value, string message) {
+        if (!value)
+            throw new InvalidOperationException(message);
+    }
 }

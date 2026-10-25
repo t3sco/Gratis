@@ -12,16 +12,15 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Windows;
 
-public sealed class SettingsTheme
-{
+public sealed class SettingsTheme {
     private readonly bool active;
     private readonly UiMotion.PolicyScope motionPolicy;
     private readonly IDisposable? font;
-    private SettingsTheme(SystemConfig config)
-    {
+    private SettingsTheme(SystemConfig config) {
         motionPolicy = UiMotion.Policy(config);
         active = config.IsGratis;
-        if (!active) return;
+        if (!active)
+            return;
         font = Font(14);
         var scale = Scale;
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * scale);
@@ -73,28 +72,28 @@ public sealed class SettingsTheme
     }
 
     public static SettingsTheme Push(SystemConfig config) => new(config);
-    public void Pop()
-    {
+    public void Pop() {
         motionPolicy.Dispose();
-        if (!active) return;
+        if (!active)
+            return;
         ImGui.PopStyleColor(30);
         ImGui.PopStyleVar(14);
         font?.Dispose();
     }
-    public static float Scale => MapDrawContext.Current.GlobalScale;
-    public static IDisposable? Font(float size, ChromeFontRole role = ChromeFontRole.Body) =>
-        MapDrawContext.Current.GetChromeFont(size * Scale, role)?.Push();
 
-    public static void Helper(string text)
-    {
+    public static float Scale => MapDrawContext.Current.GlobalScale;
+    public static IDisposable
+        ? Font(float size, ChromeFontRole role = ChromeFontRole.Body) =>
+            MapDrawContext.Current.GetChromeFont(size * Scale, role)?.Push();
+
+    public static void Helper(string text) {
         using var font = Font(12);
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
         ImGui.TextWrapped(text);
         ImGui.PopStyleColor();
     }
 
-    public static bool Toggle(string id, ref bool value, Vector4 accent, string? label = null)
-    {
+    public static bool Toggle(string id, ref bool value, Vector4 accent, string? label = null) {
         accent = GratisTheme.WarmAccent;
         var scale = Scale;
         var start = ImGui.GetCursorScreenPos();
@@ -103,31 +102,37 @@ public sealed class SettingsTheme
         var height = GratisTheme.ControlHeight * scale;
         var changed = ImGui.Button(id, new Vector2(width, height));
         ImGui.PopStyleVar();
-        if (changed) value = !value;
-        if (!ImGui.IsItemVisible()) return changed;
+        if (changed)
+            value = !value;
+        if (!ImGui.IsItemVisible())
+            return changed;
         UiMotion.ItemId(id);
-        var selected = UiMotion.Value(UiMotion.Item, 10, value ? 1 : 0, InterfaceMotionTokens.Standard, InterfaceCurve.Spring);
+        var selected = UiMotion.Value(UiMotion.Item, 10, value ? 1 : 0, InterfaceMotionTokens.Standard,
+            InterfaceCurve.Spring);
         var list = ImGui.GetWindowDrawList();
         using var motion = UiMotion.Control(list, start, start + new Vector2(width, height));
         ChromeControls.Feedback(list, start, start + new Vector2(width, height), fill: false);
         var track = start + new Vector2(0, (height - 20 * scale) / 2);
         var end = track + new Vector2(36, 20) * scale;
-        list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), accent, selected)), 10 * scale);
+        list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), accent, selected)),
+            10 * scale);
         list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), 10 * scale);
         list.AddCircleFilled(track + new Vector2(10 + 16 * selected, 10) * scale, 6 * scale,
             ImGui.GetColorU32(GratisTheme.Primary));
-        if (label is not null) list.AddText(start + new Vector2(44 * scale, (height - ImGui.GetFontSize()) / 2),
-            ImGui.GetColorU32(GratisTheme.Primary), label);
+        if (label is not null)
+            list.AddText(start + new Vector2(44 * scale, (height - ImGui.GetFontSize()) / 2),
+                ImGui.GetColorU32(GratisTheme.Primary), label);
         return changed;
     }
 
-    public static bool Slider(string id, ref float value, float min, float max, string format, Vector4 accent, bool integer = false)
-    {
+    public static bool Slider(string id, ref float value, float min, float max, string format, Vector4 accent,
+        bool integer = false) {
         ImGui.BeginGroup();
         using var font = Font(12, ChromeFontRole.Coordinates);
         var scale = Scale;
         var width = MathF.Max(60 * scale, ImGui.CalcItemWidth());
-        var readout = MathF.Min(width * .45f, MathF.Max(72 * scale, ImGui.CalcTextSize(Format(max, format)).X + 8 * scale));
+        var readout = MathF.Min(width * .45f,
+            MathF.Max(72 * scale, ImGui.CalcTextSize(Format(max, format)).X + 8 * scale));
         var trackWidth = width - readout - 8 * scale;
         var start = ImGui.GetCursorScreenPos();
         ImGui.SetNextItemWidth(trackWidth);
@@ -144,7 +149,8 @@ public sealed class SettingsTheme
             changed = ImGui.SliderInt(id, ref number, (int)min, (int)max, format);
             value = number;
         }
-        else changed = ImGui.SliderFloat(id, ref value, min, max, format);
+        else
+            changed = ImGui.SliderFloat(id, ref value, min, max, format);
         ImGui.PopStyleVar();
         ImGui.PopStyleColor(6);
         UiMotion.ItemId(id);
@@ -152,7 +158,8 @@ public sealed class SettingsTheme
         var list = ImGui.GetWindowDrawList();
         ChromeControls.Feedback(list, start, start + new Vector2(trackWidth, height), fill: false);
         if (!ImGui.IsItemActive() || !ImGui.GetIO().WantTextInput) {
-            list.AddRectFilled(start + new Vector2(2 * scale), start + new Vector2(trackWidth - 2 * scale, height - 2 * scale),
+            list.AddRectFilled(start + new Vector2(2 * scale),
+                start + new Vector2(trackWidth - 2 * scale, height - 2 * scale),
                 ImGui.ColorConvertFloat4ToU32(GratisTheme.Surface with { W = 1 }));
             var left = start + new Vector2(6 * scale, height / 2);
             var right = start + new Vector2(trackWidth - 6 * scale, height / 2);
@@ -172,6 +179,9 @@ public sealed class SettingsTheme
         return changed;
     }
 
-    private static string Format(float value, string format) => Regex.Replace(format, @"%(?:\.(\d+))?([fd])", match =>
-        value.ToString(match.Groups[2].Value == "d" ? "0" : "F" + (match.Groups[1].Success ? match.Groups[1].Value : "2"), CultureInfo.InvariantCulture));
+    private static string Format(float value, string format) =>
+        Regex.Replace(format, @"%(?:\.(\d+))?([fd])",
+            match => value.ToString(match.Groups[2].Value == "d" ? "0"
+                : "F" + (match.Groups[1].Success ? match.Groups[1].Value : "2"),
+                CultureInfo.InvariantCulture));
 }

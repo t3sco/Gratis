@@ -102,8 +102,8 @@ or message me with the saved file and a description of what you saw.
 - [Mappy](https://github.com/harbingerftw/Mappy), by MidoriKami (original author) and harbingerftw (maintainer of the
   fork this is based on, version 3.2.0.0). The map window, marker handling and plugin structure come from their work.
 - KamiLib and MappyLib, by MidoriKami and contributors, which Gratis still uses.
-- [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License) and [Lucide](https://lucide.dev) icons
-  by Lucide Contributors (ISC).
+- [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License), [Lucide](https://lucide.dev) icons
+  by Lucide Contributors (ISC) and [Phosphor](https://phosphoricons.com) icons by Phosphor Icons (MIT).
 - Dalamud (goatcorp), FFXIVClientStructs and Lumina, which Gratis is built against.
 - Bundled libraries: NetStone, HtmlAgilityPack, Newtonsoft.Json and others, each under its own licence.
 

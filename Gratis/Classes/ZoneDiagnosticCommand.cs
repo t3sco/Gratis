@@ -5,12 +5,10 @@ using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 
-internal sealed class ZoneDiagnosticCommand
-{
+internal sealed class ZoneDiagnosticCommand {
     [PluginService] private IChatGui ChatGui { get; set; } = null!;
 
-    public static void Register(ZoneSwitchController controller)
-    {
+    public static void Register(ZoneSwitchController controller) {
         var command = new ZoneDiagnosticCommand();
         Service.PluginInterface.Inject(command);
         System.CommandManager.RegisterCommand(new CommandHandler {

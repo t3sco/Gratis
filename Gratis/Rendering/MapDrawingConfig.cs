@@ -5,12 +5,12 @@ using Gratis.Compat.Configuration;
 
 namespace Gratis.Rendering;
 
-public partial class MapDrawingConfig : CharacterConfiguration
-{
+public partial class MapDrawingConfig : CharacterConfiguration {
     public bool ScaleWithFrame = true;
     public bool ClampToMap = true;
     public bool FitSmallRoomsToContent = true;
-    [JsonIgnore] public bool ViewportSmallMap { get; set; }
+    [JsonIgnore]
+    public bool ViewportSmallMap { get; set; }
 
     public bool Palette = true;
     public bool PaletteTeleportButton = true;
@@ -24,7 +24,7 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public float SpotlightSeconds = 8;
     public bool SpotlightIncludePlayer = true;
     public bool SpotlightDistanceChip = true;
-    public bool SpotlightGuideLine = false;
+    public bool SpotlightGuideLine = true;
 
     public void ResetViewport() => ScaleWithFrame = ClampToMap = FitSmallRoomsToContent = true;
 
@@ -32,7 +32,7 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public string ActiveLens = "Explore";
     public global::System.Collections.Generic.List<Lens> CustomLenses = [];
     public bool LensTintsMap = false;
-    public bool LensAuto = false;
+    public bool LensAuto = true;
     public int LensCycleKey = 0;
     public MarkerPeekKey PeekKey = MarkerPeekKey.RightAlt;
     public bool QuickFilterBar = true;
@@ -40,13 +40,16 @@ public partial class MapDrawingConfig : CharacterConfiguration
 
     public bool ReduceMotion = false;
     public MotionSettings Motion = new();
-    public void ResetMotion() { ReduceMotion = false; Motion = new MotionSettings(); }
+    public void ResetMotion() {
+        ReduceMotion = false;
+        Motion = new MotionSettings();
+    }
 
     public int VisualStyle = 0;
     public int MarkerStyle = 1;
     public int HoverCardStyle = 0;
-    public Vector4 AccentColor = GratisTheme.Accent;
-    public float FlatMarkerSize = 14;
+    public Vector4 AccentColor = new(.404209f, .738332f, .742616f, 1);
+    public float FlatMarkerSize = 13;
     public bool HoverCardSwatch = true;
     public Vector4 PoiMarkerColor = GratisTheme.Poi;
     public Vector4 TransportMarkerColor = GratisTheme.Transport;
@@ -56,36 +59,36 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public Vector4 PartyMarkerColor = GratisTheme.Party;
     public bool FlatPlayer = true;
     public bool PlayerInnerHighlight = true;
-    public float SoftConeLength = 110;
-    public float SoftConeOpacity = .35f;
+    public float SoftConeLength = 160;
+    public float SoftConeOpacity = .5f;
     public bool SegmentedToolbar = true;
     public float IconSize = 16;
     public bool AutoHideChrome = true;
-    public float ChromeIdleDelay = 1.2f;
-    public float ChromeFadeDurationMs = 180;
-    public float ChromeTitleMinAlpha = .35f;
+    public float ChromeIdleDelay = 2.1f;
+    public float ChromeFadeDurationMs = 403;
+    public float ChromeTitleMinAlpha = .73f;
     public float ChromeControlsMinAlpha = 0;
     public bool PinChrome = false;
     public float ChromeScale = 1;
-    public bool RestoreOpacityOnHover = false;
+    public bool RestoreOpacityOnHover = true;
     public ChromeAnchor ToolbarAnchor = ChromeAnchor.TopCenter;
     public bool ToolbarAnchorExplicit = false;
     public ChromeAnchor FilterBarAnchor = ChromeAnchor.BottomLeft;
-    public ChromeAnchor LocationAnchor = ChromeAnchor.BottomCenter;
+    public ChromeAnchor LocationAnchor = ChromeAnchor.TopLeft;
     public ChromeAnchor CoordinateAnchor = ChromeAnchor.BottomCenter;
     public ChromeAnchor TravelCardAnchor = ChromeAnchor.TopCenter;
 
-    public void ResetChromeLayout()
-    {
-        ChromeScale = 1; RestoreOpacityOnHover = false;
-        ToolbarAnchor = ChromeAnchor.TopCenter; ToolbarAnchorExplicit = false;
+    public void ResetChromeLayout() {
+        ChromeScale = 1;
+        RestoreOpacityOnHover = false;
+        ToolbarAnchor = ChromeAnchor.TopCenter;
+        ToolbarAnchorExplicit = false;
         FilterBarAnchor = ChromeAnchor.BottomLeft;
         ResetBottomCards();
         TravelCardAnchor = ChromeAnchor.TopCenter;
     }
 
-    public void ResetChromeVisibility()
-    {
+    public void ResetChromeVisibility() {
         var defaults = new MapDrawingConfig();
         AutoHideChrome = defaults.AutoHideChrome;
         ChromeIdleDelay = defaults.ChromeIdleDelay;
@@ -99,34 +102,33 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public bool NeutralFrame = true;
     public FramePreset FramePreset = FramePreset.Hairline;
     public void ResetFramePreset() => FramePreset = global::Gratis.Rendering.FramePreset.Hairline;
-    public float FlatCornerRadius = 10;
+    public float FlatCornerRadius = 48;
     public bool CompactTitle = true;
     public bool StyledCoordinates = true;
     public int FrameFont = 0;
-    public bool FeatherEnabled = true;
-    public float FeatherWidth = 6;
+    public bool FeatherEnabled = false;
+    public float FeatherWidth = 25;
     // FeatherShape is derived from MapCircle / MapShape.Rounding; no second shape to desynchronize.
     [JsonIgnore] public string FeatherShape => MapCircle ? "Circle" : "Rounded rectangle";
     public bool RingEnabled = true;
-    public float RingThickness = 2;
-    public Vector4 RingColorA = new(1, 1, 1, .12f);
-    public Vector4 RingColorB = new(1, 1, 1, .12f);
+    public float RingThickness = 5.9f;
+    public Vector4 RingColorA = new(.943128f, .151973f, .151973f, .12f);
+    public Vector4 RingColorB = new(.336493f, .25835f, .25835f, .12f);
     public Vector4 RingAccentColor = new(1, 1, 1, .95f);
-    public float RingAngle = -90;
-    public float RingSweepWidth = 70;
-    public float RingIntensity = .55f;
+    public float RingAngle = 85;
+    public float RingSweepWidth = 180;
+    public float RingIntensity = 1;
     public bool RingRotate = true;
-    public float RingRotationSpeed = 6;
+    public float RingRotationSpeed = -9.6f;
     public bool GlassEnabled = true;
     public bool GlassBlur = true;
-    public float GlassBlurRadius = 12;
-    public float GlassTintOpacity = .04f;
-    public float GlassHighlight = .50f;
+    public float GlassBlurRadius = 4;
+    public float GlassTintOpacity = 0;
+    public float GlassHighlight = .21f;
     public bool GlassGrain = false;
-    public float GlassGrainIntensity = .018f;
+    public float GlassGrainIntensity = .028f;
 
-    public void ResetFrameMaterials()
-    {
+    public void ResetFrameMaterials() {
         var defaults = new MapDrawingConfig();
         ResetFramePreset();
         FeatherEnabled = defaults.FeatherEnabled;
@@ -154,7 +156,7 @@ public partial class MapDrawingConfig : CharacterConfiguration
     [JsonIgnore] public bool UseCustomWindowChrome => HideWindowFrame || (IsGratis && NeutralFrame);
 
     public bool ShowCoordinateBar = true;
-    public float CoordinateBarFade = .66f;
+    public float CoordinateBarFade = .44f;
     public Vector4 CoordinateTextColor = Vector4.One;
 
     public float IconScale = 0.50f;
@@ -162,10 +164,10 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public bool FollowReturnToPlayer = true;
     public FollowReturnTrigger FollowReturnTrigger = FollowReturnTrigger.WhenPlayerMoves;
     public float FollowReturnIdleSeconds = 3;
-    public float FollowReturnEaseMs = 350;
-    public bool ScalePlayerCone = false;
-    public float ConeSize = 150.0f;
-    public bool HideWindowFrame = false;
+    public float FollowReturnEaseMs = 658;
+    public bool ScalePlayerCone = true;
+    public float ConeSize = 123.5f;
+    public bool HideWindowFrame = true;
     public bool ShowTitleOnMap = true;
     public int TitleCorner = 1;
     public Vector2 TitleOffset = new(8.0f, 8.0f);
@@ -185,7 +187,7 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public bool TitleBackground = true;
     public Vector4 TitleBackgroundColor = new(0.08f, 0.07f, 0.06f, 0.65f);
     public Vector2 TitlePadding = new(8.0f, 4.0f);
-    public float TitleRounding = 6.0f;
+    public float TitleRounding = 0;
     public bool TitleBorder = false;
     public Vector4 TitleBorderColor = new(1.0f, 1.0f, 1.0f, 0.25f);
     public bool MapCircle = false;
@@ -204,16 +206,15 @@ public partial class MapDrawingConfig : CharacterConfiguration
     public Vector4 AreaOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.30f };
     public Vector4 PlayerConeColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.33f };
     public Vector4 PlayerConeOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 1.0f };
-    public float ToolbarFade = 0.33f;
+    public float ToolbarFade = 0.19f;
     public bool ShowPlayerIcon = true;
-    public float PlayerIconScale = 1.0f;
-    public PlayerArrowSmoothing PlayerArrowSmoothing = global::Gratis.Rendering.PlayerArrowSmoothing.Medium;
-    public PlayerArrowDirection ArrowPoints = PlayerArrowDirection.Camera;
+    public float PlayerIconScale = .82f;
+    public PlayerArrowSmoothing PlayerArrowSmoothing = global::Gratis.Rendering.PlayerArrowSmoothing.Low;
+    public PlayerArrowDirection ArrowPoints = PlayerArrowDirection.Character;
     [JsonIgnore]
     public bool DebugMode = false;
 
-    protected static Vector4 ColorVector(KnownColor color)
-    {
+    protected static Vector4 ColorVector(KnownColor color) {
         var value = Color.FromKnownColor(color);
         return new Vector4(value.R, value.G, value.B, value.A) / 255.0f;
     }

@@ -22,21 +22,24 @@ public static unsafe class FateContextExtensions {
     }
 
     public static TimeSpan GetTimeRemaining(this Pointer<FateContext> context) {
-        if (context.Value->Duration is 0) return TimeSpan.Zero;
+        if (context.Value->Duration is 0)
+            return TimeSpan.Zero;
 
-        return TimeSpan.FromSeconds(context.Value->StartTimeEpoch + context.Value->Duration -
-                                    DateTimeOffset.Now.ToUnixTimeSeconds());
+        return TimeSpan.FromSeconds(context.Value->StartTimeEpoch + context.Value->Duration
+            - DateTimeOffset.Now.ToUnixTimeSeconds());
     }
 
     public static TimeSpan GetTimeRemaining(this DynamicEvent e) {
-        if (e.Duration is 0) return TimeSpan.Zero;
-        
+        if (e.Duration is 0)
+            return TimeSpan.Zero;
+
         var unixNow = DateTimeOffset.Now.ToUnixTimeSeconds();
         if (e.DynamicEventType == 4) {
             return TimeSpan.FromSeconds(e.StartTimestamp - unixNow);
         }
 
-        if (e.SecondsLeft != 0) return TimeSpan.FromSeconds(e.SecondsLeft);
+        if (e.SecondsLeft != 0)
+            return TimeSpan.FromSeconds(e.SecondsLeft);
 
         return TimeSpan.FromSeconds(e.StartTimestamp + e.Duration - unixNow);
     }

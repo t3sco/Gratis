@@ -5,8 +5,7 @@ using Dalamud.Plugin.Services;
 namespace Gratis;
 
 #pragma warning disable CS8618
-public class Service
-{
+public class Service {
     [PluginService]
     public static IDalamudPluginInterface PluginInterface { get; set; }
 

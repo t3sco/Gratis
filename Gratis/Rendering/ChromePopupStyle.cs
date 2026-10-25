@@ -8,14 +8,13 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-internal readonly struct ChromePopupStyle : IDisposable
-{
+internal readonly struct ChromePopupStyle : IDisposable {
     public ChromePopupStyle() : this(false) { }
-    public ChromePopupStyle(bool transparent)
-    {
+    public ChromePopupStyle(bool transparent) {
         var s = GratisTheme.ChromeScale;
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.CardRadius * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 0);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 7) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 4) * s);
@@ -33,5 +32,9 @@ internal readonly struct ChromePopupStyle : IDisposable
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(1, 1, 1, .08f));
         ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(1, 1, 1, .12f));
     }
-    public void Dispose() { ImGui.PopStyleColor(13); ImGui.PopStyleVar(5); }
+
+    public void Dispose() {
+        ImGui.PopStyleColor(13);
+        ImGui.PopStyleVar(6);
+    }
 }

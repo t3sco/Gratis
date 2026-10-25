@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -8,8 +7,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public static class GratisIcons
-{
+public static class GratisIcons {
     public const char Lock = '\ue10b';
     public const char Unlock = '\ue10c';
     public const char Layers = '\ue529';
@@ -55,6 +53,39 @@ public static class GratisIcons
     public const char Footprints = '\ue3b9';
     public const char Bird = '\ue3c5';
     public const char Fence = '\ue582';
+
+    private const char FirstFilled = '\uf100', LastFilled = '\uf11a';
+
+    public static char Filled(char outline) => outline switch {
+        Landmark => '\uf100',
+        Bed => '\uf101',
+        Bell => '\uf102',
+        BookOpen => '\uf103',
+        Crosshair => '\uf104',
+        Pickaxe => '\uf105',
+        Mail => '\uf106',
+        Flag => '\uf107',
+        House => '\uf108',
+        Package => '\uf109',
+        Shield => '\uf10a',
+        Layers => '\uf10b',
+        Store => '\uf10c',
+        Ticket => '\uf10d',
+        Anchor => '\uf10e',
+        Swords => '\uf10f',
+        Wrench => '\uf110',
+        PawPrint => '\uf111',
+        Sparkles => '\uf112',
+        Trees => '\uf113',
+        Fish => '\uf114',
+        Bird => '\uf115',
+        DoorOpen => '\uf116',
+        Skull => '\uf117',
+        ShoppingBasket => '\uf118',
+        Footprints => '\uf119',
+        Fence => '\uf11a',
+        _ => outline,
+    };
 
     public static readonly ushort[] GlyphRanges = [
         Anchor, Anchor,
@@ -102,34 +133,40 @@ public static class GratisIcons
         Footprints, Footprints,
         Bird, Bird,
         Fence, Fence,
+        FirstFilled, LastFilled,
         0,
     ];
 
-    public static bool Available(char codepoint, float pixels)
-    {
+    public static bool Available(char codepoint, float pixels) {
         var context = MapDrawContext.Current;
         var handle = context.GetIconFont(TextDrawing.PixelSize(pixels));
-        if (handle is null) return false;
+        if (handle is null)
+            return false;
         using var scope = handle.Push();
         return context.TryIconGlyphBounds(codepoint, out _);
     }
 
     public static char ForAction(ToolbarAction action, bool following) => action switch {
-        ToolbarAction.Parent => ArrowUp, ToolbarAction.Layers => Layers,
+        ToolbarAction.Parent => ArrowUp,
+        ToolbarAction.Layers => Layers,
         ToolbarAction.Follow => following ? Lock : Unlock,
-        ToolbarAction.CenterPlayer => LocateFixed, ToolbarAction.CenterMap => LayoutGrid,
-        ToolbarAction.Search => Search, ToolbarAction.Settings => Settings, ToolbarAction.Close => X,
+        ToolbarAction.CenterPlayer => LocateFixed,
+        ToolbarAction.CenterMap => LayoutGrid,
+        ToolbarAction.Search => Search,
+        ToolbarAction.Settings => Settings,
+        ToolbarAction.Close => X,
         _ => Info,
     };
 
-    public static bool Draw(ImDrawListPtr list, Vector2 center, char codepoint, Vector4 color, float pixels)
-    {
+    public static bool Draw(ImDrawListPtr list, Vector2 center, char codepoint, Vector4 color, float pixels) {
         var context = MapDrawContext.Current;
         var handle = context.GetIconFont(TextDrawing.PixelSize(pixels));
-        if (handle is null) return false;
+        if (handle is null)
+            return false;
         using var scope = handle.Push();
         var font = ImGui.GetFont();
-        if (!context.TryIconGlyphBounds(codepoint, out var bounds)) return false;
+        if (!context.TryIconGlyphBounds(codepoint, out var bounds))
+            return false;
         pixels = font.FontSize;
         var ratio = pixels / font.FontSize;
         var position = TextDrawing.Snap(center - new Vector2(bounds.X + bounds.Z, bounds.Y + bounds.W) * (.5f * ratio));

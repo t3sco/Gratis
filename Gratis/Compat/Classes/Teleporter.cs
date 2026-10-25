@@ -26,26 +26,22 @@ using Lumina.Excel.Sheets;
 namespace Gratis.Compat.Classes;
 
 public unsafe class Teleporter {
-	[PluginService] private IDataManager DataManager { get; set; } = null!;
-	[PluginService] private IChatGui ChatGui { get; set; } = null!;
+    [PluginService] private IDataManager DataManager { get; set; } = null!;
+    [PluginService] private IChatGui ChatGui { get; set; } = null!;
 
-	private readonly string pluginName;
+    private readonly string pluginName;
 
-	public Teleporter(IDalamudPluginInterface pluginInterface) {
-		pluginInterface.Inject(this);
-		pluginName = pluginInterface.InternalName;
-	}
+    public Teleporter(IDalamudPluginInterface pluginInterface) {
+        pluginInterface.Inject(this);
+        pluginName = pluginInterface.InternalName;
+    }
 
-	public void Teleport(uint aetheryteId) {
-		var aetheryte = DataManager.GetExcelSheet<Aetheryte>().GetRow(aetheryteId);
-		Telepo.Instance()->Teleport(aetheryteId, 0);
-		ChatGui.Print(new XivChatEntry {
-			Message = new SeStringBuilder()
-				.AddUiForeground($"[{pluginName}] ", 45)
-				.AddUiForeground("[Teleport] ", 62)
-				.AddText("Teleporting to ")
-				.AddUiForeground(aetheryte.PlaceName.Value.Name.ToString(), 576)
-				.Build(),
-		});
-	}
+    public void Teleport(uint aetheryteId) {
+        var aetheryte = DataManager.GetExcelSheet<Aetheryte>().GetRow(aetheryteId);
+        Telepo.Instance()->Teleport(aetheryteId, 0);
+        ChatGui.Print(new XivChatEntry {
+            Message = new SeStringBuilder().AddUiForeground($"[{pluginName}] ", 45).AddUiForeground("[Teleport] ",
+                62).AddText("Teleporting to ").AddUiForeground(aetheryte.PlaceName.Value.Name.ToString(), 576).Build(),
+        });
+    }
 }

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Dalamud.Interface.ManagedFontAtlas;
 using Gratis.Compat.Classes;
 using Gratis.Compat.CommandManager;
 using Gratis.Compat.Window;
@@ -14,7 +13,6 @@ namespace Gratis;
 #pragma warning disable CS8618
 public static class System {
     public static SystemConfig SystemConfig { get; set; }
-    public static IconConfig IconConfig { get; set; }
     public static FlagConfig FlagConfig { get; set; }
     public static WindowManager WindowManager { get; set; }
     public static MapWindow MapWindow { get; set; }
@@ -41,5 +39,4 @@ public static class System {
     public static TripleTriadCache TripleTriadCache { get; set; } = new();
     public static AetheryteAethernetCache AetheryteAethernetCache { get; set; } = new();
 
-    public static IFontHandle LargeAxisFontHandle { get; set; }
 }

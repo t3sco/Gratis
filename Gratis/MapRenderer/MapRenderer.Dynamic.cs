@@ -6,10 +6,8 @@ using Gratis.Extensions;
 
 namespace Gratis.MapRenderer;
 
-public partial class MapRenderer
-{
-    private unsafe void DrawDynamicMarkers()
-    {
+public partial class MapRenderer {
+    private unsafe void DrawDynamicMarkers() {
         var iconGroups = AgentMap.Instance()->EventMarkers.GroupBy(markers => (markers.DataId, markers.Position));
 
         foreach (var group in iconGroups) {

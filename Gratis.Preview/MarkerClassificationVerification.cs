@@ -4,10 +4,8 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static class MarkerClassificationVerification
-{
-    public static void Run()
-    {
+internal static class MarkerClassificationVerification {
+    public static void Run() {
         var cases = new (string Name, uint Icon, MarkerType Kind, MarkerCategory Expected)[] {
             ("unmapped", 61000, MarkerType.Unknown, MarkerCategory.Poi),
             ("unmapped kind", 61000, (MarkerType)99, MarkerCategory.Poi),
@@ -42,29 +40,51 @@ internal static class MarkerClassificationVerification
             foreach (var test in cases) {
                 var marker = new MarkerInfo {
                     Position = Vector2.Zero, Offset = Vector2.Zero, Scale = 1, IconId = test.Icon,
-                    MarkerType = test.Kind, Category = MarkerCategory.Objective, IsDynamicMarker = true, IsRelevant = false,
+                    MarkerType = test.Kind,
+                    Category = MarkerCategory.Objective,
+                    IsDynamicMarker = true,
+                    IsRelevant = false,
                 };
                 Require(FlatMarkerDrawing.Category(marker) == test.Expected, test.Name);
                 if (test.Expected != MarkerCategory.Objective)
                     Require(FlatMarkerDrawing.Label(marker) != "Quest / objective", test.Name + " subtitle");
                 if (MarkerIcon.Family(marker) is MarkerIconFamily.Neutral or MarkerIconFamily.Hunt) {
-                    Require(!MarkerRelevance.IsProtected(marker) && MarkerVisual.Alpha(marker) == .3f, test.Name + " ambient policy");
+                    Require(!MarkerRelevance.IsProtected(marker) && MarkerVisual.Alpha(marker) == .3f,
+                        test.Name + " ambient policy");
                     Require(FlatMarkerDrawing.Label(marker) == "Point of interest", test.Name + " neutral label");
                 }
                 if (test.Expected == MarkerCategory.Objective)
-                    Require(MarkerRelevance.IsProtected(marker) && MarkerVisual.Alpha(marker) == 1, test.Name + " priority policy");
+                    Require(MarkerRelevance.IsProtected(marker) && MarkerVisual.Alpha(marker) == 1,
+                        test.Name + " priority policy");
             }
-            var flagged = new MarkerInfo { Position = Vector2.Zero, Offset = Vector2.Zero, Scale = 1, IconId = 61000, IsObjective = true };
-            Require(FlatMarkerDrawing.Category(flagged) == MarkerCategory.Objective && MarkerRelevance.IsProtected(flagged), "Explicit game objective");
-            var npc = new MarkerInfo { Position = Vector2.Zero, Offset = Vector2.Zero, Scale = 1, IconId = 60424, IsTarget = true };
-            Require(FlatMarkerDrawing.Category(npc) == MarkerCategory.Poi && MarkerRelevance.IsProtected(npc), "A target is protected without becoming a quest");
-            Console.WriteLine($"Marker classification verified: {cases.Length} icon/kind fixtures plus explicit objective and target; non-quests never inherit Objective, hostile/unknown markers remain neutral ambient POIs.");
+            var flagged = new MarkerInfo {
+                Position = Vector2.Zero,
+                Offset = Vector2.Zero,
+                Scale = 1,
+                IconId = 61000,
+                IsObjective = true
+            };
+            Require(FlatMarkerDrawing.Category(flagged) == MarkerCategory.Objective
+                && MarkerRelevance.IsProtected(flagged),
+                "Explicit game objective");
+            var npc = new MarkerInfo {
+                Position = Vector2.Zero,
+                Offset = Vector2.Zero,
+                Scale = 1,
+                IconId = 60424,
+                IsTarget = true
+            };
+            Require(FlatMarkerDrawing.Category(npc) == MarkerCategory.Poi && MarkerRelevance.IsProtected(npc),
+                "A target is protected without becoming a quest");
+            Console.WriteLine($"Marker classification verified: {cases.Length} icon/kind fixtures plus explicit "
+                + "objective and target; non-quests never inherit Objective, hostile/unknown "
+                + "markers remain neutral ambient POIs.");
         }
         finally { MapDrawContext.Current = saved; }
     }
 
-    private static void Require(bool value, string name)
-    {
-        if (!value) throw new InvalidOperationException("Marker classification: " + name);
+    private static void Require(bool value, string name) {
+        if (!value)
+            throw new InvalidOperationException("Marker classification: " + name);
     }
 }

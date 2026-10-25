@@ -4,14 +4,13 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static class AetheryteVerification
-{
-    public static void Selection()
-    {
+internal static class AetheryteVerification {
+    public static void Selection() {
         var a = TravelFixture.Hub with { World = new Vector2(0, 0) };
         var b = a with { Id = "a:2", AetheryteId = 2, HubId = 2, World = new Vector2(400, 0), Name = "Far crystal" };
         var shard = TravelFixture.Shard with { World = new Vector2(500, 0) };
-        var cases = new (string Name, PlaceEntry[] Entries, uint Map, Vector2 Target, uint[] Attuned, uint Active, bool Hops, uint? Expected)[] {
+        var cases = new (string Name, PlaceEntry[] Entries, uint Map, Vector2 Target, uint[] Attuned, uint Active,
+            bool Hops, uint? Expected)[] {
             ("empty", [], 1, new(20), [1], 0, false, null),
             ("origin", [a], 1, new(0), [1], 0, false, 1),
             ("target not player", [a,b], 1, new(390,0), [1,2], 0, false, 2),
@@ -38,31 +37,41 @@ internal static class AetheryteVerification
             ("zero sheet ID", [a with { AetheryteId=0 }], 1, new(0), [0], 0, false, null),
         };
         foreach (var c in cases) {
-            var found = AetheryteSelection.Nearest(c.Entries,c.Map,c.Target,p=>new(c.Attuned.Contains(p.AetheryteId)),c.Active,c.Hops);
+            var found = AetheryteSelection.Nearest(c.Entries, c.Map, c.Target,
+                p => new(c.Attuned.Contains(p.AetheryteId)), c.Active, c.Hops);
             TravelVerification.Require(found?.Destination.AetheryteId == c.Expected, "chip selection: " + c.Name);
         }
-        TravelVerification.Require(!AetheryteSelection.Useful(1,new(100,0),1,new(0)), "near target hides chip");
-        TravelVerification.Require(AetheryteSelection.Useful(1,new(200,0),1,new(0)), "far target boundary");
-        TravelVerification.Require(AetheryteSelection.Useful(2,new(0),1,new(0)), "other zone");
-        TravelVerification.Require(AetheryteSelection.Useful(1,new(0),1,null), "off-map player");
-        Console.WriteLine($"Aetherytes: {cases.Length} selection cases plus distance/zone gates; attunement and distance are relative to target.");
+        TravelVerification.Require(!AetheryteSelection.Useful(1, new(100, 0), 1, new(0)), "near target hides chip");
+        TravelVerification.Require(AetheryteSelection.Useful(1, new(200, 0), 1, new(0)), "far target boundary");
+        TravelVerification.Require(AetheryteSelection.Useful(2, new(0), 1, new(0)), "other zone");
+        TravelVerification.Require(AetheryteSelection.Useful(1, new(0), 1, null), "off-map player");
+        Console.WriteLine($"Aetherytes: {cases.Length} selection cases plus distance/zone gates; attunement "
+            + "and distance are relative to target.");
     }
 
-    public static void Frames()
-    {
+    public static void Frames() {
         var config = PaletteVerification.Config();
-        using var driver = new ScriptedFrameDriver(config,new FrameScript());
+        using var driver = new ScriptedFrameDriver(config, new FrameScript());
         var source = new TravelFixture(driver);
-        var ui = driver.Context.Assistance = new MapAssistance(NullTravelProvider.Instance,source,()=>true,()=>{});
-        driver.Step(new(0)); driver.Step(new(.02));
-        driver.Renderer.BeginSpotlight(new(new(550,0),1,SpotlightSource.Search,IncludePlayer:false));
-        driver.Step(new(.04)); driver.Step(new(.06));
-        TravelVerification.Require(ui.Chip?.Destination == TravelFixture.Hub,"nearest main crystal without Lifestream");
-        driver.Step(new(.08,Mouse:ui.ChipButtonCenter)); driver.Step(new(.10,Left:true)); driver.Step(new(.12,Left:false));
-        TravelVerification.Require(source.Teleports == 1,"chip invokes shared teleport boundary");
-        config.AetheryteChips=false; driver.Step(new(.14));
-        TravelVerification.Require(ui.Chip == null,"chip option off");
-        config.AetheryteChips=true; config.VisualStyle=1; driver.Step(new(.16));
-        TravelVerification.Require(source.Teleports == 1,"Classic emits no chip action");
+        var ui = driver.Context.Assistance = new MapAssistance(NullTravelProvider.Instance, source, () => true,
+            () => { });
+        driver.Step(new(0));
+        driver.Step(new(.02));
+        driver.Renderer.BeginSpotlight(new(new(550, 0), 1, SpotlightSource.Search, IncludePlayer: false));
+        driver.Step(new(.04));
+        driver.Step(new(.06));
+        TravelVerification.Require(ui.Chip?.Destination == TravelFixture.Hub,
+            "nearest main crystal without Lifestream");
+        driver.Step(new(.08, Mouse: ui.ChipButtonCenter));
+        driver.Step(new(.10, Left: true));
+        driver.Step(new(.12, Left: false));
+        TravelVerification.Require(source.Teleports == 1, "chip invokes shared teleport boundary");
+        config.AetheryteChips = false;
+        driver.Step(new(.14));
+        TravelVerification.Require(ui.Chip == null, "chip option off");
+        config.AetheryteChips = true;
+        config.VisualStyle = 1;
+        driver.Step(new(.16));
+        TravelVerification.Require(source.Teleports == 1, "Classic emits no chip action");
     }
 }

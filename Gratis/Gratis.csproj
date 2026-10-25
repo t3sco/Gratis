@@ -16,7 +16,8 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Assets/Fonts/**/*.ttf" />
-        <None Include="Assets/Fonts/Lucide/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="Assets/Fonts/Icons/LICENSE-Lucide.txt" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="Assets/Fonts/Icons/LICENSE-Phosphor.txt" CopyToOutputDirectory="PreserveNewest" />
         <None Include="Assets/Fonts/OFL.txt" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 

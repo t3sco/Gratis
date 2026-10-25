@@ -4,16 +4,17 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static class HeadingVerification
-{
-    public static void Run()
-    {
+internal static class HeadingVerification {
+    public static void Run() {
         static float Rad(double degrees) => (float)(degrees * Math.PI / 180);
         static void Check(bool condition, string message) {
-            if (!condition) throw new InvalidOperationException("Heading: " + message);
+            if (!condition)
+                throw new InvalidOperationException("Heading: " + message);
         }
-        static float Step(PlayerHeading h, float raw, double t, PlayerArrowSmoothing level = PlayerArrowSmoothing.Medium,
-            ulong map = 1, Vector3 position = default, bool reduced = false) => h.Advance(raw, t, level, map, position, reduced);
+        static float Step(PlayerHeading h, float raw, double t,
+            PlayerArrowSmoothing level = PlayerArrowSmoothing.Medium, ulong map = 1, Vector3 position = default,
+            bool reduced = false) =>
+            h.Advance(raw, t, level, map, position, reduced);
 
         foreach (var sign in new[] { -1, 1 }) {
             var h = new PlayerHeading();
@@ -24,8 +25,10 @@ internal static class HeadingVerification
         }
         var still = new PlayerHeading();
         Step(still, 0, 0);
-        for (var i = 1; i <= 100; i++) Check(Step(still, Rad(i % 2 == 0 ? 1.9 : -1.9), i / 60d) == 0, "deadzone jitter");
-        foreach (var level in new[] { PlayerArrowSmoothing.Low, PlayerArrowSmoothing.Medium, PlayerArrowSmoothing.High }) {
+        for (var i = 1; i <= 100; i++)
+            Check(Step(still, Rad(i % 2 == 0 ? 1.9 : -1.9), i / 60d) == 0, "deadzone jitter");
+        foreach (var level in new[] { PlayerArrowSmoothing.Low, PlayerArrowSmoothing.Medium,
+            PlayerArrowSmoothing.High }) {
             var results = new List<float>();
             foreach (var fps in new[] { 30, 60, 144 }) {
                 var h = new PlayerHeading();
@@ -46,7 +49,8 @@ internal static class HeadingVerification
         var last = 0f;
         for (var i = 1; i <= 600; i++) {
             var next = Step(spin, Rad(Math.Min(i / 120d, 1) * 720), i / 120d);
-            Check(Math.Abs(next) <= Math.PI && Math.Abs(PlayerHeading.Wrap(next - last)) <= PlayerHeading.MaximumSpeed / 120 + 1e-6,
+            Check(Math.Abs(next) <= Math.PI
+                && Math.Abs(PlayerHeading.Wrap(next - last)) <= PlayerHeading.MaximumSpeed / 120 + 1e-6,
                 "720 degree spin stays bounded");
             last = next;
         }
@@ -60,16 +64,21 @@ internal static class HeadingVerification
         Step(reset, 0, 0);
         Check(Step(reset, 1, .01, map: 2) == 1, "map reset");
         Check(Step(reset, 2, .02, map: 2, position: new Vector3(31, 0, 0)) == 2, "teleport reset");
-        Check(Step(reset, -1, .03, map: 2, position: new Vector3(31, 0, 0), reduced: true) == -1, "Reduce Motion reset");
+        Check(Step(reset, -1, .03, map: 2, position: new Vector3(31, 0, 0), reduced: true) == -1,
+            "Reduce Motion reset");
         var json = new JsonSerializerOptions { IncludeFields = true };
-        var legacy = JsonSerializer.Deserialize<MapDrawingConfig>("{\"PlayerIconScale\":0.35,\"ConeSize\":83.75}", json)!;
-        Check(legacy.PlayerArrowSmoothing == PlayerArrowSmoothing.Medium && legacy.PlayerIconScale == .35f && legacy.ConeSize == 83.75f,
-            "old settings preserve values and default Medium");
+        var legacy = JsonSerializer.Deserialize<MapDrawingConfig>("{\"PlayerIconScale\":0.35,\"ConeSize\":83.75}",
+            json)!;
+        Check(legacy.PlayerArrowSmoothing == PlayerArrowSmoothing.Low && legacy.PlayerIconScale == .35f
+            && legacy.ConeSize == 83.75f,
+            "old settings preserve values and default Low");
         foreach (var level in Enum.GetValues<PlayerArrowSmoothing>()) {
             legacy.PlayerArrowSmoothing = level;
-            Check(JsonSerializer.Deserialize<MapDrawingConfig>(JsonSerializer.Serialize(legacy, json), json)!.PlayerArrowSmoothing == level,
+            Check(JsonSerializer.Deserialize<MapDrawingConfig>(JsonSerializer.Serialize(legacy, json),
+                json)!.PlayerArrowSmoothing == level,
                 "setting roundtrip");
         }
-        Console.WriteLine("Heading verified: wrap, deadzone, no overshoot, cap, identical 30/60/144 fps held targets, 720-degree spin/settle, Off, resets, old settings.");
+        Console.WriteLine("Heading verified: wrap, deadzone, no overshoot, cap, identical 30/60/144 fps "
+            + "held targets, 720-degree spin/settle, Off, resets, old settings.");
     }
 }

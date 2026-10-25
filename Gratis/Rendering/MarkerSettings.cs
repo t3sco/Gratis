@@ -1,15 +1,17 @@
 namespace Gratis.Rendering;
 
-public enum MarkerIconStyle { Icons, Shapes, Game }
+public enum MarkerIconStyle {
+    Icons, Shapes, Game
+}
 
-public sealed class MarkerSettings
-{
-    public MarkerIconStyle IconStyle = MarkerIconStyle.Icons;
-    public bool Declutter = false;
-    public bool ScaleWithZoom = false;
-    public float MinimumScale = .7f;
-    public float MaximumScale = 1.4f;
-    public float ClusterDistance = 24;
-    public bool DimIrrelevant = false;
-    public float IrrelevantAlpha = .6f;
+public sealed class MarkerSettings {
+    public MarkerIconStyle IconStyle = MarkerIconStyle.Game;
+    public bool Declutter = true;
+    public bool ScaleWithZoom = true;
+    public float MinimumScale = 1;
+    public float MaximumScale = 1;
+    public float ClusterDistance = 11;
+    public float Opacity = 1;
+    public bool DimIrrelevant = true;
+    public float IrrelevantAlpha = 0;
 }

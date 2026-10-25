@@ -16,6 +16,7 @@
 */
 
 using System.Collections.Concurrent;
+using System;
 using System.Threading.Tasks;
 
 namespace Gratis.Compat.Classes;
@@ -28,18 +29,21 @@ public abstract class Cache<T, TU> where T : notnull {
             return result;
         }
 
-        else {
+        if (!internalCache.TryAdd(key, default)) {
+            return default;
+        }
 
-            if (internalCache.TryAdd(key, default)) {
+        Task.Run(() => Load(key));
 
-                Task.Run(() => internalCache[key] = LoadValue(key));
+        return internalCache[key];
+    }
 
-                return internalCache[key];
-            }
-
-            else {
-                return default;
-            }
+    private void Load(T key) {
+        try {
+            internalCache[key] = LoadValue(key);
+        }
+        catch (Exception e) {
+            Service.Log.Error(e, $"Failed to load cache entry for {key}");
         }
     }
 

@@ -10,16 +10,14 @@ using Gratis.Classes.SelectionWindowComponents;
 
 namespace Gratis.Data;
 
-public unsafe record Flag(uint Territory, uint Map, float X, float Y, uint IconId)
-{
+public unsafe record Flag(uint Territory, uint Map, float X, float Y, uint IconId) {
     public IDalamudTextureWrap? GetMapTexture() => MapDrawableOption.GetMapTexture(Map);
 
     public Map GetMap() => Service.DataManager.GetExcelSheet<Map>().GetRow(Map);
 
     public TerritoryType GetTerritoryType() => Service.DataManager.GetExcelSheet<TerritoryType>().GetRow(Territory);
 
-    public void PlaceFlag()
-    {
+    public void PlaceFlag() {
         AgentMap.Instance()->FlagMarkerCount = 0;
         AgentMap.Instance()->SetFlagMapMarker(Territory, Map, X, Y, IconId);
 
@@ -34,29 +32,31 @@ public unsafe record Flag(uint Territory, uint Map, float X, float Y, uint IconI
 
     public Vector2 GetMapCoordinate() => MapUtil.WorldToMap(GetCoordinate());
 
-    public void Focus()
-    {
+    public void Focus() {
         System.SystemConfig.FollowPlayer = false;
         System.IntegrationsController.OpenMap(Map);
         System.MapRenderer.CenterOnCoordinate(GetCoordinate());
     }
 
-    public bool IsFlagSet()
-    {
-        if (AgentMap.Instance()->FlagMarkerCount is 0) return false;
+    public bool IsFlagSet() {
+        if (AgentMap.Instance()->FlagMarkerCount is 0)
+            return false;
         ref var setMarker = ref AgentMap.Instance()->FlagMapMarkers[0];
 
-        if (setMarker.TerritoryId != Territory) return false;
-        if (setMarker.MapId != Map) return false;
-        if (Math.Abs(setMarker.XFloat - X) > 0.01f) return false;
-        if (Math.Abs(setMarker.YFloat - Y) > 0.01f) return false;
+        if (setMarker.TerritoryId != Territory)
+            return false;
+        if (setMarker.MapId != Map)
+            return false;
+        if (Math.Abs(setMarker.XFloat - X) > 0.01f)
+            return false;
+        if (Math.Abs(setMarker.YFloat - Y) > 0.01f)
+            return false;
 
         return true;
     }
 }
 
-public class FlagConfig
-{
+public class FlagConfig {
     public LinkedList<Flag> FlagHistory = [];
 
     public int HistoryLimit = 10;

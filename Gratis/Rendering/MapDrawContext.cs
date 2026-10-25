@@ -16,16 +16,18 @@ public readonly record struct DrawTexture(nint Handle, Vector2 Size);
 public readonly record struct DrawTexture(ImTextureID Handle, Vector2 Size);
 #endif
 
-public interface IDrawFont
-{
+public interface IDrawFont {
     IDisposable Push();
 }
 
-public enum ToolbarAction { Parent, Layers, Follow, CenterPlayer, CenterMap, Search, Settings, Close }
-public enum ChromeFontRole { Body, Chip, Title, Coordinates }
+public enum ToolbarAction {
+    Parent, Layers, Follow, CenterPlayer, CenterMap, Search, Settings, Close
+}
+public enum ChromeFontRole {
+    Body, Chip, Title, Coordinates
+}
 
-public abstract class MapDrawContext
-{
+public abstract class MapDrawContext {
     public static MapDrawContext Current { get; set; } =
 #if GRATIS_PREVIEW
         null!;
@@ -34,10 +36,10 @@ public abstract class MapDrawContext
 #endif
     public virtual bool IsPvP => false;
     public PvpMapPolicy Pvp { get; } = new();
-    public void SynchronizePvp()
-    {
+    public void SynchronizePvp() {
         Config.PvpMapOnly = true;
-        if (!Pvp.Synchronize(IsPvP)) return;
+        if (!Pvp.Synchronize(IsPvP))
+            return;
         Spotlight?.Cancel("PvP state changed: discard previous target");
         MarkerTargets.Targets.Clear();
         EdgePointers.ClearPvp();
@@ -60,20 +62,24 @@ public abstract class MapDrawContext
     public virtual bool LensInDuty => false;
     public virtual bool LensGatheringClass => false;
     public virtual bool LensNearNode => false;
-    public virtual void SaveConfig() { }
-    public virtual void OpenFilterSettings() { }
+    public virtual void SaveConfig() {
+    }
+
+    public virtual void OpenFilterSettings() {
+    }
+
     public virtual long UnixTimeSeconds => global::System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     public FlagArrivalOverlay FlagArrival { get; } = new();
     public ContextMenu ContextMenu { get; } = new();
     public MapMotion Motion { get; } = new();
     public Spotlight? Spotlight { get; set; }
     public bool WindowMoveInputBlocked { get; set; }
-    public virtual void ZoomCluster(Vector2 position, float scale) { }
+    public virtual void ZoomCluster(Vector2 position, float scale) {
+    }
     public abstract MapDrawingConfig Config { get; }
     public abstract float GlobalScale { get; }
     public abstract float MapSizeFactor { get; }
     public abstract DrawTexture GetIcon(uint id);
-    public abstract IconSetting GetIconSetting(uint id);
     public abstract bool PrepareMarker(MarkerInfo marker);
     public abstract bool IsRadiusHovered(Vector2 center, float radius);
     public abstract IDisposable? PushLargeFont();
@@ -81,12 +87,17 @@ public abstract class MapDrawContext
     public abstract IDrawFont? GetChromeFont(float size, ChromeFontRole role);
     public virtual IDisposable? PushDefaultTextFont() => null;
     public virtual IDrawFont? GetIconFont(float size) => null;
-    public virtual bool TryIconGlyphBounds(char glyph, out Vector4 bounds) => DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out bounds);
+    public virtual bool TryIconGlyphBounds(char glyph, out Vector4 bounds) =>
+        DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out bounds);
     public virtual string IconFontDiagnostics() => "icon-fonts=host-unavailable";
-    public virtual string TextDiagnostics() => $"text face={(Config.IsGratis ? "Geist-Regular" : "Classic")} legacyFontChoice={Config.FrameFont}(ignored-in-Gratis) uiScale={GlobalScale:0.###} " +
-        $"nativePixels=true positionSnap=integer sizeLadder=[{string.Join(",", TextDrawing.Sizes)}] {TextDrawing.LastDraw}";
+    public virtual string TextDiagnostics() => $"text face={(Config.IsGratis ? "Geist-Regular" : "Classic")} "
+        + $"legacyFontChoice={Config.FrameFont}(ignored-in-Gratis) uiScale={GlobalScale:0.###} "
+        + "nativePixels=true positionSnap=integer "
+        + $"sizeLadder=[{string.Join(",", TextDrawing.Sizes)}] {TextDrawing.LastDraw}";
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }
     public virtual MapColourPreset ActiveColourPreset => MapColourPreset.Original;
-    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false) => false;
+    public virtual bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius,
+        float opacity = 1, bool prepend = false) =>
+        false;
 }

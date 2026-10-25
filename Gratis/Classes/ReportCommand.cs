@@ -12,25 +12,25 @@ using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 
-internal sealed class ReportCommand : IDisposable
-{
+internal sealed class ReportCommand : IDisposable {
     [PluginService] private IChatGui ChatGui { get; set; } = null!;
     private readonly ScreenshotCapture capture;
     private readonly ReportLogBuffer logs;
     private readonly CommandHandler command;
     private bool pending;
     private bool disposed;
-    public ReportCommand(ScreenshotCapture capture, ReportLogBuffer logs)
-    {
-        this.capture = capture; this.logs = logs;
+    public ReportCommand(ScreenshotCapture capture, ReportLogBuffer logs) {
+        this.capture = capture;
+        this.logs = logs;
         Service.PluginInterface.Inject(this);
         command = new CommandHandler { ActivationPath = "/report", Delegate = _ => pending = true };
         System.CommandManager.RegisterCommand(command);
         Service.PluginInterface.UiBuilder.Draw += OnDraw;
     }
-    private void OnDraw()
-    {
-        if (!pending || disposed) return;
+
+    private void OnDraw() {
+        if (!pending || disposed)
+            return;
         pending = false;
         try {
             var directory = Path.Combine(Service.PluginInterface.GetPluginConfigDirectory(), "reports");
@@ -40,9 +40,12 @@ internal sealed class ReportCommand : IDisposable
             var png = Path.Combine(directory, stem + ".png");
             TextDrawing.SampleDiagnostics();
             var body = DiagnosticReport.Build(new Context(logs));
-            void Write(string status) => File.WriteAllText(path, DiagnosticReport.WithScreenshot(body, status), new UTF8Encoding(false));
+            void Write(string status) =>
+                File.WriteAllText(path, DiagnosticReport.WithScreenshot(body, status), new UTF8Encoding(false));
             Write("Capture requested; pending next rendered map frame.");
-            if (!capture.RequestReport(png, success => Write(success ? $"Saved alongside this report: {stem}.png" : "Unavailable: map capture failed (see recent warnings/errors).")))
+            if (!capture.RequestReport(png,
+                success => Write(success ? $"Saved alongside this report: {stem}.png"
+                    : "Unavailable: map capture failed (see recent warnings/errors).")))
                 Write("Unavailable: capture busy, map closed, or a text-entry overlay is open.");
             ChatGui.Print($"[Gratis] Report saved: {path}");
         }
@@ -51,16 +54,20 @@ internal sealed class ReportCommand : IDisposable
             ChatGui.PrintError("[Gratis] Could not write the diagnostic report; see the plugin log.");
         }
     }
-    private sealed class Context(ReportLogBuffer logs) : IReportContext
-    {
-        private static string Information => typeof(GratisPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+
+    private sealed class Context(ReportLogBuffer logs) : IReportContext {
+        private static string Information =>
+            typeof(GratisPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>(
+                )?.InformationalVersion
+            ?? "unknown";
         public string Version => Information;
         public string Commit => Information.Contains('+') ? Information[(Information.IndexOf('+') + 1)..] : "unknown";
         public SystemConfig Settings => System.SystemConfig;
         public IReadOnlyList<ReportLogEntry> RecentLogs => logs.Snapshot();
-        private static string SafeLensName(string name)
-        {
-            foreach (var lens in Lenses.BuiltIn) if (name == lens.Name) return lens.Name;
+        private static string SafeLensName(string name) {
+            foreach (var lens in Lenses.BuiltIn)
+                if (name == lens.Name)
+                    return lens.Name;
             return "custom (name omitted)";
         }
         public IEnumerable<(string Name, string State)> States {
@@ -79,18 +86,24 @@ internal sealed class ReportCommand : IDisposable
                 yield return ("Zone", System.ZoneSwitchController?.Diagnostics() ?? "unavailable");
                 yield return ("Spotlight", System.MapRenderer.Frame.Spotlight.Diagnostics());
                 var visibility = ctx.Visibility;
-                var states = $"active={SafeLensName(Settings.ActiveLens)} effective={SafeLensName(visibility.EffectiveLens)} auto={Settings.LensAuto} tint={Settings.LensTintsMap} peek={visibility.Peek} cycleKey={Settings.LensCycleKey} custom={Settings.CustomLenses?.Count ?? 0}; ";
+                var states = $"active={SafeLensName(Settings.ActiveLens)} "
+                    + $"effective={SafeLensName(visibility.EffectiveLens)} auto={Settings.LensAuto} "
+                    + $"tint={Settings.LensTintsMap} peek={visibility.Peek} "
+                    + $"cycleKey={Settings.LensCycleKey} custom={Settings.CustomLenses?.Count ?? 0}; ";
                 for (var i = 0; i < MarkerVisibility.GroupCount; i++)
-                    states += $"{(MarkerGroup)i}={visibility.State((MarkerGroup)i)} count={visibility.Counts[i]} filter={visibility.Overrides[i]?.ToString() ?? "lens"}; ";
+                    states += $"{(MarkerGroup)i}={visibility.State((MarkerGroup)i)} count={visibility.Counts[i]} "
+                        + $"filter={visibility.Overrides[i]?.ToString() ?? "lens"}; ";
                 yield return ("Lens", states);
-                yield return ("Viewport", System.MapRenderer.Frame.ViewportDiagnostics() + $" globalScale={ctx.GlobalScale:0.###} chromeScale={Settings.ChromeScale:0.###}");
+                yield return ("Viewport",
+                    System.MapRenderer.Frame.ViewportDiagnostics()
+                        + $" globalScale={ctx.GlobalScale:0.###} chromeScale={Settings.ChromeScale:0.###}");
                 yield return ("View memory", System.MapRenderer.Frame.ViewMemoryDiagnostics());
                 yield return ("Window presets", System.MapWindow.WindowPresetDiagnostics());
             }
         }
     }
-    public void Dispose()
-    {
+
+    public void Dispose() {
         disposed = true;
         Service.PluginInterface.UiBuilder.Draw -= OnDraw;
         System.CommandManager.RemoveCommand(command);

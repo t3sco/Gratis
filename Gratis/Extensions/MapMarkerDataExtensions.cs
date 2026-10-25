@@ -6,16 +6,16 @@ using MarkerInfo = Gratis.Classes.MarkerInfo;
 
 namespace Gratis.Extensions;
 
-public static class MapMarkerDataExtensions
-{
-    public static void Draw(this MapMarkerData marker, Vector2 offset, float scale)
-    {
-        if ((marker.Flags & 1) == 1) return;
+public static class MapMarkerDataExtensions {
+    public static void Draw(this MapMarkerData marker, Vector2 offset, float scale) {
+        if ((marker.Flags & 1) == 1)
+            return;
         var questObjective = marker.ObjectiveId != 0 && Rendering.MarkerRelevance.IsActive(marker.ObjectiveId);
 
-        DrawHelpers.DrawMapMarker(new MarkerInfo
-        {
-            Position = (marker.Position.AsMapVector() * DrawHelpers.GetMapScaleFactor() - DrawHelpers.GetMapOffsetVector() + DrawHelpers.GetMapCenterOffsetVector()) * scale,
+        var position = marker.Position.AsMapVector() * DrawHelpers.GetMapScaleFactor()
+            - DrawHelpers.GetMapOffsetVector() + DrawHelpers.GetMapCenterOffsetVector();
+        DrawHelpers.DrawMapMarker(new MarkerInfo {
+            Position = position * scale,
             Offset = offset,
             Source = Rendering.MapMarkerSource.NativeEvent,
             Scale = scale,
@@ -33,11 +33,13 @@ public static class MapMarkerDataExtensions
         });
     }
 
-    private static unsafe string GetMarkerPrimaryText(MapMarkerData marker)
-    {
-        if (marker.TooltipString is null) return string.Empty;
-        if (marker.TooltipString->StringPtr.Value is null) return string.Empty;
-        if (marker.TooltipString->StringPtr.ExtractText().IsNullOrEmpty()) return string.Empty;
+    private static unsafe string GetMarkerPrimaryText(MapMarkerData marker) {
+        if (marker.TooltipString is null)
+            return string.Empty;
+        if (marker.TooltipString->StringPtr.Value is null)
+            return string.Empty;
+        if (marker.TooltipString->StringPtr.ExtractText().IsNullOrEmpty())
+            return string.Empty;
 
         var text = marker.TooltipString->StringPtr.ExtractText();
         return marker.RecommendedLevel is 0 ? text : $"Lv. {marker.RecommendedLevel} {text}";

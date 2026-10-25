@@ -30,6 +30,7 @@ public class CommandHandler {
     public bool CommandMatches(IPluginLog log, params string[] commandParts) {
         var thisCommandParts = ActivationPath.Split("/").Prepend("/").Where(part => !part.IsNullOrEmpty()).ToArray();
 
-        return commandParts.Length == CommandLength && Enumerable.Range(0, CommandLength).All(index => thisCommandParts[index] == commandParts[index]);
+        return commandParts.Length == CommandLength
+            && Enumerable.Range(0, CommandLength).All(index => thisCommandParts[index] == commandParts[index]);
     }
 }

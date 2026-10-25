@@ -48,14 +48,13 @@ public class CommandManager : IDisposable {
         foreach (var alias in baseCommands) {
             registeredBaseCommands.Add(alias);
 
-            DalamudCommandManager.AddHandler($"/{alias} help", new CommandInfo(HelpCommandHandler) {
-                ShowInHelp = true,
-                HelpMessage = "Display all available commands",
-            });
+            DalamudCommandManager.AddHandler($"/{alias} help",
+                new CommandInfo(HelpCommandHandler) {
+                    ShowInHelp = true, HelpMessage = "Display all available commands",
+                });
 
-            DalamudCommandManager.AddHandler($"/{alias}", new CommandInfo(DalamudCommandHandler) {
-                ShowInHelp = false,
-            });
+            DalamudCommandManager.AddHandler($"/{alias}",
+                new CommandInfo(DalamudCommandHandler) { ShowInHelp = false, });
         }
     }
 
@@ -79,7 +78,8 @@ public class CommandManager : IDisposable {
         => registeredCommands.Remove(commandInfo);
 
     public void RemoveCommand(string commandPath)
-        => registeredCommands.RemoveAll(command => string.Equals(command.ActivationPath, commandPath, StringComparison.OrdinalIgnoreCase));
+        => registeredCommands.RemoveAll(command =>
+            string.Equals(command.ActivationPath, commandPath, StringComparison.OrdinalIgnoreCase));
 
     private void DalamudCommandHandler(string command, string arguments) {
         Log.Verbose($"Received Command: {command}, Args: {arguments}");
@@ -117,14 +117,9 @@ public class CommandManager : IDisposable {
     }
 
     private void HelpCommandHandler(string command, string arguments) {
-        var stringBuilder = new SeStringBuilder()
-            .PushColorRgba(KnownColor.ForestGreen.Vector())
-            .Append($"[{pluginInterface.InternalName}] ")
-            .PopColor()
-            .PushColorRgba(KnownColor.Gold.Vector())
-            .Append("[Command] ")
-            .PopColor()
-            .Append("Displaying all commands\n\n");
+        var stringBuilder = new SeStringBuilder().PushColorRgba(KnownColor.ForestGreen.Vector()).Append(
+            $"[{pluginInterface.InternalName}] ").PopColor().PushColorRgba(KnownColor.Gold.Vector()).Append(
+            "[Command] ").PopColor().Append("Displaying all commands\n\n");
 
         foreach (var registeredCommand in registeredCommands) {
             if (!registeredCommand.Hidden) {
@@ -132,7 +127,8 @@ public class CommandManager : IDisposable {
                 stringBuilder.Append($"/{registeredBaseCommands[0]}");
 
                 foreach (var part in registeredCommand.ActivationPath.Replace("/", " ").Split(" ")) {
-                    if (part.IsNullOrEmpty()) continue;
+                    if (part.IsNullOrEmpty())
+                        continue;
 
                     stringBuilder.Append($" {part}");
                 }

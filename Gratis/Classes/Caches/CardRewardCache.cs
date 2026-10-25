@@ -4,16 +4,11 @@ using Lumina.Excel.Sheets;
 
 namespace Gratis.Classes.Caches;
 
-public class CardRewardCache : Cache<uint, string>
-{
-    protected override string LoadValue(uint key)
-    {
+public class CardRewardCache : Cache<uint, string> {
+    protected override string LoadValue(uint key) {
         if (Service.DataManager.GetExcelSheet<TripleTriad>().GetRow(key) is { RowId: not 0 } triadInfo) {
-            var cardRewards = triadInfo.ItemPossibleReward
-                .Where(reward => reward.RowId is not 0)
-                .Select(reward => reward.Value)
-                .Where(item => item.RowId is not 0)
-                .Select(item => item.Name.ExtractText());
+            var cardRewards = triadInfo.ItemPossibleReward.Where(reward => reward.RowId is not 0).Select(reward =>
+                reward.Value).Where(item => item.RowId is not 0).Select(item => item.Name.ExtractText());
 
             return string.Join("\n", cardRewards);
         }

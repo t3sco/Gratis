@@ -6,12 +6,10 @@ using Gratis.Compat.Configuration;
 
 namespace Gratis.Preview;
 
-internal static class ConfigVerification
-{
+internal static class ConfigVerification {
     private static readonly JsonSerializerOptions Json = Configuration.SerializerOptions;
 
-    public static void Run()
-    {
+    public static void Run() {
         const string source = """
             { "TitleCorner": 2, "TitleOffset": { "X": 21, "Y": 18 }, "ConeSize": 83.75,
               "MapGlow": true, "MapVignette": 0.46, "FollowOnOpen": true, "Version": 1,
@@ -25,8 +23,9 @@ internal static class ConfigVerification
         var saved = JsonSerializer.SerializeToNode(config, Json)!.AsObject();
         var compared = 0;
         foreach (var field in typeof(SystemConfig).GetFields()) {
-            if (!old.TryGetPropertyValue(field.Name, out var original) ||
-                !saved.TryGetPropertyValue(field.Name, out var restored)) continue;
+            if (!old.TryGetPropertyValue(field.Name, out var original)
+                || !saved.TryGetPropertyValue(field.Name, out var restored))
+                continue;
             if (!JsonNode.DeepEquals(original, restored))
                 throw new InvalidOperationException($"Legacy value changed: {field.Name}.");
             compared++;
@@ -35,11 +34,13 @@ internal static class ConfigVerification
             if (!JsonNode.DeepEquals(old[name], saved[name]))
                 throw new InvalidOperationException($"Legacy metadata changed: {name}.");
         }
-        if (saved.ContainsKey("$type") || saved.ContainsKey("ProfilePicture") || saved.ContainsKey("PurgeProfilePicture"))
+        if (saved.ContainsKey("$type") || saved.ContainsKey("ProfilePicture")
+            || saved.ContainsKey("PurgeProfilePicture"))
             throw new InvalidOperationException("Type names or ignored portrait state were written to config.");
         var defaults = JsonSerializer.Deserialize<SystemConfig>("{}", Json)!;
-        if (defaults.Version != 2 || defaults.CharacterName != "Unknown Name" ||
-            defaults.CharacterWorld != "Unknown World" || defaults.ContentId != 0 || defaults.LodestoneId is not null)
+        if (defaults.Version != 2 || defaults.CharacterName != "Unknown Name"
+            || defaults.CharacterWorld != "Unknown World" || defaults.ContentId != 0
+            || defaults.LodestoneId is not null)
             throw new InvalidOperationException("Missing legacy metadata defaults changed.");
         config.LodestoneId = null;
         if (JsonSerializer.SerializeToNode(config, Json)!["LodestoneId"] is not null)
@@ -52,9 +53,12 @@ internal static class ConfigVerification
         if (!JsonNode.DeepEquals(saved, JsonSerializer.SerializeToNode(roundTrip, Json)))
             throw new InvalidOperationException("Config round trip changed values.");
         config.VisualStyle = 1;
-        if (config.IsGratis) throw new InvalidOperationException("Classic selection failed.");
+        if (config.IsGratis)
+            throw new InvalidOperationException("Classic selection failed.");
         config.VisualStyle = 0;
-        if (!config.IsGratis) throw new InvalidOperationException("Gratis selection failed.");
-        Console.WriteLine($"Config verified: embedded legacy fixture; {compared} saved fields and five metadata properties unchanged, no type names/portrait state, defaults and round trip preserved.");
+        if (!config.IsGratis)
+            throw new InvalidOperationException("Gratis selection failed.");
+        Console.WriteLine($"Config verified: embedded legacy fixture; {compared} saved fields and five "
+            + "metadata properties unchanged, no type names/portrait state, defaults and round trip preserved.");
     }
 }

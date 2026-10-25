@@ -13,25 +13,28 @@ using Gratis.Classes;
 
 namespace Gratis.MapRenderer;
 
-public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposable
-{
-    public static float Scale
-    {
+public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposable {
+    public static float Scale {
         get => System.SystemConfig.MapScale;
         set => WriteScale(value, new global::System.Diagnostics.StackFrame(1).GetMethod()?.Name ?? "external");
     }
 
     private readonly Rendering.MapRendererFrame frame;
     public Rendering.MapRendererFrame Frame => frame;
-    public Vector2 DrawOffset { get => frame.DrawOffset; set => frame.CenterOnOffset(value, false); }
-    private static void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "")
-    {
+    public Vector2 DrawOffset {
+        get => frame.DrawOffset; set => frame.CenterOnOffset(value, false);
+    }
+
+    private static void WriteScale(float value,
+        [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") {
         if (System.MapRenderer is { } renderer) {
             renderer.frame.SetViewportScale(value, false);
             renderer.frame.viewportMotion.Written("scale", writer);
         }
-        else System.SystemConfig.MapScale = value;
+        else
+            System.SystemConfig.MapScale = value;
     }
+
     public Vector2 DrawPosition => frame.DrawPosition;
 
     private IDalamudTextureWrap? blendedTexture;
@@ -40,18 +43,17 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     private Rendering.MapContentBounds? contentBounds;
     private bool nativeTextureReady;
     private long viewSession = global::System.Diagnostics.Stopwatch.GetTimestamp();
-    private void OnViewTerritoryChanged(uint territory) => global::System.Threading.Interlocked.Increment(ref viewSession);
+    private void OnViewTerritoryChanged(uint territory) =>
+        global::System.Threading.Interlocked.Increment(ref viewSession);
 
-    public MapRenderer()
-    {
+    public MapRenderer() {
         cameraHeading = new CameraHeadingReader();
         frame = new Rendering.MapRendererFrame(this);
         LoadFogHooks();
         Service.ClientState.TerritoryChanged += OnViewTerritoryChanged;
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         UnloadFogHooks();
         Service.ClientState.TerritoryChanged -= OnViewTerritoryChanged;
         cameraHeading.Dispose();
@@ -61,11 +63,13 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         fogTexture?.Dispose();
     }
 
-    public void CenterOnGameObject(IGameObject obj) => frame.CenterOnCoordinate(new Vector2(obj.Position.X, obj.Position.Z), false);
+    public void CenterOnGameObject(IGameObject obj) =>
+        frame.CenterOnCoordinate(new Vector2(obj.Position.X, obj.Position.Z), false);
 
     public void CenterOnCoordinate(Vector2 coord) => frame.CenterOnCoordinate(coord);
 
-    private static Vector2 CoordinateOffset(Vector2 coord) => -coord * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetMapOffsetVector();
+    private static Vector2 CoordinateOffset(Vector2 coord) => -coord * DrawHelpers.GetMapScaleFactor()
+        + DrawHelpers.GetMapOffsetVector();
 
     public void DrawBaseTexture() => frame.DrawBaseTexture();
     public void DrawDynamicElements() => frame.DrawDynamicElements();
@@ -74,11 +78,13 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     double Rendering.IMapRendererHost.Now => ImGui.GetTime();
     int Rendering.IMapRendererHost.FrameId => ImGui.GetFrameCount();
     uint Rendering.IMapRendererHost.MapId => AgentMap.Instance()->SelectedMapId;
-    ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->CurrentTerritoryId << 32) | AgentMap.Instance()->SelectedMapId;
+    ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->CurrentTerritoryId << 32)
+        | AgentMap.Instance()->SelectedMapId;
     Rendering.MapContentBounds? Rendering.IMapRendererHost.ContentBounds => contentBounds;
     bool Rendering.IMapRendererHost.SmallMapHint => DrawHelpers.GetMapScaleFactor() >= 2;
     bool Rendering.IMapRendererHost.TextureReady => nativeTextureReady;
-    bool Rendering.IMapRendererHost.InstanceMap => Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
+    bool Rendering.IMapRendererHost.InstanceMap =>
+        Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
     long Rendering.IMapRendererHost.ViewSession => viewSession;
     Vector2 Rendering.IMapRendererHost.CoordinateOffset(Vector2 position) => CoordinateOffset(position);
     void Rendering.IMapRendererHost.DrawBackgroundTexture() => DrawBackgroundTexture();
@@ -86,25 +92,27 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     void Rendering.IMapRendererHost.DrawFlag() => DrawFlag();
     void Rendering.IMapRendererHost.DrawPlayer() => DrawPlayer();
     void Rendering.IMapRendererHost.DrawTextMarkers() => DrawStaticTextMarkers();
-    void Rendering.IMapRendererHost.CollectMarkers()
-    {
+    void Rendering.IMapRendererHost.CollectMarkers() {
         Rendering.MapDrawContext.Current.SynchronizePvp();
         DrawStaticMapMarkers();
         DrawDynamicMarkers();
         DrawGameObjects();
         DrawGroupMembers();
         DrawTemporaryMarkers();
-        if (!Service.ClientState.IsPvP) DrawGatheringMarkers();
+        if (!Service.ClientState.IsPvP)
+            DrawGatheringMarkers();
         DrawFieldMarkers();
     }
 
-    private void DrawBackgroundTexture()
-    {
+    private void DrawBackgroundTexture() {
         nativeTextureReady = false;
         contentBounds = System.SystemConfig.IsGratis && System.SystemConfig.FitSmallRoomsToContent
-            ? mapContents.Get(AgentMap.Instance()->SelectedMapId, $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex") : null;
+            ? mapContents.Get(AgentMap.Instance()->SelectedMapId,
+                $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex")
+            : null;
         if (AgentMap.Instance()->SelectedMapBgPath.Length is 0) {
-            var texture = Service.TextureProvider.GetFromGame($"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
+            var texture = Service.TextureProvider.GetFromGame(
+                $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
 
             nativeTextureReady = texture.Handle != default && texture.Width >= 16 && texture.Height >= 16;
             var path = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
@@ -122,16 +130,17 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
             }
 
             if (blendedTexture is not null) {
-                nativeTextureReady = blendedTexture.Handle != default && blendedTexture.Width >= 16 && blendedTexture.Height >= 16;
+                nativeTextureReady = blendedTexture.Handle != default && blendedTexture.Width >= 16
+                    && blendedTexture.Height >= 16;
                 DrawColouredMapImage(blendedTexture, source, () => LoadMapPixels(foregroundPath, backgroundPath));
             }
         }
     }
 
-    private void DrawMapImage(IDalamudTextureWrap texture) => frame.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size));
+    private void DrawMapImage(IDalamudTextureWrap texture) =>
+        frame.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size));
 
-    private static IDalamudTextureWrap? LoadTexture()
-    {
+    private static IDalamudTextureWrap? LoadTexture() {
         var vanillaBgPath = $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex";
         var vanillaFgPath = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
 
@@ -146,8 +155,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         var backgroundBytes = bgFile.GetRgbaImageData();
         var foregroundBytes = fgFile.GetRgbaImageData();
 
-        Parallel.For(0, 2048 * 2048, i =>
-        {
+        Parallel.For(0, 2048 * 2048, i => {
             var index = i * 4;
 
             backgroundBytes[index + 0] = (byte)(backgroundBytes[index + 0] * foregroundBytes[index + 0] / 255);
@@ -158,8 +166,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         return Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(2048, 2048), backgroundBytes);
     }
 
-    private static TexFile? GetTexFile(string rawPath)
-    {
+    private static TexFile? GetTexFile(string rawPath) {
         var path = Service.TextureSubstitutionProvider.GetSubstitutedPath(rawPath);
 
         if (Path.IsPathRooted(path)) {

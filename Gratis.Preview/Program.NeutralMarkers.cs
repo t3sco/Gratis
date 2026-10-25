@@ -5,10 +5,8 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static partial class Program
-{
-    private static void DrawNeutralMarkerScene(Vector2 frame)
-    {
+internal static partial class Program {
+    private static void DrawNeutralMarkerScene(Vector2 frame) {
         var context = MapDrawContext.Current;
         var origin = ImGui.GetWindowPos();
         var list = ImGui.GetWindowDrawList();
@@ -29,7 +27,8 @@ internal static partial class Program
             var point = frame * new Vector2(x, y);
             var marker = new MarkerInfo {
                 Position = point, Offset = Vector2.Zero, Scale = 1, IconId = id,
-                IsDynamicMarker = true, MarkerType = id == 61000 ? (MarkerType)99 : id == 60502 ? MarkerType.Fate : MarkerType.Unknown,
+                IsDynamicMarker = true,
+                MarkerType = id == 61000 ? (MarkerType)99 : id == 60502 ? MarkerType.Fate : MarkerType.Unknown,
                 Category = MarkerCategory.Objective, PrimaryText = () => name,
             };
             DrawHelpers.DrawMapMarker(marker);

@@ -6,8 +6,9 @@ namespace Gratis.MapRenderer;
 public partial class MapRenderer {
     private unsafe void DrawGatheringMarkers() {
         var agent = AgentMap.Instance();
-        if (agent->SelectedMapId != agent->CurrentMapId) return;
-        
+        if (agent->SelectedMapId != agent->CurrentMapId)
+            return;
+
         foreach (var marker in agent->MiniMapGatheringMarkers) {
             marker.Draw(DrawPosition, Scale);
         }

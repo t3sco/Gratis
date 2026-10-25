@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.IoC;
@@ -9,8 +8,7 @@ using Gratis.Compat.CommandManager;
 
 namespace Gratis.Controllers;
 
-internal sealed class TravelPlacesAdapter : ITravelPlaces
-{
+internal sealed class TravelPlacesAdapter : ITravelPlaces {
     private readonly GameTeleportService teleportService = new();
     private PlaceIndexGame Source => System.MapWindow.PlacePalette;
     public IEnumerable<PlaceEntry> Entries => Source.Entries;
@@ -21,15 +19,13 @@ internal sealed class TravelPlacesAdapter : ITravelPlaces
     public void Show(PlaceEntry place) => Source.Show(place);
 }
 
-internal sealed class TravelIntegration
-{
+internal sealed class TravelIntegration {
     private static TravelIntegration? current;
     public static MapAssistance Assistance => (current ??= new()).Ui;
     [PluginService] private IChatGui Chat { get; set; } = null!;
     public MapAssistance Ui { get; }
 
-    private TravelIntegration()
-    {
+    private TravelIntegration() {
         var pi = Service.PluginInterface;
         pi.Inject(this);
         var busy = pi.GetIpcSubscriber<bool>("Lifestream.IsBusy");
@@ -37,26 +33,31 @@ internal sealed class TravelIntegration
         var hop = pi.GetIpcSubscriber<uint, bool>("Lifestream.AethernetTeleportById");
         var teleport = pi.GetIpcSubscriber<uint, byte, bool>("Lifestream.Teleport");
         var abort = pi.GetIpcSubscriber<object>("Lifestream.Abort");
-        var provider = new LifestreamTravelProvider(
-            () => !Service.ClientState.IsPvP && busy.HasFunction && hop.HasFunction && teleport.HasFunction && abort.HasAction
-                ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString() : null,
-            () => !Service.ClientState.IsPvP && busy.InvokeFunc(), () => Service.ClientState.IsPvP ? 0 : active.InvokeFunc(),
+        var provider = new LifestreamTravelProvider(() => !Service.ClientState.IsPvP && busy.HasFunction
+            && hop.HasFunction && teleport.HasFunction && abort.HasAction
+            ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString()
+            : null,
+            () => !Service.ClientState.IsPvP && busy.InvokeFunc(),
+            () => Service.ClientState.IsPvP ? 0 : active.InvokeFunc(),
             id => !Service.ClientState.IsPvP && hop.InvokeFunc(id),
             (id, sub) => !Service.ClientState.IsPvP && teleport.InvokeFunc(id, sub),
             () => { if (!Service.ClientState.IsPvP) abort.InvokeAction(); });
-        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save, GameTeleportService.BlockedReason);
+        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save,
+            GameTeleportService.BlockedReason);
         Ui.PinLayer = new PinOverlay(new PinStore(System.SystemConfig, () => {
-            SystemConfig.Save(); System.MapWindow.PlacePalette.Invalidate();
+            SystemConfig.Save();
+            System.MapWindow.PlacePalette.Invalidate();
         }, id => Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Map>().GetRowOrDefault(id) != null),
             place => System.MapWindow.PlacePalette.Show(place));
         System.MapWindow.PlacePalette.Pins = () => Ui.PinLayer.Store.Entries;
         Ui.CapturePinKeys = () => {
-            foreach (var key in Service.KeyState.GetValidVirtualKeys()) Service.KeyState[key] = false;
+            foreach (var key in Service.KeyState.GetValidVirtualKeys())
+                Service.KeyState[key] = false;
         };
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/travel",
-            Delegate = _ => Chat.Print($"[Gratis] Lifestream detected={provider.Available} version={provider.Version} " +
-                $"busy={provider.IsBusy} last action={provider.LastAction}"),
+            Delegate = _ => Chat.Print($"[Gratis] Lifestream detected={provider.Available} version={provider.Version} "
+                + $"busy={provider.IsBusy} last action={provider.LastAction}"),
         });
     }
 

@@ -19,9 +19,14 @@ The complete license and copyright notice are in Gratis/Assets/Fonts/OFL.txt.
 Lucide icon font from the official lucide-static 1.61.0 npm package:
 https://www.npmjs.com/package/lucide-static/v/1.61.0
 Lucide Icons and Contributors, ISC license (with MIT notices for Feather-derived
-icons). The complete upstream license is in Gratis/Assets/Fonts/Lucide/LICENSE.txt.
-Only the TTF and license are bundled; named codepoints come from that package's
+icons). The complete upstream license is in Gratis/Assets/Fonts/Icons/LICENSE-Lucide.txt.
+Only the TTF and license are used; named codepoints come from that package's
 font/codepoints.json. The package was downloaded as data; no package scripts ran.
+
+Phosphor Icons (Fill weight), https://github.com/phosphor-icons/web, MIT license. The solid
+marker glyphs come from it; the license is in Gratis/Assets/Fonts/Icons/LICENSE-Phosphor.txt.
+tools/icon-font/build.py merges the Lucide TTF and a subset of the Phosphor TTF into the
+single Gratis/Assets/Fonts/Icons/icons.ttf that the plugin embeds.
 
 ## Authorship of the code this project builds on
 

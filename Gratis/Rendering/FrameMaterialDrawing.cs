@@ -9,15 +9,15 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-internal static class FrameMaterialDrawing
-{
+internal static class FrameMaterialDrawing {
     private static readonly List<Vector2> outline = [];
 
-    internal static int ArcSegments(float radius, float sweep) => Math.Clamp((int)MathF.Ceiling(
-        MathF.Abs(sweep) / MathF.Min(.04f, 2 * MathF.Acos(Math.Clamp(1 - .05f / MathF.Max(radius, .05f), -1, 1)))), 1, 2048);
+    internal static int ArcSegments(float radius, float sweep) =>
+        Math.Clamp((int)MathF.Ceiling(MathF.Abs(sweep)
+            / MathF.Min(.04f, 2 * MathF.Acos(Math.Clamp(1 - .05f / MathF.Max(radius, .05f), -1, 1)))),
+            1, 2048);
 
-    private static void Outline(Vector2 min, Vector2 max, float radius)
-    {
+    private static void Outline(Vector2 min, Vector2 max, float radius) {
         outline.Clear();
         radius = Math.Clamp(radius, 0, MathF.Min(max.X - min.X, max.Y - min.Y) / 2);
         var segments = ArcSegments(radius, MathF.PI / 2);
@@ -30,8 +30,10 @@ internal static class FrameMaterialDrawing
                 if (outline.Count > 0) {
                     var previous = outline[^1];
                     var pieces = Math.Clamp((int)MathF.Ceiling(Vector2.Distance(previous, point) / 3), 1, 1024);
-                    for (var piece = 1; piece < pieces; piece++) outline.Add(Vector2.Lerp(previous, point, piece / (float)pieces));
-                    if (Vector2.DistanceSquared(previous, point) < .0001f) continue;
+                    for (var piece = 1; piece < pieces; piece++)
+                        outline.Add(Vector2.Lerp(previous, point, piece / (float)pieces));
+                    if (Vector2.DistanceSquared(previous, point) < .0001f)
+                        continue;
                 }
                 outline.Add(point);
             }
@@ -39,30 +41,33 @@ internal static class FrameMaterialDrawing
         var last = outline[^1];
         var first = outline[0];
         var closing = Math.Clamp((int)MathF.Ceiling(Vector2.Distance(last, first) / 3), 1, 1024);
-        for (var piece = 1; piece < closing; piece++) outline.Add(Vector2.Lerp(last, first, piece / (float)closing));
-        if (Vector2.DistanceSquared(outline[^1], first) < .0001f) outline.RemoveAt(outline.Count - 1);
+        for (var piece = 1; piece < closing; piece++)
+            outline.Add(Vector2.Lerp(last, first, piece / (float)closing));
+        if (Vector2.DistanceSquared(outline[^1], first) < .0001f)
+            outline.RemoveAt(outline.Count - 1);
     }
 
-    private static Vector4 Mix(Vector4 a, Vector4 b, float t)
-    {
+    private static Vector4 Mix(Vector4 a, Vector4 b, float t) {
         var alpha = a.W + (b.W - a.W) * t;
         var rgb = Vector3.Lerp(new Vector3(a.X, a.Y, a.Z) * a.W, new Vector3(b.X, b.Y, b.Z) * b.W, t);
         return new Vector4(alpha > .00001f ? rgb / alpha : Vector3.Zero, alpha);
     }
 
     internal static void DrawStroke(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float width,
-        Vector4 color, MapDrawingConfig? conic = null, bool topHighlight = false)
-    {
+        Vector4 color, MapDrawingConfig? conic = null, bool topHighlight = false) {
         var shortSide = MathF.Min(max.X - min.X, max.Y - min.Y);
-        if (shortSide <= 2 || width <= 0) return;
+        if (shortSide <= 2 || width <= 0)
+            return;
         width = Math.Clamp(width, .1f, shortSide / 4);
         var inset = (width + 1) / 2;
-        if (max.X - min.X <= inset * 2 || max.Y - min.Y <= inset * 2) return;
+        if (max.X - min.X <= inset * 2 || max.Y - min.Y <= inset * 2)
+            return;
         Outline(min + new Vector2(inset), max - new Vector2(inset), MathF.Max(0, radius - inset));
         var count = outline.Count;
         var center = (min + max) / 2;
-        var angle = conic is null ? 0 : (float)((conic.RingAngle + (conic.RingRotate
-            ? ImGui.GetTime() * conic.RingRotationSpeed : 0)) % 360) * MathF.PI / 180;
+        var angle = conic is null ? 0
+            : (float)((conic.RingAngle + (conic.RingRotate ? ImGui.GetTime() * conic.RingRotationSpeed : 0)) % 360)
+                * MathF.PI / 180;
         var uv = ImGui.GetFontTexUvWhitePixel();
         list.PrimReserve(count * 18, count * 4);
         var firstIndex = DrawBinding.VertexIndex(list);
@@ -81,10 +86,12 @@ internal static class FrameMaterialDrawing
                 var sweep = Math.Clamp(1 - distance / MathF.Max(conic.RingSweepWidth / 2, .5f), 0, 1);
                 sweep *= sweep * (3 - 2 * sweep);
                 var highlight = Vector3.Lerp(new Vector3(conic.AccentColor.X, conic.AccentColor.Y, conic.AccentColor.Z),
-                    new Vector3(conic.RingAccentColor.X, conic.RingAccentColor.Y, conic.RingAccentColor.Z), Math.Clamp(conic.RingIntensity, 0, 1));
+                    new Vector3(conic.RingAccentColor.X, conic.RingAccentColor.Y, conic.RingAccentColor.Z),
+                    Math.Clamp(conic.RingIntensity, 0, 1));
                 tint = Mix(tint, new Vector4(highlight, conic.RingAccentColor.W), sweep);
             }
-            if (topHighlight) tint.W *= MathF.Pow(MathF.Max(0, -Vector2.Normalize(normal).Y), 2);
+            if (topHighlight)
+                tint.W *= MathF.Pow(MathF.Max(0, -Vector2.Normalize(normal).Y), 2);
             tint.W *= MathF.Min(width, 1);
             var packed = ImGui.GetColorU32(tint);
             var clear = packed & 0x00FFFFFFu;
@@ -99,8 +106,12 @@ internal static class FrameMaterialDrawing
             for (var band = 0; band < 3; band++) {
                 var a = (ushort)(firstIndex + index * 4 + band);
                 var b = (ushort)(firstIndex + next * 4 + band);
-                list.PrimWriteIdx(a); list.PrimWriteIdx(b); list.PrimWriteIdx((ushort)(b + 1));
-                list.PrimWriteIdx(a); list.PrimWriteIdx((ushort)(b + 1)); list.PrimWriteIdx((ushort)(a + 1));
+                list.PrimWriteIdx(a);
+                list.PrimWriteIdx(b);
+                list.PrimWriteIdx((ushort)(b + 1));
+                list.PrimWriteIdx(a);
+                list.PrimWriteIdx((ushort)(b + 1));
+                list.PrimWriteIdx((ushort)(a + 1));
             }
         }
     }
@@ -111,22 +122,19 @@ internal static class FrameMaterialDrawing
     internal static float GlassGrain(MapDrawingConfig config) => config.GlassGrain
         ? Math.Clamp(float.IsFinite(config.GlassGrainIntensity) ? config.GlassGrainIntensity : .018f, 0, .04f) : 0;
 
-    internal static float GlassChromeOpacity(MapDrawingConfig config)
-    {
+    internal static float GlassChromeOpacity(MapDrawingConfig config) {
         var film = 1 - (1 - GlassTint(config)) * (1 - GlassGrain(config));
         var limit = (76 / 255f - film) / (1 - film);
         return Math.Clamp((1 - limit) / (1 - GratisTheme.Surface.Z), .78f, 1);
     }
 
-    internal static float GlassBackingOpacity(MapDrawingConfig config)
-    {
+    internal static float GlassBackingOpacity(MapDrawingConfig config) {
         var film = 1 - (1 - GlassTint(config)) * (1 - GlassGrain(config));
         var limit = (39 / 255f - film) / (1 - film);
         return Math.Clamp((1 - limit) / (1 - GratisTheme.Surface.Z), .86f, 1);
     }
 
-    internal static void DrawGlass(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha)
-    {
+    internal static void DrawGlass(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha) {
         var context = MapDrawContext.Current;
         var config = context.Config;
         var scale = context.GlobalScale;
@@ -140,7 +148,8 @@ internal static class FrameMaterialDrawing
                 for (var x = 3 * scale; x < max.X - min.X - 3 * scale; x += 4 * scale) {
                     var point = min + new Vector2(x, y);
                     var q = Vector2.Abs(point - center) - half + new Vector2(r);
-                    if (Vector2.Max(q, Vector2.Zero).Length() + MathF.Min(MathF.Max(q.X, q.Y), 0) > r) continue;
+                    if (Vector2.Max(q, Vector2.Zero).Length() + MathF.Min(MathF.Max(q.X, q.Y), 0) > r)
+                        continue;
                     var hash = unchecked((uint)(x / scale) * 374761393u + (uint)(y / scale) * 668265263u);
                     hash = (hash ^ (hash >> 13)) * 1274126177u;
                     var grain = new Vector4((hash & 1) == 0 ? Vector3.One : Vector3.Zero,

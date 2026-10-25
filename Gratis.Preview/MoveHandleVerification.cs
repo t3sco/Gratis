@@ -4,18 +4,18 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static class MoveHandleVerification
-{
-    private static void Require(bool value, string message)
-    {
-        if (!value) throw new InvalidOperationException(message);
+internal static class MoveHandleVerification {
+    private static void Require(bool value, string message) {
+        if (!value)
+            throw new InvalidOperationException(message);
     }
+
     internal static SystemConfig Config() => new() {
         AcceptedSpoilerWarning = true, FadeMode = 0, FollowPlayer = false, MapScale = .5f,
         WindowPosition = new(32), WindowSize = new(640, 480), HideWindowFrame = true,
+        ChromeIdleDelay = 1.2f, ChromeFadeDurationMs = 180,
     };
-    public static void Maths()
-    {
+    public static void Maths() {
         var config = new SystemConfig();
         Require(config.MoveHandle && config.AltDragMovesWindow && config.MoveHandleSnap && !config.ClassicMoveHandle,
             "Missing saved settings must default on in Gratis, with Classic opt-in");
@@ -37,7 +37,8 @@ internal static class MoveHandleVerification
             var far = screen.Max - size - new Vector2(8 * scale);
             Require(MoveHandleMath.SnapDrag(far - new Vector2(11 * scale), size, screen, scale) == far,
                 "Bottom/right edge snap preserves the margin");
-            var grid = MoveHandleMath.SnapDrag(screen.Min + new Vector2(103 * scale, 91 * scale), size, screen, scale) - screen.Min;
+            var grid = MoveHandleMath.SnapDrag(screen.Min + new Vector2(103 * scale, 91 * scale), size, screen, scale)
+                - screen.Min;
             Require(grid == new Vector2(104, 88) * scale, "Shift grid is relative to this monitor's origin");
             Require(MoveHandleMath.NearestEdge(screen.Min + new Vector2(32), size, screen, scale) == near,
                 "Nearest corner snap must align both edges");
@@ -47,49 +48,63 @@ internal static class MoveHandleVerification
         }
     }
 
-    private static FrameSnapshot Warm(ScriptedFrameDriver driver)
-    {
-        driver.Step(new(0)); driver.Step(new(.02)); driver.Step(new(2));
+    private static FrameSnapshot Warm(ScriptedFrameDriver driver) {
+        driver.Step(new(0));
+        driver.Step(new(.02));
+        driver.Step(new(2));
         driver.Step(new(2.02));
         return driver.Step(new(2.2));
     }
 
-    public static void Frames()
-    {
+    public static void Frames() {
         foreach (var circle in new[] { false, true })
-        foreach (var scale in new[] { 1f, 1.5f })
-        foreach (var origin in new[] { Vector2.Zero, new Vector2(1920, 900) }) {
-            var config = Config(); config.MapCircle = circle; config.WindowPosition += origin;
-            using var driver = new ScriptedFrameDriver(config, new FrameScript { Dpi = scale, ScreenOrigin = origin });
-            var idle = Warm(driver);
-            Require(idle.ChromeProgress == 0 && idle.HandleVisibility == 0, "Handle and toolbar must hide at rest");
-            var handle = idle.HandleCenter;
-            driver.Step(new(2.22, Mouse: handle));
-            var hover = driver.Step(new(2.28));
-            Require(hover.HandleVisibility is > 0 and < 1 && hover.ChromeProgress == 0,
-                $"Handle fade/reveal: circle={circle}, scale={scale}, origin={origin}, visibility={hover.HandleVisibility}, chrome={hover.ChromeProgress}, center={hover.HandleCenter}");
-            var down = driver.Step(new(2.36, Left: true));
-            Require(down.MovingWindow && !down.Dragging, "A handle press owns the gesture and never starts pan");
-            var delta = new Vector2(45, 27);
-            var moved = driver.Step(new(2.38, Mouse: handle + delta));
-            Require(moved.WindowPosition == idle.WindowPosition + delta, "Window must move by the exact screen-space mouse delta at every DPI/monitor");
-            Require(driver.Window.MapDrawOffset == moved.WindowPosition, "Child map position must update in the same rendered frame");
-            Require(moved.Viewport == idle.Viewport, "Moving must retain the full viewport in the same frame, without stale Begin/content bounds");
-            Require(moved.Offset == idle.Offset && !moved.Dragging && moved.ChromeProgress == 0,
-                "Moving must not pan or reveal the toolbar");
-            var stalled = driver.Step(new(2.68));
-            Require(stalled.WindowPosition == moved.WindowPosition, "Frame time must not accumulate position drift");
-            driver.Step(new(2.7, Left: false));
-            Require(driver.PositionSaves == 1, "Save movement once on release");
-            var diagnostics = driver.Context.Chrome.TakeDiagnostics(config, driver.Now);
-            Require(diagnostics.Contains("window-move=") && diagnostics.Contains("hover=0") && diagnostics.Contains("drag=0"),
-                "Chrome diagnostics must distinguish window movement from map interaction");
-        }
-        AltDrag(); SnapRestore(); LockedAndClassic(); NormalPan();
+            foreach (var scale in new[] { 1f, 1.5f })
+                foreach (var origin in new[] { Vector2.Zero, new Vector2(1920, 900) }) {
+                    var config = Config();
+                    config.MapCircle = circle;
+                    config.WindowPosition += origin;
+                    using var driver = new ScriptedFrameDriver(config,
+                        new FrameScript { Dpi = scale, ScreenOrigin = origin });
+                    var idle = Warm(driver);
+                    Require(idle.ChromeProgress == 0 && idle.HandleVisibility == 0,
+                        "Handle and toolbar must hide at rest");
+                    var handle = idle.HandleCenter;
+                    driver.Step(new(2.22, Mouse: handle));
+                    var hover = driver.Step(new(2.28));
+                    Require(hover.HandleVisibility is > 0 and < 1 && hover.ChromeProgress == 0,
+                        $"Handle fade/reveal: circle={circle}, scale={scale}, origin={origin}, "
+                            + $"visibility={hover.HandleVisibility}, chrome={hover.ChromeProgress}, "
+                            + $"center={hover.HandleCenter}");
+                    var down = driver.Step(new(2.36, Left: true));
+                    Require(down.MovingWindow && !down.Dragging,
+                        "A handle press owns the gesture and never starts pan");
+                    var delta = new Vector2(45, 27);
+                    var moved = driver.Step(new(2.38, Mouse: handle + delta));
+                    Require(moved.WindowPosition == idle.WindowPosition + delta,
+                        "Window must move by the exact screen-space mouse delta at every DPI/monitor");
+                    Require(driver.Window.MapDrawOffset == moved.WindowPosition,
+                        "Child map position must update in the same rendered frame");
+                    Require(moved.Viewport == idle.Viewport,
+                        "Moving must retain the full viewport in the same frame, without stale Begin/content bounds");
+                    Require(moved.Offset == idle.Offset && !moved.Dragging && moved.ChromeProgress == 0,
+                        "Moving must not pan or reveal the toolbar");
+                    var stalled = driver.Step(new(2.68));
+                    Require(stalled.WindowPosition == moved.WindowPosition,
+                        "Frame time must not accumulate position drift");
+                    driver.Step(new(2.7, Left: false));
+                    Require(driver.PositionSaves == 1, "Save movement once on release");
+                    var diagnostics = driver.Context.Chrome.TakeDiagnostics(config, driver.Now);
+                    Require(diagnostics.Contains("window-move=") && diagnostics.Contains("hover=0")
+                        && diagnostics.Contains("drag=0"),
+                        "Chrome diagnostics must distinguish window movement from map interaction");
+                }
+        AltDrag();
+        SnapRestore();
+        LockedAndClassic();
+        NormalPan();
     }
 
-    private static void AltDrag()
-    {
+    private static void AltDrag() {
         using var driver = new ScriptedFrameDriver(Config());
         var idle = Warm(driver);
         var mouse = new Vector2(400, 240);
@@ -112,19 +127,20 @@ internal static class MoveHandleVerification
         Require(driver.PositionSaves == 1, "Alt release must persist its final position");
     }
 
-    private static void SnapRestore()
-    {
+    private static void SnapRestore() {
         using var driver = new ScriptedFrameDriver(Config());
         var idle = Warm(driver);
         var handle = idle.HandleCenter;
-        driver.Step(new(2.22, Mouse: handle)); driver.Step(new(2.24, Left: true));
+        driver.Step(new(2.22, Mouse: handle));
+        driver.Step(new(2.24, Left: true));
         driver.Step(new(2.26, Left: false));
         var snapped = driver.Step(new(2.36, Left: true));
         Require(snapped.WindowPosition == new Vector2(8) && snapped.WindowSize == idle.WindowSize,
             "Double-click must snap to nearest screen corner with an 8 px margin");
         driver.Step(new(2.38, Left: false));
         var resized = driver.Step(new(3, Size: new Vector2(600, 420), Mouse: new Vector2(-1000)));
-        driver.Step(new(3.02, Mouse: resized.HandleCenter)); driver.Step(new(3.04, Left: true));
+        driver.Step(new(3.02, Mouse: resized.HandleCenter));
+        driver.Step(new(3.04, Left: true));
         driver.Step(new(3.06, Left: false));
         var restored = driver.Step(new(3.16, Left: true));
         Require(restored.WindowPosition == idle.WindowPosition && restored.WindowSize == idle.WindowSize,
@@ -133,17 +149,20 @@ internal static class MoveHandleVerification
         var ready = driver.Step(new(4, Mouse: driver.Window.MoveHandle.Geometry.Center));
         driver.Step(new(4.02, Left: true));
         var aligned = driver.Step(new(4.04, Shift: true, Mouse: ready.HandleCenter + new Vector2(71, 59)));
-        Require(aligned.WindowPosition == new Vector2(104, 88), "Shift drag must align window position to the 8 px grid");
+        Require(aligned.WindowPosition == new Vector2(104, 88),
+            "Shift drag must align window position to the 8 px grid");
         var clamped = driver.Step(new(4.06, Shift: false, Mouse: new Vector2(-9000)));
-        Require(driver.Window.MoveHandle.Geometry.HitMin.X >= 0 && driver.Window.MoveHandle.Geometry.HitMin.Y >= 0 &&
-            !clamped.Dragging, "Even an extreme drag must leave the handle reachable");
+        Require(driver.Window.MoveHandle.Geometry.HitMin.X >= 0 && driver.Window.MoveHandle.Geometry.HitMin.Y >= 0
+            && !clamped.Dragging,
+            "Even an extreme drag must leave the handle reachable");
         driver.Step(new(4.08, Left: false));
     }
 
-    private static void LockedAndClassic()
-    {
+    private static void LockedAndClassic() {
         foreach (var classic in new[] { false, true }) {
-            var config = Config(); config.VisualStyle = classic ? 1 : 0; config.LockWindow = !classic;
+            var config = Config();
+            config.VisualStyle = classic ? 1 : 0;
+            config.LockWindow = !classic;
             using var driver = new ScriptedFrameDriver(config);
             var idle = Warm(driver);
             driver.Step(new(2.22, Mouse: idle.HandleCenter, Alt: true));
@@ -151,15 +170,17 @@ internal static class MoveHandleVerification
             var moved = driver.Step(new(2.26, Mouse: idle.HandleCenter + new Vector2(100)));
             Require(moved.WindowPosition == idle.WindowPosition && !moved.MovingWindow,
                 "Lock position and default Classic must disable custom window movement");
-            if (classic) Require(moved.HandleVisibility == 0, "Classic must draw no handle without explicit opt-in");
+            if (classic)
+                Require(moved.HandleVisibility == 0, "Classic must draw no handle without explicit opt-in");
         }
-        var optedIn = Config(); optedIn.VisualStyle = 1; optedIn.ClassicMoveHandle = true;
+        var optedIn = Config();
+        optedIn.VisualStyle = 1;
+        optedIn.ClassicMoveHandle = true;
         using var enabled = new ScriptedFrameDriver(optedIn);
         Require(Warm(enabled).HandleVisibility == 1, "Classic can explicitly enable the handle");
     }
 
-    private static void NormalPan()
-    {
+    private static void NormalPan() {
         using var driver = new ScriptedFrameDriver(Config());
         Warm(driver);
         driver.Step(new(2.22, Mouse: new Vector2(400, 240)));

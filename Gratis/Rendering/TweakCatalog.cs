@@ -1,150 +1,139 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Gratis.Data;
 
 namespace Gratis.Rendering;
 
-public sealed class TweakDefinition
-{
-    public string Id { get; }
-    public string Group { get; }
-    public char Icon { get; }
-    public string Name { get; }
-    public string Description { get; }
-    public string ConfigPath { get; }
-    public bool Default { get; }
-    public bool Locked => ConfigPath == nameof(MapDrawingConfig.PvpMapOnly);
-    public string? ConfigureSection { get; }
-    public string? ConfigureGroup { get; }
-    public string? IntegrationNote { get; }
-    private readonly FieldInfo[] fields;
-
-    internal TweakDefinition(string id, string group, char icon, string name, string description,
-        string path, string? section, string? configureGroup, string? integrationNote)
-    {
-        Id = id; Group = group; Icon = icon; Name = name; Description = description;
-        ConfigPath = path; ConfigureSection = section; ConfigureGroup = configureGroup; IntegrationNote = integrationNote;
-        var type = typeof(SystemConfig);
-        fields = path.Split('.').Select(part => {
-            var field = type.GetField(part) ?? throw new ArgumentException($"Unknown tweak binding: {path}");
-            type = field.FieldType; return field;
-        }).ToArray();
-        if (type != typeof(bool) && type != typeof(InterfaceAnimationMode)) throw new ArgumentException($"Tweaks must be independent toggles: {path}");
-        Default = Get(new SystemConfig());
-    }
-
-    public bool Get(SystemConfig config)
-    {
-        object? owner = config;
-        foreach (var field in fields) {
-            if (owner is null) return Default;
-            owner = field.GetValue(owner);
-        }
-        return owner is InterfaceAnimationMode motion ? motion != InterfaceAnimationMode.Off : (bool)owner!;
-    }
-
-    public void Set(SystemConfig config, bool value)
-    {
-        if (Locked) value = true;
-        object owner = config;
-        foreach (var field in fields.AsSpan(0, fields.Length - 1)) {
-            var next = field.GetValue(owner);
-            if (next is null) { next = Activator.CreateInstance(field.FieldType)!; field.SetValue(owner, next); }
-            owner = next;
-        }
-        fields[^1].SetValue(owner, fields[^1].FieldType == typeof(InterfaceAnimationMode)
-            ? value ? InterfaceAnimationMode.Full : InterfaceAnimationMode.Off : value);
-        if (ConfigPath == nameof(MapDrawingConfig.TravelActions)) config.TravelActionsInitialized = true;
-    }
-    public bool IsModified(SystemConfig config) => ConfigPath == "InterfaceAnimations"
-        ? config.InterfaceAnimations != InterfaceAnimationMode.Full : Get(config) != Default;
-    public void Reset(SystemConfig config) => Set(config, Default);
-
-    internal int Rank(string search)
-    {
-        var words = search.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var rank = 0;
-        foreach (var word in words) {
-            if (Name.Equals(word, StringComparison.OrdinalIgnoreCase)) rank += 100;
-            else if (Name.StartsWith(word, StringComparison.OrdinalIgnoreCase)) rank += 60;
-            else if (Name.Contains(word, StringComparison.OrdinalIgnoreCase)) rank += 40;
-            else if (Id.Contains(word, StringComparison.OrdinalIgnoreCase) || ConfigPath.Contains(word, StringComparison.OrdinalIgnoreCase)) rank += 20;
-            else if ((Group + " " + Description + " " + IntegrationNote).Contains(word, StringComparison.OrdinalIgnoreCase)) rank += 10;
-            else return -1;
-        }
-        return rank;
-    }
-}
-
-public static class TweakCatalog
-{
-    public static IReadOnlyList<string> Groups { get; } = Array.AsReadOnly(new[] { "Navigation", "Markers", "Travel", "Window", "Display", "Time and info" });
+public static class TweakCatalog {
+    public static IReadOnlyList<string> Groups { get; } = Array.AsReadOnly(new[] {
+        "Navigation",
+        "Markers",
+        "Travel",
+        "Window",
+        "Display",
+        "Time and info" });
     public static IReadOnlyList<TweakDefinition> All { get; } = Array.AsReadOnly(Create());
 
     public static TweakDefinition[] Find(SystemConfig config, string search = "", bool modifiedOnly = false) =>
-        All.Select(t => (Tweak: t, Rank: t.Rank(search.Trim())))
-            .Where(t => t.Rank >= 0 && (!modifiedOnly || t.Tweak.IsModified(config)))
-            .OrderByDescending(t => t.Rank).ThenBy(t => GroupOrder(t.Tweak.Group))
-            .ThenBy(t => t.Tweak.Name, StringComparer.OrdinalIgnoreCase).Select(t => t.Tweak).ToArray();
+        All.Select(t => (Tweak: t, Rank: t.Rank(search.Trim()))).Where(
+            t => t.Rank >= 0 && (!modifiedOnly || t.Tweak.IsModified(config))).OrderByDescending(t => t.Rank).ThenBy(
+            t => GroupOrder(t.Tweak.Group)).ThenBy(t => t.Tweak.Name, StringComparer.OrdinalIgnoreCase).Select(
+            t => t.Tweak).ToArray();
 
-    private static int GroupOrder(string group)
-    {
-        for (var i = 0; i < Groups.Count; i++) if (Groups[i] == group) return i;
+    private static int GroupOrder(string group) {
+        for (var i = 0; i < Groups.Count; i++)
+            if (Groups[i] == group)
+                return i;
         return Groups.Count;
     }
 
-    private static TweakDefinition[] Create()
-    {
+    private static TweakDefinition[] Create() {
         var items = new List<TweakDefinition>();
         void Add(string id, string group, char icon, string name, string description, string path,
             string? section = null, string? configureGroup = null, string? integration = null) =>
             items.Add(new(id, group, icon, name, description, path, section, configureGroup, integration));
         Add("pvp-map-only", "Markers", GratisIcons.Flag, "PvP: show only what the game map shows",
-            "Mandatory: group data and native non-player markers only; unverified enemies are omitted.",
-            "PvpMapOnly", "Map", "PvP", "Always on. Native map remains the PvP fallback.");
-        Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival", "Show a quiet notification when you reach your flag.", "FlagArrival", "Chrome & motion", "Motion");
-        Add("map-memory", "Navigation", GratisIcons.BookOpen, "Remember map views", "Restore each map's zoom and detached pan.", "RememberMapView", "Map", "Viewport");
-        Add("zone-switch", "Navigation", GratisIcons.Compass, "Automatic zone switch", "Switch to your new zone while respecting a deliberately opened map.", "AutoSwitchOnZoneChange", "Map", "Zone changes");
-        Add("measure", "Navigation", GratisIcons.Crosshair, "Measure tool", "Ctrl-drag to measure a straight distance in yalms.", "MeasureTool");
-        Add("spotlight", "Navigation", GratisIcons.LocateFixed, "Quest spotlight", "Frame a quest target briefly when opening a quest map link.", "QuestSpotlight", "Map", "Spotlight");
-        Add("follow-return", "Navigation", GratisIcons.Repeat, "Follow return", "Resume following the player after detached panning.", "FollowReturnToPlayer", "Map", "Viewport");
-        Add("frame-scale", "Navigation", GratisIcons.LayoutGrid, "Frame scaling", "Preserve relative zoom when resizing the map window.", "ScaleWithFrame");
-        Add("clamp-map", "Navigation", GratisIcons.Anchor, "Clamp to map", "Keep the viewport within the map texture.", "ClampToMap");
-        Add("small-rooms", "Navigation", GratisIcons.House, "Fit small rooms to content", "Fit small instanced rooms with comfortable padding.", "FitSmallRoomsToContent");
-        Add("follow-open", "Navigation", GratisIcons.LocateFixed, "Follow on open", "Start following the player whenever the map opens.", "FollowOnOpen");
-        Add("place-search", "Navigation", GratisIcons.Search, "Place search", "Find zones, aetherytes, services and pins in the palette.", "Palette", "Map", "Place search");
-        Add("edge-pointers", "Markers", GratisIcons.Compass, "Edge pointers", "Point toward important targets beyond the visible map.", "EdgePointers", "Map", "Edge pointers");
-        Add("attunement", "Markers", GratisIcons.Landmark, "Aetheryte attunement styling", "Distinguish unattuned crystals and shards without hiding them.", "AetheryteAttunementStyle");
-        Add("pins", "Markers", GratisIcons.MapPin, "Pins and notes", "Add personal map pins with notes and share codes.", "Pins", "Markers", "Pins and notes");
-        Add("marker-tooltips", "Markers", GratisIcons.Info, "Extra marker tooltips", "Show additional information when hovering map markers.", "ShowMiscTooltips");
-        Add("player-trail", "Markers", GratisIcons.Footprints, "Player trail", "Leave a short fading trail behind the player.", "Motion.PlayerTrail", "Chrome & motion", "Motion");
-        Add("aetheryte-chips", "Travel", GratisIcons.Landmark, "Aetheryte chips", "Offer the nearest attuned aetheryte for distant targets.", "AetheryteChips", "Map", "Travel");
-        Add("travel-actions", "Travel", GratisIcons.Compass, "Travel actions", "Offer explicit teleport actions for map objectives.", "TravelActions", "Map", "Travel", "Native Teleport; Aethernet needs Lifestream.");
-        Add("fate-flag", "Travel", GratisIcons.Flag, "Flag FATE clicks", "Place a map flag when selecting a FATE in the list.", "SetFlagOnFateClick");
-        Add("ghost", "Window", GratisIcons.EyeOff, "Ghost mode", "Fade and pass clicks through while moving; hover restores input.", "GhostMode", "Chrome & motion", "Chrome visibility");
-        Add("move-handle", "Window", GratisIcons.Anchor, "Move handle", "Move the window with its subtle top-edge handle.", "MoveHandle", "Advanced", "Window behaviour");
-        Add("alt-drag", "Window", GratisIcons.Unlock, "Alt-drag move", "Hold Alt and drag to move the map window.", "AltDragMovesWindow");
-        Add("move-snap", "Window", GratisIcons.LayoutGrid, "Window snapping", "Snap or restore with the handle; Shift aligns to a grid.", "MoveHandleSnap", "Advanced", "Window behaviour");
-        Add("keep-open", "Window", GratisIcons.Lock, "Keep map open", "Keep the map open after closing the game's map.", "KeepOpen");
-        Add("avoid-focus", "Window", GratisIcons.Eye, "Avoid focus on open", "Open the map without taking keyboard focus.", "NoFocusOnAppear");
-        Add("auto-hide", "Display", GratisIcons.Eye, "Auto-hide chrome", "Fade map controls when idle and reveal them on interaction.", "AutoHideChrome", "Chrome & motion", "Chrome visibility");
-        Add("hover-unfade", "Display", GratisIcons.Eye, "Hover unfade", "Restore ordinary faded-map opacity while hovered.", "RestoreOpacityOnHover");
-        Add("context-menu", "Display", GratisIcons.LayoutGrid, "Context menu", "Open map actions with a right-click.", "GratisContextMenu");
-        Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag inertia", "Let a released map pan glide gently to a stop.", "Motion.PanInertia", "Chrome & motion", "Motion");
-        Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion", "Use immediate movement and suppress decorative animation.", "ReduceMotion");
-        Add("interface-motion", "Display", GratisIcons.Sparkles, "Interface animations", "Ease map controls, popovers and list scrolling. Configure the amount and speed.", "InterfaceAnimations", "Chrome & motion", "Motion");
-        Add("location-card", "Display", GratisIcons.MapPin, "Location card", "Show your zone and area together; choose how much detail to include.", "ShowTitleOnMap", "Chrome & motion", "title");
-        Add("coordinates-card", "Display", GratisIcons.Crosshair, "Player and cursor coordinates", "Keep player and cursor positions together in a compact card.", "ShowCoordinateBar", "Chrome & motion", "coordinates");
-        Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzea time chip", "Show Eorzea time beside map coordinates.", "ShowEorzeaTime", "Chrome & motion", "coordinates");
-        Add("sub-zone", "Time and info", GratisIcons.MapPin, "Sub-zone banner", "Briefly announce the area you have just entered.", "SubZoneBanner");
-        Add("mute-map-sound", "Time and info", GratisIcons.Bell, "Mute native map sound", "Suppress the game's native map-open sound.", "SuppressNativeMapOpenSound");
-        Add("whats-new", "Time and info", GratisIcons.Sparkles, "Show what's new", "Show a quiet settings badge and release notes for new tweaks.", "ShowWhatsNew");
-        if (items.Select(t => t.Id).Distinct(StringComparer.Ordinal).Count() != items.Count ||
-            items.Select(t => t.ConfigPath).Distinct(StringComparer.Ordinal).Count() != items.Count ||
-            items.Any(t => !Groups.Contains(t.Group) || string.IsNullOrWhiteSpace(t.Description)))
-            throw new InvalidOperationException("Tweak catalog must have unique IDs/bindings and complete UI metadata.");
+            "Always on. Shows your party and alliance, not enemies or nearby players.", "PvpMapOnly",
+            section: "Map", configureGroup: "PvP", integration: "Always on. The game's own map still works in PvP.");
+        Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival",
+            "Show a quiet notification when you reach your flag.", "FlagArrival", section: "Chrome & motion",
+            configureGroup: "Motion");
+        Add("map-memory", "Navigation", GratisIcons.BookOpen, "Remember map views",
+            "Reopen each map at the zoom and position you left it.", "RememberMapView", section: "Map", configureGroup: "Viewport");
+        Add("zone-switch", "Navigation", GratisIcons.Compass, "Automatic zone switch",
+            "Switch to your new zone's map, unless you opened a different map yourself.", "AutoSwitchOnZoneChange",
+            section: "Map", configureGroup: "Zone changes");
+        Add("measure", "Navigation", GratisIcons.Crosshair, "Measure tool",
+            "Ctrl-drag to measure a straight distance in yalms.", "MeasureTool");
+        Add("spotlight", "Navigation", GratisIcons.LocateFixed, "Quest spotlight",
+            "Briefly highlight the quest target when you open a quest's map link.", "QuestSpotlight", section: "Map",
+            configureGroup: "Spotlight");
+        Add("follow-return", "Navigation", GratisIcons.Repeat, "Follow return",
+            "Go back to following you after you drag the map.", "FollowReturnToPlayer", section: "Map",
+            configureGroup: "Viewport");
+        Add("frame-scale", "Navigation", GratisIcons.LayoutGrid, "Zoom with window size",
+            "Keep what you see the same when you resize the map window.", "ScaleWithFrame");
+        Add("clamp-map", "Navigation", GratisIcons.Anchor, "Keep view inside map", "Stops you panning past the edge of the map.",
+            "ClampToMap");
+        Add("small-rooms", "Navigation", GratisIcons.House, "Zoom small areas to fit",
+            "Zoom in on small rooms and instances when you first visit.", "FitSmallRoomsToContent");
+        Add("follow-open", "Navigation", GratisIcons.LocateFixed, "Follow on open",
+            "Start following the player whenever the map opens.", "FollowOnOpen");
+        Add("place-search", "Navigation", GratisIcons.Search, "Place search",
+            "Search for zones, aetherytes, services and pins.", "Palette", section: "Map",
+            configureGroup: "Place search");
+        Add("edge-pointers", "Markers", GratisIcons.Compass, "Arrows to off-screen targets",
+            "Point toward important targets outside the visible map.", "EdgePointers", section: "Map",
+            configureGroup: "Edge pointers");
+        Add("attunement", "Markers", GratisIcons.Landmark, "Unattuned aetheryte styling",
+            "Dim aetherytes you have not attuned to, without hiding them.", "AetheryteAttunementStyle");
+        Add("pins", "Markers", GratisIcons.MapPin, "Pins and notes",
+            "Add personal map pins with notes and share codes.", "Pins", section: "Markers",
+            configureGroup: "Pins and notes");
+        Add("marker-tooltips", "Markers", GratisIcons.Info, "Extra marker tooltips",
+            "Show additional information when hovering map markers.", "ShowMiscTooltips");
+        Add("player-trail", "Markers", GratisIcons.Footprints, "Player trail",
+            "Leave a short fading trail behind the player.", "Motion.PlayerTrail", section: "Chrome & motion",
+            configureGroup: "Motion");
+        Add("aetheryte-chips", "Travel", GratisIcons.Landmark, "Nearest aetheryte buttons",
+            "Offer the nearest attuned aetheryte for distant targets.", "AetheryteChips", section: "Map",
+            configureGroup: "Travel");
+        Add("travel-actions", "Travel", GratisIcons.Compass, "Teleport actions",
+            "Offer teleport buttons for quests and objectives.", "TravelActions", section: "Map",
+            configureGroup: "Travel", integration: "Uses the game's Teleport. Aethernet needs Lifestream.");
+        Add("fate-flag", "Travel", GratisIcons.Flag, "Flag FATE clicks",
+            "Place a map flag when selecting a FATE in the list.", "SetFlagOnFateClick");
+        Add("ghost", "Window", GratisIcons.EyeOff, "Click-through while moving",
+            "Fade the map and let clicks reach the game while you move.", "GhostMode", section: "Chrome & motion",
+            configureGroup: "Chrome visibility");
+        Add("move-handle", "Window", GratisIcons.Anchor, "Move handle",
+            "Drag the thin bar at the top edge to move the window.", "MoveHandle", section: "Advanced",
+            configureGroup: "Window behaviour");
+        Add("alt-drag", "Window", GratisIcons.Unlock, "Alt-drag move", "Hold Alt and drag to move the map window.",
+            "AltDragMovesWindow");
+        Add("move-snap", "Window", GratisIcons.LayoutGrid, "Window snapping",
+            "Double-click the move handle to snap or restore. Hold Shift to align to screen edges.", "MoveHandleSnap", section: "Advanced",
+            configureGroup: "Window behaviour");
+        Add("keep-open", "Window", GratisIcons.Lock, "Keep map open", "Keep the map open after you close the game's map.",
+            "KeepOpen");
+        Add("avoid-focus", "Window", GratisIcons.Eye, "Avoid focus on open",
+            "Open the map without taking keyboard focus.", "NoFocusOnAppear");
+        Add("auto-hide", "Display", GratisIcons.Eye, "Auto-hide controls",
+            "Fade the toolbar, location and coordinates when idle. Hover to bring them back.", "AutoHideChrome", section: "Chrome & motion",
+            configureGroup: "Chrome visibility");
+        Add("hover-unfade", "Display", GratisIcons.Eye, "Full opacity on hover",
+            "Show the map at normal opacity while hovered.", "RestoreOpacityOnHover");
+        Add("context-menu", "Display", GratisIcons.LayoutGrid, "Right-click menu", "Right-click the map for actions like setting a flag.",
+            "GratisContextMenu");
+        Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag glide",
+            "Let the map keep gliding a moment after you let go.", "Motion.PanInertia", section: "Chrome & motion",
+            configureGroup: "Motion");
+        Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion",
+            "Skip animations and move things instantly.", "ReduceMotion");
+        Add("interface-motion", "Display", GratisIcons.Sparkles, "Animations",
+            "Smooth the toolbar, menus and list scrolling. Choose how much and how fast.", "InterfaceAnimations",
+            section: "Chrome & motion", configureGroup: "Motion");
+        Add("location-card", "Display", GratisIcons.MapPin, "Location card",
+            "Show your zone and area together. Choose how much detail to show.", "ShowTitleOnMap",
+            section: "Chrome & motion", configureGroup: "title");
+        Add("coordinates-card", "Display", GratisIcons.Crosshair, "Player and cursor coordinates",
+            "Show your position and the cursor position together in a small card.", "ShowCoordinateBar",
+            section: "Chrome & motion", configureGroup: "coordinates");
+        Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzea time",
+            "Show Eorzea time beside the map coordinates.", "ShowEorzeaTime", section: "Chrome & motion",
+            configureGroup: "coordinates");
+        Add("sub-zone", "Time and info", GratisIcons.MapPin, "Sub-zone banner",
+            "Briefly announce the area you have just entered.", "SubZoneBanner");
+        Add("mute-map-sound", "Time and info", GratisIcons.Bell, "Mute the game's map sound",
+            "Silence the sound the game plays when the map opens.", "SuppressNativeMapOpenSound");
+        Add("whats-new", "Time and info", GratisIcons.Sparkles, "Show what's new",
+            "Show a small badge and release notes when there are new tweaks.", "ShowWhatsNew");
+        if (items.Select(t => t.Id).Distinct(StringComparer.Ordinal).Count() != items.Count
+            || items.Select(t => t.ConfigPath).Distinct(StringComparer.Ordinal).Count() != items.Count
+            || items.Any(t => !Groups.Contains(t.Group) || string.IsNullOrWhiteSpace(t.Description)))
+            throw new InvalidOperationException(
+                "Tweak catalog must have unique IDs/bindings and complete UI metadata.");
         return items.ToArray();
     }
 }

@@ -1,8 +1,3 @@
 ﻿namespace Gratis.Classes;
 
-public enum MarkerType
-{
-    Unknown = 0,
-    Fate = 1,
-    Stellar = 6,
-}
+public enum MarkerType { Unknown = 0, Fate = 1, Stellar = 6, }

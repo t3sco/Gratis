@@ -9,24 +9,22 @@ using MarkerInfo = Gratis.Classes.MarkerInfo;
 
 namespace Gratis.MapRenderer;
 
-public partial class MapRenderer
-{
-    private readonly List<FieldMarker> fieldMarkers = Service.DataManager.GetExcelSheet<FieldMarker>().Where(marker => marker.MapIcon is not 0).ToList();
+public partial class MapRenderer {
+    private readonly List<FieldMarker> fieldMarkers = Service.DataManager.GetExcelSheet<FieldMarker>().Where(marker =>
+        marker.MapIcon is not 0).ToList();
 
-    private unsafe void DrawFieldMarkers()
-    {
-        if (AgentMap.Instance()->CurrentMapId != AgentMap.Instance()->SelectedMapId) return;
+    private unsafe void DrawFieldMarkers() {
+        if (AgentMap.Instance()->CurrentMapId != AgentMap.Instance()->SelectedMapId)
+            return;
         var markerSpan = MarkingController.Instance()->FieldMarkers;
 
         foreach (var index in Enumerable.Range(0, 8)) {
             if (markerSpan[index] is { Active: true } marker) {
-                var markerPosition =
-                    new Vector2(marker.X, marker.Z) / 1000.0f * DrawHelpers.GetMapScaleFactor()
+                var markerPosition = new Vector2(marker.X, marker.Z) / 1000.0f * DrawHelpers.GetMapScaleFactor()
                     - DrawHelpers.GetMapOffsetVector()
                     + DrawHelpers.GetMapCenterOffsetVector();
 
-                DrawHelpers.DrawMapMarker(new MarkerInfo
-                {
+                DrawHelpers.DrawMapMarker(new MarkerInfo {
                     Source = Rendering.MapMarkerSource.NativeWaymark,
                     Offset = DrawPosition,
                     Scale = Scale,

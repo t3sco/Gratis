@@ -6,32 +6,30 @@ using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 
-internal sealed class PvpDiagnosticCommand : IDisposable
-{
+internal sealed class PvpDiagnosticCommand : IDisposable {
     [PluginService] private IChatGui ChatGui { get; set; } = null!;
     private readonly CommandHandler command;
 
-    public PvpDiagnosticCommand()
-    {
+    public PvpDiagnosticCommand() {
         Service.PluginInterface.Inject(this);
-        command = new CommandHandler { ActivationPath = "/pvp", Delegate = _ => {
-            MapDrawContext.Current.SynchronizePvp();
-            ChatGui.Print("[Gratis PvP] " + MapDrawContext.Current.Pvp.Diagnostics());
-        } };
+        command = new CommandHandler {
+            ActivationPath = "/pvp", Delegate = _ => {
+                MapDrawContext.Current.SynchronizePvp();
+                ChatGui.Print("[Gratis PvP] " + MapDrawContext.Current.Pvp.Diagnostics());
+            }
+        };
         System.CommandManager.RegisterCommand(command);
         Service.ClientState.EnterPvP += OnTransition;
         Service.ClientState.LeavePvP += OnTransition;
         OnTransition();
     }
 
-    private static void OnTransition()
-    {
+    private static void OnTransition() {
         MapDrawContext.Current.SynchronizePvp();
         System.MapWindow.PlacePalette.ResetPvpState();
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         Service.ClientState.EnterPvP -= OnTransition;
         Service.ClientState.LeavePvP -= OnTransition;
         System.CommandManager.RemoveCommand(command);

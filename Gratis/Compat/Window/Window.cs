@@ -24,12 +24,7 @@ using Dalamud.Plugin;
 namespace Gratis.Compat.Window;
 
 [Flags]
-public enum WindowFlags {
-    None = 0,
-    OpenImmediately = 1,
-    IsConfigWindow = 2,
-    RequireLoggedIn = 4,
-}
+public enum WindowFlags { None = 0, OpenImmediately = 1, IsConfigWindow = 2, RequireLoggedIn = 4, }
 
 public abstract class Window : Dalamud.Interface.Windowing.Window {
     private bool isCollapsed;
@@ -43,8 +38,7 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
     protected Window(string windowName, Vector2 size, bool fixedSize = false) : base(windowName) {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = size,
-            MaximumSize = fixedSize ? size : new Vector2(float.PositiveInfinity),
-        };
+            MaximumSize = fixedSize ? size : new Vector2(float.PositiveInfinity), };
 
         if (fixedSize) {
             Flags |= ImGuiWindowFlags.NoResize;
@@ -54,7 +48,9 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
         CollapsedCondition = ImGuiCond.Always;
     }
 
-    public virtual void Load() { }
+    public virtual void Load() {
+    }
+
     protected abstract void DrawContents();
 
     public void Open()
@@ -68,7 +64,8 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
             isCollapsed = false;
             Collapsed = false;
             IsOpen = true;
-        } else {
+        }
+        else {
             IsOpen = true;
         }
     }
@@ -78,7 +75,8 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
             isCollapsed = false;
             Collapsed = false;
             IsOpen = true;
-        } else {
+        }
+        else {
             Toggle();
         }
     }

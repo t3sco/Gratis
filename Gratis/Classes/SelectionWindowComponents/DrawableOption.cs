@@ -10,8 +10,7 @@ using Lumina.Excel.Sheets;
 
 namespace Gratis.Classes.SelectionWindowComponents;
 
-public abstract class DrawableOption
-{
+public abstract class DrawableOption {
     protected virtual string[] GetAdditionalFilterStrings() => [];
 
     public virtual Map Map { get; set; }
@@ -30,33 +29,38 @@ public abstract class DrawableOption
 
     public virtual string GetElementKey() => $"{Map.RowId}{MarkerLocation}{ExtraLineShort}{ExtraLineLong}";
 
-    public string[] GetFilterStrings()
-    {
-        if (Map.RowId is 0) return [];
+    public string[] GetFilterStrings() {
+        if (Map.RowId is 0)
+            return [];
 
         var baseStrings = new[]
         {
-            Map.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? string.Empty, Map.PlaceName.ValueNullable?.Name.ExtractText() ?? string.Empty,
-            Map.PlaceNameSub.ValueNullable?.Name.ExtractText() ?? string.Empty, Map.TerritoryType.ValueNullable?.Name.ExtractText() ?? string.Empty, Map.Id.ExtractText(),
+            Map.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? string.Empty,
+                Map.PlaceName.ValueNullable?.Name.ExtractText() ?? string.Empty,
+            Map.PlaceNameSub.ValueNullable?.Name.ExtractText() ?? string.Empty,
+                Map.TerritoryType.ValueNullable?.Name.ExtractText() ?? string.Empty,
+                Map.Id.ExtractText(),
         };
 
         return baseStrings.Concat(GetAdditionalFilterStrings()).ToArray();
     }
 
-    public void Draw()
-    {
+    public void Draw() {
         using var id = ImRaii.PushId(Map.RowId.ToString());
 
         DrawIcon();
         ImGui.SameLine();
 
-        using var contentsFrame = ImRaii.Child($"contents_frame#{GetElementKey()}", new Vector2(ImGui.GetContentRegionAvail().X, Height), false, ImGuiWindowFlags.NoInputs);
-        if (!contentsFrame) return;
+        using var contentsFrame = ImRaii.Child($"contents_frame#{GetElementKey()}",
+            new Vector2(ImGui.GetContentRegionAvail().X, Height), false, ImGuiWindowFlags.NoInputs);
+        if (!contentsFrame)
+            return;
 
         ImGuiHelpers.ScaledDummy(1.0f);
 
         using var table = ImRaii.Table("data_table", 2, ImGuiTableFlags.SizingStretchProp);
-        if (!table) return;
+        if (!table)
+            return;
 
         ImGui.TableSetupColumn("##column1", ImGuiTableColumnFlags.None, 2.0f);
         ImGui.TableSetupColumn("##column2", ImGuiTableColumnFlags.None, 1.0f);

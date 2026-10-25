@@ -9,22 +9,23 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public static class AetheryteAttunementDrawing
-{
-    public static float Opacity(MarkerInfo marker)
-    {
+public static class AetheryteAttunementDrawing {
+    public static float Opacity(MarkerInfo marker) {
         var c = MapDrawContext.Current;
-        return AetheryteAttunement.Opacity(c.Config, marker,
-            c.Visibility.State(MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Loud);
+        return AetheryteAttunement.Opacity(
+            c.Config, marker, c.Visibility.State(
+                MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Loud);
     }
-    public static void Ring(MarkerInfo marker)
-    {
+
+    public static void Ring(MarkerInfo marker) {
         var c = MapDrawContext.Current;
-        if (AetheryteAttunement.Status(c.Config, marker) != false) return;
+        if (AetheryteAttunement.Status(c.Config, marker) != false)
+            return;
         var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
         var half = MarkerVisual.HalfSize(marker);
         var radius = MathF.Max(half.X, half.Y);
-        if (!MapShape.ContainsSymbol(center, new Vector2(radius + c.GlobalScale))) return;
+        if (!MapShape.ContainsSymbol(center, new Vector2(radius + c.GlobalScale)))
+            return;
         var loud = c.Visibility.State(MarkerVisibility.Group(marker), true) == MarkerVisibilityState.Loud;
         var color = ImGui.GetColorU32(FlatMarkerDrawing.Color(MarkerCategory.Transport) with { W = loud ? .95f : .7f });
         var list = ImGui.GetWindowDrawList();

@@ -8,14 +8,16 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public enum FramePreset { Hairline, DoubleRing, InsetGlow, NotchedCorners, SoftShadow, None }
+public enum FramePreset {
+    Hairline, DoubleRing, InsetGlow, NotchedCorners, SoftShadow, None
+}
 
-internal static class FramePresetDrawing
-{
-    internal static void Draw(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, MapDrawingConfig config, float scale)
-    {
+internal static class FramePresetDrawing {
+    internal static void Draw(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, MapDrawingConfig config,
+        float scale) {
         var shortSide = MathF.Min(max.X - min.X, max.Y - min.Y);
-        if (shortSide <= 4 || config.FramePreset == FramePreset.None) return;
+        if (shortSide <= 4 || config.FramePreset == FramePreset.None)
+            return;
         var unit = MathF.Min(scale, shortSide / 64);
         var accent = config.AccentColor;
         void Stroke(float inset, Vector4 color) =>
@@ -43,8 +45,7 @@ internal static class FramePresetDrawing
         }
     }
 
-    private static void DrawShadow(Vector2 min, Vector2 max, float radius, float unit)
-    {
+    private static void DrawShadow(Vector2 min, Vector2 max, float radius, float unit) {
         var list = ImGui.GetBackgroundDrawList();
         var offset = new Vector2(0, 6 * unit);
         const int layers = 24;
@@ -60,8 +61,8 @@ internal static class FramePresetDrawing
         }
     }
 
-    private static void DrawBrackets(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float unit, bool circle, Vector4 accent)
-    {
+    private static void DrawBrackets(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float unit,
+        bool circle, Vector4 accent) {
         var ink = ImGui.GetColorU32(accent with { W = .90f });
         var arm = 14 * unit;
         if (circle) {
@@ -80,8 +81,7 @@ internal static class FramePresetDrawing
         for (var corner = 0; corner < 4; corner++) {
             var left = corner is 0 or 3;
             var top = corner < 2;
-            var point = new Vector2(left ? min.X + inset : max.X - inset,
-                top ? min.Y + inset : max.Y - inset);
+            var point = new Vector2(left ? min.X + inset : max.X - inset, top ? min.Y + inset : max.Y - inset);
             list.PathLineTo(point + new Vector2(left ? arm : -arm, 0));
             list.PathLineTo(point);
             list.PathLineTo(point + new Vector2(0, top ? arm : -arm));

@@ -8,8 +8,7 @@ using Gratis.Compat.Configuration;
 
 namespace Gratis.Data;
 
-public enum CenterTarget
-{
+public enum CenterTarget {
     [Description("Disabled")]
     Disabled = 0,
 
@@ -21,8 +20,7 @@ public enum CenterTarget
 }
 
 [Flags]
-public enum FadeMode
-{
+public enum FadeMode {
     [Description("Always")]
     Always = 1 << 0,
 
@@ -36,37 +34,36 @@ public enum FadeMode
     WhenUnFocused = 1 << 4,
 }
 
-public class SystemConfig : Gratis.Rendering.MapDrawingConfig
-{
+public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public Gratis.Rendering.MapColourSettings MapColour = new();
 
     public bool UseLinearZoom = false;
-    public float ZoomSpeed = 0.25f;
+    public float ZoomSpeed = 0.085f;
     public bool ShowMiscTooltips = true;
     public bool HideWithGameGui = true;
-    public bool HideBetweenAreas = false;
+    public bool HideBetweenAreas = true;
     public bool HideInCombat = false;
     public bool KeepOpen = false;
-    public bool FollowOnOpen = false;
+    public bool FollowOnOpen = true;
     public bool AutoSwitchOnZoneChange = true;
     public bool OnlyIfViewingCurrentZone = true;
     public bool SwitchInDuties = true;
-    public CenterTarget CenterOnOpen = CenterTarget.Disabled;
-    public bool ShowRadar = true;
+    public CenterTarget CenterOnOpen = CenterTarget.Player;
+    public bool ShowRadar = false;
     public bool ShowRadarInDuties = false;
     public Vector4 RadarColor = ColorVector(KnownColor.Gray) with { W = 0.10f };
     public Vector4 RadarOutlineColor = ColorVector(KnownColor.Gray) with { W = 0.30f };
-    public bool HideWindowBackground = false;
+    public bool HideWindowBackground = true;
     public bool BlurBackground = false;
-    public float BlurStrength = 3.0f;
+    public float BlurStrength = 0.5f;
     public bool EnableShiftDragMove = false;
     public bool LockWindow = false;
     public bool MoveHandle = true;
     public bool AltDragMovesWindow = true;
     public bool MoveHandleSnap = true;
     public bool ClassicMoveHandle = false;
-    public float FadePercent = 0.60f;
-    public FadeMode FadeMode = FadeMode.WhenUnFocused | FadeMode.WhenMoving;
+    public float FadePercent = 0.81f;
+    public FadeMode FadeMode = FadeMode.WhenUnFocused;
     public Vector2 WindowPosition = new(1024.0f, 700.0f);
     public Vector2 WindowSize = new(500.0f, 500.0f);
     public bool AlwaysShowToolbar = false;
@@ -86,12 +83,14 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig
     public bool ShowAreaLabel = true;
     public bool ShowSubAreaLabel = true;
     public bool NoFocusOnAppear = false;
-    public float LargeAreaTextScale = 1.5f;
-    public float SmallAreaTextScale = 1.0f;
+    public float LargeAreaTextScale = 1.0f;
+    public float SmallAreaTextScale = 0.5f;
+    public float LargeAreaTextOpacity = 0.30f;
+    public float SmallAreaTextOpacity = 1.0f;
     public bool ShowTextLabels = true;
-    public bool ShowFogOfWar = true;
-    public bool ScaleTextWithZoom = true;
-    public float AutoZoomScaleFactor = 0.33f;
+    public bool ShowFogOfWar = false;
+    public bool ScaleTextWithZoom = false;
+    public float AutoZoomScaleFactor = 0.38f;
 
     public bool SuppressNativeMapOpenSound = true;
 

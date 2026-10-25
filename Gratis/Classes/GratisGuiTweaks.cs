@@ -4,10 +4,8 @@ using Dalamud.Interface.Utility.Raii;
 
 namespace Gratis.Classes;
 
-public static class GratisGuiTweaks
-{
-    public static bool IconButton(FontAwesomeIcon icon, string id, string? tooltip)
-    {
+public static class GratisGuiTweaks {
+    public static bool IconButton(FontAwesomeIcon icon, string id, string? tooltip) {
         using var imRaiiId = ImRaii.PushId(id);
 
         bool result;

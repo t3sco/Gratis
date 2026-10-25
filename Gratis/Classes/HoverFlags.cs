@@ -3,8 +3,7 @@
 namespace Gratis.Classes;
 
 [Flags]
-public enum HoverFlags
-{
+public enum HoverFlags {
     Nothing = 0,
     MapTexture = 1 << 0,
     Toolbar = 1 << 1,
@@ -13,7 +12,6 @@ public enum HoverFlags
     WindowInnerFrame = 1 << 4,
 }
 
-public static class HoverFlagsExtensions
-{
+public static class HoverFlagsExtensions {
     public static bool Any(this HoverFlags flags) => flags != HoverFlags.Nothing;
 }

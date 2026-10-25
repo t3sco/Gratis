@@ -21,7 +21,6 @@ namespace Gratis.Compat.Configuration;
 
 public static partial class Configuration {
     public static readonly JsonSerializerOptions SerializerOptions = new() {
-        WriteIndented = true,
-        IncludeFields = true,
+        WriteIndented = true, IncludeFields = true,
     };
 }

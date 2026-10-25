@@ -32,7 +32,8 @@ public static class HookSafety {
                 var callingClass = trace.GetMethod()?.DeclaringType;
                 var callingName = trace.GetMethod()?.Name;
 
-                log.Error($"Exception Source: {Assembly.GetCallingAssembly().GetName().Name} :: {callingClass} :: {callingName}");
+                log.Error($"Exception Source: {Assembly.GetCallingAssembly().GetName().Name} :: "
+                    + $"{callingClass} :: {callingName}");
             }
 
             log.Error(exception, message ?? "Caught Exception Safely");

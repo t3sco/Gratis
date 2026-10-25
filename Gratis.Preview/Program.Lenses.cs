@@ -4,10 +4,10 @@ using Gratis.Rendering;
 
 namespace Gratis.Preview;
 
-internal static partial class Program
-{
-    private static bool IsLensScene(string scene) => scene is "lens-explore" or "lens-quests" or "lens-minimal" or
-        "filter-bar" or "filter-bar-circular" or "filter-bar-narrow" or "filter-bar-midnight" or "filter-bar-mono";
+internal static partial class Program {
+    private static bool IsLensScene(string scene) =>
+        scene is "lens-explore" or "lens-quests" or "lens-minimal" or "filter-bar" or "filter-bar-circular"
+            or "filter-bar-narrow" or "filter-bar-midnight" or "filter-bar-mono";
     private static FrameScript LensFixture() => new() {
         Width = 1280, Height = 800,
         Markers = [
@@ -19,22 +19,32 @@ internal static partial class Program
             new(60003, new Vector2(-480, 240)), new(60421, new Vector2(130, 270)), new(60450, new Vector2(60, -100)),
         ],
     };
-    private static void RenderLensScene(Options options)
-    {
+    private static void RenderLensScene(Options options) {
         var script = LensFixture();
-        script.Width = options.Width; script.Height = options.Height;
+        script.Width = options.Width;
+        script.Height = options.Height;
         script.Dpi = options.Dpi;
-        var config = new SystemConfig { AcceptedSpoilerWarning = true, FollowPlayer = false, PinChrome = true,
-            WindowPosition = new Vector2(32), WindowSize = new Vector2(Math.Min(options.Width - 64, 960), Math.Min(options.Height - 64, 640)),
-            ActiveLens = options.Scene == "lens-quests" ? "Quests" : options.Scene == "lens-minimal" ? "Minimal" : "Explore",
-            MapCircle = options.Circle ?? options.Scene == "filter-bar-circular", ReduceMotion = true, MapScale = .5f };
-        if (options.Scene == "filter-bar-narrow") config.WindowSize = new Vector2(300, 220);
-        if (options.Scene == "filter-bar-circular") config.WindowSize = new Vector2(640);
-        if (options.Scene == "filter-bar-midnight") config.MapColour.Preset = MapColourPreset.Midnight;
-        if (options.Scene == "filter-bar-mono") config.MapColour.Preset = MapColourPreset.Mono;
+        var config = new SystemConfig {
+            AcceptedSpoilerWarning = true, FollowPlayer = false, PinChrome = true,
+            WindowPosition = new Vector2(32),
+            WindowSize = new Vector2(Math.Min(options.Width - 64, 960), Math.Min(options.Height - 64, 640)),
+            ActiveLens = options.Scene == "lens-quests" ? "Quests" : options.Scene == "lens-minimal" ? "Minimal"
+                : "Explore",
+            MapCircle = options.Circle ?? options.Scene == "filter-bar-circular", ReduceMotion = true, MapScale = .5f
+        };
+        if (options.Scene == "filter-bar-narrow")
+            config.WindowSize = new Vector2(300, 220);
+        if (options.Scene == "filter-bar-circular")
+            config.WindowSize = new Vector2(640);
+        if (options.Scene == "filter-bar-midnight")
+            config.MapColour.Preset = MapColourPreset.Midnight;
+        if (options.Scene == "filter-bar-mono")
+            config.MapColour.Preset = MapColourPreset.Mono;
         using var driver = new ScriptedFrameDriver(config, script);
-        for (var i = 0; i < 4; i++) driver.Step(new ScriptFrame(.1 + i * .1));
+        for (var i = 0; i < 4; i++)
+            driver.Step(new ScriptFrame(.1 + i * .1));
         driver.Save(options.Output);
-        Console.WriteLine($"{options.Scene}: {options.Output}; lens={config.ActiveLens}; counts={string.Join(',', driver.Context.Visibility.Counts)}");
+        Console.WriteLine($"{options.Scene}: {options.Output}; lens={config.ActiveLens}; "
+            + $"counts={string.Join(',', driver.Context.Visibility.Counts)}");
     }
 }

@@ -21,5 +21,6 @@ using Dalamud.Plugin.Services;
 namespace Gratis.Compat.Classes;
 #pragma warning disable CS8618
 internal class LogWrapper {
-    [PluginService] public IPluginLog Log { get; set; }
+    [PluginService]
+    public IPluginLog Log { get; set; }
 }

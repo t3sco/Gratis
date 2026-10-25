@@ -1,12 +1,11 @@
 namespace Gratis.Rendering;
 
-public sealed class MotionSettings
-{
+public sealed class MotionSettings {
     public bool Pings = true;
     public float PingSeconds = .9f;
     public bool PlayerTrail = true;
-    public float TrailSeconds = 4;
-    public float TrailOpacity = .22f;
+    public float TrailSeconds = 8.3f;
+    public float TrailOpacity = .33f;
     public bool EaseFollow = true;
     public bool EaseZoom = true;
     public bool PanInertia = true;

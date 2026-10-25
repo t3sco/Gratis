@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -35,7 +34,8 @@ public unsafe class AddonAreaMapController : IDisposable {
     private void AddonAreaMapListener(IFramework framework) {
         var addonAreaMap = Service.GameGui.GetAddonByName<AddonAreaMap>("AreaMap");
 
-        if (addonAreaMap is null) return;
+        if (addonAreaMap is null)
+            return;
 
         if (System.SystemConfig.SuppressNativeMapOpenSound) {
             addonAreaMap->ShowSoundEffectId = 0;
@@ -63,14 +63,16 @@ public unsafe class AddonAreaMapController : IDisposable {
     }
 
     private void OnAreaMapPreShow(AddonEvent type, AddonArgs args) {
-        if (System.ZoneSwitchController is { IsApplying: true }) return;
+        if (System.ZoneSwitchController is { IsApplying: true })
+            return;
         System.MapWindow.WakeGhost();
         Service.Log.Verbose($"[AreaMap] AddonEventPreShow");
         System.WindowManager.GetWindow<MapWindow>()?.Open();
     }
 
     private void OnAreaMapPreHide(AddonEvent type, AddonArgs args) {
-        if (System.ZoneSwitchController is { IsApplying: true }) return;
+        if (System.ZoneSwitchController is { IsApplying: true })
+            return;
         System.MapWindow.WakeGhost();
         Service.Log.Verbose($"[AreaMap] AreaMapPreHide");
 
@@ -83,7 +85,6 @@ public unsafe class AddonAreaMapController : IDisposable {
             System.WindowManager.GetWindow<MapWindow>()?.Close();
         }
     }
-
 
     private void OnAreaMapDraw(AddonEvent type, AddonArgs args) {
         var addon = (AddonAreaMap*)args.Addon.Address;

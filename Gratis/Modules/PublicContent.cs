@@ -8,17 +8,17 @@ namespace Gratis.Modules;
 
 public class PublicContent : ModuleBase {
     public override unsafe bool ProcessMarker(MarkerInfo markerInfo) {
-        if (EventFramework.Instance()->GetPublicContentDirector() is null) return false;
+        if (EventFramework.Instance()->GetPublicContentDirector() is null)
+            return false;
         var occult = PublicContentOccultCrescent.GetInstance();
         var bozja = PublicContentBozja.GetInstance();
-        DynamicEventContainer? container = occult != null
-            ? occult->DynamicEventContainer
-            : bozja != null
-                ? bozja->DynamicEventContainer
-                : null;
+        DynamicEventContainer? container = occult != null ? occult->DynamicEventContainer : bozja != null
+            ? bozja->DynamicEventContainer : null;
 
-        if (container is null) return false;
-        if (System.SystemConfig.IsGratis && markerInfo.DataId is not > 0) return false;
+        if (container is null)
+            return false;
+        if (System.SystemConfig.IsGratis && markerInfo.DataId is not > 0)
+            return false;
 
         foreach (var e in container.Value.Events) {
             if (e.State != DynamicEventState.Inactive && e.MapMarker.DataId == markerInfo.DataId) {
@@ -28,19 +28,17 @@ public class PublicContent : ModuleBase {
                         return false;
                     case DynamicEventState.Register:
                         markerInfo.SecondaryText = () =>
-                            $"Recruiting Members: {timeRemaining.Subtract(TimeSpan.FromSeconds(20)):mm\\:ss}\n" +
-                            $"Participants: {e.Participants}/{e.MaxParticipants}";
+                            $"Recruiting Members: {timeRemaining.Subtract(TimeSpan.FromSeconds(20)):mm\\:ss}\n"
+                            + $"Participants: {e.Participants}/{e.MaxParticipants}";
                         break;
                     case DynamicEventState.Warmup:
                         markerInfo.SecondaryText = () =>
-                            $"Preparing for Battle: {timeRemaining.Subtract(TimeSpan.FromSeconds(20)):mm\\:ss}\n" +
-                            $"Participants: {e.Participants}/{e.MaxParticipants}";
+                            $"Preparing for Battle: {timeRemaining.Subtract(TimeSpan.FromSeconds(20)):mm\\:ss}\n"
+                            + $"Participants: {e.Participants}/{e.MaxParticipants}";
                         break;
                     case DynamicEventState.Battle:
-                        markerInfo.SecondaryText = () =>
-                            $"Battle Underway: {e.GetTimeRemaining():mm\\:ss}\n" +
-                            $"Participants: {e.Participants}/{e.MaxParticipants}\n" +
-                            $"Progress: {e.Progress}%";
+                        markerInfo.SecondaryText = () => $"Battle Underway: {e.GetTimeRemaining():mm\\:ss}\n"
+                            + $"Participants: {e.Participants}/{e.MaxParticipants}\nProgress: {e.Progress}%";
                         break;
                     default:
                         return false;

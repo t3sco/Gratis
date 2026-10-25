@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using Gratis.Classes;
 #if GRATIS_PREVIEW
 using ImGuiNET;
 #else
@@ -9,12 +8,12 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public static class SubZoneBannerDrawing
-{
-    public static void Draw(SubZoneBanner banner)
-    {
-        if (banner.Opacity <= 0) return;
-        var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
+public static class SubZoneBannerDrawing {
+    public static void Draw(SubZoneBanner banner) {
+        if (banner.Opacity <= 0)
+            return;
+        var context = MapDrawContext.Current;
+        var s = GratisTheme.ChromeScale;
         using var alpha = new ChromeVisibility.AlphaScope(true, banner.Opacity);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         var (min, max) = ChromeLayout.SafeBounds();
@@ -22,12 +21,16 @@ public static class SubZoneBannerDrawing
         var text = ChromeControls.FitLabel(banner.Text, width);
         var size = new Vector2(ImGui.CalcTextSize(text).X + 48 * s, GratisTheme.ControlHeight * s);
         var bounds = ChromeLayout.Place("zone-banner", size, ChromeAnchor.TopCenter);
-        if (bounds == Vector4.Zero) return;
+        if (bounds == Vector4.Zero)
+            return;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
-        using var motion = new UiMotion.VisualScope(list, pos, 1, UiMotion.Full ? new Vector2(0, (1 - banner.Opacity) * 6 * s) : Vector2.Zero);
+        using var motion = new UiMotion.VisualScope(list, pos, 1,
+            UiMotion.Full ? new Vector2(0, (1 - banner.Opacity) * 6 * s) : Vector2.Zero);
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
-        GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Compass, GratisTheme.WarmAccent, GratisTheme.IconSize * s);
-        list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
+        GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Compass, GratisTheme.WarmAccent,
+            GratisTheme.IconSize * s);
+        list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2),
+            ImGui.GetColorU32(GratisTheme.Primary), text);
     }
 }

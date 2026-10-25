@@ -2,44 +2,51 @@ using Gratis.Classes;
 
 namespace Gratis.Rendering;
 
-public enum MarkerIconFamily
-{
+public enum MarkerIconFamily {
     Auto, Landmark, Aetheryte, Aethernet, Quest, Fate, FateBoss, FateCollect, FateDefend,
     FateEscort, FateSpecial, Duty, Exit, Shop, Mender, Inn, Housing, Stable, Mail,
     Bell, Market, Gathering, Botany, Fishing, Hunt, Treasure, Flag, Party, Alliance,
     Player, Pet, Anchor, Chocobo, AetherCurrent, Leve, Lore, Guildhest, Cards, Gate, Novice, Neutral,
 }
 
-public enum QuestMarkerState { Available, InProgress, Complete, Locked }
+public enum QuestMarkerState {
+    Available, InProgress, Complete, Locked
+}
 
 public readonly record struct QuestMarker(QuestMarkerState State, bool MainScenario, bool Feature, bool Repeatable);
 
-public static class MarkerIcon
-{
-    public static bool TryQuest(uint id, out QuestMarker quest)
-    {
+public static class MarkerIcon {
+    public static bool TryQuest(uint id, out QuestMarker quest) {
         var block = id / 10;
         var main = block is 7100 or 7101 or 7120 or 7121;
         var feature = block is 7114 or 7115 or 7134 or 7135;
         var side = block is 7102 or 7103 or 7122 or 7123;
         var digit = id % 10;
-        if (!(main || feature || side) || digit is < 1 or > 6) { quest = default; return false; }
+        if (!(main || feature || side) || digit is < 1 or > 6) {
+            quest = default;
+            return false;
+        }
         var locked = block % 2 == 1;
-        quest = new QuestMarker(locked ? QuestMarkerState.Locked : digit == 5 ? QuestMarkerState.Complete :
-            digit is 3 or 4 or 6 ? QuestMarkerState.InProgress : QuestMarkerState.Available,
+        quest = new QuestMarker(locked ? QuestMarkerState.Locked : digit == 5 ? QuestMarkerState.Complete
+            : digit is 3 or 4 or 6 ? QuestMarkerState.InProgress : QuestMarkerState.Available,
             main, feature, digit == 2);
         return true;
     }
 
-    public static MarkerIconFamily Family(MarkerInfo marker)
-    {
-        if (marker.IconFamily != MarkerIconFamily.Auto) return marker.IconFamily;
-        if (marker.IsFlag) return MarkerIconFamily.Flag;
+    public static MarkerIconFamily Family(MarkerInfo marker) {
+        if (marker.IconFamily != MarkerIconFamily.Auto)
+            return marker.IconFamily;
+        if (marker.IsFlag)
+            return MarkerIconFamily.Flag;
         var id = marker.IconId;
-        if (TryQuest(id, out _)) return MarkerIconFamily.Quest;
-        if (marker.MarkerType == MarkerType.Stellar) return MarkerIconFamily.FateSpecial;
-        if (marker.MarkerType == MarkerType.Fate) return FateFamily(id);
-        if (marker.IsObjective) return MarkerIconFamily.Quest;
+        if (TryQuest(id, out _))
+            return MarkerIconFamily.Quest;
+        if (marker.MarkerType == MarkerType.Stellar)
+            return MarkerIconFamily.FateSpecial;
+        if (marker.MarkerType == MarkerType.Fate)
+            return FateFamily(id);
+        if (marker.IsObjective)
+            return MarkerIconFamily.Quest;
         return id switch {
             60453 or 60959 => MarkerIconFamily.Aetheryte,
             60430 or 60452 => MarkerIconFamily.Aethernet,
@@ -93,14 +100,15 @@ public static class MarkerIcon
     };
 
     public static MarkerCategory Category(MarkerIconFamily family) => family switch {
-        MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet or MarkerIconFamily.Anchor or MarkerIconFamily.Chocobo => MarkerCategory.Transport,
-        MarkerIconFamily.Quest or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or
-        MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or
-        MarkerIconFamily.Flag or MarkerIconFamily.Leve => MarkerCategory.Objective,
+        MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet or MarkerIconFamily.Anchor or MarkerIconFamily.Chocobo =>
+            MarkerCategory.Transport,
+        MarkerIconFamily.Quest or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or MarkerIconFamily.Flag or MarkerIconFamily.Leve =>
+            MarkerCategory.Objective,
         MarkerIconFamily.Duty or MarkerIconFamily.Exit => MarkerCategory.Link,
-        MarkerIconFamily.Shop or MarkerIconFamily.Mender or MarkerIconFamily.Inn or MarkerIconFamily.Housing or
-        MarkerIconFamily.Stable or MarkerIconFamily.Mail or MarkerIconFamily.Bell or MarkerIconFamily.Market => MarkerCategory.Service,
-        MarkerIconFamily.Party or MarkerIconFamily.Alliance or MarkerIconFamily.Player or MarkerIconFamily.Pet => MarkerCategory.Party,
+        MarkerIconFamily.Shop or MarkerIconFamily.Mender or MarkerIconFamily.Inn or MarkerIconFamily.Housing or MarkerIconFamily.Stable or MarkerIconFamily.Mail or MarkerIconFamily.Bell or MarkerIconFamily.Market =>
+            MarkerCategory.Service,
+        MarkerIconFamily.Party or MarkerIconFamily.Alliance or MarkerIconFamily.Player or MarkerIconFamily.Pet =>
+            MarkerCategory.Party,
         _ => MarkerCategory.Poi,
     };
 

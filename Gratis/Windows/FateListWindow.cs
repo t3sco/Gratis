@@ -34,7 +34,7 @@ public class FateListWindow : Window {
 
                 var cursorStart = ImGui.GetCursorScreenPos();
                 if (ImGui.Selectable($"##{fate->FateId}_Selectable", false, ImGuiSelectableFlags.None,
-                        new Vector2(ImGui.GetContentRegionAvail().X, ElementHeight))) {
+                    new Vector2(ImGui.GetContentRegionAvail().X, ElementHeight))) {
                     OnFateClick(fate);
                 }
 
@@ -60,11 +60,9 @@ public class FateListWindow : Window {
         ImGui.SetCursorPosY(startPos);
         ImGui.Spacing();
 
-        ImGui.Image(
-            Service.TextureProvider.GetFromGameIcon(new GameIconLookup { IconId = 60502 }).GetWrapOrEmpty().Handle,
-            new Vector2(ImGui.GetContentRegionMax().X, ImGui.GetContentRegionMax().X),
-            Vector2.Zero,
-            Vector2.One,
+        ImGui.Image(Service.TextureProvider.GetFromGameIcon(new GameIconLookup { IconId = 60502 }).GetWrapOrEmpty(
+            ).Handle,
+            new Vector2(ImGui.GetContentRegionMax().X, ImGui.GetContentRegionMax().X), Vector2.Zero, Vector2.One,
             new Vector4(1.0f, 1.0f, 1.0f, 0.15f));
 
         ImGui.SetCursorPos(windowCursorStart);
@@ -100,7 +98,7 @@ public class FateListWindow : Window {
 
     private static unsafe void DrawFateInfo(FateContext* fate) {
         using (ImRaii.Child($"image_child_{fate->FateId}", new Vector2(ElementHeight, ElementHeight), false,
-                   ImGuiWindowFlags.NoInputs)) {
+            ImGuiWindowFlags.NoInputs)) {
             ImGui.Image(Service.TextureProvider.GetFromGameIcon(fate->IconId).GetWrapOrEmpty().Handle,
                 new Vector2(ElementHeight, ElementHeight));
         }
@@ -108,7 +106,7 @@ public class FateListWindow : Window {
         ImGui.SameLine();
 
         using (ImRaii.Child($"text_child_{fate->FateId}", new Vector2(ImGui.GetContentRegionAvail().X, ElementHeight),
-                   false, ImGuiWindowFlags.NoInputs)) {
+            false, ImGuiWindowFlags.NoInputs)) {
             ImGui.TextColored(FateContextExtensions.GetColor(fate, 1.0f), $"Lv. {fate->Level} {fate->Name}");
 
             if (fate->State is FateState.Running) {
@@ -116,8 +114,8 @@ public class FateListWindow : Window {
 
                 var timeRemaining = FateContextExtensions.GetTimeRemaining(fate);
                 if (timeRemaining != TimeSpan.Zero) {
-                    var timeString =
-                        $"{(fate->IsBonus ? "Exp Bonus!\t" : string.Empty)}{SeIconChar.Clock.ToIconString()} {FateContextExtensions.GetTimeRemaining(fate):mm\\:ss}";
+                    var timeString = $"{(fate->IsBonus ? "Exp Bonus!\t" : string.Empty)}{SeIconChar.Clock.ToIconString()} "
+                        + $"{FateContextExtensions.GetTimeRemaining(fate):mm\\:ss}";
                     ImGui.SameLine(ImGui.GetContentRegionMax().X - ImGui.CalcTextSize(timeString).X);
                     ImGui.Text(timeString);
                 }

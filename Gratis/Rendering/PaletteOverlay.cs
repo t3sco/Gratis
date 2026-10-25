@@ -11,8 +11,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public interface IPaletteSource
-{
+public interface IPaletteSource {
     IEnumerable<PlaceEntry> Entries { get; }
     int Revision { get; }
     bool Building { get; }
@@ -27,9 +26,12 @@ public interface IPaletteSource
     PaletteImage Image(PlaceEntry place) => default;
 }
 
-public sealed partial class PaletteOverlay(IPaletteSource source)
-{
-    private static readonly PlaceKind[] scopes = [PlaceKind.All, PlaceKind.Aetheryte, PlaceKind.Zone, PlaceKind.Quest, PlaceKind.Marker];
+public sealed partial class PaletteOverlay(IPaletteSource source) {
+    private static readonly PlaceKind[] scopes = [PlaceKind.All,
+        PlaceKind.Aetheryte,
+        PlaceKind.Zone,
+        PlaceKind.Quest,
+        PlaceKind.Marker];
     private static readonly string[] labels = ["All", "Aetherytes", "Zones", "Quests", "Markers"];
     private readonly Dictionary<string, long> recent = new();
     private string query = "", searched = "", message = "";
@@ -52,17 +54,17 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     public Vector4 FieldBounds { get; private set; }
     public Vector4 ClearBounds { get; private set; }
     private float inlineWidth;
-    public float InlineWidth(float scale)
-    {
+    public float InlineWidth(float scale) {
         inlineWidth = UiMotion.Value(ImGui.GetID("##inline-search-width"), 12, IsOpen ? 240 : 0,
             InterfaceMotionTokens.Standard, InterfaceCurve.Spring, initial: 0);
-        if (IsOpen) inlineWidth = MathF.Max(96, inlineWidth);
-        else if (inlineWidth < 1) inlineWidth = 0;
+        if (IsOpen)
+            inlineWidth = MathF.Max(96, inlineWidth);
+        else if (inlineWidth < 1)
+            inlineWidth = 0;
         return inlineWidth * scale;
     }
 
-    public void DrawInline(Vector2 position, Vector2 size)
-    {
+    public void DrawInline(Vector2 position, Vector2 size) {
         var s = GratisTheme.ChromeScale;
         FieldBounds = new(position.X, position.Y, position.X + size.X, position.Y + size.Y);
         ClearBounds = Vector4.Zero;
@@ -70,19 +72,26 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         using var fieldMotion = UiMotion.Surface("##inline-field-enter", position, IsOpen);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.SetCursorScreenPos(position);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding,
+            new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         var clearSize = MathF.Min(size.Y, size.X / 3);
         ImGui.SetNextItemWidth(MathF.Max(1, size.X - clearSize));
-        if (focusSearch) { ImGui.SetKeyboardFocusHere(); focusSearch = false; }
+        if (focusSearch) {
+            ImGui.SetKeyboardFocusHere();
+            focusSearch = false;
+        }
         ImGui.InputTextWithHint(queryInputId, "Search places...", ref query, 256);
-        ImGui.PopStyleColor(2); ImGui.PopStyleVar(2);
+        ImGui.PopStyleColor(2);
+        ImGui.PopStyleVar(2);
         var clearPos = position + new Vector2(size.X - clearSize, 0);
         ImGui.SetCursorScreenPos(clearPos);
         ClearBounds = new(clearPos.X, clearPos.Y, clearPos.X + clearSize, clearPos.Y + size.Y);
-        if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y), windowBounds: MapToolbarDrawing.WindowBounds)) SetQuery("");
+        if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y),
+            windowBounds: MapToolbarDrawing.WindowBounds))
+            SetQuery("");
         Search(MapDrawContext.Current.Config);
         ImGui.EndDisabled();
     }
@@ -92,9 +101,10 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     private uint? previousExpansion;
     private bool previousHome;
     private int viewRevision;
-    private void RememberView()
-    {
-        previousResults = results; previousExpansions = expansions; previousExpansion = expansion;
+    private void RememberView() {
+        previousResults = results;
+        previousExpansions = expansions;
+        previousExpansion = expansion;
         previousHome = string.IsNullOrWhiteSpace(searched) && searchedScope == 0;
         viewRevision++;
     }
@@ -104,81 +114,149 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     private PaletteExpansion[] expansions = [];
     private uint? expansion;
     private int browserSelection;
+    private PlaceResult?[] nearby = new PlaceResult?[NearbyCards.Length];
     public uint? BrowsedExpansion => expansion;
     public int BrowserSelection => browserSelection;
     public IReadOnlyList<PaletteExpansion> Expansions => expansions;
     public Vector2 FirstResultCenter { get; private set; }
     public Vector2 ConfirmationCenter { get; private set; }
     private bool Home => string.IsNullOrWhiteSpace(query) && scope == 0;
-    public void BrowseExpansion(uint? id) { RememberView(); expansion = id; browserSelection = 0; revision = -1; scrollSelection = false; focusSearch = true; }
-
-
-    public void Open(string text = "")
-    {
-        if (MapDrawContext.Current.IsPvP) { Close(false); return; }
-        IsOpen = CapturesInput = true; focusSearch = true; query = text; scope = 0; selected = 0;
-        queryInputId = $"##place-query-{++openSerial}";
-        revision = -1; searchedScope = -1; confirming = null; message = ""; expansion = null; browserSelection = 0;
-        source.Opening(); source.Used();
+    public void BrowseExpansion(uint? id) {
+        RememberView();
+        expansion = id;
+        browserSelection = 0;
+        revision = -1;
+        scrollSelection = false;
+        focusSearch = true;
     }
-    public void Close(bool restoreFocus = true) { IsOpen = false; confirming = null; if (restoreFocus) ImGui.SetWindowFocus(); }
 
-    public void Prepare(MapDrawingConfig config, bool focused)
-    {
-        if (MapDrawContext.Current.IsPvP) { Close(false); CapturesInput = false; return; }
+    public void Open(string text = "") {
+        if (MapDrawContext.Current.IsPvP) {
+            Close(false);
+            return;
+        }
+        IsOpen = CapturesInput = true;
+        focusSearch = true;
+        query = text;
+        scope = 0;
+        selected = 0;
+        queryInputId = $"##place-query-{++openSerial}";
+        revision = -1;
+        searchedScope = -1;
+        confirming = null;
+        message = "";
+        expansion = null;
+        browserSelection = 0;
+        source.Opening();
+        source.Used();
+    }
+
+    public void Close(bool restoreFocus = true) {
+        IsOpen = false;
+        confirming = null;
+        if (restoreFocus)
+            ImGui.SetWindowFocus();
+    }
+
+    public void Prepare(MapDrawingConfig config, bool focused) {
+        if (MapDrawContext.Current.IsPvP) {
+            Close(false);
+            CapturesInput = false;
+            return;
+        }
         CapturesInput = IsOpen;
-        if (!config.IsGratis || !config.Palette) { IsOpen = false; CapturesInput = false; return; }
+        if (!config.IsGratis || !config.Palette) {
+            IsOpen = false;
+            CapturesInput = false;
+            return;
+        }
         if (swallowEscape) {
             swallowEscape = ImGui.IsKeyDown(ImGuiKey.Escape);
-            if (swallowEscape) { CapturesInput = true; ImGui.SetNextFrameWantCaptureKeyboard(true); }
+            if (swallowEscape) {
+                CapturesInput = true;
+                ImGui.SetNextFrameWantCaptureKeyboard(true);
+            }
         }
-        if (IsOpen && !focused) { Close(false); CapturesInput = false; return; }
-        if (!IsOpen) return;
-        if ((ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right)) &&
-            !Contains(FieldBounds, ImGui.GetMousePos()) &&
-            !Contains(new(PanelMin.X, PanelMin.Y, PanelMax.X, PanelMax.Y), ImGui.GetMousePos()) &&
-            !Contains(MapToolbarDrawing.ButtonBounds[0], ImGui.GetMousePos())) {
-            Close(); CapturesInput = false;
-            ImGui.SetNextFrameWantCaptureKeyboard(false); ImGui.SetNextFrameWantCaptureMouse(false);
+        if (IsOpen && !focused) {
+            Close(false);
+            CapturesInput = false;
+            return;
+        }
+        if (!IsOpen)
+            return;
+        if ((ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            && !Contains(FieldBounds, ImGui.GetMousePos())
+            && !Contains(new(PanelMin.X, PanelMin.Y, PanelMax.X, PanelMax.Y), ImGui.GetMousePos())
+            && !Contains(MapToolbarDrawing.ButtonBounds[0], ImGui.GetMousePos())) {
+            Close();
+            CapturesInput = false;
+            ImGui.SetNextFrameWantCaptureKeyboard(false);
+            ImGui.SetNextFrameWantCaptureMouse(false);
             return;
         }
         CapturesInput = true;
         ImGui.SetNextFrameWantCaptureKeyboard(true);
         ImGui.SetNextFrameWantCaptureMouse(true);
-        if (ImGui.IsKeyPressed(ImGuiKey.Escape, false)) { swallowEscape = true; Close(); return; }
+        if (ImGui.IsKeyPressed(ImGuiKey.Escape, false)) {
+            swallowEscape = true;
+            Close();
+            return;
+        }
         source.Refresh();
     }
 
-    private static bool Contains(Vector4 rect, Vector2 p) => rect.Z > rect.X && rect.W > rect.Y && p.X >= rect.X && p.X <= rect.Z && p.Y >= rect.Y && p.Y <= rect.W;
+    private static bool Contains(Vector4 rect, Vector2 p) => rect.Z > rect.X && rect.W > rect.Y && p.X >= rect.X
+        && p.X <= rect.Z && p.Y >= rect.Y && p.Y <= rect.W;
 
-    private void Search(MapDrawingConfig config)
-    {
+    private void Search(MapDrawingConfig config) {
         var windows = MapDrawContext.Current.WindowPresets;
         if (windowPresetRevision != windows.Revision || windowPresetSettings != config.WindowPresetOptions) {
-            windowPresetRevision = windows.Revision; windowPresetSettings = config.WindowPresetOptions; revision = -1;
+            windowPresetRevision = windows.Revision;
+            windowPresetSettings = config.WindowPresetOptions;
+            revision = -1;
         }
         if (searched == query && searchedScope == scope && revision == source.Revision && context == source.Context
-            && showUnattuned == config.PaletteShowUnattuned) return;
-        if (searched != query || searchedScope != scope) RememberView();
-        if (searched != query) browserSelection = 0;
-        if (searched != query || searchedScope != scope) { selected = 0; scrollSelection = true; confirming = null; message = ""; }
-        searched = query; searchedScope = scope; revision = source.Revision; context = source.Context;
+            && showUnattuned == config.PaletteShowUnattuned)
+            return;
+        if (searched != query || searchedScope != scope)
+            RememberView();
+        if (searched != query)
+            browserSelection = 0;
+        if (searched != query || searchedScope != scope) {
+            selected = 0;
+            scrollSelection = true;
+            confirming = null;
+            message = "";
+        }
+        searched = query;
+        searchedScope = scope;
+        revision = source.Revision;
+        context = source.Context;
         showUnattuned = config.PaletteShowUnattuned;
-        var entries = NearestPlaces.Parse(query, out _) ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries) : source.Entries.Append(MainStoryObjective.Action);
+        var entries = NearestPlaces.Parse(query, out _)
+            ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries)
+            : source.Entries.Append(MainStoryObjective.Action);
         if (config is Gratis.Data.SystemConfig systemConfig && !NearestPlaces.Parse(query, out _))
             entries = entries.Concat(windows.Commands(systemConfig));
         var snapshot = entries.ToArray();
         expansions = PaletteBrowser.Expansions(snapshot);
-        if (Home && expansion is { } ex) snapshot = snapshot.Where(p => p.Expansion == ex && p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte).ToArray();
-        results = PaletteBrowser.Distinct(PlaceSearch.Find(snapshot, query, scopes[scope], context, recent, source.Access, showUnattuned));
-        if (NearestPlaces.Parse(query, out _) && context.Player == null) message = "Player position is unavailable on the selected map.";
+        if (Home && expansion is { } ex)
+            snapshot = snapshot.Where(p => p.Expansion == ex
+                && p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte).ToArray();
+        results = PaletteBrowser.Distinct(PlaceSearch.Find(snapshot, query, scopes[scope], context, recent,
+            source.Access, showUnattuned));
+        if (Home && expansion == null)
+            nearby = FindNearby();
+        if (NearestPlaces.Parse(query, out _) && context.Player == null)
+            message = "Player position is unavailable on the selected map.";
         selected = Math.Clamp(selected, 0, Math.Max(0, results.Length - 1));
     }
 
-    private void ChangeScope(int next)
-    {
-        scope = next; query = PlaceSearch.Parse(query, PlaceKind.All).Query;
-        queryInputId = $"##place-query-{++openSerial}"; focusSearch = true;
+    private void ChangeScope(int next) {
+        scope = next;
+        query = PlaceSearch.Parse(query, PlaceKind.All).Query;
+        queryInputId = $"##place-query-{++openSerial}";
+        focusSearch = true;
     }
 
     private static bool BeginChild(string id, Vector2 size, ImGuiWindowFlags flags) =>
@@ -188,28 +266,47 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         ImGui.BeginChild(id, size, false, flags | ImGuiWindowFlags.AlwaysUseWindowPadding);
 #endif
 
-    private void Activate(PlaceEntry place)
-    {
-        if (MapDrawContext.Current.Config is Gratis.Data.SystemConfig config && MapDrawContext.Current.WindowPresets.Activate(place.Id, config)) { Close(); return; }
-        if (place.Id == MainStoryObjective.Action.Id) { source.ShowMainStory(); Close(); return; }
+    private void Activate(PlaceEntry place) {
+        if (MapDrawContext.Current.Config is Gratis.Data.SystemConfig config
+            && MapDrawContext.Current.WindowPresets.Activate(place.Id, config)) {
+            Close();
+            return;
+        }
+        if (place.Id == MainStoryObjective.Action.Id) {
+            source.ShowMainStory();
+            Close();
+            return;
+        }
         if (!string.IsNullOrWhiteSpace(query)) {
-            recentQueries.Remove(query); recentQueries.Insert(0, query);
-            if (recentQueries.Count > 6) recentQueries.RemoveAt(recentQueries.Count - 1);
+            recentQueries.Remove(query);
+            recentQueries.Insert(0, query);
+            if (recentQueries.Count > 6)
+                recentQueries.RemoveAt(recentQueries.Count - 1);
         }
         recent[place.Id] = ++sequence;
-        if (recent.Count > 128) { string? oldest = null; long rank = long.MaxValue; foreach (var item in recent) if (item.Value < rank) { rank = item.Value; oldest = item.Key; } if (oldest != null) recent.Remove(oldest); }
-        source.Show(place); Close();
+        if (recent.Count > 128) {
+            string? oldest = null;
+            long rank = long.MaxValue;
+            foreach (var item in recent)
+                if (item.Value < rank) {
+                    rank = item.Value;
+                    oldest = item.Key;
+                }
+            if (oldest != null)
+                recent.Remove(oldest);
+        }
+        source.Show(place);
+        Close();
     }
 
-    private void Teleport(PlaceEntry place, bool confirmed)
-    {
+    private void Teleport(PlaceEntry place, bool confirmed) {
         message = MapDrawContext.Current.Assistance?.CanOffer(place) == true
             ? MapDrawContext.Current.Assistance.Request(place, confirmed) : source.Teleport(place, confirmed);
         confirming = message.StartsWith("Confirm ", StringComparison.Ordinal) ? place : null;
-        if (message.Length == 0 || message == "Teleport requested.") Close();
+        if (message.Length == 0 || message == "Teleport requested.")
+            Close();
     }
 
-    public void DrawHint(MapDrawingConfig config)
-    {
+    public void DrawHint(MapDrawingConfig config) {
     }
 }

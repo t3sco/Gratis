@@ -16,9 +16,8 @@ using Math = global::System.Math;
 
 namespace Gratis.Classes;
 
-public sealed class ScreenshotCapture : IDisposable
-{
-    private const string OutputDirectory = @"C:\Users\cmaho\Documents\Gratis\_shots";
+public sealed class ScreenshotCapture : IDisposable {
+    private static string OutputDirectory => Path.Combine(Service.PluginInterface.GetPluginConfigDirectory(), "shots");
 
     [PluginService] private IChatGui ChatGui { get; set; } = null!;
 
@@ -32,24 +31,21 @@ public sealed class ScreenshotCapture : IDisposable
     private Action<bool>? reportCompletion;
     private Rendering.MapDrawContext? privacyContext;
 
-    public ScreenshotCapture()
-    {
+    public ScreenshotCapture() {
         Service.PluginInterface.Inject(this);
         command = new CommandHandler { ActivationPath = "/shot", Delegate = Request };
         System.CommandManager.RegisterCommand(command);
         Service.PluginInterface.UiBuilder.Draw += OnDraw;
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         disposed = true;
         Service.PluginInterface.UiBuilder.Draw -= OnDraw;
         System.CommandManager.RemoveCommand(command);
         CompleteReport(false);
     }
 
-    private void Request(params string[] args)
-    {
+    private void Request(params string[] args) {
         if (args.Length > 1 || (args.Length == 1 && !args[0].Equals("map", StringComparison.OrdinalIgnoreCase))) {
             ChatGui.PrintError("[Gratis] Usage: /gratis shot [map]");
             return;
@@ -66,48 +62,58 @@ public sealed class ScreenshotCapture : IDisposable
         Volatile.Write(ref pendingDraw, 1);
     }
 
-    internal bool RequestReport(string path, Action<bool> completion)
-    {
+    internal bool RequestReport(string path, Action<bool> completion) {
         var ctx = Rendering.MapDrawContext.Current;
-        if (disposed || !System.MapWindow.IsOpen || System.MapWindow.PlacePalette.Overlay.IsOpen ||
-            ctx.ContextMenu.CapturesInput || ctx.Assistance?.PinLayer?.CapturesInput == true ||
-            Interlocked.CompareExchange(ref busy, 1, 0) != 0) return false;
-        reportOutput = path; reportCompletion = completion;
-        privacyContext = ctx; ctx.ReportCapture = true;
-        mapOnly = true; mapBounds = null;
+        if (disposed || !System.MapWindow.IsOpen || System.MapWindow.PlacePalette.Overlay.IsOpen
+            || ctx.ContextMenu.CapturesInput || ctx.Assistance?.PinLayer?.CapturesInput == true
+            || Interlocked.CompareExchange(ref busy, 1, 0) != 0)
+            return false;
+        reportOutput = path;
+        reportCompletion = completion;
+        privacyContext = ctx;
+        ctx.ReportCapture = true;
+        mapOnly = true;
+        mapBounds = null;
         Volatile.Write(ref pendingDraw, 1);
         return true;
     }
 
-    private void CompleteReport(bool success)
-    {
-        if (privacyContext is { } ctx) ctx.ReportCapture = false;
+    private void CompleteReport(bool success) {
+        if (privacyContext is { } ctx)
+            ctx.ReportCapture = false;
         privacyContext = null;
-        try { Interlocked.Exchange(ref reportCompletion, null)?.Invoke(success); }
+        try {
+            Interlocked.Exchange(ref reportCompletion, null)?.Invoke(success);
+        }
         catch (Exception error) { Service.Log.Warning(error, "[Gratis] Could not update report screenshot status."); }
     }
 
-    private void OnDraw()
-    {
-        if (disposed || Volatile.Read(ref pendingDraw) == 0) return;
+    private void OnDraw() {
+        if (disposed || Volatile.Read(ref pendingDraw) == 0)
+            return;
 
         try {
-            if (reportOutput is not null && (System.MapWindow.PlacePalette.Overlay.IsOpen || Rendering.MapDrawContext.Current.ContextMenu.CapturesInput ||
-                Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput == true))
+            if (reportOutput is not null
+                && (System.MapWindow.PlacePalette.Overlay.IsOpen
+                    || Rendering.MapDrawContext.Current.ContextMenu.CapturesInput
+                    || Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput == true))
                 throw new InvalidOperationException("A text-entry overlay opened during report capture.");
             if (pendingDraw == 1) {
                 if (mapOnly) {
                     var map = System.MapWindow;
-                    if (!map.IsOpen || !map.DrawConditions()) throw new InvalidOperationException("Open the Gratis map before using /gratis shot map.");
+                    if (!map.IsOpen || !map.DrawConditions())
+                        throw new InvalidOperationException("Open the Gratis map before using /gratis shot map.");
 
                     var visible = ImGui.Begin(map.WindowName);
                     try {
-                        if (!visible) throw new InvalidOperationException("The Gratis map is collapsed.");
+                        if (!visible)
+                            throw new InvalidOperationException("The Gratis map is collapsed.");
                         var position = ImGui.GetWindowPos() - ImGui.GetMainViewport().Pos;
                         var size = ImGui.GetWindowSize();
                         mapBounds = new Rect {
                             Left = (int)Math.Floor(position.X), Top = (int)Math.Floor(position.Y),
-                            Right = (int)Math.Ceiling(position.X + size.X), Bottom = (int)Math.Ceiling(position.Y + size.Y),
+                            Right = (int)Math.Ceiling(position.X + size.X),
+                            Bottom = (int)Math.Ceiling(position.Y + size.Y),
                         };
                     }
                     finally {
@@ -130,47 +136,57 @@ public sealed class ScreenshotCapture : IDisposable
         }
     }
 
-    private void Capture(Rect? bounds)
-    {
+    private void Capture(Rect? bounds) {
         try {
-            if (disposed) return;
+            if (disposed)
+                return;
             using var process = Process.GetCurrentProcess();
             var window = process.MainWindowHandle;
-            if (window == 0 || IsIconic(window)) throw new InvalidOperationException("The game window is unavailable or minimized.");
-            if (!GetClientRect(window, out var client)) throw new Win32Exception();
+            if (window == 0 || IsIconic(window))
+                throw new InvalidOperationException("The game window is unavailable or minimized.");
+            if (!GetClientRect(window, out var client))
+                throw new Win32Exception();
 
             var crop = bounds is { } map ? new Rect {
                 Left = Math.Max(0, map.Left), Top = Math.Max(0, map.Top),
                 Right = Math.Min(client.Right, map.Right), Bottom = Math.Min(client.Bottom, map.Bottom),
             } : client;
-            if (crop.Right <= crop.Left || crop.Bottom <= crop.Top) throw new InvalidOperationException("The Gratis map is outside the game client area.");
+            if (crop.Right <= crop.Left || crop.Bottom <= crop.Top)
+                throw new InvalidOperationException("The Gratis map is outside the game client area.");
 
             var info = new BitmapInfo {
-                Size = 40, Width = client.Right, Height = -client.Bottom, Planes = 1, BitCount = 32,
-            };
+                Size = 40, Width = client.Right, Height = -client.Bottom, Planes = 1,
+                BitCount = 32, };
             var dc = CreateCompatibleDC(0);
-            if (dc == 0) throw new Win32Exception();
+            if (dc == 0)
+                throw new Win32Exception();
             nint bitmap = 0;
             nint previous = 0;
             byte[] pixels;
             try {
                 bitmap = CreateDIBSection(dc, ref info, 0, out var bits, 0, 0);
-                if (bitmap == 0) throw new Win32Exception();
+                if (bitmap == 0)
+                    throw new Win32Exception();
                 previous = SelectObject(dc, bitmap);
-                if (previous == 0 || previous == -1) throw new Win32Exception();
+                if (previous == 0 || previous == -1)
+                    throw new Win32Exception();
 
                 Marshal.ThrowExceptionForHR(DwmFlush());
-                if (!PrintWindow(window, dc, 0x3)) throw new InvalidOperationException("PrintWindow could not capture the rendered game client.");
+                if (!PrintWindow(window, dc, 0x3))
+                    throw new InvalidOperationException("PrintWindow could not capture the rendered game client.");
                 pixels = new byte[checked(client.Right * client.Bottom * 4)];
                 Marshal.Copy(bits, pixels, 0, pixels.Length);
             }
             finally {
-                if (previous != 0 && previous != -1) SelectObject(dc, previous);
-                if (bitmap != 0) DeleteObject(bitmap);
+                if (previous != 0 && previous != -1)
+                    SelectObject(dc, previous);
+                if (bitmap != 0)
+                    DeleteObject(bitmap);
                 DeleteDC(dc);
             }
 
-            if (disposed) return;
+            if (disposed)
+                return;
             if (reportOutput is { } reportPath) {
                 Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
                 WritePng(reportPath, pixels, client.Right, crop);
@@ -182,7 +198,8 @@ public sealed class ScreenshotCapture : IDisposable
             WritePng(timestamped, pixels, client.Right, crop);
             var latest = Path.Combine(OutputDirectory, "latest.png");
             File.Copy(timestamped, latest, true);
-            foreach (var old in Directory.EnumerateFiles(OutputDirectory, "shot-*.png").OrderByDescending(Path.GetFileName, StringComparer.Ordinal).Skip(20)) {
+            foreach (var old in Directory.EnumerateFiles(OutputDirectory,
+                "shot-*.png").OrderByDescending(Path.GetFileName, StringComparer.Ordinal).Skip(20)) {
                 File.Delete(old);
             }
 
@@ -197,25 +214,26 @@ public sealed class ScreenshotCapture : IDisposable
         }
     }
 
-    private void ReportFailure(Exception exception)
-    {
+    private void ReportFailure(Exception exception) {
         CompleteReport(false);
         Service.Log.Error(exception, "[Gratis] Screenshot capture failed.");
         Notify($"[Gratis] Screenshot failed: {exception.Message}", true);
     }
 
-    private void Notify(string message, bool error = false)
-    {
-        if (disposed) return;
+    private void Notify(string message, bool error = false) {
+        if (disposed)
+            return;
         _ = Service.Framework.RunOnFrameworkThread(() => {
-            if (disposed) return;
-            if (error) ChatGui.PrintError(message);
-            else ChatGui.Print(message);
+            if (disposed)
+                return;
+            if (error)
+                ChatGui.PrintError(message);
+            else
+                ChatGui.Print(message);
         });
     }
 
-    private static void WritePng(string path, byte[] bgra, int stridePixels, Rect crop)
-    {
+    private static void WritePng(string path, byte[] bgra, int stridePixels, Rect crop) {
         var width = crop.Right - crop.Left;
         var height = crop.Bottom - crop.Top;
         using var output = File.Create(path);
@@ -243,33 +261,35 @@ public sealed class ScreenshotCapture : IDisposable
         WriteChunk(output, "IEND"u8, ReadOnlySpan<byte>.Empty);
     }
 
-    private static void WriteChunk(Stream output, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
-    {
+    private static void WriteChunk(Stream output, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data) {
         Span<byte> number = stackalloc byte[4];
         BinaryPrimitives.WriteInt32BigEndian(number, data.Length);
         output.Write(number);
         output.Write(type);
         output.Write(data);
         var crc = uint.MaxValue;
-        foreach (var value in type) crc = UpdateCrc(crc, value);
-        foreach (var value in data) crc = UpdateCrc(crc, value);
+        foreach (var value in type)
+            crc = UpdateCrc(crc, value);
+        foreach (var value in data)
+            crc = UpdateCrc(crc, value);
         BinaryPrimitives.WriteUInt32BigEndian(number, ~crc);
         output.Write(number);
     }
 
-    private static uint UpdateCrc(uint crc, byte value)
-    {
+    private static uint UpdateCrc(uint crc, byte value) {
         crc ^= value;
-        for (var bit = 0; bit < 8; bit++) crc = (crc >> 1) ^ ((crc & 1) == 0 ? 0 : 0xedb88320u);
+        for (var bit = 0; bit < 8; bit++)
+            crc = (crc >> 1) ^ ((crc & 1) == 0 ? 0 : 0xedb88320u);
         return crc;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct Rect { public int Left, Top, Right, Bottom; }
+    private struct Rect {
+        public int Left, Top, Right, Bottom;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct BitmapInfo
-    {
+    private struct BitmapInfo {
         public uint Size;
         public int Width, Height;
         public ushort Planes, BitCount;
@@ -282,7 +302,9 @@ public sealed class ScreenshotCapture : IDisposable
     [DllImport("user32.dll")] private static extern bool IsIconic(nint window);
     [DllImport("user32.dll")] private static extern bool PrintWindow(nint window, nint dc, uint flags);
     [DllImport("gdi32.dll", SetLastError = true)] private static extern nint CreateCompatibleDC(nint dc);
-    [DllImport("gdi32.dll", SetLastError = true)] private static extern nint CreateDIBSection(nint dc, ref BitmapInfo info, uint usage, out nint bits, nint section, uint offset);
+    [DllImport("gdi32.dll", SetLastError = true)]
+    private static extern nint CreateDIBSection(nint dc, ref BitmapInfo info, uint usage, out nint bits, nint section,
+        uint offset);
     [DllImport("gdi32.dll", SetLastError = true)] private static extern nint SelectObject(nint dc, nint item);
     [DllImport("gdi32.dll")] private static extern bool DeleteObject(nint item);
     [DllImport("gdi32.dll")] private static extern bool DeleteDC(nint dc);

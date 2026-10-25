@@ -4,21 +4,19 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static partial class Program
-{
+internal static partial class Program {
     private static readonly string[] ViewportScenes = ["viewport-small", "viewport-large", "viewport-unscaled",
         "viewport-clamp-corner", "viewport-clamp-off", "viewport-circle-corner"];
     private static bool IsViewportScene(string scene) => ViewportScenes.Contains(scene);
 
-    private static Vector2 ViewportSceneSize(string scene, Vector2 available)
-    {
+    private static Vector2 ViewportSceneSize(string scene, Vector2 available) {
         var requested = scene == "viewport-small" ? new Vector2(432, 288) : new Vector2(864, 576);
         return Vector2.Min(requested, available);
     }
 
-    private static bool DrawViewportMap(string scene, Vector2 frame, DrawTexture texture, bool viewportOff)
-    {
-        if (!IsViewportScene(scene)) return false;
+    private static bool DrawViewportMap(string scene, Vector2 frame, DrawTexture texture, bool viewportOff) {
+        if (!IsViewportScene(scene))
+            return false;
         var config = MapDrawContext.Current.Config;
         config.ScaleWithFrame = !viewportOff && scene != "viewport-unscaled";
         config.ClampToMap = !viewportOff && scene != "viewport-clamp-off";
@@ -29,11 +27,13 @@ internal static partial class Program
         var scale = MathF.Max(reference.X / texture.Size.X, reference.Y / texture.Size.Y) * 2.5f;
         scale = zoom.Resolve(reference, scale, config.ScaleWithFrame);
         var corner = scene is "viewport-clamp-corner" or "viewport-clamp-off" or "viewport-circle-corner";
-        if (corner) scale *= .2f;
+        if (corner)
+            scale *= .2f;
         scale = zoom.Resolve(frame, scale, config.ScaleWithFrame,
             config.ClampToMap ? ViewportMath.MinimumScale(frame, texture.Size, config.MapCircle) : .05f);
         var center = corner ? new Vector2(-300, -200) : texture.Size * new Vector2(.52f, .48f);
-        if (config.ClampToMap) center = ViewportMath.ClampCenter(center, frame, texture.Size, scale, config.MapCircle);
+        if (config.ClampToMap)
+            center = ViewportMath.ClampCenter(center, frame, texture.Size, scale, config.MapCircle);
         var origin = frame / 2 - center * scale;
         ImGui.SetCursorPos(origin);
         MapTextureDrawing.DrawMapImage(texture, scale);

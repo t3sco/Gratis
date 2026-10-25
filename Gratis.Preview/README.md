@@ -41,7 +41,7 @@ marker and exercises all four chrome surfaces; `glass-toolbar` hovers Settings.
 Their PNGs must match. `glass-on` and `glass-off` share an identical fixture.
 `glass-circle` adds a fully visible circle, supported by a rounded-square host mask.
 Partially clipped circles use tint; chrome glass never blurs the whole map.
-See [glass diagnostics and defaults](../docs/GLASS.md).
+See [glass diagnostics and defaults](../docs/RENDERING.md#feather-frames-and-glass).
 
 Harness blur is a **CPU box-blur approximation** of the already-drawn backdrop at
 the surface's index position, using an immutable padded snapshot and a rounded mask.

@@ -5,10 +5,8 @@ using SkiaSharp;
 
 namespace Gratis.Preview;
 
-internal static partial class Program
-{
-    private static void RenderSpotlightSheet(Options options)
-    {
+internal static partial class Program {
+    private static void RenderSpotlightSheet(Options options) {
         const int width = 576, height = 420, caption = 34;
         var circle = options.Scene == "spotlight-circular";
         var directory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(options.Output))!, options.Scene);
@@ -35,18 +33,25 @@ internal static partial class Program
                     new(60450, new Vector2(-270, -140)), new(61000, new Vector2(390, 140))],
             };
             using var driver = new ScriptedFrameDriver(config, scene);
-            driver.Step(new(0)); driver.Step(new(.01));
+            driver.Step(new(0));
+            driver.Step(new(.01));
             driver.Step(new(.02, QuestLink: new(new Vector2(300, -110), 1, Icon: 71001)));
             var time = .02;
             for (var column = 0; column < times.Length; column++) {
                 var capture = .02 + times[column];
-                while (time + 1.0 / 60 < capture) { time += 1.0 / 60; driver.Step(new(time)); }
-                time = capture; driver.Step(new(time));
+                while (time + 1.0 / 60 < capture) {
+                    time += 1.0 / 60;
+                    driver.Step(new(time));
+                }
+                time = capture;
+                driver.Step(new(time));
                 var path = Path.Combine(directory, $"{(row == 0 ? "mono" : "midnight")}-{column}.png");
                 driver.Save(path);
                 using var tile = SKBitmap.Decode(path);
-                var x = column * width; var y = row * (height + caption);
-                canvas.DrawText($"{(row == 0 ? "Mono" : "Midnight")} / {labels[column]}", x + 20, y + 24, SKTextAlign.Left, font, paint);
+                var x = column * width;
+                var y = row * (height + caption);
+                canvas.DrawText($"{(row == 0 ? "Mono" : "Midnight")} / {labels[column]}", x + 20, y + 24,
+                    SKTextAlign.Left, font, paint);
                 canvas.DrawBitmap(tile, x, y + caption);
             }
         }
@@ -54,6 +59,7 @@ internal static partial class Program
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var output = File.Create(options.Output);
         data.SaveTo(output);
-        Console.WriteLine($"{options.Output}: shared quest Spotlight at start/framing/pulse/fade, Mono + Midnight, {(circle ? "circle" : "rectangle")}; tiles in {directory}");
+        Console.WriteLine($"{options.Output}: shared quest Spotlight at start/framing/pulse/fade, Mono + "
+            + $"Midnight, {(circle ? "circle" : "rectangle")}; tiles in {directory}");
     }
 }

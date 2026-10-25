@@ -9,38 +9,41 @@ using Gratis.Windows;
 
 namespace Gratis.Classes.MapWindowComponents;
 
-public unsafe class MapContextMenu
-{
-    public MapContextMenu()
-    {
+public unsafe class MapContextMenu {
+    public MapContextMenu() {
         Rendering.MapDrawContext.Current.ContextMenu.Actions = new Rendering.GameContextMenuActions();
     }
 
-    public void Draw(Vector2 mapDrawOffset)
-    {
+    public void Draw(Vector2 mapDrawOffset) {
         using var contextMenu = ImRaii.ContextPopup("Gratis_Context_Menu");
 
-        if (!contextMenu) return;
+        if (!contextMenu)
+            return;
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
         if (ImGui.BeginMenu("Window presets")) {
             var index = 0;
             foreach (var item in Rendering.MapDrawContext.Current.WindowPresets.Menu(System.SystemConfig)) {
                 ImGui.PushID(index++);
-                if (ImGui.MenuItem(item.Label, "", false, item.Invoke != null)) item.Invoke?.Invoke();
+                if (ImGui.MenuItem(item.Label, "", false, item.Invoke != null))
+                    item.Invoke?.Invoke();
                 ImGui.PopID();
             }
             ImGui.EndMenu();
         }
 
-        if (System.SystemConfig.IsGratis && System.SystemConfig.Pins && Rendering.MapDrawContext.Current.Assistance?.PinLayer is { } pins) {
+        if (System.SystemConfig.IsGratis && System.SystemConfig.Pins
+            && Rendering.MapDrawContext.Current.Assistance?.PinLayer is { } pins) {
             if (ImGui.MenuItem("Add pin here")) {
-                var world = System.MapRenderer.Frame.ScreenToWorld(ImGui.GetMousePosOnOpeningCurrentPopup(), mapDrawOffset);
+                var world = System.MapRenderer.Frame.ScreenToWorld(ImGui.GetMousePosOnOpeningCurrentPopup(),
+                    mapDrawOffset);
                 pins.Edit(AgentMap.Instance()->SelectedMapId, world);
             }
-            if (ImGui.MenuItem("Import pin from clipboard")) pins.Import(ImGui.GetClipboardText());
+            if (ImGui.MenuItem("Import pin from clipboard"))
+                pins.Import(ImGui.GetClipboardText());
             if (ImGui.BeginMenu("Pins on this map")) {
                 foreach (var pin in pins.Store.ForMap(AgentMap.Instance()->SelectedMapId))
-                    if (ImGui.MenuItem(pin.Title + "##" + pin.Id)) pins.Edit(pin.MapId, pin.World, pin);
+                    if (ImGui.MenuItem(pin.Title + "##" + pin.Id))
+                        pins.Edit(pin.MapId, pin.World, pin);
                 ImGui.EndMenu();
             }
             ImGui.Separator();
@@ -50,12 +53,14 @@ public unsafe class MapContextMenu
             var cursorPosition = ImGui.GetMousePosOnOpeningCurrentPopup();
             var mapChildOffset = mapDrawOffset;
             var mapDrawPositionOffset = System.MapRenderer.DrawPosition;
-            var textureClickLocation = (cursorPosition - mapChildOffset - mapDrawPositionOffset) / MapRenderer.MapRenderer.Scale;
+            var textureClickLocation = (cursorPosition - mapChildOffset - mapDrawPositionOffset)
+                / MapRenderer.MapRenderer.Scale;
             var result = textureClickLocation - new Vector2(1024.0f, 1024.0f);
             var scaledResult = result / DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetRawMapOffsetVector();
 
             AgentMap.Instance()->FlagMarkerCount = 0;
-            AgentMap.Instance()->SetFlagMapMarker(AgentMap.Instance()->SelectedTerritoryId, AgentMap.Instance()->SelectedMapId, scaledResult.X, scaledResult.Y);
+            AgentMap.Instance()->SetFlagMapMarker(AgentMap.Instance()->SelectedTerritoryId,
+                AgentMap.Instance()->SelectedMapId, scaledResult.X, scaledResult.Y);
             System.MapRenderer.PingTexturePosition(textureClickLocation);
             AgentChatLog.Instance()->InsertTextCommandParam(1048, false);
         }
@@ -66,7 +71,8 @@ public unsafe class MapContextMenu
 
         ImGuiHelpers.ScaledDummy(5.0f);
 
-        if (ImGui.MenuItem("Center on Player", false, Service.ObjectTable.LocalPlayer is not null) && Service.ObjectTable.LocalPlayer is not null) {
+        if (ImGui.MenuItem("Center on Player", false, Service.ObjectTable.LocalPlayer is not null)
+            && Service.ObjectTable.LocalPlayer is not null) {
             System.IntegrationsController.OpenOccupiedMap();
             System.MapRenderer.CenterOnGameObject(Service.ObjectTable.LocalPlayer);
         }
@@ -85,15 +91,18 @@ public unsafe class MapContextMenu
         ImGuiHelpers.ScaledDummy(5.0f);
 
         if (ImGui.MenuItem("Open Quest List", false, System.WindowManager.GetWindow<QuestListWindow>() is null)) {
-            System.WindowManager.AddWindow(new QuestListWindow(), WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+            System.WindowManager.AddWindow(new QuestListWindow(), WindowFlags.OpenImmediately
+                | WindowFlags.RequireLoggedIn);
         }
 
         if (ImGui.MenuItem("Open Fate List", false, System.WindowManager.GetWindow<FateListWindow>() is null)) {
-            System.WindowManager.AddWindow(new FateListWindow(), WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+            System.WindowManager.AddWindow(new FateListWindow(), WindowFlags.OpenImmediately
+                | WindowFlags.RequireLoggedIn);
         }
 
         if (ImGui.MenuItem("Open Flag List", false, System.WindowManager.GetWindow<FlagHistoryWindow>() is null)) {
-            System.WindowManager.AddWindow(new FlagHistoryWindow(), WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+            System.WindowManager.AddWindow(new FlagHistoryWindow(), WindowFlags.OpenImmediately
+                | WindowFlags.RequireLoggedIn);
         }
     }
 }

@@ -10,26 +10,24 @@ using Gratis.Data;
 
 namespace Gratis.Windows;
 
-public class FlagHistoryWindow : Window
-{
+public class FlagHistoryWindow : Window {
     private static float FlagElementHeight => 95.0f * ImGuiHelpers.GlobalScale;
 
-    public FlagHistoryWindow() : base("Gratis Flag History Window", new Vector2(400.0f, 400.0f))
-    {
+    public FlagHistoryWindow() : base("Gratis Flag History Window", new Vector2(400.0f, 400.0f)) {
         AdditionalInfoTooltip = "Shows a list of all recently used flags";
     }
 
-    protected override void DrawContents()
-    {
+    protected override void DrawContents() {
         ImGuiClip.ClippedDraw(System.FlagConfig.FlagHistory.ToImmutableList(), DrawFlag, FlagElementHeight);
     }
 
-    private void DrawFlag(Flag flag)
-    {
+    private void DrawFlag(Flag flag) {
         using var id = ImRaii.PushId(flag.GetIdString());
 
-        using (ImRaii.Child("flag_container", new Vector2(ImGui.GetContentRegionAvail().X, FlagElementHeight - ImGui.GetStyle().FramePadding.Y * 2.0f))) {
-            using (ImRaii.Child("flag_image_container", new Vector2(155.0f * ImGuiHelpers.GlobalScale, ImGui.GetContentRegionAvail().Y))) {
+        using (ImRaii.Child("flag_container",
+            new Vector2(ImGui.GetContentRegionAvail().X, FlagElementHeight - ImGui.GetStyle().FramePadding.Y * 2.0f))) {
+            using (ImRaii.Child("flag_image_container",
+                new Vector2(155.0f * ImGuiHelpers.GlobalScale, ImGui.GetContentRegionAvail().Y))) {
                 DrawFlagImage(flag);
             }
 
@@ -44,19 +42,18 @@ public class FlagHistoryWindow : Window
         ImGui.Spacing();
     }
 
-    private void DrawFlagImage(Flag flag)
-    {
+    private void DrawFlagImage(Flag flag) {
         var texture = flag.GetMapTexture();
         if (texture is not null) {
-            ImGui.Image(texture.Handle, ImGui.GetContentRegionAvail(), new Vector2(0.15f, 0.15f), new Vector2(0.85f, 0.85f));
+            ImGui.Image(texture.Handle, ImGui.GetContentRegionAvail(), new Vector2(0.15f, 0.15f),
+                new Vector2(0.85f, 0.85f));
         }
         else {
             ImGuiHelpers.ScaledDummy(ImGui.GetContentRegionAvail());
         }
     }
 
-    private void DrawFlagData(Flag flag)
-    {
+    private void DrawFlagData(Flag flag) {
         ImGui.Text(flag.GetMap().PlaceName.Value.Name.ExtractText());
 
         ImGui.SameLine();
@@ -66,7 +63,8 @@ public class FlagHistoryWindow : Window
         ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - coordinateStringSize.X);
         ImGui.Text(coordinateString);
 
-        ImGui.TextColored(KnownColor.Gray.Vector().Lighten(0.20f), flag.GetTerritoryType().PlaceNameZone.Value.Name.ExtractText());
+        ImGui.TextColored(KnownColor.Gray.Vector().Lighten(0.20f),
+            flag.GetTerritoryType().PlaceNameZone.Value.Name.ExtractText());
 
         if (flag.IsFlagSet()) {
             ImGui.Spacing();
@@ -74,8 +72,7 @@ public class FlagHistoryWindow : Window
         }
     }
 
-    private void DrawButtons(Flag flag)
-    {
+    private void DrawButtons(Flag flag) {
         var buttonSize = ImGuiHelpers.ScaledVector2(100.0f, 24.0f);
 
         ImGui.SetCursorPos(new Vector2(0.0f, ImGui.GetContentRegionMax().Y - buttonSize.Y));
@@ -91,8 +88,7 @@ public class FlagHistoryWindow : Window
         }
     }
 
-    public override void OnClose()
-    {
+    public override void OnClose() {
         System.WindowManager.RemoveWindow(this);
     }
 }

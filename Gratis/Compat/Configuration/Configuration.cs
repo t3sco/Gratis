@@ -48,8 +48,6 @@ public static partial class Configuration {
             catch (Exception e) {
                 var localLog = pluginInterface.Create<LogWrapper>();
                 localLog?.Log.Error(e, $"Error trying to load file {filePath}, creating a new one instead.");
-
-                SaveFile(pluginInterface, filePath, new T());
             }
         }
 
