@@ -80,6 +80,12 @@ public static class DiagnosticReport
             Line(); Line("### " + ReportPrivacy.Clean(name, 64)); Line("```text");
             Line(ReportPrivacy.Clean(state, 6000)); Line("```");
         }
+        Line(); Line("## Tweaks");
+        var modifiedTweaks = TweakCatalog.All.Where(t => t.IsModified(context.Settings)).ToArray();
+        Line($"Registered: {TweakCatalog.All.Count}; modified: {modifiedTweaks.Length}.");
+        Line(modifiedTweaks.Length == 0 ? "Modified tweaks: none." : "Modified tweaks: " +
+            string.Join(", ", modifiedTweaks.Select(t => $"{t.Id} ({t.Name})={t.Get(context.Settings).ToString().ToLowerInvariant()}")));
+        Line($"What's new enabled: {context.Settings.ShowWhatsNew}; unseen releases: {TweakNews.Unseen(context.Settings).Length}.");
         Line(); Line("## Settings");
         Line("**Non-default** values are bold. Collections show counts; text values are omitted.");
         Line(); Line("| Setting | Value | Default |\n| --- | --- | --- |");

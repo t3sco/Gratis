@@ -22,6 +22,15 @@ public unsafe class MapContextMenu
 
         if (!contextMenu) return;
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
+        if (ImGui.BeginMenu("Window presets")) {
+            var index = 0;
+            foreach (var item in Rendering.MapDrawContext.Current.WindowPresets.Menu(System.SystemConfig)) {
+                ImGui.PushID(index++);
+                if (ImGui.MenuItem(item.Label, "", false, item.Invoke != null)) item.Invoke?.Invoke();
+                ImGui.PopID();
+            }
+            ImGui.EndMenu();
+        }
 
         if (System.SystemConfig.IsGratis && System.SystemConfig.Pins && Rendering.MapDrawContext.Current.Assistance?.PinLayer is { } pins) {
             if (ImGui.MenuItem("Add pin here")) {

@@ -13,9 +13,9 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout
 {
-    public static readonly string[] Sections = ["Appearance", "Map", "Markers", "Chrome & motion", "Modules / tools", "Advanced", "Filters"];
+    public static readonly string[] Sections = ["Appearance", "Map", "Markers", "Chrome & motion", "Modules / tools", "Advanced", "Filters", "Tweaks"];
     private static readonly char[] SectionIcons = [GratisIcons.Eye, GratisIcons.Compass, GratisIcons.MapPin,
-        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid];
+        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid, GratisIcons.Wrench];
     public string Search = "";
     public int SelectedSection;
     public static SettingsEntry[] Entries { get; } = CreateEntries();
@@ -28,6 +28,7 @@ public sealed partial class SettingsLayout
 
     public static void Reset(SystemConfig config, string section)
     {
+        if (section == "Tweaks") { foreach (var tweak in TweakCatalog.All) tweak.Reset(config); return; }
         var entries = Find(config, section, "");
         var defaults = new SystemConfig();
         foreach (var entry in entries) entry.Reset(config, defaults);
@@ -77,7 +78,10 @@ public sealed partial class SettingsLayout
             ImGui.EndChild();
             ImGui.SameLine();
             if (ImGui.BeginChild("settings-content", new Vector2(0, available.Y))) {
-                var sectionNames = string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
+                var tweaksPage = Sections[SelectedSection] == "Tweaks";
+                if (tweaksPage) changed |= DrawTweaks(config);
+                var sectionNames = tweaksPage ? Array.Empty<string>() :
+                    string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
                 var found = false;
                 foreach (var section in sectionNames) {
                     var entries = Find(config, section, Search);
@@ -132,7 +136,7 @@ public sealed partial class SettingsLayout
                     ImGui.Spacing();
                     ImGui.PopID();
                 }
-                if (!found) ImGui.TextDisabled("No settings match. Try another name or change the visual style.");
+                if (!found && !tweaksPage) ImGui.TextDisabled("No settings match. Try another name or change the visual style.");
             }
             ImGui.EndChild();
         }
@@ -158,6 +162,27 @@ public sealed partial class SettingsLayout
 
     public static bool DrawTools(string search, ref int historyLimit, Action<string>? activate)
     {
+        if (MapDrawContext.Current.Config.IsGratis) {
+            var s = SettingsTheme.Scale;
+            foreach (var (tool, label, glyph) in new[] { ("FATE list", "FATEs", GratisIcons.Swords),
+                ("Quest list", "Quests", GratisIcons.BookOpen), ("Flag history", "Flag history", GratisIcons.Flag) }) {
+                if (!NamesMatch(search, tool)) continue;
+                ImGui.BeginDisabled(activate is null);
+                var pos = ImGui.GetCursorScreenPos();
+                var size = new Vector2(MathF.Min(280 * s, ImGui.GetContentRegionAvail().X), GratisTheme.ControlHeight * s);
+                if (ImGui.Button("##open-" + tool, size)) activate?.Invoke(tool);
+                GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(18 * s, size.Y / 2), glyph, GratisTheme.Secondary, GratisTheme.IconSize * s);
+                ImGui.GetWindowDrawList().AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), label);
+                ImGui.EndDisabled();
+            }
+            if (!NamesMatch(search, "Flag history limit")) return false;
+            ImGui.TextUnformatted("Recent flags to keep");
+            ImGui.SetNextItemWidth(MathF.Min(280 * s, ImGui.GetContentRegionAvail().X));
+            float count = historyLimit;
+            var changed = SettingsTheme.Slider("##flag-history-limit", ref count, 1, 100, "%d flags", GratisTheme.WarmAccent, true);
+            if (changed) historyLimit = (int)count;
+            return changed;
+        }
         foreach (var tool in new[] { "FATE list", "Quest list", "Flag history" }) {
             if (!NamesMatch(search, tool)) continue;
             ImGui.BeginDisabled(activate is null);

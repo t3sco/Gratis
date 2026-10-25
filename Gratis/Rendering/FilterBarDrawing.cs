@@ -21,6 +21,7 @@ public static class FilterBarDrawing
     public static Vector4 LastBounds { get; private set; }
     public static Vector4 OverflowBounds { get; private set; }
     public static Vector4 SettingsBounds { get; private set; }
+    public static Vector4 DeclutterBounds { get; private set; }
     public static Vector4[] ChipBounds { get; } = new Vector4[MarkerVisibility.GroupCount];
     public static bool Hovered { get; private set; }
     public static bool InputActive { get; private set; }
@@ -37,7 +38,13 @@ public static class FilterBarDrawing
         MarkerVisibilityState.Hidden => " \u00b7 Muted", MarkerVisibilityState.Loud => " \u00b7 Loud",
         MarkerVisibilityState.Quiet => " \u00b7 Quiet", _ => "",
     });
-    private static void Tooltip(string text) { LastTooltip = text; ImGui.SetTooltip(text); }
+    private static void Tooltip(string text)
+    {
+        LastTooltip = text;
+        using var style = new ChromePopupStyle();
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale, ChromeFontRole.Body)?.Push();
+        ImGui.BeginTooltip(); ImGui.TextUnformatted(text); ImGui.EndTooltip();
+    }
     private static bool ShowGroup(MarkerGroup group) => MapDrawContext.Current.Config.FilterOptions.Contains(group) &&
         (MapDrawContext.Current.Visibility.Counts[(int)group] > 0 || MapDrawContext.Current.Visibility.Overrides[(int)group] == MarkerVisibilityState.Hidden);
 
@@ -46,7 +53,7 @@ public static class FilterBarDrawing
         var context = MapDrawContext.Current;
         if (!ReferenceEquals(drawnContext, context)) { popupFrame = -2; suppressOpen = false; }
         drawnContext = context; LensDrawing.BeginDraw();
-        LastBounds = OverflowBounds = SettingsBounds = Vector4.Zero; Array.Clear(ChipBounds);
+        LastBounds = OverflowBounds = SettingsBounds = DeclutterBounds = Vector4.Zero; Array.Clear(ChipBounds);
         Hovered = InputActive = PopoverOpen = false; LastTooltip = TriggerLabel = ""; ActiveCount = MutedCount = 0;
         if (!context.Config.IsGratis) return;
         using var alpha = new ChromeVisibility.AlphaScope(true, context.Chrome.ControlsAlpha(context.Config));
@@ -72,10 +79,13 @@ public static class FilterBarDrawing
         }
         TriggerLabel = SoloGroup >= 0 ? "Solo" : MutedCount > 0 ? $"{MutedCount} muted" : ActiveCount > 0 ? $"{ActiveCount} active" : "";
         var triggerWidth = TriggerLabel.Length == 0 ? button : MathF.Min(available, ImGui.CalcTextSize(TriggerLabel).X + 48 * s);
-        var slots = options.Mode == FilterBarMode.AlwaysExpanded ? Math.Max(0, (int)((available - triggerWidth - stride) / stride)) : 0;
+        var stateWidth = context.Markers.Clusters > 0 ? ImGui.CalcTextSize("Decluttered").X + 16 * s : 0;
+        if (triggerWidth + stateWidth + gap > available) stateWidth = 0;
+        var stateSpace = stateWidth > 0 ? stateWidth + gap : 0;
+        var slots = options.Mode == FilterBarMode.AlwaysExpanded ? Math.Max(0, (int)((available - triggerWidth - stride - stateSpace) / stride)) : 0;
         var count = Math.Min(slots, visible);
         var expanded = options.Mode == FilterBarMode.AlwaysExpanded;
-        var size = new Vector2(expanded ? triggerWidth + (count + 1) * stride : triggerWidth, button);
+        var size = new Vector2((expanded ? triggerWidth + (count + 1) * stride : triggerWidth) + stateSpace, button);
         var pos = LensDrawing.Position(size.X, size.Y);
         if (pos.Y == float.MinValue) return;
         LastBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
@@ -103,6 +113,13 @@ public static class FilterBarDrawing
                 DrawChip((MarkerGroup)i, new(x, pos.Y), new(button)); x += stride; submitted++;
             }
             DrawSettings(new(x, pos.Y), new(button));
+        }
+        if (stateWidth > 0) {
+            var left = pos.X + size.X - stateWidth;
+            DeclutterBounds = new(left, pos.Y, left + stateWidth, pos.Y + button);
+            ImGui.SetCursorScreenPos(new(left, pos.Y)); ImGui.Dummy(new(stateWidth, button));
+            ImGui.GetWindowDrawList().AddText(new(left + 8 * s, pos.Y + (button - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), "Decluttered");
+            if (ImGui.IsItemHovered()) Tooltip("Nearby ambient markers grouped");
         }
         InputActive = Hovered;
         DrawPopover(pos, button, stride, visible, close);

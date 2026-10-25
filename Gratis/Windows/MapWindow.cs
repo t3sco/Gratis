@@ -12,6 +12,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiLib.Classes;
 using KamiLib.CommandManager;
+using KamiLib.Extensions;
 using KamiLib.Window;
 using Lumina.Excel.Sheets;
 using Gratis.Classes;
@@ -47,6 +48,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
 
         DisableWindowSounds = true;
         RegisterCommands();
+        Rendering.MapDrawContext.Current.WindowPresets.ShowWindow = UnCollapseOrShow;
     }
 
     public override bool DrawConditions() => IntegrationsController.ShouldShowMap();
@@ -68,6 +70,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
 
     public override void OnOpen()
     {
+        Rendering.MapDrawContext.Current.WindowPresets.OnOpen(System.SystemConfig.WindowPresetOptions, Service.Condition.IsBoundByDuty());
         WakeGhost();
         System.MapRenderer.Frame.RestoreMapViewOnOpen();
         Rendering.MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
@@ -295,7 +298,8 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
 
     public override unsafe void OnClose()
     {
-        windowFrame.MoveHandle.Cancel();
+        Rendering.MapDrawContext.Current.WindowPresets.Cancel();
+        windowFrame.ResetWindowInput();
         if (PlacePalette.Overlay.IsOpen) PlacePalette.Overlay.Close(false);
         AgentMap.Instance()->Hide();
 

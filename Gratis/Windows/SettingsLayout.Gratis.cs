@@ -31,7 +31,7 @@ public sealed partial class SettingsLayout
         if (Search.Length > 0) {
             var next = ImGui.GetCursorPos();
             ImGui.SetCursorScreenPos(start + new Vector2(width - 36 * scale, 0));
-            if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new Vector2(36) * scale)) Search = "";
+            if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new Vector2(36) * scale, scale)) Search = "";
             ImGui.SetCursorPos(next); ImGui.Dummy(Vector2.Zero);
         }
         ImGui.Spacing();
@@ -62,7 +62,7 @@ public sealed partial class SettingsLayout
                 }
                 GratisIcons.Draw(nav, start + new Vector2(18, 18) * scale, SectionIcons[index],
                     selected ? GratisTheme.WarmAccent : GratisTheme.Secondary, 16 * scale);
-                if (compactNav) ChromeControls.Tooltip(SectionLabel(Sections[index]));
+                if (compactNav) ChromeControls.Tooltip(SectionLabel(Sections[index]), scale: scale);
                 else nav.AddText(start + new Vector2(34 * scale, (size.Y - ImGui.GetFontSize()) / 2),
                     ImGui.GetColorU32(selected ? GratisTheme.Primary : GratisTheme.Secondary), SectionLabel(Sections[index]));
             }
@@ -74,7 +74,10 @@ public sealed partial class SettingsLayout
         var testContent = ImGui.GetCursorScreenPos(); TestContent = new(testContent.X, testContent.Y, testContent.X + ImGui.GetContentRegionAvail().X, testContent.Y + available.Y);
 #endif
         if (ImGui.BeginChild("settings-content", new Vector2(0, available.Y))) {
-            var sections = string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
+            var tweaksPage = Sections[SelectedSection] == "Tweaks";
+            if (tweaksPage) changed |= DrawTweaks(config);
+            var sections = tweaksPage ? Array.Empty<string>() :
+                string.IsNullOrWhiteSpace(Search) ? new[] { Sections[SelectedSection] } : Sections;
             var found = false;
             foreach (var section in sections) {
                 var entries = Find(config, section, Search);
@@ -87,7 +90,7 @@ public sealed partial class SettingsLayout
                     ImGui.TextUnformatted(SectionLabel(section));
                 }
                 ImGui.SameLine(MathF.Max(ImGui.GetCursorPosX(), ImGui.GetWindowWidth() - 40 * scale));
-                if (ChromeControls.IconButton("##reset-section", GratisIcons.Repeat, "Reset section to defaults", new Vector2(36) * scale)) {
+                if (ChromeControls.IconButton("##reset-section", GratisIcons.Repeat, "Reset section to defaults", new Vector2(36) * scale, scale)) {
                     Reset(config, section); resetExtension?.Invoke(section); changed = true;
                 }
                 SettingsTheme.Helper(section switch {
@@ -147,7 +150,7 @@ public sealed partial class SettingsLayout
                 if (extension && drawExtension is not null) changed |= drawExtension(section, Search);
                 ImGui.Spacing(); ImGui.PopID();
             }
-            if (!found) SettingsTheme.Helper("No settings match. Try another name or change the visual style.");
+            if (!found && !tweaksPage) SettingsTheme.Helper("No settings match. Try another name or change the visual style.");
         }
         ImGui.EndChild();
         return changed;

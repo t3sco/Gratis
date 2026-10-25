@@ -69,6 +69,7 @@ public sealed class SettingsEntry
 
     public bool Draw(SystemConfig config)
     {
+        if (Path == "WindowPresets") return SettingsWindowPresets.Draw(config);
         if (Path == "ActiveLens") return Rendering.LensDrawing.DrawSelector(config);
         if (Path == "CustomLenses") return Rendering.LensDrawing.DrawEditor(config);
         if (Path == "LensCycleKey") return Rendering.LensDrawing.DrawKeyBinding(config);

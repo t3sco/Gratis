@@ -39,6 +39,7 @@ public abstract class MapDrawContext
     public MapMarkerTargets MarkerTargets { get; } = new();
     public MeasureTool Measure { get; } = new();
     public MainStoryObjective Story { get; } = new();
+    public WindowPresetController WindowPresets { get; } = new();
     public ChromeVisibility Chrome { get; } = new();
     public BlurDiagnostics Blur { get; } = new();
     public int HoverCardFrame { get; set; } = -1;

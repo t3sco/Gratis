@@ -27,9 +27,9 @@ public static class ChromeControls
         return clicked;
     }
 
-    public static void Feedback(ImDrawListPtr list, Vector2 min, Vector2 max, bool selected = false, bool fill = true)
+    public static void Feedback(ImDrawListPtr list, Vector2 min, Vector2 max, bool selected = false, bool fill = true, float? scale = null)
     {
-        var s = GratisTheme.ChromeScale;
+        var s = scale ?? GratisTheme.ChromeScale;
         var hovered = ImGui.IsItemHovered();
         var pressed = ImGui.IsItemActive();
         if (fill && (hovered || pressed || selected))
@@ -39,18 +39,19 @@ public static class ChromeControls
             list.AddRect(min + new Vector2(2 * s), max - new Vector2(2 * s), ImGui.GetColorU32(GratisTheme.Crystal), GratisTheme.ButtonRadius * s, ImDrawFlags.None, s);
     }
 
-    public static bool IconButton(string id, char glyph, string label, Vector2 size)
+    public static bool IconButton(string id, char glyph, string label, Vector2 size, float? scale = null)
     {
         var pos = ImGui.GetCursorScreenPos();
         var clicked = Button(id, size);
         var list = ImGui.GetWindowDrawList();
-        Feedback(list, pos, pos + size);
-        GratisIcons.Draw(list, pos + size / 2, glyph, GratisTheme.Secondary, GratisTheme.IconSize * GratisTheme.ChromeScale);
-        Tooltip(label);
+        var s = scale ?? GratisTheme.ChromeScale;
+        Feedback(list, pos, pos + size, scale: s);
+        GratisIcons.Draw(list, pos + size / 2, glyph, GratisTheme.Secondary, GratisTheme.IconSize * s);
+        Tooltip(label, scale: s);
         return clicked;
     }
 
-    public static void Tooltip(string label, string? shortcut = null)
+    public static void Tooltip(string label, string? shortcut = null, float? scale = null)
     {
         var focused = ImGui.IsItemFocused() && ImGui.GetIO().NavVisible;
         if (!ImGui.IsItemHovered() && !focused) return;
@@ -63,9 +64,10 @@ public static class ChromeControls
         hoverFrame = frame;
         if (!focused && now - hoverBegan < .4) return;
         using var style = new ChromePopupStyle();
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale, ChromeFontRole.Body)?.Push();
+        var s = scale ?? GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.BeginTooltip();
-        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MathF.Min(360 * GratisTheme.ChromeScale, ImGui.GetWindowViewport().Size.X - 32 * GratisTheme.ChromeScale));
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MathF.Min(360 * s, ImGui.GetWindowViewport().Size.X - 32 * s));
         ImGui.TextUnformatted(label);
         ImGui.PopTextWrapPos();
         if (!string.IsNullOrEmpty(shortcut)) { ImGui.SameLine(0, GratisTheme.Gap * GratisTheme.ChromeScale); Hints((shortcut, "")); }

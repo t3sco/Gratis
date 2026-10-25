@@ -82,6 +82,7 @@ internal sealed class ReportCommand : IDisposable
                 yield return ("Lens", states);
                 yield return ("Viewport", System.MapRenderer.Frame.ViewportDiagnostics() + $" globalScale={ctx.GlobalScale:0.###} chromeScale={Settings.ChromeScale:0.###}");
                 yield return ("View memory", System.MapRenderer.Frame.ViewMemoryDiagnostics());
+                yield return ("Window presets", System.MapWindow.WindowPresetDiagnostics());
             }
         }
     }

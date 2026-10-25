@@ -33,7 +33,11 @@ public sealed partial class MapAssistance
             (!AetheryteSelection.Useful(target.MapId, target.Target, places.Context.MapId, places.Context.Player) && !IsContextTarget(target))) return;
         if (chipTarget != target) { chipTarget = target; chipCreated = host.Now; chipUntil = host.Now + 8; chipDrawn = host.Now; }
         var over = previousBounds != Vector4.Zero && ImGui.IsMouseHoveringRect(new(previousBounds.X, previousBounds.Y), new(previousBounds.Z, previousBounds.W), false);
-        if (over || chipConfirm) chipUntil += Math.Max(0, host.Now - chipDrawn);
+        if (over || chipConfirm) {
+            chipUntil += Math.Max(0, host.Now - chipDrawn);
+            if (IsContextTarget(target)) contextTargetUntil = Math.Max(contextTargetUntil, chipUntil);
+            if (storyTarget == target) storyUntil = Math.Max(storyUntil, chipUntil);
+        }
         chipDrawn = host.Now;
         ChipTimeRemaining = (float)Math.Clamp(chipUntil - host.Now, 0, 8);
         if (ChipTimeRemaining <= 0) { dismissedTarget = target; return; }

@@ -70,8 +70,6 @@ internal static partial class Program
             marker.Offset = (frame - new Vector2(2048 * marker.Scale)) / 2;
             DrawHelpers.DrawMapMarker(marker);
         }
-        ImGui.GetWindowDrawList().AddText(ImGui.GetWindowPos() + new Vector2(36, 80), ImGui.GetColorU32(Vector4.One),
-            $"Declutter {(MapDrawContext.Current.Config.Markers.Declutter ? "ON" : "OFF")} · quests / FATE / transport / party always standalone");
     }
 
     private static readonly (string Name, uint Icon)[] QuestSamples = [

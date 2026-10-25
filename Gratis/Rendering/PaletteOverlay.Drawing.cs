@@ -62,19 +62,19 @@ public sealed partial class PaletteOverlay
                     for (var i = 0; i < scopes.Length; i++) {
                         if (i > 0) ImGui.SameLine();
                         ImGui.PushStyleColor(ImGuiCol.Button, effective == scopes[i] ? config.AccentColor with { W = .25f } : new Vector4(1, 1, 1, .035f));
-                        var label = compact ? new[] { "All", "a:", "z:", "q:", "m:" }[i] : labels[i];
+                        var label = compact ? i == 0 ? "All" : "" : labels[i];
                         var chipWidth = compact ? (size.X - 2 * GratisTheme.Inset * scale - 4 * GratisTheme.Gap * scale) / 5
                             : ImGui.CalcTextSize(label).X + 44 * scale;
-                        if (ImGui.Button("##scope-" + i, new Vector2(MathF.Max(1, chipWidth), 30 * scale))) ChangeScope(i);
+                        if (ImGui.Button("##scope-" + i, new Vector2(MathF.Max(1, chipWidth), GratisTheme.ControlHeight * scale))) ChangeScope(i);
                         var chipMin = ImGui.GetItemRectMin(); var chipMax = ImGui.GetItemRectMax();
-                        if (!compact) {
+                        if (!compact || i > 0) {
                             var glyph = i switch { 0 => GratisIcons.LayoutGrid, 1 => GratisIcons.Sparkles, 2 => GratisIcons.Compass, 3 => GratisIcons.BookOpen, _ => GratisIcons.MapPin };
-                            GratisIcons.Draw(surface, new Vector2(chipMin.X + 14 * scale, (chipMin.Y + chipMax.Y) / 2), glyph, GratisTheme.Primary, 13 * scale);
+                            GratisIcons.Draw(surface, new Vector2(compact ? (chipMin.X + chipMax.X) / 2 : chipMin.X + 14 * scale, (chipMin.Y + chipMax.Y) / 2), glyph, GratisTheme.Primary, 13 * scale);
                         }
                         var textSize = TextDrawing.Measure(label);
                         TextDrawing.Draw(surface, new Vector2(compact ? (chipMin.X + chipMax.X - textSize.X) / 2 : chipMin.X + 28 * scale,
                             (chipMin.Y + chipMax.Y - textSize.Y) / 2), ImGui.GetColorU32(GratisTheme.Primary), label);
-                        if (compact && ImGui.IsItemHovered()) ImGui.SetTooltip(labels[i]);
+                        ChromeControls.Tooltip(labels[i]);
                         ImGui.PopStyleColor();
                     }
                 }
@@ -104,6 +104,7 @@ public sealed partial class PaletteOverlay
                         if (size.X > 470 * scale) { ImGui.SameLine(); ImGui.TextDisabled(message); }
                     }
                     else if (message.Length > 0) ImGui.TextUnformatted(ChromeControls.FitLabel(message, ImGui.GetContentRegionAvail().X));
+                    else if (!Home && results.Length == 0) ChromeControls.Hints(("Esc", "Close"), ("Tab", "Filter"));
                     else if (size.X < 440 * scale) ChromeControls.Hints(("Enter", "Show"), ("Esc", "Close"), ("Tab", "Filter"));
                     else if (Home) ChromeControls.Hints(("Up/Down", "Browse"), ("Enter", "Select"), ("Tab", "Filter"), ("Esc", "Close"));
                     else if (config.PaletteTeleportButton) ChromeControls.Hints(("Enter", "Show"), ("Alt+Enter", "Teleport"), ("Tab", "Filter"), ("Esc", "Close"));

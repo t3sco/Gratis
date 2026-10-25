@@ -24,7 +24,7 @@ internal static partial class Program
         config.MapColour.Preset = scene == "palette-glass-dark-recolour" ? MapColourPreset.Midnight : MapColourPreset.Original;
         using var driver = new ScriptedFrameDriver(config, new FrameScript { Palette = true, Width = 960, Height = 800 });
         driver.Step(new(0)); driver.Step(new(.02));
-        driver.Palette!.Open(scene switch { "palette-query-limsa" => "limsa", "palette-unattuned" => "a:summer", "palette-scoped" => "a:", _ => "" });
+        driver.Palette!.Open(scene switch { "palette-empty" => "no-such-place-zzzz", "palette-query-limsa" => "limsa", "palette-unattuned" => "a:summer", "palette-scoped" => "a:", _ => "" });
         driver.Step(new(.04));
         if (scene == "palette-expansion") driver.Palette.BrowseExpansion(0);
         if (scene == "palette-recent") {

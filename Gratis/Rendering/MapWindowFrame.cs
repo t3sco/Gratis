@@ -26,6 +26,7 @@ public interface IMapWindowHost
     void UpdateWindow();
     MoveWorkArea MoveWorkArea => MoveWorkAreaAt(ImGui.GetMousePos());
     MoveWorkArea MoveWorkAreaAt(Vector2 point) => MoveHandleScreen.At(point);
+    Vector2 MinimumWindowSize => new Vector2(400, 250) * MapDrawContext.Current.GlobalScale;
     void SaveWindowPosition() { }
     void DrawSpoilerWarning();
     void DrawToolbar();
@@ -41,8 +42,13 @@ public sealed partial class MapWindowFrame
     private Vector2 lastWindowSize;
     public bool Dragging => isDragStarted;
     public MoveHandleInput MoveHandle { get; } = new();
+    public void ResetWindowInput() { isDragStarted = false; MoveHandle.Cancel(); }
     public SubZoneBanner ZoneBanner { get; } = new();
-    public void PreDraw(IMapWindowHost host) { MoveHandle.PrepareWindow(host); PrepareGhost(host); }
+    public void PreDraw(IMapWindowHost host)
+    {
+        MapDrawContext.Current.WindowPresets.PrepareWindow(host, MoveHandle.Dragging || isDragStarted);
+        MoveHandle.PrepareWindow(host); PrepareGhost(host);
+    }
     private static bool IsBoundedBy(Vector2 cursor, Vector2 min, Vector2 max) =>
         cursor.X >= min.X && cursor.Y >= min.Y && cursor.X <= max.X && cursor.Y <= max.Y;
 

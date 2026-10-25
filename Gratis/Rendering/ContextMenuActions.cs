@@ -84,6 +84,7 @@ public sealed partial class ContextMenu
             if (actions?.RecentFlags is { Count: > 0 } flags) items.Add(new("Recent flags", GratisIcons.Flag, Children: flags));
             if (actions?.Layers is { Count: > 0 } layers) items.Add(new("Layers", GratisIcons.Layers, Children: layers));
         }
+        items.Add(new("Window presets", GratisIcons.LayoutGrid, Children: MapDrawContext.Current.WindowPresets.Menu(host.Config)));
         current = items; selected = 0;
     }
 }

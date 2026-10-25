@@ -12,7 +12,7 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout
 {
-    private static readonly int[] NavigationOrder = [0, 1, 2, 6, 3, 4, 5];
+    private static readonly int[] NavigationOrder = [7, 0, 1, 2, 6, 3, 4, 5];
     internal static string SectionLabel(string section) => section switch {
         "Chrome & motion" => "Controls & motion", "Modules / tools" => "Tools", _ => section,
     };
@@ -42,8 +42,9 @@ public sealed partial class SettingsLayout
         "ChromeScale" => "Control size", "RestoreOpacityOnHover" => "Restore opacity on hover",
         "CompactTitle" => "Compact location card", "StyledCoordinates" => "Coordinate card",
         "AetheryteChips" => "Nearest aetheryte card", "TravelActions" => "Teleport actions",
-        "TravelConfirmGil" => "Confirm travel above", "Filters.Mode" => "Drawer mode",
-        "QuickFilterBar" => "Show Filters button", "ShowEorzeaTime" => "Show Eorzea time",
+        "TravelConfirmGil" => "Confirm travel from", "Filters.Mode" => "Drawer mode",
+        "ChromeFont" => "Control font",
+        "QuickFilterBar" => "Show filter bar", "ShowEorzeaTime" => "Show Eorzea time",
         _ => entry.Label,
     };
 #if GRATIS_PREVIEW
@@ -78,7 +79,7 @@ public sealed partial class SettingsLayout
 #if GRATIS_PREVIEW
             var labelMin = ImGui.GetItemRectMin(); var labelMax = ImGui.GetItemRectMax();
 #endif
-            if (entry.Tooltip is { } tip) ChromeControls.Tooltip(tip);
+            if (entry.Tooltip is { } tip) ChromeControls.Tooltip(tip, scale: s);
             if (!stacked) ImGui.TableNextColumn();
             else if (inlineToggle) {
                 ImGui.SameLine();
@@ -88,7 +89,7 @@ public sealed partial class SettingsLayout
             ImGui.BeginDisabled(!entry.Enabled(config));
             ImGui.BeginGroup(); changed |= entry.Draw(config); ImGui.EndGroup();
             ImGui.EndDisabled();
-            if (entry.Tooltip is { } valueTip) ChromeControls.Tooltip(valueTip);
+            if (entry.Tooltip is { } valueTip) ChromeControls.Tooltip(valueTip, scale: s);
 #if GRATIS_PREVIEW
             var controlMin = ImGui.GetItemRectMin(); var controlMax = ImGui.GetItemRectMax();
             TestRows.Add((entry.Path, new(labelMin.X, labelMin.Y, labelMax.X, labelMax.Y), new(controlMin.X, controlMin.Y, controlMax.X, controlMax.Y)));

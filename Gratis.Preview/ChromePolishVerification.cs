@@ -11,6 +11,7 @@ internal static class ChromePolishVerification
 
     public static void Run()
     {
+        DeclutterLayout();
         var config = ChromeLayoutVerification.Config(new(780, 600));
         using var driver = new ScriptedFrameDriver(config, new FrameScript { Width = 1000, Height = 800,
             Markers = [new(71001, new(80, 60)), new(60412, new(-80, -30))] });
@@ -48,12 +49,32 @@ internal static class ChromePolishVerification
         Step(dt: 6);
         Require(travel.Chip == null && places.Teleports == 0, "Travel offer expires after eight idle seconds without executing");
         travel.OfferContextTarget(new(new(400, 0), 1, SpotlightSource.Quest), time);
-        Step(); Step(); Click(travel.ChipButtonCenter);
+        Step(action, true); Step(action, false);
+        Require(places.Teleports == 0, "An opening click under the future Teleport button is consumed safely");
+        Step(); Click(travel.ChipButtonCenter);
         Require(places.Teleports == 1, "Reoffered card still teleports only by explicit click");
         config.ReduceMotion = true; Step();
         Require(travel.Chip != null, "Reduce motion retains the travel action without a ticking line");
         KeyboardAndLabels();
         Console.WriteLine("Chrome polish: six toolbar actions, lens/filter routing, present-only categories, solo cue, compact card baselines, paused expiry, explicit travel and Reduce motion.");
+    }
+
+    internal static List<ScriptMarker> DenseMarkers() => Enumerable.Range(0, 24)
+        .Select(i => new ScriptMarker(60412, new(100 + i % 6 * 8, 80 + i / 6 * 8))).ToList();
+
+    private static void DeclutterLayout()
+    {
+        foreach (var size in new[] { new Vector2(360, 280), new Vector2(780, 600) }) {
+            var config = ChromeLayoutVerification.Config(size); config.Markers.Declutter = true;
+            using var driver = new ScriptedFrameDriver(config, new FrameScript {
+                Width = 1000, Height = 800, Markers = DenseMarkers(),
+            });
+            driver.Step(new(0)); driver.Step(new(.04));
+            var state = FilterBarDrawing.DeclutterBounds; var row = FilterBarDrawing.LastBounds;
+            Require(driver.Context.Markers.Clusters > 0 && state.Z > state.X && state.X >= row.X && state.Z <= row.Z && state.Y == row.Y && state.W == row.W,
+                "Decluttered state is a compact baseline-aligned part of the filter row");
+            Require(!ChromeLayout.Overlap(row, MapWindowDrawing.TitleBounds) && !ChromeLayout.Overlap(row, MapWindowDrawing.CoordinateBounds), "Declutter state does not overlap bottom chrome");
+        }
     }
 
     private static void KeyboardAndLabels()

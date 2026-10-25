@@ -50,6 +50,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     public Vector2 PanelMin { get; private set; }
     public Vector2 PanelMax { get; private set; }
     private PlaceResult[] results = [];
+    private int windowPresetRevision = -1;
+    private WindowPresetSettings? windowPresetSettings;
     private readonly List<string> recentQueries = [];
     private PaletteExpansion[] expansions = [];
     private uint? expansion;
@@ -103,6 +105,10 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
 
     private void Search(MapDrawingConfig config)
     {
+        var windows = MapDrawContext.Current.WindowPresets;
+        if (windowPresetRevision != windows.Revision || windowPresetSettings != config.WindowPresetOptions) {
+            windowPresetRevision = windows.Revision; windowPresetSettings = config.WindowPresetOptions; revision = -1;
+        }
         if (searched == query && searchedScope == scope && revision == source.Revision && context == source.Context
             && showUnattuned == config.PaletteShowUnattuned) return;
         if (searched != query) browserSelection = 0;
@@ -110,6 +116,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         searched = query; searchedScope = scope; revision = source.Revision; context = source.Context;
         showUnattuned = config.PaletteShowUnattuned;
         var entries = NearestPlaces.Parse(query, out _) ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries) : source.Entries.Append(MainStoryObjective.Action);
+        if (config is Gratis.Data.SystemConfig systemConfig && !NearestPlaces.Parse(query, out _))
+            entries = entries.Concat(windows.Commands(systemConfig));
         var snapshot = entries.ToArray();
         expansions = PaletteBrowser.Expansions(snapshot);
         if (Home && expansion is { } ex) snapshot = snapshot.Where(p => p.Expansion == ex && p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte).ToArray();
@@ -133,6 +141,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
 
     private void Activate(PlaceEntry place)
     {
+        if (MapDrawContext.Current.Config is Gratis.Data.SystemConfig config && MapDrawContext.Current.WindowPresets.Activate(place.Id, config)) { Close(); return; }
         if (place.Id == MainStoryObjective.Action.Id) { source.ShowMainStory(); Close(); return; }
         if (!string.IsNullOrWhiteSpace(query)) {
             recentQueries.Remove(query); recentQueries.Insert(0, query);

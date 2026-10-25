@@ -169,6 +169,8 @@ public static class MapToolbarDrawing
                 if (id == "Filters") GratisIcons.Draw(list, min + new Vector2(GratisTheme.ControlHeight / 2 * scale), GratisIcons.Eye,
                     active ? context.Config.AccentColor : GratisTheme.Primary, GratisTheme.IconSize * scale);
                 else DrawGlyph(list, min + new Vector2(GratisTheme.ControlHeight / 2 * scale), action, active ? context.Config.AccentColor : GratisTheme.Primary, scale, context.Config.FollowPlayer);
+                if (id == "Settings" && TweakNews.HasUnseen(context.Config))
+                    list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale, ImGui.GetColorU32(GratisTheme.WarmAccent));
                 ChromeControls.Tooltip(tooltip, id == "Search" && context.Config.Palette ? context.Config.PaletteShortcut : null);
                 if (clicked) {
                     if (id == "Lens") ImGui.OpenPopup(MapMenu);

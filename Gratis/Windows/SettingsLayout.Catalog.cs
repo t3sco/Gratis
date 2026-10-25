@@ -113,6 +113,8 @@ public sealed partial class SettingsLayout
         Add("PaletteImagery", "Location imagery", tip: "Load location artwork from the game. A flat illustrated placeholder appears while loading or when unavailable.");
         Add("AetheryteAttunementStyle", "Style unattuned map markers", tip: "Dim unattuned crystals and shards, add a dashed ring and hover-card status. Unknown state stays normal.");
         Add("PaletteMaxResults", "Visible search rows", 1, 12, "%.0f");
+        Group("Map", "Window");
+        Add("WindowPresets", "Window presets", tip: "Save up to five named window sizes and positions. Select a chip to apply, rename or delete it. Open at restores the chosen preset each time the map opens.");
         Group("Map", "On open");
         Add("FollowOnOpen", "Follow player on open");
         Add("CenterOnOpen", "Centre on open", choices: "Disabled|Player|Map");
