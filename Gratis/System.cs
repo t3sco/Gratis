@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using Dalamud.Interface.ManagedFontAtlas;
-using KamiLib.Classes;
-using KamiLib.CommandManager;
-using KamiLib.Window;
+using Gratis.Compat.Classes;
+using Gratis.Compat.CommandManager;
+using Gratis.Compat.Window;
 using Gratis.Classes.Caches;
 using Gratis.Controllers;
 using Gratis.Data;

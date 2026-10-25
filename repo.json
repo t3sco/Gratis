@@ -3,7 +3,7 @@
     "Author": "t3sco (based on Mappy by MidoriKami, harbingerftw)",
     "Name": "Gratis",
     "InternalName": "Gratis",
-    "AssemblyVersion": "0.1.0.1",
+    "AssemblyVersion": "0.1.0.2",
     "Description": "Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.",
     "Punchline": "A flat, minimal, quality-of-life-packed map.",
     "ApplicableVersion": "any",
@@ -17,12 +17,12 @@
     "DalamudApiLevel": 15,
     "LoadPriority": 0,
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.1/Gratis.zip",
-    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.1/Gratis.zip",
-    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.1/Gratis.zip",
+    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.2/Gratis.zip",
+    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.2/Gratis.zip",
+    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.2/Gratis.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1792941328,
+    "LastUpdate": 1792950466,
     "Changelog": "Early testing build."
   }
 ]

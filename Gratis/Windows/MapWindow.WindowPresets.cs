@@ -1,4 +1,4 @@
-using KamiLib.Extensions;
+using Gratis.Compat.Extensions;
 
 namespace Gratis.Windows;
 

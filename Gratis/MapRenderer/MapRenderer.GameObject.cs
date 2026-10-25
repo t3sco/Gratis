@@ -7,7 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Extensions;
+using Gratis.Compat.Extensions;
 using Lumina.Excel.Sheets;
 using Gratis.Classes;
 using Gratis.Extensions;

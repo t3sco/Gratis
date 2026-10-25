@@ -2,7 +2,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
 using Gratis.Rendering;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 

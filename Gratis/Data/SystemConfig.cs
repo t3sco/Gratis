@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Numerics;
 #if !GRATIS_PREVIEW
-using KamiLib.Configuration;
+using Gratis.Compat.Configuration;
 #endif
 
 namespace Gratis.Data;

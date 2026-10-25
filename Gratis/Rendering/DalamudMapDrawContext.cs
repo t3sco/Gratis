@@ -5,7 +5,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Classes;
+using Gratis.Compat.Classes;
 using Gratis.Classes;
 using Gratis.Data;
 using Math = global::System.Math;

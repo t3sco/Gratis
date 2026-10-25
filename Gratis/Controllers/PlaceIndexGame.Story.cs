@@ -1,5 +1,5 @@
 using Gratis.Rendering;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 
 namespace Gratis.Controllers;
 

@@ -5,7 +5,7 @@
         <InternalName>Gratis</InternalName>
         <RootNamespace>Gratis</RootNamespace>
         <Author>t3sco (based on Mappy by MidoriKami, harbingerftw)</Author>
-        <Version>0.1.0.1</Version>
+        <Version>0.1.0.2</Version>
         <Punchline>A flat, minimal, quality-of-life-packed map.</Punchline>
         <Description>Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.</Description>
         <RepoUrl>https://github.com/t3sco/Gratis</RepoUrl>
@@ -18,7 +18,6 @@
         <EmbeddedResource Include="Assets/Fonts/**/*.ttf" />
         <None Include="Assets/Fonts/Lucide/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
         <None Include="Assets/Fonts/OFL.txt" CopyToOutputDirectory="PreserveNewest" />
-        <ProjectReference Include="..\KamiLib\KamiLib.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

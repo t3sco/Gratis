@@ -3,7 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Extensions;
+using Gratis.Compat.Extensions;
 using Gratis.Classes;
 using Gratis.Extensions;
 

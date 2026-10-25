@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
-using KamiLib.Extensions;
+using Gratis.Compat.Extensions;
 
 namespace Gratis.Controllers;
 

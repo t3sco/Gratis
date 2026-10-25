@@ -8,7 +8,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin.Services;
 using Gratis.Data;
 using Gratis.Rendering;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 

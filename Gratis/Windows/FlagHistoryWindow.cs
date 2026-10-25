@@ -5,7 +5,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using KamiLib.Window;
+using Gratis.Compat.Window;
 using Gratis.Data;
 
 namespace Gratis.Windows;

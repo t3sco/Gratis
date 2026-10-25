@@ -14,7 +14,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiLib.Classes;
+using Gratis.Compat.Classes;
 using TerraFX.Interop.DirectX;
 
 namespace Gratis.MapRenderer;

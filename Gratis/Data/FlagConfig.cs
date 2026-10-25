@@ -4,7 +4,7 @@ using System.Numerics;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Configuration;
+using Gratis.Compat.Configuration;
 using Lumina.Excel.Sheets;
 using Gratis.Classes.SelectionWindowComponents;
 

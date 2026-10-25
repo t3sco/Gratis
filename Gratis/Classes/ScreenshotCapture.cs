@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 using Math = global::System.Math;
 
 namespace Gratis.Classes;

@@ -1,5 +1,5 @@
-﻿using KamiLib.Classes;
-using KamiLib.Extensions;
+﻿using Gratis.Compat.Classes;
+using Gratis.Compat.Extensions;
 using Lumina.Excel.Sheets;
 
 namespace Gratis.Classes.Caches;

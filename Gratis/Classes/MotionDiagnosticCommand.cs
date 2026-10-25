@@ -1,6 +1,6 @@
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 
 namespace Gratis.Classes;
 

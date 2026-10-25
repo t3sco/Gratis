@@ -2,8 +2,8 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-using KamiLib.CommandManager;
-using KamiLib.Window;
+using Gratis.Compat.CommandManager;
+using Gratis.Compat.Window;
 using Gratis.Classes;
 using Gratis.Data;
 

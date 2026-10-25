@@ -7,7 +7,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Data;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 using Lumina.Excel.Sheets;
 
 namespace Gratis.Rendering;

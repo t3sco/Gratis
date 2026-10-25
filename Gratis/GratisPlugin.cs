@@ -1,8 +1,8 @@
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Classes;
-using KamiLib.CommandManager;
-using KamiLib.Window;
+using Gratis.Compat.Classes;
+using Gratis.Compat.CommandManager;
+using Gratis.Compat.Window;
 using Gratis.Controllers;
 using Gratis.Data;
 using Gratis.Windows;

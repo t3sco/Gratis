@@ -93,7 +93,8 @@ public static class DiagnosticReport
         void Settings(object? value, object? baseline, Type type, string prefix, int depth)
         {
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance).OrderBy(field => field.Name, StringComparer.Ordinal)) {
-                if (field.DeclaringType?.Assembly != typeof(MapDrawingConfig).Assembly) continue;
+                if (field.DeclaringType == typeof(Compat.Configuration.CharacterConfiguration) ||
+                    field.DeclaringType?.Assembly != typeof(MapDrawingConfig).Assembly) continue;
                 var path = prefix + field.Name;
                 var current = value is null ? null : field.GetValue(value);
                 var original = baseline is null ? null : field.GetValue(baseline);

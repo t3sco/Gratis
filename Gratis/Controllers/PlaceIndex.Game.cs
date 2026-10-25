@@ -16,7 +16,7 @@ using Gratis.Classes;
 using MarkerInfo = Gratis.Classes.MarkerInfo;
 using Gratis.Data;
 using Gratis.Rendering;
-using KamiLib.CommandManager;
+using Gratis.Compat.CommandManager;
 using Dalamud.Game;
 using Lumina.Excel.Sheets;
 using SheetMap = Lumina.Excel.Sheets.Map;

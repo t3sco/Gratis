@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using KamiLib.Classes;
 using Gratis.Rendering;
 
 namespace Gratis.Windows;
@@ -9,7 +9,10 @@ public partial class MapFunctionsTab
 {
     private static bool DrawMarkersSection()
     {
-        ImGuiTweaks.Header("Markers");
+        ImGuiHelpers.ScaledDummy(10.0f);
+        ImGui.Text("Markers");
+        ImGui.Separator();
+        ImGuiHelpers.ScaledDummy(5.0f);
         using var indent = ImRaii.PushIndent();
         var settings = System.SystemConfig.Markers;
         var iconStyle = (int)settings.IconStyle;

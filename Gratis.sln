@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gratis", "Gratis\Gratis.csproj", "{ED012F22-F994-4178-809F-7CDC44BFF840}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KamiLib", "KamiLib\KamiLib.csproj", "{B1015978-67C0-45C6-955F-018E4B270498}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gratis.Preview", "Gratis.Preview\Gratis.Preview.csproj", "{B0947BE9-C097-43DE-975A-1870C8A84255}"
 EndProject
 Global
@@ -23,10 +21,6 @@ Global
 		{BDF198BE-0703-408A-B179-B7E00C7B8663}.Debug|x64.Build.0 = Debug|x64
 		{BDF198BE-0703-408A-B179-B7E00C7B8663}.Release|x64.ActiveCfg = Release|x64
 		{BDF198BE-0703-408A-B179-B7E00C7B8663}.Release|x64.Build.0 = Release|x64
-		{B1015978-67C0-45C6-955F-018E4B270498}.Debug|x64.ActiveCfg = Debug|x64
-		{B1015978-67C0-45C6-955F-018E4B270498}.Debug|x64.Build.0 = Debug|x64
-		{B1015978-67C0-45C6-955F-018E4B270498}.Release|x64.ActiveCfg = Release|x64
-		{B1015978-67C0-45C6-955F-018E4B270498}.Release|x64.Build.0 = Release|x64
 		{B0947BE9-C097-43DE-975A-1870C8A84255}.Debug|x64.ActiveCfg = Debug|x64
 		{B0947BE9-C097-43DE-975A-1870C8A84255}.Debug|x64.Build.0 = Debug|x64
 		{B0947BE9-C097-43DE-975A-1870C8A84255}.Release|x64.ActiveCfg = Release|x64

@@ -3,7 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Window;
+using Gratis.Compat.Window;
 using Gratis.Data;
 using Gratis.Windows;
 

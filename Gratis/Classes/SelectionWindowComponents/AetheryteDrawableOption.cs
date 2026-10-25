@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
-using KamiLib.Extensions;
+using Gratis.Compat.Extensions;
 using Lumina.Excel.Sheets;
 
 namespace Gratis.Classes.SelectionWindowComponents;

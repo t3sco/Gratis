@@ -6,9 +6,10 @@ https://github.com/harbingerftw/Mappy
 Credit to MidoriKami and harbingerftw for Mappy, and to the KamiLib/MappyLib
 authors and contributors for their library work.
 
-The original AGPL-3.0 license is retained in LICENSE. The bundled KamiLib
-license is retained in KamiLib/LICENSE. Existing authorship and license
-notices remain applicable.
+The original AGPL-3.0 license is retained in LICENSE. The KamiLib code still
+needed by Gratis was copied into Gratis/Compat, with small one-call helpers
+inlined at their call sites. Its original license is retained unchanged in
+licenses/KamiLib-LICENSE. Existing authorship and license notices remain applicable.
 
 Geist (Regular, Medium, SemiBold) and Geist Mono Regular, by Vercel, are
 bundled from the official v1.8.2 release under the SIL Open Font License 1.1:
@@ -30,7 +31,7 @@ is the foundation of the map window, marker handling, configuration and much of 
 plugin structure:
 
 - MidoriKami: original author of Mappy and KamiLib (copyright 2022, AGPL-3.0; see LICENSE
-  and KamiLib/LICENSE).
+  and licenses/KamiLib-LICENSE).
 - harbingerftw: maintainer of the Mappy fork this project is based on (version 3.2.0.0).
 - The KamiLib/MappyLib contributors credited in those repositories.
 
@@ -40,14 +41,10 @@ repository, as the AGPL requires.
 
 ## Third-party code shipped in the plugin
 
-These libraries are bundled in the release zip and remain under their own licences:
-
-- NetStone, by goaaats and Koenari (xivapi/NetStone), MIT. Used by the inherited KamiLib code.
-- HtmlAgilityPack, by ZZZ Projects, Simon Mourrier, Jeff Klawiter and Stephan Grell, MIT.
-- Karashiiro.HtmlAgilityPack.CssSelectors.NetCoreFork, by karashiiro and Thibaut Renoncourt;
-  see https://github.com/karashiiro/HtmlAgilityPack.CssSelectors.NetCore for its licence.
-- Newtonsoft.Json, by James Newton-King, MIT.
-- Microsoft.Extensions.ObjectPool, by Microsoft, MIT.
+KamiLib's unused Lodestone/portrait code and its NetStone, HtmlAgilityPack,
+Karashiiro.HtmlAgilityPack.CssSelectors.NetCoreFork, Newtonsoft.Json and
+Microsoft.Extensions.ObjectPool dependencies have been removed. These libraries
+are not bundled in the release zip.
 
 Gratis is built against the Dalamud plugin framework (goatcorp), FFXIVClientStructs
 (aers and contributors) and Lumina (NotAdam and contributors), which are provided by the

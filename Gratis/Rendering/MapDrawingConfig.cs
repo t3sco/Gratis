@@ -1,16 +1,11 @@
 using System.Drawing;
 using System.Numerics;
 using System.Text.Json.Serialization;
-#if !GRATIS_PREVIEW
-using KamiLib.Configuration;
-#endif
+using Gratis.Compat.Configuration;
 
 namespace Gratis.Rendering;
 
-public partial class MapDrawingConfig
-#if !GRATIS_PREVIEW
-    : CharacterConfiguration
-#endif
+public partial class MapDrawingConfig : CharacterConfiguration
 {
     public bool ScaleWithFrame = true;
     public bool ClampToMap = true;

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using KamiLib.Configuration;
+using Gratis.Compat.Configuration;
 
 namespace Gratis.Data;
 

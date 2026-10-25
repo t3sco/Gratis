@@ -1,7 +1,7 @@
 using System;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.Classes;
+using Gratis.Compat.Classes;
 using Gratis.Data;
 
 namespace Gratis.Controllers;

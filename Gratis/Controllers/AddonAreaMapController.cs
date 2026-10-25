@@ -5,8 +5,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using KamiLib.CommandManager;
-using KamiLib.Extensions;
+using Gratis.Compat.CommandManager;
 using Gratis.Extensions;
 using Gratis.Windows;
 
@@ -87,7 +86,7 @@ public unsafe class AddonAreaMapController : IDisposable {
 
 
     private void OnAreaMapDraw(AddonEvent type, AddonArgs args) {
-        var addon = args.GetAddon<AddonAreaMap>();
+        var addon = (AddonAreaMap*)args.Addon.Address;
 
         if (Service.ClientState is { IsPvP: true }) {
             if (addon->IsOffscreen())

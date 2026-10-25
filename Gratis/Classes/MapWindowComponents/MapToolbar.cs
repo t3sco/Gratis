@@ -5,7 +5,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.Interop;
-using KamiLib.Window;
+using Gratis.Compat.Window;
 using Lumina.Excel.Sheets;
 using Gratis.Windows;
 using Gratis.Rendering;

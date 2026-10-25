@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Utility;
-using KamiLib.Window;
+using Gratis.Compat.Window;
 using Lumina.Excel.Sheets;
 using Gratis.Classes.SelectionWindowComponents;
 using Aetheryte = Lumina.Excel.Sheets.Aetheryte;
@@ -11,8 +11,6 @@ namespace Gratis.Windows;
 
 public class MapSelectionWindow : SelectionWindowBase<DrawableOption>
 {
-    protected override bool AllowMultiSelect => false;
-
     protected override float SelectionHeight => 75.0f * ImGuiHelpers.GlobalScale;
 
     public MapSelectionWindow() : base(new Vector2(500.0f, 800.0f), alternativeName: "Map Selection Window")
