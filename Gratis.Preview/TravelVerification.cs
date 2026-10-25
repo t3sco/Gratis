@@ -49,6 +49,6 @@ internal static class TravelVerification
         Require(ipc.Requests == 1, "confirmation does not execute");
         Require(ui.Request(TravelFixture.Hub, true) == "Travel requested." && ipc.Requests == 2, "confirmed cost");
         ipc.Version = null; driver.Step(new(.20));
-        Require(!ui.CanOffer(TravelFixture.Hub), "missing provider hides actions");
+        Require(ui.CanOffer(TravelFixture.Hub) && !ui.CanOffer(TravelFixture.Shard), "missing provider retains native teleport and hides aethernet actions");
     }
 }

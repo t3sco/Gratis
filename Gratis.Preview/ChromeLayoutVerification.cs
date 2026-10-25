@@ -25,13 +25,13 @@ internal static class ChromeLayoutVerification
         ToolbarPlacement();
         var c = JsonSerializer.Deserialize<SystemConfig>("{}", new JsonSerializerOptions { IncludeFields = true })!;
         Require(c.ChromeScale == 1 && !c.RestoreOpacityOnHover && c.ToolbarAnchor == ChromeAnchor.TopCenter &&
-            c.FilterBarAnchor == ChromeAnchor.BottomLeft && c.LocationAnchor == ChromeAnchor.BottomRight &&
-            c.CoordinateAnchor == ChromeAnchor.BottomRight && c.TravelCardAnchor == ChromeAnchor.TopCenter, "Old configs acquire layout defaults");
+            c.FilterBarAnchor == ChromeAnchor.BottomLeft && c.LocationAnchor == ChromeAnchor.BottomCenter &&
+            c.CoordinateAnchor == ChromeAnchor.BottomCenter && c.TravelCardAnchor == ChromeAnchor.TopCenter, "Old configs acquire layout defaults");
         SetAnchors(c, ChromeAnchor.TopRight); c.ChromeScale = 1.4f; c.RestoreOpacityOnHover = true;
         var restored = JsonSerializer.Deserialize<SystemConfig>(JsonSerializer.Serialize(c, ScriptedFrameDriver.Json), ScriptedFrameDriver.Json)!;
         Require(restored.TravelCardAnchor == ChromeAnchor.TopRight && restored.ChromeScale == 1.4f && restored.RestoreOpacityOnHover, "Layout settings round trip");
         SettingsLayout.Reset(c, "Chrome & motion");
-        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && c.LocationAnchor == ChromeAnchor.BottomRight && c.ChromeScale == 1 && !c.RestoreOpacityOnHover, "Section reset restores layout and hover settings");
+        Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && c.LocationAnchor == ChromeAnchor.BottomCenter && c.ChromeScale == 1 && !c.RestoreOpacityOnHover, "Section reset restores layout and hover settings");
         foreach (var a in Enum.GetValues<ChromeAnchor>()) {
             var min = new Vector2(14); var max = new Vector2(626, 466); var size = new Vector2(100, 36);
             var first = ChromeLayout.Resolve(min, max, size, a, [], 8);
@@ -66,7 +66,7 @@ internal static class ChromeLayoutVerification
         c = driver.Config; c.MapCircle = false; c.ResetChromeLayout();
         driver.Step(new(time += .04, Size: new(1280, 800)));
         var location = MapWindowDrawing.TitleBounds; var coords = MapWindowDrawing.CoordinateBounds; var filters = FilterBarDrawing.LastBounds;
-        Require(Valid(location) && Valid(coords) && Valid(filters) && location.Y == coords.Y && location.W == coords.W && filters.W == coords.W && location.Z + GratisTheme.Gap == coords.X, "Default [location][coords] cluster and filters share height and baseline");
+        Require(Valid(location) && Valid(coords) && !Valid(filters) && location.Y == coords.Y && location.W == coords.W && location.Z + GratisTheme.Gap == coords.X, "Default [location][coords] cluster has no standalone Filters neighbour");
         c.CompactTitle = c.StyledCoordinates = false;
         c.LocationAnchor = c.CoordinateAnchor = ChromeAnchor.TopRight;
         driver.Step(new(time += .04));
@@ -95,8 +95,8 @@ internal static class ChromeLayoutVerification
         Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && !c.ToolbarAnchorExplicit, "Layout reset clears explicit choice");
         picker.Set(c, ChromeAnchor.TopLeft); SettingsLayout.Reset(c, "Chrome & motion");
         Require(c.ToolbarAnchor == ChromeAnchor.TopCenter && !c.ToolbarAnchorExplicit, "Section reset clears explicit choice");
-        foreach (var path in new[] { "ToolbarAnchor", "FilterBarAnchor", "LocationAnchor", "CoordinateAnchor", "TravelCardAnchor" })
-            Require(SettingsLayout.Find(c, "Chrome & motion", "").Any(e => e.Path == path), "All five anchor pickers remain in settings");
+        foreach (var path in new[] { "ToolbarAnchor", "LocationAnchor", "CoordinateAnchor", "TravelCardAnchor" })
+            Require(SettingsLayout.Find(c, "Chrome & motion", "").Any(e => e.Path == path), "Active chrome anchor pickers remain in settings");
     }
 
     private static void ToolbarPlacement()
@@ -129,8 +129,8 @@ internal static class ChromeLayoutVerification
                 var surfaces = new[] { toolbar, MapWindowDrawing.TitleBounds, MapWindowDrawing.CoordinateBounds, FilterBarDrawing.LastBounds, travel.ChipBounds };
                 for (var i = 0; i < surfaces.Length; i++) for (var j = i + 1; j < surfaces.Length; j++)
                     Require(!ChromeLayout.Overlap(surfaces[i], surfaces[j]), $"Toolbar and corner/centre chrome do not overlap at {width}/{scale}/{dpi}");
-                if (width >= 780) Require(Valid(travel.ChipBounds) && travel.ChipBounds.Y >= toolbar.W + GratisTheme.Gap * totalScale - .01f,
-                    "Another Top-centre element stacks below the toolbar");
+                if (width >= 780) Require(Valid(travel.ChipBounds) && !ChromeLayout.Overlap(travel.ChipBounds, toolbar),
+                    "Icon-anchored travel popover avoids the toolbar");
             }
             c.ToolbarAnchor = ChromeAnchor.TopLeft; c.ToolbarAnchorExplicit = true;
             driver.Step(new(time += .04, Size: new Vector2(1280, 800) * dpi));
@@ -168,7 +168,9 @@ internal static class ChromeLayoutVerification
         Require(travel.Chip?.Destination == TravelFixture.Hub && Valid(travel.ChipBounds) && source.Teleports == 0, "Click objective offers transport without teleporting");
         var dismiss = travel.ChipDismissButtonCenter; Step(dismiss); Step(left: true); Step(left: false); Step();
         Require(travel.Chip == null && source.Teleports == 0, "Dismiss persists while target remains selected");
-        Step(objective); Step(right: true); Step(right: false); Step(escape: true); Step();
+        Step(objective); Step(right: true); Step(right: false);
+        var nearest = driver.Context.ContextMenu.Rows["Show nearest aetheryte"];
+        Step(nearest, left: true); Step(left: false); Step();
         Require(travel.Chip != null && source.Teleports == 0, "Objective context menu offers the same card");
         Step(travel.ChipButtonCenter); Step(left: true); Step(left: false);
         Require(source.Teleports == 1, "Only explicit Teleport invokes native travel without Lifestream");

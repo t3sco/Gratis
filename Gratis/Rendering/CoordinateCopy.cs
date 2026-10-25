@@ -15,6 +15,11 @@ public static class CoordinateCopy
     public static Vector4 PlayerBounds { get; private set; }
     public static Vector4 CursorBounds { get; private set; }
     public static bool InputActive => inputFrame == ImGui.GetFrameCount() && ReferenceEquals(inputContext, MapDrawContext.Current);
+    public static void RecordRows(Vector4 player, Vector4 cursor)
+    {
+        layoutFrame = ImGui.GetFrameCount(); layoutContext = MapDrawContext.Current;
+        PlayerBounds = player; CursorBounds = cursor;
+    }
     public static void Record(Vector2 pos, Vector2 size, float playerWidth, float cursorWidth, float separator)
     {
         layoutFrame = ImGui.GetFrameCount(); layoutContext = MapDrawContext.Current;
@@ -36,7 +41,7 @@ public static class CoordinateCopy
             if (ImGui.InvisibleButton(id, width)) context.ContextMenu.Copy(CoordinateShare.Text(value,
                 ImGui.GetIO().KeyShift ? context.ContextMenu.Actions?.MapName : null));
             if (ImGui.IsItemHovered() || ImGui.IsItemActive()) { inputFrame = ImGui.GetFrameCount(); inputContext = context; }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip((cursor is { } mouse ? FormattableString.Invariant($"Cursor {mouse.X:F1} / {mouse.Y:F1}\n") : "") + "Copy coordinates · Shift: include map name");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(id.Contains("cursor", StringComparison.Ordinal) ? "Copy cursor coordinates · Shift: include map name" : "Copy player coordinates · Shift: include map name");
         }
         void Target(string id, Vector4 bounds, Vector2? value)
         {

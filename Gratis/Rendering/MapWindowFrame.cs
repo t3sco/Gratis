@@ -20,6 +20,7 @@ public interface IMapWindowHost
     bool PlayerMoving => false;
     bool MapFocused => false;
     SubZoneLocation? SubZone => null;
+    MapLocation? Location => null;
     string Title { get; }
     ImGuiWindowFlags Flags { get; set; }
     PaletteOverlay? Palette => null;
@@ -59,13 +60,13 @@ public sealed partial class MapWindowFrame
         ZoneBanner.Update(host.Config, host.SubZone, host.Now);
         MapDrawContext.Current.Measure.BeginFrame();
         MapDrawContext.Current.ContextMenu.Measure ??= MapDrawContext.Current.Measure;
-        MapDrawContext.Current.Assistance?.Prepare(host.Config);
+        MapDrawContext.Current.Assistance?.Prepare(host.Config, host.PlayerMoving);
         host.Palette?.Prepare(host.Config, ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
         var paletteInput = host.Palette?.CapturesInput == true;
         MapDrawContext.Current.ContextMenu.Prepare(host.Config);
         var assistanceInput = MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput;
         var filterInput = host.Config.IsGratis && !MoveHandle.Dragging &&
-            (LensDrawing.PointerOver || host.Config.QuickFilterBar && FilterBarDrawing.PointerOver);
+            FilterBarDrawing.PointerOver;
         var measureGesture = MapDrawContext.Current.Measure.WantsGesture(host.Config);
         if (paletteInput || assistanceInput || measureGesture) MoveHandle.Cancel();
         else if (!filterInput) MoveHandle.Update(host, isDragStarted);
@@ -136,13 +137,13 @@ public sealed partial class MapWindowFrame
             DrawToolbar(host);
             using (var paletteBlock = new MoveHandleInput.InputScope(paletteInput)) {
             MapDrawContext.Current.Trace?.Chrome("coordinates-call");
+            if (host.Config.IsGratis) BottomCardsDrawing.Prepare(host.Title, host.SubZone, host.Location);
             DrawCoordinateBar(host);
             if (!host.Config.IsGratis) DrawFrameEffects();
             MapDrawContext.Current.Trace?.Chrome("title-call");
             MapWindowDrawing.DrawTitleOnMap(host.Title);
             SubZoneBannerDrawing.Draw(ZoneBanner);
-            if (host.Config.IsGratis && host.Config.QuickFilterBar) FilterBarDrawing.Draw();
-            else LensDrawing.Draw();
+            if (host.Config.IsGratis) FilterBarDrawing.Draw();
             MapDrawContext.Current.Assistance?.Draw(host);
             MoveHandle.Draw(host.Config);
             MapDrawContext.Current.Measure.Draw(host, MoveHandle.Geometry);
@@ -193,7 +194,7 @@ public sealed partial class MapWindowFrame
         if (!host.Config.ShowCoordinateBar) return;
 
         using (FrameScopes.Group()) {
-            host.DrawCoordinates(HoveredFlags.HasFlag(HoverFlags.MapTexture), MapDrawOffset);
+            host.DrawCoordinates(host.Config.IsGratis ? ChromeVisibility.IsMapFrameHovered() : HoveredFlags.HasFlag(HoverFlags.MapTexture), MapDrawOffset);
         }
 
         if (ImGui.IsItemHovered()) {
@@ -221,7 +222,7 @@ public sealed partial class MapWindowFrame
         if (host.Config.IsGratis && MapDrawContext.Current.Measure.InputActive) { isDragStarted = false; host.Flags |= ImGuiWindowFlags.NoMove; return; }
         if (host.Config.IsGratis && MapDrawContext.Current.EdgePointers.InputActive) { isDragStarted = false; host.Flags |= ImGuiWindowFlags.NoMove; return; }
         if (host.Config.IsGratis && (MapDrawContext.Current.Assistance?.InputActive == true || MapDrawContext.Current.ContextMenu.CapturesInput || CoordinateCopy.InputActive)) { isDragStarted = false; return; }
-        if (host.Config.IsGratis && (LensDrawing.InputActive || host.Config.QuickFilterBar && FilterBarDrawing.InputActive)) { isDragStarted = false; return; }
+        if (host.Config.IsGratis && FilterBarDrawing.InputActive) { isDragStarted = false; return; }
         if (MoveHandle.BlocksMapInput || host.Palette?.CapturesInput == true || host.Palette?.IsOpen == true) {
             isDragStarted = false;
             host.Flags |= ImGuiWindowFlags.NoMove;
@@ -283,7 +284,10 @@ public sealed partial class MapWindowFrame
     private void ProcessMapDragStart(IMapWindowHost host)
     {
         if (ImGui.GetWindowSize() == lastWindowSize) {
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !isDragStarted) {
+            var pressed = host.Config.IsGratis ? ImGui.IsMouseClicked(ImGuiMouseButton.Left) &&
+                ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem) &&
+                !HoveredFlags.HasFlag(HoverFlags.Toolbar) : ImGui.IsItemClicked(ImGuiMouseButton.Left);
+            if (pressed && !isDragStarted) {
                 isDragStarted = true;
                 host.Renderer.InteractWithViewport(true);
             }

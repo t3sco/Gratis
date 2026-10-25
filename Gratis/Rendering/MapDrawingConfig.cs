@@ -76,8 +76,8 @@ public partial class MapDrawingConfig
     public ChromeAnchor ToolbarAnchor = ChromeAnchor.TopCenter;
     public bool ToolbarAnchorExplicit = false;
     public ChromeAnchor FilterBarAnchor = ChromeAnchor.BottomLeft;
-    public ChromeAnchor LocationAnchor = ChromeAnchor.BottomRight;
-    public ChromeAnchor CoordinateAnchor = ChromeAnchor.BottomRight;
+    public ChromeAnchor LocationAnchor = ChromeAnchor.BottomCenter;
+    public ChromeAnchor CoordinateAnchor = ChromeAnchor.BottomCenter;
     public ChromeAnchor TravelCardAnchor = ChromeAnchor.TopCenter;
 
     public void ResetChromeLayout()
@@ -85,7 +85,7 @@ public partial class MapDrawingConfig
         ChromeScale = 1; RestoreOpacityOnHover = false;
         ToolbarAnchor = ChromeAnchor.TopCenter; ToolbarAnchorExplicit = false;
         FilterBarAnchor = ChromeAnchor.BottomLeft;
-        LocationAnchor = CoordinateAnchor = ChromeAnchor.BottomRight;
+        ResetBottomCards();
         TravelCardAnchor = ChromeAnchor.TopCenter;
     }
 

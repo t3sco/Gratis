@@ -8,5 +8,7 @@ public partial class MapDrawingConfig : IJsonOnDeserialized
     {
         if (!ToolbarAnchorExplicit && ToolbarAnchor == ChromeAnchor.TopLeft)
             ToolbarAnchor = ChromeAnchor.TopCenter;
+        if (!LocationAnchorExplicit && LocationAnchor == ChromeAnchor.BottomRight) LocationAnchor = ChromeAnchor.BottomCenter;
+        if (!CoordinateAnchorExplicit && CoordinateAnchor == ChromeAnchor.BottomRight) CoordinateAnchor = ChromeAnchor.BottomCenter;
     }
 }

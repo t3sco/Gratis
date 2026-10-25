@@ -40,7 +40,8 @@ public static class MapMarkerInfoExtensions {
                 _ => Rendering.MarkerCategory.Auto,
             },
             PrimaryText = GetMarkerPrimaryTooltip(marker, tooltipText),
-            OnLeftClicked = () => OnMarkerClicked(ref marker),
+            OnLeftClicked = Rendering.MapDrawContext.Current.Config.IsGratis && marker.DataType is 3 or 4
+                ? null : () => OnMarkerClicked(ref marker),
             SecondaryText = () => GetTooltip(ref marker),
         };
 

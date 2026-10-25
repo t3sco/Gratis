@@ -3,6 +3,7 @@ using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace Gratis.Controllers;
 
@@ -10,10 +11,17 @@ internal sealed class GameTeleportService
 {
     private (string Id, uint Cost)? pending;
     public void ClearConfirmation() => pending = null;
-    public static unsafe bool CanTeleport() => Service.ClientState.IsLoggedIn && !Service.ClientState.IsPvP &&
-        Service.ObjectTable.LocalPlayer != null && !Service.Condition[ConditionFlag.InCombat] &&
-        !Service.Condition[ConditionFlag.BetweenAreas] && !Service.Condition[ConditionFlag.BetweenAreas51] &&
-        ActionManager.Instance()->GetActionStatus(ActionType.Action, 5) == 0;
+    public static bool CanTeleport() => BlockedReason().Length == 0;
+    public static unsafe string BlockedReason()
+    {
+        if (!Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer == null) return "Teleport unavailable";
+        if (Service.Condition[ConditionFlag.BetweenAreas] || Service.Condition[ConditionFlag.BetweenAreas51]) return "Changing areas";
+        if (AgentMap.Instance()->IsPlayerMoving) return "Stop moving to teleport";
+        if (Service.Condition[ConditionFlag.InCombat]) return "In combat";
+        if (Service.ObjectTable.LocalPlayer.IsCasting) return "Finish casting to teleport";
+        if (Service.ClientState.IsPvP || ActionManager.Instance()->GetActionStatus(ActionType.Action, 5) != 0) return "Teleport unavailable here";
+        return "";
+    }
 
     public unsafe string Request(PlaceEntry place, bool confirmed, bool enabled = true)
     {

@@ -28,7 +28,7 @@ internal static class FilterBarVerification
             void Click(MarkerGroup group, bool right = false, bool control = false, bool alt = false) {
                 Step();
                 if (!Valid(FilterBarDrawing.ChipBounds[(int)group])) {
-                    var overflow = Center(FilterBarDrawing.OverflowBounds);
+                    var overflow = Center(MapToolbarDrawing.ButtonBounds[2]);
                     Step(overflow); Step(overflow, left: true); Step(overflow); Step(overflow);
                 }
                 var bounds = FilterBarDrawing.ChipBounds[(int)group]; Require(Valid(bounds), $"Expected {group} chip in bar/overflow; row={FilterBarDrawing.LastBounds}; overflow={FilterBarDrawing.OverflowBounds}; input={FilterBarDrawing.InputActive}");
@@ -85,22 +85,22 @@ internal static class FilterBarVerification
                 var config = Config(size); config.MapCircle = circle;
                 using var driver = new ScriptedFrameDriver(config, Fixture());
                 driver.Step(new ScriptFrame(0)); driver.Step(new ScriptFrame(.1));
+                Require(!Valid(FilterBarDrawing.LastBounds) && !Valid(FilterBarDrawing.OverflowBounds), $"No standalone Filters trigger exists at {size}, circle={circle}");
+                var trigger = MapToolbarDrawing.ButtonBounds[2];
+                if (!Valid(trigger)) {
+                    FilterBarDrawing.TogglePopover(); driver.Step(new(.2));
+                    Require(!FilterBarDrawing.PopoverOpen, "A compact toolbar without Filters never creates an orphaned drawer");
+                    continue;
+                }
+                var button = Center(trigger);
+                driver.Step(new(.2, Mouse: button)); driver.Step(new(.24, Left: true)); driver.Step(new(.28, Left: false));
                 var row = FilterBarDrawing.LastBounds;
-                Require(Valid(row), $"Overflow control exists at {size}, circle={circle}");
-                var handle = driver.Window.MoveHandle.Geometry;
-                Require(!Overlap(row, MapToolbarDrawing.LastBounds) && !Overlap(row, MapWindowDrawing.TitleBounds) && !Overlap(row, MapWindowDrawing.CoordinateBounds) &&
-                    !Overlap(row, new Vector4(handle.HitMin.X, handle.HitMin.Y, handle.HitMax.X, handle.HitMax.Y)), $"Row overlaps chrome at {size}, circle={circle}");
+                Require(FilterBarDrawing.PopoverOpen && Valid(row) && !Overlap(row, trigger), "Only the toolbar trigger opens an adjacent drawer");
                 var center = config.WindowPosition + size / 2;
                 foreach (var point in new[] { new Vector2(row.X,row.Y), new Vector2(row.Z,row.Y), new Vector2(row.X,row.W), new Vector2(row.Z,row.W) })
-                    Require(circle ? Vector2.Distance(point, center) < MathF.Min(size.X,size.Y) / 2 : point.X >= config.WindowPosition.X && point.Y >= config.WindowPosition.Y && point.X <= config.WindowPosition.X + size.X && point.Y <= config.WindowPosition.Y + size.Y, "Row stays inside frame");
-                if (size.X < 430) {
-                    Require(Valid(FilterBarDrawing.OverflowBounds), "Narrow row offers overflow");
-                    var button = Center(FilterBarDrawing.OverflowBounds);
-                    driver.Step(new ScriptFrame(.2, Mouse: button));
-                    driver.Step(new ScriptFrame(.24, Mouse: button, Left: true));
-                    driver.Step(new ScriptFrame(.28, Mouse: button, Left: false));
-                    Require(FilterBarDrawing.InputActive && Enumerable.Range(0, MarkerVisibility.GroupCount).Where(i => driver.Context.Visibility.Counts[i] > 0).All(i => Valid(FilterBarDrawing.ChipBounds[i])), $"Present categories fit overflow at {size}, circle={circle}");
-                }
+                    Require(circle ? Vector2.Distance(point, center) < MathF.Min(size.X,size.Y) / 2 : point.X >= config.WindowPosition.X && point.Y >= config.WindowPosition.Y && point.X <= config.WindowPosition.X + size.X && point.Y <= config.WindowPosition.Y + size.Y, "Drawer stays inside frame");
+                config.FilterBarAnchor = ChromeAnchor.TopRight; driver.Step(new(.32));
+                Require(FilterBarDrawing.LastBounds == row, "The legacy FilterBarAnchor has no effect on drawer placement");
             }
         Console.WriteLine("Quick filters: native chip mute, Ctrl/Alt solo, priority protection, right click, peek/restore, counts, custom cycling, auto-hide, and 10 real-frame chrome/shape layouts verified.");
     }
@@ -110,6 +110,8 @@ internal static class FilterBarVerification
         var json = ScriptedFrameDriver.Json;
         var saved = global::System.Text.Json.JsonSerializer.Deserialize<SystemConfig>("{}", json)!;
         Require(saved.FilterOptions.Mode == FilterBarMode.Collapsed && Enum.GetValues<MarkerGroup>().All(saved.FilterOptions.Contains), "Old configs default to collapsed with all categories available");
+        var legacy = global::System.Text.Json.JsonSerializer.Deserialize<SystemConfig>("{\"FilterBarAnchor\":\"TopRight\",\"QuickFilterBar\":false}", json)!;
+        Require(legacy.FilterBarAnchor == ChromeAnchor.TopRight && !legacy.QuickFilterBar, "Retired filter placement/visibility fields still deserialize harmlessly");
         saved.Filters = null!;
         Require(saved.FilterOptions.Quests, "Explicit null filter options acquire safe defaults");
         saved.FilterOptions.Mode = FilterBarMode.AlwaysExpanded; saved.FilterOptions.Services = false;
@@ -117,8 +119,7 @@ internal static class FilterBarVerification
         Require(saved.FilterOptions.Mode == FilterBarMode.AlwaysExpanded && !saved.FilterOptions.Services, "Mode and category selection round trip");
         Gratis.Windows.SettingsLayout.Reset(saved, "Filters");
         Require(saved.FilterOptions.Mode == FilterBarMode.Collapsed && saved.FilterOptions.Services && saved.ActiveLens == "Explore", "Filters section resets mode, categories and lenses");
-        Require(Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "Filters.Mode") &&
-            Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "CustomLenses"), "Filter/lens controls share the dedicated settings section");
+        Require(Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "CustomLenses"), "Lens controls remain in the dedicated settings section");
         Require(FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Normal) == "FATEs" &&
             FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Hidden) == "FATEs \u00b7 Muted" &&
             Enum.GetValues<MarkerVisibilityState>().All(s => !FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, s).Contains('\n')), "One-line tooltips contain only category and state");
@@ -128,9 +129,9 @@ internal static class FilterBarVerification
             void Step(Vector2? mouse = null, bool left = false) => driver.Step(new(time += .04, Mouse: mouse ?? new(-1000), Left: left));
             void Click(Vector4 bounds) { var mouse = Center(bounds); Step(mouse); Step(mouse, true); Step(mouse); Step(mouse); }
             Step(); Step();
-            Require(FilterBarDrawing.LastBounds.Z - FilterBarDrawing.LastBounds.X == GratisTheme.ControlHeight &&
-                FilterBarDrawing.ChipBounds.All(b => !Valid(b)) && FilterBarDrawing.ActiveCount == 0, "Each session starts with one compact Filters button");
-            Click(FilterBarDrawing.OverflowBounds);
+            Require(!Valid(FilterBarDrawing.LastBounds) && !Valid(FilterBarDrawing.OverflowBounds) &&
+                FilterBarDrawing.ChipBounds.All(b => !Valid(b)) && FilterBarDrawing.ActiveCount == 0, "Each session has only the toolbar Filters trigger");
+            Click(MapToolbarDrawing.ButtonBounds[2]);
             Require(FilterBarDrawing.PopoverOpen && Enumerable.Range(0, MarkerVisibility.GroupCount).Where(i => driver.Context.Visibility.Counts[i] > 0).All(i => Valid(FilterBarDrawing.ChipBounds[i])) &&
                 !Valid(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Housing]), "Popover includes map categories and omits empty groups");
             var fate = Center(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Fates]);
@@ -140,19 +141,18 @@ internal static class FilterBarVerification
             driver.Context.Visibility.ResetFilters(); driver.Config.FilterOptions.Quests = false;
             Step();
             Require(!Valid(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Quests]) && driver.Trace.DrawnMarkers.Any(m => m.IconId == 71001), "Removing a category control never hides its priority markers");
-            Click(FilterBarDrawing.OverflowBounds);
+            Click(MapToolbarDrawing.ButtonBounds[2]);
             Require(!FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds.All(b => !Valid(b)), "Clicking the Filters button again collapses");
-            Click(FilterBarDrawing.OverflowBounds);
+            Click(MapToolbarDrawing.ButtonBounds[2]);
             Click(new(1080, 780, 1084, 784)); Step();
             Require(!FilterBarDrawing.PopoverOpen, "Clicking away collapses");
             driver.Config.FilterOptions.Mode = FilterBarMode.AlwaysExpanded; Step();
-            Require(FilterBarDrawing.ChipBounds.Any(Valid) && Valid(FilterBarDrawing.SettingsBounds), "Always expanded retains an icon row and settings gear at both sizes");
-            Require(!Overlap(FilterBarDrawing.LastBounds, MapToolbarDrawing.LastBounds) &&
-                !Overlap(FilterBarDrawing.LastBounds, MapWindowDrawing.TitleBounds) &&
-                !Overlap(FilterBarDrawing.LastBounds, MapWindowDrawing.CoordinateBounds), "Always-expanded row avoids the other anchored controls");
+            Require(!Valid(FilterBarDrawing.LastBounds) && FilterBarDrawing.ChipBounds.All(b => !Valid(b)), "Legacy AlwaysExpanded never restores a standalone row");
+            Click(MapToolbarDrawing.ButtonBounds[2]);
+            Require(FilterBarDrawing.PopoverOpen && Valid(FilterBarDrawing.SettingsBounds), "The drawer still provides filter settings");
             var gear = FilterBarDrawing.SettingsBounds; Click(gear);
             Require(driver.Context.RequestedSettingsSection == "Filters", "Gear opens the Filters settings section");
         }
-        Console.WriteLine("Filter presentation: collapsed sessions, icon popovers/rows, button-toggle/outside dismissal, short hover text, badge, category-only preferences, settings route, old/null configs and reset at small/normal sizes.");
+        Console.WriteLine("Filter presentation: toolbar-only drawers, toggle/outside dismissal, short hover text, badge, category preferences, settings route, ignored legacy row mode/anchor and old/null config/reset.");
     }
 }

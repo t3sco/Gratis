@@ -147,9 +147,6 @@ public sealed partial class SettingsLayout
         Add("SmallAreaTextScale", "Small label size", .5f, 3, "%.2fx", when: c => c.ShowTextLabels);
         Add("ShowFogOfWar", "Fog of war");
 
-        Group("Filters", "Filter bar", Gratis);
-        Add("QuickFilterBar", "Show filter bar");
-        Add("Filters.Mode", "Filter bar", choices: "Collapsed (default)|Always expanded");
         Group("Filters", "Categories in the list", Gratis);
         foreach (var category in Enum.GetValues<MarkerGroup>())
             Add("Filters." + category, MarkerVisibility.Names[(int)category],
@@ -214,10 +211,9 @@ public sealed partial class SettingsLayout
         Add("ChromeScale", "Chrome size", .8f, 1.6f, "%.2fx");
         const string anchors = "Top left|Top centre|Top right|Bottom left|Bottom centre|Bottom right";
         Add("ToolbarAnchor", "Toolbar anchor", choices: anchors);
-        Add("FilterBarAnchor", "Filter bar anchor", choices: anchors);
         Add("LocationAnchor", "Location card anchor", choices: anchors);
         Add("CoordinateAnchor", "Coordinates anchor", choices: anchors);
-        Add("TravelCardAnchor", "Travel card anchor", choices: anchors,
+        Add("TravelCardAnchor", "Travel status anchor", choices: anchors,
             tip: "Cards and controls sharing an anchor stack inward. Location and coordinates flow together on one row when there is room. Reset section restores the default layout.");
         Group("Chrome & motion", "Chrome visibility", Gratis);
         Add("ChromeIdleDelay", "Idle delay", 0, 10, "%.1f s", when: c => c.AutoHideChrome && !c.PinChrome);
@@ -240,7 +236,8 @@ public sealed partial class SettingsLayout
         Add("ShowSubAreaLabel", "Sub-area in title", when: c => !c.IsGratis || !c.CompactTitle);
         Group("Chrome & motion", "Gratis title", Gratis);
         Add("SubZoneBanner", "Sub-zone arrival banner", tip: "Show area changes for 1.8 seconds, even while chrome is hidden.");
-        Add("CompactTitle", "Compact title chip", when: c => c.ShowTitleOnMap);
+        Add("CompactTitle", "Location card", when: c => c.ShowTitleOnMap);
+        Add("LocationCardShows", "Location card shows", choices: "Area only|Zone|Zone + area|Region · Zone · Area", when: c => c.ShowTitleOnMap && c.CompactTitle);
         Group("Chrome & motion", "Classic title", Classic);
         Add("TitleCorner", "Title corner", choices: "Top left|Top right|Bottom left|Bottom right", when: c => c.ShowTitleOnMap);
         Add("TitleOffset", "Title offset", 0, 100, "%.0f px", when: c => c.ShowTitleOnMap);
@@ -267,6 +264,7 @@ public sealed partial class SettingsLayout
         Add("ShowCoordinateBar", "Coordinates");
         Group("Chrome & motion", "Gratis coordinates", Gratis);
         Add("StyledCoordinates", "Coordinate chip", when: c => c.ShowCoordinateBar);
+        Add("CoordinatesShow", "Coordinates show", choices: "Player|Cursor|Both", when: c => c.ShowCoordinateBar);
         Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar, tip: "Use the coordinate chip to show ET beside map coordinates.");
         Add("GratisContextMenu", "Gratis context menu");
         Group("Chrome & motion", "Classic coordinates", Classic);

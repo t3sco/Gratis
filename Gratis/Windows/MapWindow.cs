@@ -37,6 +37,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
     private uint lastAreaPlaceNameId;
     private uint lastSubAreaPlaceNameId;
     private string compactMapTitle = string.Empty;
+    private Rendering.MapLocation? cardLocation;
 
     private readonly MapToolbar mapToolbar = new();
     private readonly MapCoordinateBar mapCoordinateBar = new();
@@ -113,6 +114,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
     public void WakeGhost() => windowFrame.Ghost.Wake(ImGui.GetTime());
     public string GhostDiagnostics() => windowFrame.Ghost.Diagnostics();
     string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle ? compactMapTitle : WindowName;
+    Rendering.MapLocation? Rendering.IMapWindowHost.Location => cardLocation;
     void Rendering.IMapWindowHost.UpdateWindow() { UpdateTitle(); UpdateStyle(); UpdateSizePosition(); }
     void Rendering.IMapWindowHost.SaveWindowPosition() => SystemConfig.Save();
     void Rendering.IMapWindowHost.DrawSpoilerWarning() => DrawSpoilerWarning();
@@ -163,6 +165,12 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost
         if (!locationChanged) return;
         var subLocationString = string.Empty;
         var mapData = Service.DataManager.GetExcelSheet<Map>().GetRow(AgentMap.Instance()->SelectedMapId);
+        var cardArea = string.Empty;
+        if (AgentMap.Instance()->SelectedMapId == AgentMap.Instance()->CurrentMapId) {
+            var place = TerritoryInfo.Instance()->SubAreaPlaceNameId != 0 ? TerritoryInfo.Instance()->SubAreaPlaceNameId : TerritoryInfo.Instance()->AreaPlaceNameId;
+            if (place != 0) cardArea = Service.DataManager.GetExcelSheet<PlaceName>().GetRow(place).Name.ExtractText();
+        }
+        cardLocation = new(mapData.PlaceNameRegion.Value.Name.ExtractText(), mapData.PlaceName.Value.Name.ExtractText(), cardArea);
         var compactParts = new global::System.Collections.Generic.List<string>();
         if (System.SystemConfig.ShowRegionLabel) compactParts.Add(mapData.PlaceNameRegion.Value.Name.ExtractText());
         if (System.SystemConfig.ShowMapLabel) compactParts.Add(mapData.PlaceName.Value.Name.ExtractText());

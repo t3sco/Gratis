@@ -22,7 +22,7 @@ public interface ITravelPlaces
 }
 
 public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlaces places,
-    Func<bool> canTravel, Action save)
+    Func<bool> canTravel, Action save, Func<string>? blockedReason = null)
 {
     public ITravelProvider Provider => available ? provider : NullTravelProvider.Instance;
     public ITravelPlaces Places => places;
@@ -32,7 +32,11 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     public string DestinationName { get; private set; } = "";
     private PlaceEntry? hovered, pending;
     private Vector2 anchor;
-    private double lastHover = double.NegativeInfinity;
+    private double cardCreated, cardUntil, cardDrawn;
+    private bool playerMoving;
+    private Vector2? anchorWorld;
+    private bool TravelReady => !playerMoving && canTravel() && !provider.IsBusy;
+    public string UnavailableReason => playerMoving ? "Stop moving to teleport" : !canTravel() ? blockedReason?.Invoke() ?? "Teleport unavailable" : provider.IsBusy ? "Already travelling" : "";
     private uint pendingCost;
     private bool available;
     private readonly List<(Vector2 Min, Vector2 Max)> panelBounds = [];
@@ -41,9 +45,10 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     public Vector2 TravelButtonCenter { get; private set; }
     public Vector2 CancelButtonCenter { get; private set; }
 
-    public void Prepare(MapDrawingConfig config)
+    public void Prepare(MapDrawingConfig config, bool moving = false)
     {
-        InputActive = config.IsGratis && panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false));
+        playerMoving = moving;
+        InputActive = config.IsGratis && TravelReady && panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false));
         panelBounds.Clear();
         if (!config.IsGratis) { PinLayer?.CancelEditor(); return; }
         InputActive |= PinLayer?.CapturesInput == true;
@@ -53,30 +58,44 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         }
     }
 
-    public bool CanOffer(PlaceEntry place) => available && MapDrawContext.Current.Config.TravelActions &&
-        place.Kind == PlaceKind.Aetheryte && places.Access(place).Attuned;
+    public bool CanOffer(PlaceEntry place) => TravelReady && MapDrawContext.Current.Config.TravelActions &&
+        place.Kind == PlaceKind.Aetheryte && places.Access(place).Attuned && (!place.IsShard || available);
+
+    private PlaceEntry? FindTransport(Classes.MarkerInfo marker, string title) => places.Entries.FirstOrDefault(p =>
+        p.Kind == PlaceKind.Aetheryte && p.MapId == places.Context.MapId &&
+        (p.Name == title || p.AetheryteId == marker.DataId));
 
     public bool HoverTransport(Classes.MarkerInfo marker, string title)
     {
-        if (!available || !MapDrawContext.Current.Config.TravelActions ||
+        if (!MapDrawContext.Current.Config.TravelActions ||
             MarkerIcon.Family(marker) is not (MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet)) return false;
-        var match = places.Entries.FirstOrDefault(p => p.Kind == PlaceKind.Aetheryte &&
-            p.MapId == places.Context.MapId && (p.Name == title || p.AetheryteId == marker.DataId));
-        if (match == null || !CanOffer(match)) return false;
-        HoverPlace(match, marker.Position + marker.Offset + ImGui.GetWindowPos());
+        var match = FindTransport(marker, title);
+        if (match == null) return false;
+        if (hovered?.Id == match.Id && TravelReady) return true;
+        var reason = !places.Access(match).Attuned ? "Not yet attuned" : UnavailableReason;
+        if (reason.Length == 0 && match.IsShard && !available) reason = "Lifestream unavailable";
+        ImGui.SetTooltip(match.Name + (reason.Length > 0 ? " · " + reason : ""));
         return true;
     }
 
     public void HoverPlace(PlaceEntry place, Vector2 markerCenter)
     {
-        if (hovered?.Id != place.Id) { pending = null; Message = ""; }
-        hovered = place; anchor = markerCenter; lastHover = ImGui.GetTime();
+        if (!CanOffer(place)) return;
+        pending = null; Message = ""; hovered = place; anchor = markerCenter; anchorWorld = null;
+        cardCreated = cardDrawn = ImGui.GetTime(); cardUntil = cardCreated + 8;
+        contextTarget = null;
     }
 
     public string Request(PlaceEntry place, bool confirmed = false)
     {
         places.Refresh();
-        if (!CanOffer(place) || !provider.Available || provider.IsBusy || !canTravel()) return Message = "Travel is unavailable now.";
+        if (!CanOffer(place)) return Message = "Travel is unavailable now.";
+        if (!provider.Available && !place.IsShard) {
+            Message = places.Teleport(place, confirmed && pending?.Id == place.Id);
+            pending = Message.StartsWith("Confirm ", StringComparison.Ordinal) ? place : null;
+            pendingCost = places.Access(place).Cost ?? 0;
+            return Message;
+        }
         var access = places.Access(place);
         if (!place.IsShard && access.Cost == null) return Message = "Teleport cost is unavailable.";
         var cost = place.IsShard ? 0 : access.Cost!.Value;
@@ -97,8 +116,8 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         if (!host.Config.IsGratis) return;
         OfferClickedObjective(host);
         DrawAetheryteChip(host);
-        if (available && host.Config.TravelActions) {
-            if (provider.IsBusy) DrawProgress(host);
+        if (host.Config.TravelActions) {
+            if (available && provider.IsBusy) DrawProgress(host);
             DrawTravelCard(host);
         }
         PinLayer?.Draw(host, this);
@@ -106,17 +125,40 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         if (PinLayer?.CapturesInput == true) CapturePinKeys?.Invoke();
     }
 
+    private PlaceEntry? pressedPlace;
+    private SpotlightRequest? pressedObjective;
+    private Vector2 pressPosition, pressedWorld;
+    private bool markerDragged;
     private void OfferClickedObjective(IMapWindowHost host)
     {
         var context = MapDrawContext.Current;
-        if (!host.Config.TravelActions || !host.Config.AetheryteChips || InputActive || context.WindowMoveInputBlocked ||
-            context.Measure.InputActive || !ImGui.IsWindowHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem) ||
-            !(ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right))) return;
-        foreach (var (marker, world) in context.MarkerTargets.Targets) {
-            if (!marker.IsHovered || !(marker.IsObjective || MarkerIcon.Family(marker) is MarkerIconFamily.Quest or MarkerIconFamily.Leve)) continue;
-            OfferContextTarget(new(world, host.Renderer.ViewedMapId, SpotlightSource.Quest, Icon: marker.IconId), host.Now);
-            break;
+        if (!TravelReady || !host.Config.TravelActions) {
+            hovered = pending = pressedPlace = null; pressedObjective = null; return;
         }
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) {
+            pressedPlace = null; pressedObjective = null; markerDragged = false;
+            pressPosition = ImGui.GetMousePos();
+            if (InputActive || context.WindowMoveInputBlocked || context.Measure.InputActive ||
+                !ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem)) return;
+            foreach (var (marker, world) in context.MarkerTargets.Targets) {
+                if (!marker.IsHovered || !context.GetIconSetting(marker.IconId).AllowClick) continue;
+                if (MarkerIcon.Family(marker) is MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet) {
+                    var place = FindTransport(marker, marker.PrimaryText?.Invoke() ?? "");
+                    if (place != null && CanOffer(place)) { pressedPlace = place; pressedWorld = world; break; }
+                }
+                if (host.Config.AetheryteChips && (marker.IsObjective || MarkerIcon.Family(marker) is MarkerIconFamily.Quest or MarkerIconFamily.Leve)) {
+                    pressedObjective = new(world, host.Renderer.ViewedMapId, SpotlightSource.Quest, Icon: marker.IconId);
+                    pressedWorld = world; break;
+                }
+            }
+        }
+        markerDragged |= Vector2.DistanceSquared(pressPosition, ImGui.GetMousePos()) > MathF.Pow(ImGui.GetIO().MouseDragThreshold, 2);
+        if (!ImGui.IsMouseReleased(ImGuiMouseButton.Left)) return;
+        if (!markerDragged) {
+            if (pressedPlace is { } place) { HoverPlace(place, pressPosition); anchorWorld = pressedWorld; }
+            else if (pressedObjective is { } objective) { hovered = null; OfferContextTarget(objective, host.Now); }
+        }
+        pressedPlace = null; pressedObjective = null;
     }
 
     private void DrawProgress(IMapWindowHost host)
@@ -134,28 +176,63 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     private void DrawTravelCard(IMapWindowHost host)
     {
+        CardMin = CardMax = Vector2.Zero;
         if (hovered == null || !CanOffer(hovered)) return;
+        if (anchorWorld is { } world) anchor = host.Renderer.WorldToScreen(world, ImGui.GetWindowPos());
         var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
-        var size = new Vector2(MathF.Min(310 * s, max.X - min.X), (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 148 : 104) * s);
+        var size = new Vector2(MathF.Min(332 * s, max.X - min.X), (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 168 : 136) * s);
         if (size.X < 230 * s) return;
-        var bounds = ChromeLayout.Place("hover-travel", size, host.Config.TravelCardAnchor);
+        var bounds = ChromeLayout.PlacePopover("hover-travel", size, anchor);
         if (bounds == Vector4.Zero) return;
         var pos = ChromeLayout.Position(bounds);
+        if (DismissPopover(bounds, cardCreated)) { hovered = pending = null; return; }
+        var over = ImGui.IsMouseHoveringRect(pos, pos + size, false);
+        if (over || pending != null) cardUntil += Math.Max(0, host.Now - cardDrawn);
+        cardDrawn = host.Now;
+        if (host.Now > cardUntil) { hovered = pending = null; return; }
         CardMin = pos; CardMax = pos + size;
-        if (ImGui.IsMouseHoveringRect(pos - new Vector2(12 * s), pos + size + new Vector2(12 * s), false)) lastHover = ImGui.GetTime();
-        if (ImGui.GetTime() - lastHover > .6) { hovered = pending = null; return; }
+        DrawPointer(bounds, anchor);
         Panel("##travel-card", pos, size, () => {
-            CardHeading(hovered.IsShard ? "Aethernet" : "Aetheryte", hovered.Name, hovered.IsShard ? "" : places.Access(hovered).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable");
-            if (PrimaryTravelButton(pending?.Id == hovered.Id ? $"Confirm {pendingCost:N0} gil" : hovered.IsShard ? "Travel here" : "Teleport", GratisIcons.Compass))
+            CardHeading(hovered.IsShard ? "Aethernet" : "Aetheryte", hovered.Name,
+                hovered.IsShard ? "" : places.Access(hovered).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable", hovered.Subtitle);
+            ImGui.BeginDisabled(host.Now <= cardCreated);
+            if (PrimaryTravelButton(pending?.Id == hovered.Id ? $"Confirm {pendingCost:N0} gil" : "Teleport", GratisIcons.Compass))
                 Request(hovered, pending?.Id == hovered.Id);
+            ImGui.EndDisabled();
             TravelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
             ImGui.SameLine(0, GratisTheme.Gap * s);
             if (QuietButton("Dismiss")) hovered = pending = null;
             if (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal)) ImGui.TextWrapped(Message);
+            DrawTimer(pos, size, (float)(cardUntil - host.Now), host.Config.ReduceMotion);
         });
     }
 
-    private static void CardHeading(string label, string name, string detail)
+    private static bool DismissPopover(Vector4 bounds, double created) => ImGui.IsKeyPressed(ImGuiKey.Escape) ||
+        ImGui.GetTime() > created && (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right)) &&
+        !ImGui.IsMouseHoveringRect(new(bounds.X, bounds.Y), new(bounds.Z, bounds.W), false);
+
+    private static void DrawTimer(Vector2 position, Vector2 size, float seconds, bool reduceMotion)
+    {
+        if (reduceMotion) return;
+        var s = GratisTheme.ChromeScale; var start = position + new Vector2(12 * s, size.Y - 4 * s);
+        ImGui.GetWindowDrawList().AddLine(start, start + new Vector2((size.X - 24 * s) * Math.Clamp(seconds / 8, 0, 1), 0),
+            ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .5f }), s);
+    }
+
+    private static void DrawPointer(Vector4 bounds, Vector2 target)
+    {
+        var s = GratisTheme.ChromeScale; var min = new Vector2(bounds.X, bounds.Y); var max = new Vector2(bounds.Z, bounds.W);
+        var edge = Vector2.Clamp(target, min + new Vector2(12 * s), max - new Vector2(12 * s));
+        Vector2 along;
+        if (target.X < min.X || target.X > max.X) { edge.X = target.X < min.X ? min.X : max.X; along = new(0, 5 * s); }
+        else { edge.Y = target.Y < min.Y ? min.Y : max.Y; along = new(5 * s, 0); }
+        var direction = target - edge;
+        if (direction.LengthSquared() < 1) return;
+        var tip = edge + Vector2.Normalize(direction) * MathF.Min(9 * s, direction.Length());
+        ImGui.GetWindowDrawList().AddTriangleFilled(edge - along, tip, edge + along, ImGui.GetColorU32(GratisTheme.Surface with { W = .98f }));
+    }
+
+    private static void CardHeading(string label, string name, string detail, string subtitle = "")
     {
         var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
@@ -164,18 +241,28 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
             var crystal = pos + new Vector2(5, 7) * s;
             list.AddQuad(crystal - new Vector2(0, 6) * s, crystal + new Vector2(4, 0) * s,
                 crystal + new Vector2(0, 6) * s, crystal - new Vector2(4, 0) * s,
-                ImGui.GetColorU32(GratisTheme.WarmAccent), s);
+                ImGui.GetColorU32(GratisTheme.Crystal), s);
             ImGui.Dummy(new Vector2(18, 12) * s); ImGui.SameLine(0, 0);
             ImGui.TextColored(GratisTheme.Secondary, label);
             if (detail.Length > 0) {
                 var x = ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X - ImGui.CalcTextSize(detail).X;
-                if (x > ImGui.GetCursorPosX() + 8 * s) { ImGui.SameLine(x); ImGui.TextColored(GratisTheme.Secondary, detail); }
+                if (x > ImGui.GetCursorPosX() + 16 * s) {
+                    ImGui.SameLine(x - 6 * s);
+                    var chip = ImGui.GetCursorScreenPos(); var measured = ImGui.CalcTextSize(detail);
+                    list.AddRectFilled(chip - new Vector2(4, 2) * s, chip + measured + new Vector2(4, 2) * s,
+                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .10f }), GratisTheme.ButtonRadius * s);
+                    ImGui.TextColored(GratisTheme.Secondary, detail);
+                }
             }
         }
-        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push()) {
+        using (context.GetChromeFont(GratisTheme.TravelTitleSize * s, ChromeFontRole.Title)?.Push()) {
             var displayed = ChromeControls.FitLabel(name, ImGui.GetContentRegionAvail().X);
             ImGui.TextUnformatted(displayed);
             if (displayed != name) ChromeControls.Tooltip(name);
+        }
+        if (subtitle.Length > 0) {
+            using var secondary = context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push();
+            ImGui.TextColored(GratisTheme.Secondary, ChromeControls.FitLabel(subtitle, ImGui.GetContentRegionAvail().X));
         }
         ImGui.Spacing();
     }
@@ -253,7 +340,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
             if (visible) {
                 MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.CardRadius * s, surfaceOpacity: 1);
                 content();
-                if (ImGui.IsWindowHovered() || ImGui.IsAnyItemActive()) { InputActive = true; MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime()); }
+                if (ImGui.IsWindowHovered() || ImGui.IsWindowFocused() && ImGui.IsAnyItemActive()) { InputActive = true; MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime()); }
             }
             ImGui.EndChild();
             ImGui.SetCursorPos(cursor); ImGui.Dummy(Vector2.Zero);

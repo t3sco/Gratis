@@ -12,6 +12,7 @@ public static class GratisTheme
     public const float ToolbarCenterMargin = 32;
     public const float TextSize = 14;
     public const float SmallTextSize = 12;
+    public const float TravelTitleSize = 16;
     public const float IconSize = 18;
     public static readonly Vector4[] FilterTints = [
         new(1, .76f, .3f, 1), new(.96f, .86f, .61f, 1), new(.77f, .58f, 1, 1),
@@ -19,7 +20,6 @@ public static class GratisTheme
         new(.87f, .75f, .6f, 1), new(.58f, .87f, .46f, 1), new(.98f, .82f, .36f, 1),
         new(.42f, .91f, .59f, 1), new(.75f, .78f, .82f, 1), new(.96f, .62f, .49f, 1),
     ];
-    public const float AreaLabelSlant = .14f;
     public static readonly Vector4 WarmAccent = new(.85f, .72f, .48f, 1);
     public static readonly Vector4 Crystal = new(.72f, .9f, 1, 1);
     public static float ChromeScale => MapDrawContext.Current.GlobalScale *

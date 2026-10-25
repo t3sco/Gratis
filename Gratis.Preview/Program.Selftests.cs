@@ -5,6 +5,9 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("chrome-three", ChromeThreeVerification.State),
+        ("frames-bottom-cards", ChromeThreeVerification.BottomRow),
+        ("frames-travel-input", ChromeThreeVerification.TravelInput),
         ("window-presets", WindowPresetVerification.State),
         ("frames-window-presets", WindowPresetVerification.Frames),
         ("tweaks", TweakVerification.Run),

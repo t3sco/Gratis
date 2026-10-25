@@ -124,10 +124,11 @@ public static class TweakCatalog
         Add("avoid-focus", "Window", GratisIcons.Eye, "Avoid focus on open", "Open the map without taking keyboard focus.", "NoFocusOnAppear");
         Add("auto-hide", "Display", GratisIcons.Eye, "Auto-hide chrome", "Fade map controls when idle and reveal them on interaction.", "AutoHideChrome", "Chrome & motion", "Chrome visibility");
         Add("hover-unfade", "Display", GratisIcons.Eye, "Hover unfade", "Restore ordinary faded-map opacity while hovered.", "RestoreOpacityOnHover");
-        Add("quick-filters", "Display", GratisIcons.Layers, "Quick filter bar", "Keep category visibility controls close to the map.", "QuickFilterBar", "Filters", "Filter bar");
         Add("context-menu", "Display", GratisIcons.LayoutGrid, "Context menu", "Open map actions with a right-click.", "GratisContextMenu");
         Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag inertia", "Let a released map pan glide gently to a stop.", "Motion.PanInertia", "Chrome & motion", "Motion");
         Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion", "Use immediate movement and suppress decorative animation.", "ReduceMotion");
+        Add("location-card", "Display", GratisIcons.MapPin, "Location card", "Show your zone and area together; choose how much detail to include.", "ShowTitleOnMap", "Chrome & motion", "title");
+        Add("coordinates-card", "Display", GratisIcons.Crosshair, "Player and cursor coordinates", "Keep player and cursor positions together in a compact card.", "ShowCoordinateBar", "Chrome & motion", "coordinates");
         Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzea time chip", "Show Eorzea time beside map coordinates.", "ShowEorzeaTime", "Chrome & motion", "coordinates");
         Add("sub-zone", "Time and info", GratisIcons.MapPin, "Sub-zone banner", "Briefly announce the area you have just entered.", "SubZoneBanner");
         Add("mute-map-sound", "Time and info", GratisIcons.Bell, "Mute native map sound", "Suppress the game's native map-open sound.", "SuppressNativeMapOpenSound");

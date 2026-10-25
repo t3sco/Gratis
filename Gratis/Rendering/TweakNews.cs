@@ -15,11 +15,13 @@ public sealed record TweakRelease(string Version, string Date, IReadOnlyList<str
 public static class TweakNews
 {
     public static IReadOnlyList<TweakRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new TweakRelease("3.2.1", "2026-10-25", Array.AsReadOnly(new[] { "location-card", "coordinates-card" }),
+            "Centre your location and coordinates together, with selectable area detail and player/cursor rows."),
         new TweakRelease("3.2.0", "2026-10-25", Array.AsReadOnly(new[] {
             "flag-arrival", "map-memory", "zone-switch", "measure", "spotlight", "follow-return", "frame-scale", "clamp-map",
             "small-rooms", "follow-open", "place-search", "edge-pointers", "attunement", "pins", "marker-tooltips", "player-trail",
             "aetheryte-chips", "travel-actions", "fate-flag", "ghost", "move-handle", "alt-drag", "move-snap", "keep-open",
-            "avoid-focus", "auto-hide", "hover-unfade", "quick-filters", "context-menu", "drag-inertia", "reduce-motion",
+            "avoid-focus", "auto-hide", "hover-unfade", "context-menu", "drag-inertia", "reduce-motion",
             "eorzea-time", "sub-zone", "mute-map-sound", "whats-new"
         }),
             "Your shipped quality-of-life options now live together in searchable Tweaks, with individual resets.")

@@ -16,7 +16,7 @@ public static class MapWindowDrawing
     private static Vector4 titleBounds, coordinateBounds;
     public static Vector4 TitleBounds => boundsFrame == ImGui.GetFrameCount() && ReferenceEquals(boundsContext, MapDrawContext.Current) ? titleBounds : Vector4.Zero;
     public static Vector4 CoordinateBounds => boundsFrame == ImGui.GetFrameCount() && ReferenceEquals(boundsContext, MapDrawContext.Current) ? coordinateBounds : Vector4.Zero;
-    private static void RecordBounds(Vector2 min, Vector2 max, bool title)
+    internal static void RecordBounds(Vector2 min, Vector2 max, bool title)
     {
         if (boundsFrame != ImGui.GetFrameCount() || !ReferenceEquals(boundsContext, MapDrawContext.Current)) {
             titleBounds = coordinateBounds = Vector4.Zero; boundsFrame = ImGui.GetFrameCount(); boundsContext = MapDrawContext.Current;
@@ -299,75 +299,7 @@ public static class MapWindowDrawing
         }
     }
 
-    private static void DrawCompactTitle(string title)
-    {
-        var context = MapDrawContext.Current; var scale = GratisTheme.ChromeScale;
-        var (min, max) = ChromeLayout.SafeBounds();
-        var available = max - min;
-        if (available.X < 240 * scale || available.Y < 180 * scale) return;
-        var parts = title.Split(" - ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (parts.Length == 0) return;
-        var name = parts[^1];
-        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
-        var width = MathF.Min(220 * scale, ImGui.CalcTextSize(name).X + 24 * scale);
-        var coordinates = CoordinateBounds;
-        if (coordinates != Vector4.Zero && context.Config.LocationAnchor == context.Config.CoordinateAnchor)
-            width = MathF.Min(width, available.X - (coordinates.Z - coordinates.X) - GratisTheme.Gap * scale);
-        if (width < 80 * scale) return;
-        var size = new Vector2(width, GratisTheme.ControlHeight * scale);
-        var bounds = ChromeLayout.Place("location", size, context.Config.LocationAnchor);
-        if (bounds == Vector4.Zero) return;
-        var pos = ChromeLayout.Position(bounds); var list = ImGui.GetWindowDrawList();
-        RecordBounds(pos, pos + size, true);
-        DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Title);
-        var displayed = name;
-        while (displayed.Length > 1 && ImGui.CalcTextSize(displayed + (displayed.Length < name.Length ? "\u2026" : "")).X > size.X - 24 * scale)
-            displayed = displayed[..^1];
-        if (displayed.Length < name.Length) displayed += "\u2026";
-        var textPos = pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2);
-        var firstVertex = list.VtxBuffer.Size;
-        list.AddText(textPos, ImGui.GetColorU32(GratisTheme.Primary), displayed);
-        unsafe {
-            var vertices = (ImDrawVert*)list.VtxBuffer.Data;
-            for (var i = firstVertex; i < list.VtxBuffer.Size; i++) {
-                var position = (Vector2*)(vertices + i);
-                position->X += (textPos.Y + ImGui.GetFontSize() - position->Y) * GratisTheme.AreaLabelSlant;
-            }
-        }
-        ImGui.SetCursorScreenPos(pos); ImGui.InvisibleButton("##location-card", size);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip(string.Join(" / ", parts));
-    }
+    private static void DrawCompactTitle(string title) => BottomCardsDrawing.DrawLocation(title);
 
-    public static void DrawCoordinates(Vector2? character, Vector2? cursor)
-    {
-        var context = MapDrawContext.Current; var scale = GratisTheme.ChromeScale;
-        var time = context.Config.IsGratis && context.Config.ShowEorzeaTime ? EorzeaTime.Format(context.UnixTimeSeconds) : "";
-        if (character is null && cursor is null && time.Length == 0) return;
-        var (min, max) = ChromeLayout.SafeBounds(); var available = max - min;
-        if (available.X < 320 * scale || available.Y < 220 * scale) return;
-        using var alpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
-        if (!alpha.Visible) return;
-        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, context.Config.StyledCoordinates ? ChromeFontRole.Coordinates : ChromeFontRole.Body)?.Push();
-        string Format(Vector2 point) => FormattableString.Invariant($"{point.X:F1} / {point.Y:F1}");
-        var left = character is { } player ? Format(player) : "";
-        var right = character is null && cursor is { } mouse ? Format(mouse) : "";
-        const string separator = "  \u00b7  ";
-        var text = left + (left.Length > 0 && right.Length > 0 ? separator : "") + right;
-        if (time.Length > 0) text += (text.Length > 0 ? separator : "") + time;
-        var budget = MathF.Min(available.X * .54f, 360 * scale);
-        if (TextDrawing.Measure(text, tabularDigits: true).X + 24 * scale > budget && left.Length > 0) {
-            right = ""; text = left + (time.Length > 0 ? separator + time : "");
-        }
-        var size = new Vector2(TextDrawing.Measure(text, tabularDigits: true).X + 24 * scale, GratisTheme.ControlHeight * scale);
-        if (size.X > available.X) return;
-        var bounds = ChromeLayout.Place("coordinates", size, context.Config.CoordinateAnchor);
-        if (bounds == Vector4.Zero) return;
-        var pos = ChromeLayout.Position(bounds);
-        RecordBounds(pos, pos + size, false);
-        CoordinateCopy.Record(pos, size, TextDrawing.Measure(left, tabularDigits: true).X, TextDrawing.Measure(right, tabularDigits: true).X, TextDrawing.Measure(separator, tabularDigits: true).X);
-        ImGui.SetCursorScreenPos(pos); ImGui.Dummy(size);
-        var list = ImGui.GetWindowDrawList();
-        DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Coordinates);
-        TextDrawing.Draw(list, pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text, tabularDigits: true);
-    }
+    public static void DrawCoordinates(Vector2? character, Vector2? cursor) => BottomCardsDrawing.DrawCoordinates(character, cursor);
 }

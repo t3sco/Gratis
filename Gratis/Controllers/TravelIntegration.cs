@@ -42,7 +42,7 @@ internal sealed class TravelIntegration
                 ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString() : null,
             () => busy.InvokeFunc(), () => active.InvokeFunc(), id => hop.InvokeFunc(id),
             (id, sub) => teleport.InvokeFunc(id, sub), () => abort.InvokeAction());
-        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save);
+        Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save, GameTeleportService.BlockedReason);
         Ui.PinLayer = new PinOverlay(new PinStore(System.SystemConfig, () => {
             SystemConfig.Save(); System.MapWindow.PlacePalette.Invalidate();
         }, id => Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Map>().GetRowOrDefault(id) != null),

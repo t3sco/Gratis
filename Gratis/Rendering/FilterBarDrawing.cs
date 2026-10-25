@@ -52,16 +52,14 @@ public static class FilterBarDrawing
         var context = MapDrawContext.Current;
         if (!ReferenceEquals(drawnContext, context)) { popupFrame = -2; suppressOpen = false; }
         drawnContext = context; LensDrawing.BeginDraw();
-        LastBounds = OverflowBounds = SettingsBounds = DeclutterBounds = Vector4.Zero; Array.Clear(ChipBounds);
+        LastBounds = OverflowBounds = SettingsBounds = DeclutterBounds = PopoverBounds = Vector4.Zero; Array.Clear(ChipBounds);
         Hovered = InputActive = PopoverOpen = false; LastTooltip = TriggerLabel = ""; ActiveCount = MutedCount = 0;
         if (!context.Config.IsGratis) return;
         using var alpha = new ChromeVisibility.AlphaScope(true, context.Chrome.ControlsAlpha(context.Config));
         if (!alpha.Visible) return;
-        var options = context.Config.FilterOptions;
         var s = GratisTheme.ChromeScale;
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         var button = GratisTheme.ControlHeight * s; var gap = 4 * s; var stride = button + gap;
-        var available = ChromeLayout.AvailableWidth(context.Config.FilterBarAnchor);
         var visible = 0;
         for (var i = 0; i < MarkerVisibility.GroupCount; i++) {
             if (context.Visibility.Overrides[i] is { } state && state != MarkerVisibilityState.Normal) ActiveCount++;
@@ -77,53 +75,20 @@ public static class FilterBarDrawing
             if (solo) SoloGroup = i;
         }
         TriggerLabel = SoloGroup >= 0 ? "Solo" : MutedCount > 0 ? $"{MutedCount} muted" : ActiveCount > 0 ? $"{ActiveCount} active" : "";
-        var triggerWidth = TriggerLabel.Length == 0 ? button : MathF.Min(available, ImGui.CalcTextSize(TriggerLabel).X + 48 * s);
-        var stateWidth = context.Markers.Clusters > 0 ? ImGui.CalcTextSize("Decluttered").X + 16 * s : 0;
-        if (triggerWidth + stateWidth + gap > available) stateWidth = 0;
-        var stateSpace = stateWidth > 0 ? stateWidth + gap : 0;
-        var slots = options.Mode == FilterBarMode.AlwaysExpanded ? Math.Max(0, (int)((available - triggerWidth - stride - stateSpace) / stride)) : 0;
-        var count = Math.Min(slots, visible);
-        var expanded = options.Mode == FilterBarMode.AlwaysExpanded;
-        var size = new Vector2((expanded ? triggerWidth + (count + 1) * stride : triggerWidth) + stateSpace, button);
-        var pos = LensDrawing.Position(size.X, size.Y);
-        if (pos.Y == float.MinValue) return;
-        LastBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
-        OverflowBounds = new(pos.X, pos.Y, pos.X + triggerWidth, pos.Y + button);
-        var onButton = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(triggerWidth, button), false);
         var toolbar = MapToolbarDrawing.ButtonBounds[2];
-        onButton |= toolbar != Vector4.Zero && ImGui.IsMouseHoveringRect(new(toolbar.X, toolbar.Y), new(toolbar.Z, toolbar.W), false);
+        if (toolbar == Vector4.Zero) {
+            toggleContext = null;
+            if (ImGui.BeginPopup(Popup)) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); }
+            return;
+        }
+        var onButton = ImGui.IsMouseHoveringRect(new(toolbar.X, toolbar.Y), new(toolbar.Z, toolbar.W), false);
         var close = popupFrame >= ImGui.GetFrameCount() - 1 && onButton && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
         if (close) suppressOpen = true;
-        ImGui.SetCursorScreenPos(pos);
-        var clicked = ChromeControls.Button("##filter-overflow", new Vector2(triggerWidth, button));
-        Hovered |= ImGui.IsItemHovered();
         if (ReferenceEquals(toggleContext, context)) {
             if (popupFrame >= ImGui.GetFrameCount() - 1) close = true; else if (!suppressOpen) ImGui.OpenPopup(Popup);
             toggleContext = null;
         }
-        if (clicked && !suppressOpen) ImGui.OpenPopup(Popup);
-        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.CardRadius * s);
-        ChromeControls.Feedback(ImGui.GetWindowDrawList(), pos, pos + new Vector2(triggerWidth, button), ActiveCount > 0);
-        GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(button / 2), GratisIcons.Eye, GratisTheme.Primary, GratisTheme.IconSize * s);
-        if (TriggerLabel.Length > 0) ImGui.GetWindowDrawList().AddText(pos + new Vector2(36 * s, (button - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), TriggerLabel);
-        if (ImGui.IsItemHovered()) Tooltip(ActiveCount > 0 ? $"Filters \u00b7 {ActiveCount} active" : "Filters");
-        var x = pos.X + triggerWidth + gap; var submitted = 0;
-        if (expanded) {
-            for (var i = 0; i < MarkerVisibility.GroupCount && submitted < count; i++) {
-                if (!ShowGroup((MarkerGroup)i)) continue;
-                DrawChip((MarkerGroup)i, new(x, pos.Y), new(button)); x += stride; submitted++;
-            }
-            DrawSettings(new(x, pos.Y), new(button));
-        }
-        if (stateWidth > 0) {
-            var left = pos.X + size.X - stateWidth;
-            DeclutterBounds = new(left, pos.Y, left + stateWidth, pos.Y + button);
-            ImGui.SetCursorScreenPos(new(left, pos.Y)); ImGui.Dummy(new(stateWidth, button));
-            ImGui.GetWindowDrawList().AddText(new(left + 8 * s, pos.Y + (button - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), "Decluttered");
-            if (ImGui.IsItemHovered()) Tooltip("Nearby ambient markers grouped");
-        }
-        InputActive = Hovered;
-        DrawPopover(pos, button, stride, visible, close);
+        DrawPopover(toolbar, button, stride, visible, close);
         if (!ImGui.IsMouseDown(ImGuiMouseButton.Left)) suppressOpen = false;
     }
 
@@ -141,22 +106,21 @@ public static class FilterBarDrawing
         MapDrawContext.Current.OpenFilterSettings();
     }
 
-    private static void DrawPopover(Vector2 anchor, float button, float stride, int visible, bool close)
+    private static void DrawPopover(Vector4 trigger, float button, float stride, int visible, bool close)
     {
         var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         var (min, max) = ChromeLayout.SafeBounds();
         var budget = Math.Clamp((int)((max.X - min.X - 24 * s) / stride), 1, 7);
         var columns = Math.Clamp(visible + 1, 1, budget); var rows = (visible + columns) / columns;
         var size = new Vector2(MathF.Min(MathF.Max(240 * s, columns * stride + 20 * s), max.X - min.X), MathF.Min(rows * stride + 60 * s, max.Y - min.Y));
-        var toolbar = MapToolbarDrawing.ButtonBounds[2];
-        var trigger = toolbar != Vector4.Zero ? toolbar : new Vector4(anchor.X, anchor.Y, anchor.X + button, anchor.Y + button);
-        PopoverBounds = ChromePopoverMath.Place(trigger, size, min, max, GratisTheme.Gap * s);
-        size = new(PopoverBounds.Z - PopoverBounds.X, PopoverBounds.W - PopoverBounds.Y);
-        ImGui.SetNextWindowPos(new(PopoverBounds.X, PopoverBounds.Y));
+        var bounds = ChromePopoverMath.Place(trigger, size, min, max, GratisTheme.Gap * s);
+        size = new(bounds.Z - bounds.X, bounds.W - bounds.Y);
+        ImGui.SetNextWindowPos(new(bounds.X, bounds.Y));
         ImGui.SetNextWindowSize(size);
         using var style = new ChromePopupStyle(transparent: true);
         if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) return;
         if (close || ImGui.IsKeyPressed(ImGuiKey.Escape, false)) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); return; }
+        LastBounds = PopoverBounds = bounds;
         PopoverOpen = InputActive = true; popupFrame = ImGui.GetFrameCount(); context.Chrome.Reveal(ImGui.GetTime());
         MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowPos() + size, GratisTheme.CardRadius * s);
         var origin = ImGui.GetCursorScreenPos(); var index = 0;

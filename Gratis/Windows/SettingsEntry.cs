@@ -60,11 +60,15 @@ public sealed class SettingsEntry
     {
         fields[^1].SetValue(Owner(config), value);
         if (Path == "ToolbarAnchor") config.ToolbarAnchorExplicit = true;
+        if (Path == "LocationAnchor") config.LocationAnchorExplicit = true;
+        if (Path == "CoordinateAnchor") config.CoordinateAnchorExplicit = true;
     }
     public void Reset(SystemConfig config, SystemConfig defaults)
     {
         Set(config, Value(defaults));
         if (Path == "ToolbarAnchor") config.ToolbarAnchorExplicit = defaults.ToolbarAnchorExplicit;
+        if (Path == "LocationAnchor") config.LocationAnchorExplicit = defaults.LocationAnchorExplicit;
+        if (Path == "CoordinateAnchor") config.CoordinateAnchorExplicit = defaults.CoordinateAnchorExplicit;
     }
 
     public bool Draw(SystemConfig config)

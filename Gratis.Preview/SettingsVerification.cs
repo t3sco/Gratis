@@ -10,7 +10,8 @@ internal static class SettingsVerification
     public static void Run()
     {
         Program.VerifyResponsiveSettings();
-        if (!SettingsLayout.Entries.Single(e => e.Path == "Filters.Mode").Matches("drawer mode") ||
+        if (!SettingsLayout.Entries.Single(e => e.Path == "CoordinatesShow").Matches("coordinates show") ||
+            !SettingsLayout.Entries.Single(e => e.Path == "LocationCardShows").Matches("location card shows") ||
             !SettingsLayout.Entries.Single(e => e.Path == "PinChrome").Matches("keep controls visible"))
             throw new InvalidOperationException("Search missed the labels shown in settings.");
         var legacyConfig = global::System.Text.Json.JsonSerializer.Deserialize<SystemConfig>(

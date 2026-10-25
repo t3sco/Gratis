@@ -100,4 +100,13 @@ public static class ChromeLayout
         return MathF.Max(MathF.Min(148 * GratisTheme.ChromeScale, max.X - min.X), width);
     }
     public static Vector2 Position(Vector4 bounds) => new(bounds.X, bounds.Y);
+    public static Vector4 PlacePopover(string id, Vector2 size, Vector2 target)
+    {
+        Begin(); occupied.RemoveAll(p => p.Id == id);
+        obstacles.Clear(); foreach (var item in occupied) obstacles.Add(item.Bounds);
+        var (min, max) = SafeBounds();
+        var result = TravelPopoverMath.Resolve(min, max, size, target, obstacles, 20 * GratisTheme.ChromeScale);
+        if (result != Vector4.Zero) occupied.Add((id, result, ChromeAnchor.TopLeft));
+        return result;
+    }
 }

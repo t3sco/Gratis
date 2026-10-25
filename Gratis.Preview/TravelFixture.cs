@@ -13,7 +13,11 @@ internal sealed class TravelFixture(ScriptedFrameDriver driver) : ITravelPlaces
     public PlaceAccess Access(PlaceEntry place) => new(true, place.IsShard ? 0u : 320u);
     public void Refresh() { }
     public int Teleports { get; private set; }
-    public string Teleport(PlaceEntry place, bool confirmed) { Teleports++; return "Teleport requested."; }
+    public bool RequireConfirmation { get; set; }
+    public string Teleport(PlaceEntry place, bool confirmed) {
+        if (RequireConfirmation && !confirmed) return "Confirm 320 gil to " + place.Name;
+        Teleports++; return "Teleport requested.";
+    }
     public void Show(PlaceEntry place) {
         if (place.World is { } world) driver.Renderer.BeginSpotlight(new(world, place.MapId, SpotlightSource.Search));
     }

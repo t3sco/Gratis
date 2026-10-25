@@ -30,7 +30,7 @@ internal static class ChromePolishVerification
         toolbar = MapToolbarDrawing.LastBounds;
         Click(Center(MapToolbarDrawing.ButtonBounds[2]));
         Require(FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds[(int)MarkerGroup.Quests] != Vector4.Zero,
-            $"Toolbar Filters opens the same drawer as the bottom trigger: open={FilterBarDrawing.PopoverOpen}, lens={MapToolbarDrawing.MapMenuOpen}, quests={driver.Context.Visibility.Counts[(int)MarkerGroup.Quests]}");
+            $"Toolbar Filters opens its drawer: open={FilterBarDrawing.PopoverOpen}, lens={MapToolbarDrawing.MapMenuOpen}, quests={driver.Context.Visibility.Counts[(int)MarkerGroup.Quests]}");
         Require(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Housing] == Vector4.Zero, "Empty map groups do not crowd the drawer");
         driver.Context.Visibility.Solo(MarkerGroup.Services); Step();
         Require(FilterBarDrawing.SoloGroup == (int)MarkerGroup.Services, "Solo has an explicit visual state");
@@ -38,7 +38,7 @@ internal static class ChromePolishVerification
         driver.Context.Visibility.ResetFilters();
         travel.OfferContextTarget(new(new(400, 0), 1, SpotlightSource.Quest), time);
         Step(); Step();
-        Require(travel.Chip != null && travel.ChipBounds.W - travel.ChipBounds.Y == 104, "Travel card uses a compact shared height");
+        Require(travel.Chip != null && travel.ChipBounds.W - travel.ChipBounds.Y == 136, "Travel card uses a compact shared height");
         var action = travel.ChipButtonCenter; var dismiss = travel.ChipDismissButtonCenter;
         Require(action.Y > travel.ChipBounds.Y && action.Y < travel.ChipBounds.W - 12 && dismiss.Y == action.Y,
             "Teleport and visible Dismiss share a baseline inside card padding");
@@ -71,8 +71,8 @@ internal static class ChromePolishVerification
             });
             driver.Step(new(0)); driver.Step(new(.04));
             var state = FilterBarDrawing.DeclutterBounds; var row = FilterBarDrawing.LastBounds;
-            Require(driver.Context.Markers.Clusters > 0 && state.Z > state.X && state.X >= row.X && state.Z <= row.Z && state.Y == row.Y && state.W == row.W,
-                "Decluttered state is a compact baseline-aligned part of the filter row");
+            Require(driver.Context.Markers.Clusters > 0 && state == Vector4.Zero && row == Vector4.Zero,
+                "Decluttering never resurrects the removed standalone filter row");
             Require(!ChromeLayout.Overlap(row, MapWindowDrawing.TitleBounds) && !ChromeLayout.Overlap(row, MapWindowDrawing.CoordinateBounds), "Declutter state does not overlap bottom chrome");
         }
     }
