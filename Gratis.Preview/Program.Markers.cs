@@ -11,7 +11,7 @@ internal static partial class Program
     private static readonly MarkerInfo[] DenseMarkers = CreateMarkers(600, false, .54f);
     private static readonly MarkerInfo[] ClusterMarkers = CreateMarkers(600, true, .54f);
     private static readonly MarkerInfo[] ZoomedMarkers = CreateMarkers(2000, false, .27f);
-    private static readonly string[] MarkerScenes = ["markers-dense", "markers-clustered", "markers-zoomed-out", "markers-legend", "markers-quests", "markers-enemies", "players"];
+    private static readonly string[] MarkerScenes = ["markers-dense", "markers-clustered", "markers-zoomed-out", "markers-legend", "markers-quests", "markers-enemies", "players", "markers-parchment", "markers-dark"];
 
     private static bool IsMarkerScene(string scene) => MarkerScenes.Contains(scene);
 
@@ -19,6 +19,12 @@ internal static partial class Program
     {
         context.Config.Markers.Declutter = declutter ?? (scene is "markers-dense" or "markers-clustered" or "markers-zoomed-out");
         if (scene is "markers-legend" or "markers-quests") context.Config.Markers.ScaleWithZoom = true;
+        if (scene is "markers-parchment" or "markers-dark") {
+            context.Config.Markers.ScaleWithZoom = true;
+            context.Config.Markers.MinimumScale = .5f;
+            context.Config.Markers.MaximumScale = 2;
+            context.Config.Markers.Declutter = true;
+        }
     }
 
     private static MarkerInfo[] CreateMarkers(int count, bool clustered, float zoom)
@@ -47,6 +53,7 @@ internal static partial class Program
 
     private static void DrawMarkerScene(string scene, Vector2 frame)
     {
+        if (scene is "markers-parchment" or "markers-dark") { DrawLegibilityScene(scene, frame); return; }
         if (scene == "markers-enemies") { DrawNeutralMarkerScene(frame); return; }
         if (scene == "players") { DrawPlayersScene(frame); return; }
         if (scene is "markers-legend" or "markers-quests") { DrawMarkerLegend(scene, frame); return; }
@@ -114,6 +121,11 @@ internal static partial class Program
     private static void VerifyMarkers(PreviewContext context, string scene)
     {
         var batch = context.Markers;
+        if (scene is "markers-parchment" or "markers-dark") {
+            if (batch.Protected < 18 || batch.Clusters < 1) throw new InvalidOperationException("Legibility scene must retain priority markers and a cluster badge.");
+            Console.WriteLine("Opaque terrain: priority icons at 0.7x/1x/1.5x, native text sizes, trail and cluster badge.");
+            return;
+        }
         if (scene == "markers-enemies") { MarkerClassificationVerification.Run(); return; }
         if (scene is "markers-legend" or "markers-quests") {
             if (batch.Enabled)

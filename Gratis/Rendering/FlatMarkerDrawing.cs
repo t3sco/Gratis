@@ -53,9 +53,7 @@ public static class FlatMarkerDrawing
 
     private static float Size(MarkerInfo marker)
     {
-        var context = MapDrawContext.Current;
-        var size = context.Config.FlatMarkerSize * (context.Config.IconScale / .5f) * context.GetIconSetting(marker.IconId).Scale * context.GlobalScale;
-        return size * MarkerVisual.Scale(marker);
+        return MarkerVisual.FlatSize(marker);
     }
 
     internal static bool FitsFeather(MarkerInfo marker) => MapShape.ContainsSymbol(
@@ -70,7 +68,7 @@ public static class FlatMarkerDrawing
         var extent = new Vector2(size * .6f + 3 * context.GlobalScale);
         if (!MapShape.Contains(center - extent) || !MapShape.Contains(center + extent) ||
             !MapShape.Contains(center + new Vector2(extent.X, -extent.Y)) || !MapShape.Contains(center + new Vector2(-extent.X, extent.Y))) return false;
-        var hitRadius = global::System.MathF.Max(size * .6f + 3 * context.GlobalScale, 8 * context.GlobalScale);
+        var hitRadius = MarkerVisual.HalfSize(marker).X;
         ImGui.SetCursorScreenPos(center - new Vector2(hitRadius));
         ImGui.Dummy(new Vector2(hitRadius * 2));
         var hover = ImGui.IsItemHovered() ? HoverAnimation.Progress(Key(marker), true) : 0;
@@ -109,7 +107,7 @@ public static class FlatMarkerDrawing
     {
         var fill = ImGui.GetColorU32(color with { W = color.W * alpha });
         var light = ImGui.GetColorU32(new Vector4(1, 1, 1, .85f * alpha));
-        var dark = ImGui.GetColorU32(GratisTheme.Outline with { W = .35f * alpha });
+        var dark = ImGui.GetColorU32(new Vector4(.025f, .03f, .045f, .95f * alpha));
         var stroke = MapDrawContext.Current.GlobalScale;
         var x = new Vector2(radius, 0); var y = new Vector2(0, radius);
         void Contour(global::System.ReadOnlySpan<Vector2> points, uint ink, float width)
@@ -119,6 +117,7 @@ public static class FlatMarkerDrawing
         }
         switch (category) {
             case MarkerCategory.Transport:
+                list.AddCircle(center, radius, dark, 32, 7 * stroke);
                 list.AddCircle(center, radius, light, 32, 5.5f * stroke);
                 list.AddCircle(center, radius, dark, 32, 2.5f * stroke);
                 list.AddCircle(center, radius, fill, 32, 1.5f * stroke);
@@ -126,17 +125,20 @@ public static class FlatMarkerDrawing
                 break;
             case MarkerCategory.Objective:
                 global::System.ReadOnlySpan<Vector2> diamond = stackalloc Vector2[] { center - y, center + x, center + y, center - x };
+                Contour(diamond, dark, 6 * stroke);
                 Contour(diamond, light, 4 * stroke);
                 list.AddQuadFilled(center - y, center + x, center + y, center - x, fill);
                 Contour(diamond, dark, stroke);
                 break;
             case MarkerCategory.Link:
                 global::System.ReadOnlySpan<Vector2> triangle = stackalloc Vector2[] { center - y, center + x + y, center - x + y };
+                Contour(triangle, dark, 6 * stroke);
                 Contour(triangle, light, 4 * stroke);
                 list.AddTriangleFilled(center - y, center + x + y, center - x + y, fill);
                 Contour(triangle, dark, stroke);
                 break;
             case MarkerCategory.Service:
+                list.AddRect(center - new Vector2(radius), center + new Vector2(radius), dark, 2 * stroke, ImDrawFlags.None, 6 * stroke);
                 list.AddRect(center - new Vector2(radius), center + new Vector2(radius), light, 2 * stroke, ImDrawFlags.None, 4 * stroke);
                 list.AddRectFilled(center - new Vector2(radius), center + new Vector2(radius), fill, 2 * stroke);
                 list.AddRect(center - new Vector2(radius), center + new Vector2(radius), dark, 2 * stroke, ImDrawFlags.None, stroke);
@@ -146,6 +148,7 @@ public static class FlatMarkerDrawing
                 list.AddCircle(center, radius * .5f + .75f * stroke, light, 24, 1.5f * stroke);
                 break;
             default:
+                list.AddCircle(center, radius, dark, 32, 6 * stroke);
                 list.AddCircle(center, radius, light, 32, 4 * stroke);
                 list.AddCircleFilled(center, radius, fill, 32);
                 list.AddCircle(center, radius, dark, 32, stroke);

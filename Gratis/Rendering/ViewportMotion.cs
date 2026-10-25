@@ -15,6 +15,9 @@ public sealed class ViewportMotion
     private Vector2 followVelocity, zoomCursor;
     public Vector2 FollowZoomOffset;
     private float zoomVelocity;
+    public Vector2 PanVelocity { get; private set; }
+    private double dragSampleTime = double.NegativeInfinity;
+    private bool gliding;
     private double time = double.NaN;
     private long frame = -1;
     private ulong? map;
@@ -38,13 +41,29 @@ public sealed class ViewportMotion
 
     public void Cancel()
     {
+        CancelPan();
         followVelocity = Vector2.Zero;
         zoomVelocity = 0;
         PendingZoom = null;
     }
 
+    public void CancelPan() { PanVelocity = Vector2.Zero; gliding = false; }
+
+    public void SampleDrag(MapDrawingConfig config, Vector2 delta, double now, float scale)
+    {
+        var settings = config.Motion ??= new MotionSettings();
+        if (!MapMotion.IsEnabled(config) || !settings.PanInertia || LastStep <= 0) { CancelPan(); return; }
+        var velocity = delta / LastStep;
+        var ceiling = 4000 / MathF.Max(.05f, scale);
+        if (velocity.LengthSquared() > ceiling * ceiling) velocity = Vector2.Normalize(velocity) * ceiling;
+        PanVelocity = velocity;
+        dragSampleTime = now;
+        gliding = false;
+    }
+
     public bool Interact(MapDrawingConfig config, double now, bool drag)
     {
+        CancelPan();
         followVelocity = Vector2.Zero;
         if (drag) { Cancel(); Reason("drag-cancel"); }
         return Follow.Interact(config, now, drag);
@@ -53,6 +72,7 @@ public sealed class ViewportMotion
     public bool QueueZoom(MapDrawingConfig config, float requested, Vector2 cursor, float scale,
         Vector2 size, Vector2 texture, bool linear)
     {
+        CancelPan();
         var motion = config.Motion ??= new MotionSettings();
         if (!MapMotion.IsEnabled(config) || !motion.EaseZoom) return false;
         if (PendingZoom is { } pending && scale > 0)
@@ -86,7 +106,10 @@ public sealed class ViewportMotion
         if (Spotlight.Advance(config, mapId, now, LastStep, size, texture,
                 SpotlightTargetTexture, SpotlightPlayerTexture, player, target, interacting, ref scale, ref offset)) {
             PendingZoom = null;
-            offset = ClampOffset(config, size, texture, scale, offset);
+            CancelPan();
+            var constrained = ViewportMath.Constrain(config, size, texture, scale, offset);
+            scale = constrained.Scale;
+            offset = constrained.Offset;
             Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
             Written("scale", "spotlight"); Written("offset", "spotlight");
             if (!Spotlight.OwnsViewport) { Follow.Reset(); Cancel(); FollowZoomOffset = Vector2.Zero; }
@@ -94,6 +117,9 @@ public sealed class ViewportMotion
         }
         var motion = config.Motion ??= new MotionSettings();
         var enabled = MapMotion.IsEnabled(config);
+        if (!enabled || !motion.PanInertia) CancelPan();
+        if (!interacting && !gliding && now - dragSampleTime > .08) CancelPan();
+        if (!interacting && PanVelocity != Vector2.Zero) gliding = true;
         var returnEnabled = config.IsGratis && config.FollowReturnToPlayer;
         if (!config.IsGratis) { Cancel(); offset = ClampOffset(config, size, texture, scale, offset); return; }
 
@@ -102,7 +128,8 @@ public sealed class ViewportMotion
         if (returnEnabled) {
             FollowZoomOffset = Vector2.Zero;
             var constrainedTarget = ClampOffset(config, size, texture, scale, target);
-            offset = Follow.Update(config, mapId, player, constrainedTarget, offset, now, interacting || PendingZoom.HasValue, hovered, focused);
+            offset = Follow.Update(config, mapId, player, constrainedTarget, offset, now,
+                interacting || PendingZoom.HasValue || PanVelocity != Vector2.Zero, hovered, focused);
             if (Follow.Snapped) { Cancel(); Reason(changed ? "map-attach" : "attach/teleport"); }
         }
         else {
@@ -128,6 +155,14 @@ public sealed class ViewportMotion
         }
         if (offset != before) Written("offset", Follow.State == FollowState.Returning ? "return" : "follow");
 
+        if (config.FollowPlayer && (!returnEnabled || Follow.State != FollowState.Detached)) CancelPan();
+        if (!interacting && gliding && PanVelocity != Vector2.Zero) {
+            var velocity = PanVelocity;
+            offset += MotionMath.Glide(ref velocity, LastStep, motion.PanInertiaStrength);
+            PanVelocity = velocity.LengthSquared() * scale * scale < 1 ? Vector2.Zero : velocity;
+            Written("offset", "pan-inertia");
+        }
+
         if (PendingZoom is { } zoom) {
             if (previousScale > 0 && scale != previousScale) zoom *= scale / previousScale;
             zoom = MathF.Max(minimum, zoom);
@@ -146,13 +181,14 @@ public sealed class ViewportMotion
         var clamped = ClampOffset(config, size, texture, scale, offset);
         if (clamped.X != offset.X) followVelocity.X = 0;
         if (clamped.Y != offset.Y) followVelocity.Y = 0;
+        PanVelocity = new Vector2(clamped.X != offset.X ? 0 : PanVelocity.X,
+            clamped.Y != offset.Y ? 0 : PanVelocity.Y);
         if (clamped != offset) Written("offset", "clamp");
         offset = clamped;
     }
 
     private static Vector2 ClampOffset(MapDrawingConfig config, Vector2 size, Vector2 texture, float scale, Vector2 value) =>
-        config.ClampToMap ? new Vector2(1024) - ViewportMath.ClampCenter(new Vector2(1024) - value,
-            size, texture, scale, config.MapCircle && config.IsGratis) : value;
+        config.ClampToMap ? ViewportMath.ClampOffset(value, size, texture, scale, config.MapCircle && config.IsGratis) : value;
 
     public string Diagnostics(MapDrawingConfig config, double now)
     {
@@ -160,7 +196,7 @@ public sealed class ViewportMotion
         var m = config.Motion ??= new MotionSettings();
         var message = $"Enabled={MapMotion.IsEnabled(config)} EaseZoom/Follow={m.EaseZoom}/{m.EaseFollow} SettleSeconds={m.SettleSeconds:0.###} " +
             $"calls/s={calls.Count} elapsed/step={LastElapsed:0.####}/{LastStep:0.####} snap/cancel=[{string.Join(",", reasons.Select(x => x.Key + "=" + x.Value))}] " +
-            $"pendingZoom={PendingZoom?.ToString("0.####") ?? "none"} velocity=zoom:{zoomVelocity:0.####}/pan:{followVelocity} state={Follow.State} " +
+            $"pendingZoom={PendingZoom?.ToString("0.####") ?? "none"} velocity=zoom:{zoomVelocity:0.####}/pan:{followVelocity}/glide:{PanVelocity} inertia={m.PanInertia}/{m.PanInertiaStrength:0.##} state={Follow.State} " +
             $"lastScale={lastScaleWriter} lastOffset={lastOffsetWriter} writes=[{string.Join(",", writers.Select(x => x.Key + "=" + x.Value))}]";
         reasons.Clear(); writers.Clear();
         return message;

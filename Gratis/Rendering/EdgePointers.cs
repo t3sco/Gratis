@@ -79,7 +79,7 @@ public sealed class EdgePointers
             var colour = ImGui.GetColorU32(target.Colour with { W = alpha });
             list.AddLine(tip - direction * 4 * s + side * 5 * s, tip + direction * 3 * s, colour, 2 * s);
             list.AddLine(tip + direction * 3 * s, tip - direction * 4 * s - side * 5 * s, colour, 2 * s);
-            if (label.Length > 0) list.AddText(point + new Vector2(-half.X + 25 * s, -ImGui.CalcTextSize(label).Y / 2), colour, label);
+            if (label.Length > 0) TextDrawing.Draw(list, point + new Vector2(-half.X + 25 * s, -TextDrawing.Measure(label).Y / 2), colour, label);
             if (context.WindowMoveInputBlocked || host.Palette?.IsOpen == true || !ImGui.IsWindowHovered()) continue;
             if (!ImGui.IsMouseHoveringRect(point - half, point + half, false)) continue;
             InputActive = true; ImGui.SetTooltip(target.Name);

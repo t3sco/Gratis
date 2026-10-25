@@ -9,6 +9,8 @@ public sealed class MotionSettings
     public float TrailOpacity = .22f;
     public bool EaseFollow = true;
     public bool EaseZoom = true;
+    public bool PanInertia = true;
+    public float PanInertiaStrength = .35f;
     public float SettleSeconds = .12f;
     public bool ZoneTransition = true;
     public float ZoneSeconds = .18f;

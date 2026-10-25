@@ -5,6 +5,17 @@ namespace Gratis.Rendering;
 
 public static class MotionMath
 {
+    public static Vector2 Glide(ref Vector2 velocity, float seconds, float strength)
+    {
+        if (seconds <= 0) return Vector2.Zero;
+        strength = float.IsFinite(strength) ? Math.Clamp(strength, .1f, 1) : .35f;
+        var decayRate = 4.60517f / strength;
+        var decay = MathF.Exp(-decayRate * seconds);
+        var distance = velocity * ((1 - decay) / decayRate);
+        velocity *= decay;
+        return distance;
+    }
+
     public static float Ease(float t)
     {
         t = Math.Clamp(t, 0, 1);

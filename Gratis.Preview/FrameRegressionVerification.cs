@@ -95,6 +95,7 @@ internal static class FrameRegressionVerification
     public static void PanReturn()
     {
         var config = Config();
+        config.Motion.PanInertia = false;
         config.FollowReturnToPlayer = true; config.FollowReturnTrigger = FollowReturnTrigger.AfterIdle;
         config.FollowReturnIdleSeconds = .5f;
         using var driver = new ScriptedFrameDriver(config);

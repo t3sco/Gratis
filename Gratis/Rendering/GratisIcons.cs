@@ -128,8 +128,9 @@ public static class GratisIcons
         using var scope = handle.Push();
         var font = ImGui.GetFont();
         if (!DrawBinding.TryGlyphBounds(font, codepoint, out var bounds)) return false;
+        pixels = font.FontSize;
         var ratio = pixels / font.FontSize;
-        var position = center - new Vector2(bounds.X + bounds.Z, bounds.Y + bounds.W) * (.5f * ratio);
+        var position = TextDrawing.Snap(center - new Vector2(bounds.X + bounds.Z, bounds.Y + bounds.W) * (.5f * ratio));
         DrawBinding.PushFontTexture(list);
         list.AddText(font, pixels, position, ImGui.GetColorU32(color), codepoint.ToString());
         DrawBinding.PopTexture(list);

@@ -94,11 +94,11 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
             Symbol(list,center,13*s*presentation.Y,Colours[pin.Colour],isHovered,presentation.X);
             if (host.Config.PinLabels==PinLabelMode.Always || host.Config.PinLabels==PinLabelMode.OnHover && isHovered) {
                 using var font=context.GetChromeFont(11*s,ChromeFontRole.Chip)?.Push();
-                var size=ImGui.CalcTextSize(pin.Title)+new Vector2(12,6)*s;
+                var size=TextDrawing.Measure(pin.Title)+new Vector2(12,6)*s;
                 var position=center+new Vector2(19*s,-size.Y/2);
                 if (Classes.MapShape.ContainsSymbol(position+size/2,size/2)) {
                     list.AddRectFilled(position,position+size,ImGui.GetColorU32(GratisTheme.Outline with{W=.95f}),5*s);
-                    list.AddText(position+new Vector2(6,3)*s,ImGui.GetColorU32(GratisTheme.Primary with { W=GratisTheme.Primary.W*presentation.X }),pin.Title);
+                    TextDrawing.Draw(list,position+new Vector2(6,3)*s,ImGui.GetColorU32(GratisTheme.Primary with { W=GratisTheme.Primary.W*presentation.X }),pin.Title);
                 }
             }
         }

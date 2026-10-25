@@ -65,6 +65,8 @@ public abstract class MapDrawContext
     public abstract IDrawFont? GetTitleFont(int choice, float size);
     public abstract IDrawFont? GetChromeFont(float size, ChromeFontRole role);
     public virtual IDrawFont? GetIconFont(float size) => null;
+    public virtual string TextDiagnostics() => $"text fontChoice={Config.FrameFont} uiScale={GlobalScale:0.###} " +
+        $"nativePixels=true positionSnap=integer sizeLadder=[{string.Join(",", TextDrawing.Sizes)}] {TextDrawing.LastDraw}";
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }
     public virtual MapColourPreset ActiveColourPreset => MapColourPreset.Original;

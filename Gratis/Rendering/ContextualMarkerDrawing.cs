@@ -12,7 +12,8 @@ namespace Gratis.Rendering;
 public static class ContextualMarkerDrawing
 {
     private static readonly Vector4 Gold = new(.91f, .72f, .32f, 1);
-    private static readonly Vector4 Muted = new(.58f, .55f, .43f, 1);
+    private static readonly Vector4 Muted = new(.79f, .72f, .49f, 1);
+    private static readonly Vector4 Contour = new(.025f, .03f, .045f, .95f);
     private static readonly Vector4 Purple = new(.65f, .48f, .91f, 1);
     private static readonly Vector4 Blue = new(.31f, .64f, .93f, 1);
 
@@ -38,15 +39,17 @@ public static class ContextualMarkerDrawing
         if (fate) color = (marker.IconId is 60507 or 60728 ? Muted : Purple) * tint;
         var stroke = MapDrawContext.Current.GlobalScale;
         var light = Ink(new Vector4(1, 1, 1, .85f), alpha);
-        var dark = Ink(GratisTheme.Outline with { W = .35f }, alpha);
+        var dark = Ink(Contour, alpha);
         var fill = Ink(Vector4.Lerp(GratisTheme.Outline with { W = 1 }, color, .42f) with { W = color.W }, alpha);
         if (fate) {
+            list.AddCircle(center, radius, dark, 24, 6 * stroke);
             list.AddCircle(center, radius, light, 24, 4 * stroke);
             list.AddCircleFilled(center, radius, fill, 24);
             list.AddCircle(center, radius, dark, 24, stroke);
         }
         else {
             var half = new Vector2(radius);
+            list.AddRect(center - half, center + half, dark, 2.5f * stroke, ImDrawFlags.None, 6 * stroke);
             list.AddRect(center - half, center + half, light, 2.5f * stroke, ImDrawFlags.None, 4 * stroke);
             list.AddRectFilled(center - half, center + half, fill, 2.5f * stroke);
             list.AddRect(center - half, center + half, dark, 2.5f * stroke, ImDrawFlags.None, stroke);
@@ -61,11 +64,13 @@ public static class ContextualMarkerDrawing
     {
         var scale = MapDrawContext.Current.GlobalScale;
         foreach (var point in points) list.PathLineTo(point);
+        list.PathStroke(Ink(Contour, alpha), ImDrawFlags.Closed, 6 * scale);
+        foreach (var point in points) list.PathLineTo(point);
         list.PathStroke(Ink(new Vector4(1, 1, 1, .85f), alpha), ImDrawFlags.Closed, 4 * scale);
         foreach (var point in points) list.PathLineTo(point);
         list.PathFillConvex(Ink(color, alpha));
         foreach (var point in points) list.PathLineTo(point);
-        list.PathStroke(Ink(GratisTheme.Outline with { W = .35f }, alpha), ImDrawFlags.Closed, scale);
+        list.PathStroke(Ink(Contour, alpha), ImDrawFlags.Closed, 1.25f * scale);
     }
 
     private static void Crystal(ImDrawListPtr list, Vector2 center, float r, bool shard, Vector4 color, float alpha)
@@ -108,11 +113,8 @@ public static class ContextualMarkerDrawing
         else {
             using var font = MapDrawContext.Current.GetChromeFont(r * 2, ChromeFontRole.Title)?.Push();
             var text = quest.State == QuestMarkerState.Available ? "!" : "?";
-            var size = r * 2;
-            DrawBinding.PushFontTexture(list);
-            list.AddText(ImGui.GetFont(), size, glyphCenter - DrawBinding.MeasureText(size, text) / 2,
+            TextDrawing.Draw(list, glyphCenter - TextDrawing.Measure(text) / 2,
                 Ink(ink with { W = tint.W }, alpha), text);
-            DrawBinding.PopTexture(list);
         }
         if (quest.MainScenario) {
             for (var i = -1; i <= 1; i++) {

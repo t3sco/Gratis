@@ -23,11 +23,14 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private readonly Rendering.MapRendererFrame frame;
     public Rendering.MapRendererFrame Frame => frame;
-    public Vector2 DrawOffset { get => frame.DrawOffset; set => frame.WriteOffset(value, new global::System.Diagnostics.StackFrame(1).GetMethod()?.Name ?? "external"); }
+    public Vector2 DrawOffset { get => frame.DrawOffset; set => frame.CenterOnOffset(value); }
     private static void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "")
     {
-        System.SystemConfig.MapScale = value;
-        System.MapRenderer?.frame.viewportMotion.Written("scale", writer);
+        if (System.MapRenderer is { } renderer) {
+            renderer.frame.SetViewportScale(value);
+            renderer.frame.viewportMotion.Written("scale", writer);
+        }
+        else System.SystemConfig.MapScale = value;
     }
     public Vector2 DrawPosition => frame.DrawPosition;
 

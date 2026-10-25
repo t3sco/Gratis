@@ -118,6 +118,8 @@ public sealed class MapMotion
             var center = origin + sample.Position * zoom;
             if (!Contains(center, 3 * scale)) continue;
             var alpha = MotionMath.TrailAlpha(now, sample.Time, config.Motion.TrailSeconds) * config.Motion.TrailOpacity;
+            list.AddCircleFilled(center, (2 + alpha * 3) * scale,
+                ImGui.GetColorU32(new Vector4(.025f, .03f, .045f, alpha)), 12);
             list.AddCircleFilled(center, (1 + alpha * 3) * scale, ImGui.GetColorU32(config.AccentColor with { W = alpha }), 12);
         }
     }

@@ -12,6 +12,13 @@ public static class MarkerVisual
     public static bool UseFlatMarker(MarkerInfo marker) => UseFlatIcons ||
         MapDrawContext.Current.Config.IsGratis && PlayerDrawing.IsPlayerMarker(marker);
 
+    public static float FlatSize(MarkerInfo marker)
+    {
+        var context = MapDrawContext.Current;
+        return context.Config.FlatMarkerSize * (context.Config.IconScale / .5f) * context.GetIconSetting(marker.IconId).Scale *
+            context.GlobalScale * Scale(marker) * (MarkerVisibility.IsPriority(marker) ? 1.18f : 1);
+    }
+
     public static float Scale(MarkerInfo marker)
     {
         var context = MapDrawContext.Current;
@@ -41,8 +48,9 @@ public static class MarkerVisual
         var scale = Scale(marker);
         var setting = context.GetIconSetting(marker.IconId);
         if (UseFlatMarker(marker)) {
-            var size = config.FlatMarkerSize * (config.IconScale / .5f) * setting.Scale * context.GlobalScale * scale;
-            return new Vector2(MathF.Max(size * .6f + 3 * context.GlobalScale, 8 * context.GlobalScale));
+            var size = FlatSize(marker);
+            return new Vector2(MathF.Max(size * .6f + 3 * context.GlobalScale,
+                (MarkerVisibility.IsPriority(marker) ? 12 : 8) * context.GlobalScale));
         }
         var iconScale = config.IconScale;
         if (marker.IconId is 60401 or 60402) scale *= 2;

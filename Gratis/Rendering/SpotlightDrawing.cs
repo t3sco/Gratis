@@ -122,6 +122,6 @@ internal static class SpotlightDrawing
         if (!Fits(center, half + new Vector2(2))) return;
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.CardRadius * scale, spotlight.Opacity, surfaceOpacity: 1);
-        list.AddText(center - half + new Vector2(12, 8) * scale, ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
+        TextDrawing.Draw(list, center - half + new Vector2(12, 8) * scale, ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
     }
 }

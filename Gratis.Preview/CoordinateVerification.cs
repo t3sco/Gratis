@@ -50,7 +50,11 @@ internal static class CoordinateVerification
         for(var i=0;i<5;i++) driver.Step(new(i*.02));
         var b=MapWindowDrawing.CoordinateBounds;
         var point=new Vector2(b.X+40,(b.Y+b.W)/2);
-        driver.Step(new(.12,Mouse:point)); driver.Step(new(.14,Left:true)); driver.Step(new(.16,Left:false));
+        var playerBeforeHover=CoordinateCopy.PlayerBounds;
+        driver.Step(new(.12,Mouse:point));
+        b=CoordinateCopy.PlayerBounds;
+        point=new((MathF.Max(playerBeforeHover.X,b.X)+MathF.Min(playerBeforeHover.Z,b.Z))/2,(b.Y+b.W)/2);
+        driver.Step(new(.13,Mouse:point)); driver.Step(new(.14,Left:true)); driver.Step(new(.16,Left:false));
         if(driver.Context.ContextMenu.Toast!="Copied 21.3, 14.8" || driver.Window.Dragging) throw new InvalidOperationException("coordinate click copies exact displayed value without pan");
         driver.Step(new(.18,Shift:true,Left:true)); driver.Step(new(.20,Left:false));
         if(driver.Context.ContextMenu.Toast!="Copied Middle La Noscea · 21.3, 14.8") throw new InvalidOperationException("Shift-click includes map name");

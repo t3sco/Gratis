@@ -194,6 +194,15 @@ public static class DrawHelpers
         if (!MapShape.ContainsSymbol(cursorScreenPos + iconSize / 2, iconSize / 2)) return false;
 
         DrawRadiusUnderlay(markerInfo);
+        if (MapDrawContext.Current.Config.IsGratis) {
+            var list = ImGui.GetWindowDrawList();
+            var step = MapDrawContext.Current.GlobalScale;
+            var ink = ImGui.GetColorU32(new Vector4(0, 0, 0, .8f * MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Color.W));
+            foreach (var direction in IconContourDirections) {
+                var offset = direction * step;
+                list.AddImage(texture.Handle, cursorScreenPos + offset, cursorScreenPos + iconSize + offset, Vector2.Zero, Vector2.One, ink);
+            }
+        }
         ImGui.Image(texture.Handle, iconSize, Vector2.Zero, Vector2.One, MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Color);
 
         if (DebugMode) {
@@ -208,12 +217,18 @@ public static class DrawHelpers
         return true;
     }
 
+    private static readonly Vector2[] IconContourDirections = [new(-1, 0), new(1, 0), new(0, -1), new(0, 1)];
+
 #if !GRATIS_PREVIEW
     public static void DrawText(MarkerInfo markerInfo, SeString text) => DrawText(markerInfo, text.ToString());
 #endif
 
     public static void DrawText(MarkerInfo markerInfo, string text)
     {
+        if (MapDrawContext.Current.Config.IsGratis) {
+            DrawCrispText(markerInfo, text);
+            return;
+        }
         using var largeFont = MapDrawContext.Current.PushLargeFont();
         ImGui.SetWindowFontScale(markerInfo.Scale);
 
@@ -244,6 +259,19 @@ public static class DrawHelpers
         ImGui.TextColored(Vector4.One, text);
 
         ImGui.SetWindowFontScale(1.0f);
+    }
+
+    private static void DrawCrispText(MarkerInfo marker, string text)
+    {
+        using var font = MapDrawContext.Current.GetChromeFont(96 * marker.Scale, ChromeFontRole.Body)?.Push();
+        var size = TextDrawing.Measure(text);
+        var position = TextDrawing.Snap(marker.Position + marker.Offset + ImGui.GetWindowPos() - size / 2);
+        if (!MapShape.ContainsSymbol(position + size / 2, size / 2 + Vector2.One)) return;
+        var list = ImGui.GetWindowDrawList();
+        for (var x = -1; x <= 1; x++)
+            for (var y = -1; y <= 1; y++)
+                if (x != 0 || y != 0) TextDrawing.Draw(list, position + new Vector2(x, y), ImGui.GetColorU32(new Vector4(0, 0, 0, .9f)), text);
+        TextDrawing.Draw(list, position, ImGui.GetColorU32(Vector4.One), text);
     }
 
     private static void ProcessInteractions(MarkerInfo markerInfo)

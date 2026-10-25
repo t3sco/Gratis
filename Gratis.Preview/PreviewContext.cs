@@ -43,27 +43,36 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public override IDrawFont? GetIconFont(float size) => !Config.IsGratis || iconFonts.Count == 0 ? null :
         new Font(iconFonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);
 
-    public void BuildFonts(string path)
+    public unsafe void BuildFonts(string path)
     {
         var atlas = ImGui.GetIO().Fonts;
-        atlas.AddFontFromFileTTF(path, 18);
-        foreach (var size in new[] { 14, 18 }) fonts[size] = atlas.AddFontFromFileTTF(path, size);
-        if (Config.IsGratis) {
-            var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
-            if (File.Exists(iconPath)) {
-                iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
-                for (var size = 8; size <= 48; size++)
-                    iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, default, iconRanges.AddrOfPinnedObject());
+        var fontConfig = ImGuiNative.ImFontConfig_ImFontConfig();
+        fontConfig->OversampleH = 2;
+        fontConfig->OversampleV = 1;
+        fontConfig->PixelSnapH = 1;
+        try {
+            atlas.AddFontFromFileTTF(path, 18);
+            foreach (var size in Config.IsGratis && Config.FrameFont != 0 ? TextDrawing.Sizes : new[] { 14, 18 })
+                fonts[size] = atlas.AddFontFromFileTTF(path, size, Config.IsGratis ? new ImFontConfigPtr(fontConfig) : default);
+            if (Config.IsGratis) {
+                var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
+                if (File.Exists(iconPath)) {
+                    iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
+                    foreach (var size in TextDrawing.Sizes)
+                        iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, new ImFontConfigPtr(fontConfig), iconRanges.AddrOfPinnedObject());
+                }
+            }
+            foreach (var role in Enum.GetValues<ChromeFontRole>()) {
+                var filename = role switch {
+                    ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
+                    ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
+                };
+                foreach (var size in Config.IsGratis ? TextDrawing.Sizes : DpiScale == 1 ? new[] { 12, 14 } : new[] { 12, 14, 24, 28 })
+                    chromeFonts[(role, size)] = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", filename), size,
+                        Config.IsGratis ? new ImFontConfigPtr(fontConfig) : default);
             }
         }
-        foreach (var role in Enum.GetValues<ChromeFontRole>()) {
-            var filename = role switch {
-                ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
-                ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
-            };
-            foreach (var size in DpiScale == 1 ? new[] { 12, 14 } : new[] { 12, 14, 24, 28 })
-                chromeFonts[(role, size)] = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", filename), size);
-        }
+        finally { ImGuiNative.ImFontConfig_destroy(fontConfig); }
     }
 
     public override DrawTexture GetIcon(uint id)

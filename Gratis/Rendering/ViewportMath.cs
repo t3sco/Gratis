@@ -5,6 +5,22 @@ namespace Gratis.Rendering;
 
 public static class ViewportMath
 {
+    public static (float Scale, Vector2 Offset) Constrain(MapDrawingConfig config, Vector2 frame,
+        Vector2 texture, float scale, Vector2 offset)
+    {
+        if (!config.ClampToMap) return (scale, offset);
+        var circle = config.MapCircle && config.IsGratis;
+        scale = MathF.Max(float.IsFinite(scale) ? scale : 1, MinimumScale(frame, texture, circle));
+        if (!float.IsFinite(offset.X) || !float.IsFinite(offset.Y)) offset = Vector2.Zero;
+        return (scale, ClampOffset(offset, frame, texture, scale, circle));
+    }
+
+    public static Vector2 ClampOffset(Vector2 offset, Vector2 frame, Vector2 texture, float scale, bool circle)
+    {
+        var half = Vector2.Min(HalfFrame(frame, circle) / scale, texture / 2);
+        return Vector2.Clamp(offset, new Vector2(1024) - texture + half, new Vector2(1024) - half);
+    }
+
     public readonly record struct BoundsFit(float Scale, Vector2 Offset, bool ContainsBoth);
 
     public static BoundsFit FitBounds(Vector2 a, Vector2 b, Vector2 frame, Vector2 texture,

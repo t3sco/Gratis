@@ -180,7 +180,8 @@ public sealed class MarkerBatch
         var context = MapDrawContext.Current;
         var scale = context.GlobalScale;
         var label = root.Count < Counts.Length ? Counts[root.Count] : "4096+";
-        var size = ImGui.CalcTextSize(label) + new Vector2(12, 6) * scale;
+        using var font = context.GetChromeFont(11 * scale, ChromeFontRole.Chip)?.Push();
+        var size = TextDrawing.Measure(label) + new Vector2(12, 6) * scale;
         var center = root.Center + ImGui.GetWindowPos();
         var half = size / 2;
         if (OverlapsProtected(root.Center, half + new Vector2(scale))) {
@@ -201,7 +202,7 @@ public sealed class MarkerBatch
         var list = ImGui.GetWindowDrawList();
         list.AddRectFilled(center - half, center + half, ImGui.GetColorU32(GratisTheme.Outline with { W = .94f }), 7 * scale);
         list.AddRect(center - half, center + half, ImGui.GetColorU32(context.Config.AccentColor), 7 * scale);
-        list.AddText(center - half + new Vector2(6, 3) * scale, ImGui.GetColorU32(Vector4.One), label);
+        TextDrawing.Draw(list, center - half + new Vector2(6, 3) * scale, ImGui.GetColorU32(Vector4.One), label);
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) context.ZoomCluster(root.Center, root.Marker.Scale);
         if (!ImGui.IsItemHovered()) return;
         memberText.Clear();

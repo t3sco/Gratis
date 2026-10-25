@@ -29,15 +29,37 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     public float Scale => host.Config.MapScale;
     public Vector2 DrawOffset { get; set; }
     public Vector2 DrawPosition { get; private set; }
-    public void WriteOffset(Vector2 value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") { DrawOffset = value; viewportMotion.Written("offset", writer); }
-    private void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") { host.Config.MapScale = value; viewportMotion.Written("scale", writer); }
-    public void CenterOnCoordinate(Vector2 position)
+    public void WriteOffset(Vector2 value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "")
+    {
+        var constrained = Constrain(Scale, value);
+        host.Config.MapScale = constrained.Scale;
+        DrawOffset = constrained.Offset;
+        viewportMotion.Written("offset", writer);
+    }
+    private (float Scale, Vector2 Offset) Constrain(float scale, Vector2 offset) => ViewportMath.Constrain(host.Config,
+        viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize, viewportTextureSize, scale, offset);
+    public void SetViewportScale(float scale)
+    {
+        CancelViewportMotion();
+        restoringView = null;
+        var constrained = Constrain(scale, DrawOffset);
+        WriteScale(constrained.Scale);
+        WriteOffset(constrained.Offset);
+    }
+    public void CenterOnOffset(Vector2 offset)
     {
         Spotlight.Cancel("cancelled: explicit centre/zone switch");
         CancelViewportMotion();
+        restoringView = null;
         followZoomOffset = Vector2.Zero;
-        WriteOffset(host.CoordinateOffset(position));
-        PingTexturePosition(new Vector2(1024) - DrawOffset);
+        WriteOffset(offset);
+    }
+    private void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") { host.Config.MapScale = value; viewportMotion.Written("scale", writer); }
+    public void CenterOnCoordinate(Vector2 position)
+    {
+        var offset = host.CoordinateOffset(position);
+        CenterOnOffset(offset);
+        PingTexturePosition(new Vector2(1024) - offset);
     }
 
     private ViewportZoom viewportZoom => viewportMotion.Zoom;
@@ -72,12 +94,17 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         MapDrawContext.Current.Trace?.MotionAdvance();
         AdvanceViewportMotion();
         AdvanceRememberedView();
+        var constrained = Constrain(Scale, DrawOffset);
+        host.Config.MapScale = constrained.Scale;
+        DrawOffset = constrained.Offset;
         UpdateDrawOffset();
     }
 
     public void ZoomViewport(float requestedScale, Vector2 cursorFromCenter, bool animate = true)
     {
         var config = host.Config;
+        viewportMotion.CancelPan();
+        if (!animate) CancelViewportMotion();
         if (animate) InteractWithViewport();
         if (animate && QueueViewportZoom(requestedScale, cursorFromCenter)) return;
         if (!config.ClampToMap) {
@@ -86,13 +113,12 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         }
         var circle = config.MapCircle && config.IsGratis;
         var minimum = ViewportMath.MinimumScale(viewportSize, viewportTextureSize, circle);
-        if (requestedScale <= minimum && Scale <= minimum) return;
         var scale = viewportZoom.Resolve(viewportSize, requestedScale, config.ScaleWithFrame, minimum);
         var center = ViewportMath.ZoomAtCursor(new Vector2(1024) - DrawOffset, cursorFromCenter, Scale, scale);
+        WriteScale(scale);
         WriteOffset(new Vector2(1024) - ViewportMath.ClampCenter(center,
             viewportSize, viewportTextureSize, scale, circle));
         if (config.FollowPlayer) followZoomOffset = DrawOffset - followTargetOffset;
-        WriteScale(scale);
     }
 
     public Vector2 ViewportSize => viewportSize;
@@ -116,6 +142,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void UpdateFollowInteraction(bool interacting, bool hovered, bool focused, Vector2? player = null)
     {
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right)) viewportMotion.CancelPan();
         if (player is { } position) {
             followPlayerPosition = position;
             followTargetOffset = host.CoordinateOffset(position);
@@ -135,8 +162,11 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void PanViewport(Vector2 delta)
     {
+        if (delta == Vector2.Zero) return;
         InteractWithViewport(true);
+        var before = DrawOffset;
         WriteOffset(DrawOffset + delta);
+        viewportMotion.SampleDrag(host.Config, DrawOffset - before, host.Now, Scale);
     }
 
     private bool QueueViewportZoom(float requested, Vector2 cursor) => viewportMotion.QueueZoom(
