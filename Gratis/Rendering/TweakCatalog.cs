@@ -15,6 +15,7 @@ public sealed class TweakDefinition
     public string Description { get; }
     public string ConfigPath { get; }
     public bool Default { get; }
+    public bool Locked => ConfigPath == nameof(MapDrawingConfig.PvpMapOnly);
     public string? ConfigureSection { get; }
     public string? ConfigureGroup { get; }
     public string? IntegrationNote { get; }
@@ -46,6 +47,7 @@ public sealed class TweakDefinition
 
     public void Set(SystemConfig config, bool value)
     {
+        if (Locked) value = true;
         object owner = config;
         foreach (var field in fields.AsSpan(0, fields.Length - 1)) {
             var next = field.GetValue(owner);
@@ -99,6 +101,9 @@ public static class TweakCatalog
         void Add(string id, string group, char icon, string name, string description, string path,
             string? section = null, string? configureGroup = null, string? integration = null) =>
             items.Add(new(id, group, icon, name, description, path, section, configureGroup, integration));
+        Add("pvp-map-only", "Markers", GratisIcons.Flag, "PvP: show only what the game map shows",
+            "Mandatory: group data and native non-player markers only; unverified enemies are omitted.",
+            "PvpMapOnly", "Map", "PvP", "Always on. Native map remains the PvP fallback.");
         Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival", "Show a quiet notification when you reach your flag.", "FlagArrival", "Chrome & motion", "Motion");
         Add("map-memory", "Navigation", GratisIcons.BookOpen, "Remember map views", "Restore each map's zoom and detached pan.", "RememberMapView", "Map", "Viewport");
         Add("zone-switch", "Navigation", GratisIcons.Compass, "Automatic zone switch", "Switch to your new zone while respecting a deliberately opened map.", "AutoSwitchOnZoneChange", "Map", "Zone changes");

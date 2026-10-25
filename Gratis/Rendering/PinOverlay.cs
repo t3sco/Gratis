@@ -24,7 +24,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
     public string LastShareCode { get; private set; } = "";
     public Dictionary<Guid, Vector2> Positions { get; } = [];
     public Dictionary<string, Vector2> Buttons { get; } = [];
-    private UserPin? hover;
+    private UserPin? hover, retainedHover, retainedDraft;
     private Vector2 anchor;
     private double lastHover = double.NegativeInfinity, toastUntil;
     private bool focusTitle, importing;
@@ -135,14 +135,21 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
             var clipboard=ImGui.GetClipboardText();
             if (clipboard.StartsWith(PinShareCode.Prefix,StringComparison.Ordinal)) Import(clipboard);
         }
-        if (Draft!=null) DrawEditor(host,assistance);
-        else DrawCard(host,assistance);
+        if (Draft!=null) { retainedDraft=Draft; DrawEditor(host,assistance); }
+        else {
+            if (retainedDraft!=null && UiMotion.Visibility(ImGui.GetID("##pin-editor"),false)>.001f) DrawEditor(host,assistance,false);
+            else retainedDraft=null;
+            DrawCard(host,assistance);
+        }
         CapturesInput=editorWasOpen || Draft!=null;
-        if (Toast.Length>0 && ImGui.GetTime()<toastUntil) {
+        var toastAlpha=UiMotion.Visibility(ImGui.GetID("##pin-notice"),Toast.Length>0 && ImGui.GetTime()<toastUntil);
+        if (toastAlpha>.001f) {
             var s=MapDrawContext.Current.GlobalScale;
             var size=new Vector2(MathF.Min(310*s,ImGui.GetWindowWidth()*.65f),36*s);
             var pos=MapAssistance.ConstrainPanel(ImGui.GetWindowPos()+new Vector2((ImGui.GetWindowWidth()-size.X)/2,ImGui.GetWindowHeight()-130*s),size);
             using var font=MapDrawContext.Current.GetChromeFont(12*s,ChromeFontRole.Body)?.Push();
+            using var motion=new UiMotion.VisualScope(ImGui.GetWindowDrawList(),pos,toastAlpha,
+                UiMotion.Full?new Vector2(0,(1-toastAlpha)*6*s):Vector2.Zero);
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(),pos,pos+size,8*s,surfaceOpacity:1);
             ImGui.GetWindowDrawList().AddText(pos+new Vector2(12,10)*s,ImGui.GetColorU32(GratisTheme.Primary),Toast);
         }
@@ -150,8 +157,13 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
 
     private void DrawCard(IMapWindowHost host,MapAssistance assistance)
     {
-        if (hover==null || ImGui.GetTime()-lastHover> .6) { hover=null; return; }
-        var pin=hover; var s=GratisTheme.ChromeScale;
+        var open=hover!=null && ImGui.GetTime()-lastHover<=.6;
+        if(!open) hover=null;
+        var pin=open?hover:retainedHover;
+        var alpha=UiMotion.Visibility(ImGui.GetID("##pin-card"),open);
+        if(pin==null || !open && alpha<=.001f) { retainedHover=null; return; }
+        if(open) retainedHover=pin;
+        var s=GratisTheme.ChromeScale;
         var width=MathF.Min(348*s,ImGui.GetWindowWidth()*(host.Config.MapCircle?.67f:.85f));
         if(width<210*s) return;
         float noteHeight;
@@ -160,7 +172,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
         var size=new Vector2(width,MathF.Min(300*s,(136*s)+noteHeight));
         var pos=MapAssistance.ConstrainPanel(anchor+new Vector2(24,12)*s,size);
         if(ImGui.IsMouseHoveringRect(pos-new Vector2(12*s),pos+size+new Vector2(12*s),false)) lastHover=ImGui.GetTime();
-        CardVisible=true;
+        CardVisible=open;
         assistance.Panel("##pin-card",pos,size,()=>{
             using(MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize*s,ChromeFontRole.Title)?.Push())
                 ImGui.TextUnformatted(ChromeControls.FitLabel(pin.Title,ImGui.GetContentRegionAvail().X));
@@ -174,33 +186,35 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
             ImGui.SameLine(); if(Button("Spotlight")) Spotlight(pin);
             ImGui.SameLine(); if(Button("Delete")) { store.Delete(pin); hover=null; Notify("Pin deleted"); }
             if(Button("Copy share code")) Copy(pin);
-            InputActive=ImGui.IsWindowHovered() || ImGui.IsAnyItemActive();
-        },scroll:true);
+            InputActive=open && (ImGui.IsWindowHovered() || ImGui.IsWindowFocused() && ImGui.IsAnyItemActive());
+        },scroll:true,interactive:open);
     }
 
-    private void DrawEditor(IMapWindowHost host,MapAssistance assistance)
+    private void DrawEditor(IMapWindowHost host,MapAssistance assistance,bool interactive=true)
     {
+        var draft=Draft??retainedDraft;
+        if(draft==null) return;
         var s=GratisTheme.ChromeScale;
         var (safeMin,safeMax)=ChromeLayout.SafeBounds();
         var size=Vector2.Min(new Vector2(360,348)*s,safeMax-safeMin);
         var pos=MapAssistance.ConstrainPanel(ImGui.GetWindowPos()+(ImGui.GetWindowSize()-size)/2,size);
-        EditorBounds=new(pos.X,pos.Y,pos.X+size.X,pos.Y+size.Y);
+        EditorBounds=interactive?new(pos.X,pos.Y,pos.X+size.X,pos.Y+size.Y):Vector4.Zero;
         assistance.Panel("##pin-editor",pos,size,()=>{
-            InputActive=true;
+            InputActive=interactive;
             ImGui.PushStyleColor(ImGuiCol.FrameBg,new Vector4(1,1,1,.055f));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding,new Vector2(7,5)*s);
-            ImGui.SetNextFrameWantCaptureKeyboard(true);
+            if(interactive) ImGui.SetNextFrameWantCaptureKeyboard(true);
             using(MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize*s,ChromeFontRole.Title)?.Push()) ImGui.TextUnformatted(importing?"Import pin":"Pin details");
-            ImGui.TextDisabled($"Map {Draft!.MapId} · {Draft.X:0.0}, {Draft.Y:0.0}");
+            ImGui.TextDisabled($"Map {draft.MapId} · {draft.X:0.0}, {draft.Y:0.0}");
             ImGui.Spacing(); ImGui.TextUnformatted("Title"); ImGui.SetNextItemWidth(-1);
-            if(focusTitle) { ImGui.SetKeyboardFocusHere(); focusTitle=false; }
+            if(interactive && focusTitle) { ImGui.SetKeyboardFocusHere(); focusTitle=false; }
             ImGui.InputText("##pin-title-"+editorSerial,ref title,80,ImGuiInputTextFlags.AutoSelectAll);
-            TitleFocused=ImGui.IsItemActive();
+            TitleFocused=interactive && ImGui.IsItemActive();
             ImGui.TextUnformatted("Note"); ImGui.SetNextItemWidth(-1);
             ImGui.InputTextMultiline("##pin-note-"+editorSerial,ref note,280,new Vector2(-1,78*s));
             ImGui.PopStyleVar(); ImGui.PopStyleColor();
-            var pointer = Draft!.Pointer;
-            if (ImGui.Checkbox("Edge pointer", ref pointer)) Draft.Pointer = pointer;
+            var pointer = draft.Pointer;
+            if (ImGui.Checkbox("Edge pointer", ref pointer)) draft.Pointer = pointer;
             using(MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize*s,ChromeFontRole.Chip)?.Push())
                 ImGui.TextDisabled(ChromeControls.FitLabel($"{note.Length}/280  ·  Enter saves  ·  Esc cancels",ImGui.GetContentRegionAvail().X));
             var columns=Math.Max(1,(int)((ImGui.GetContentRegionAvail().X+4*s)/(40*s)));
@@ -221,9 +235,9 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show)
             if(ImGui.GetItemRectSize().X+ImGui.CalcTextSize("Cancel").X+24*s<ImGui.GetContentRegionAvail().X) ImGui.SameLine();
             if(Button("Cancel")) CancelEditor();
             if(editorMessage.Length>0) ImGui.TextColored(GratisTheme.Objective,editorMessage);
-            if(ImGui.IsKeyPressed(ImGuiKey.Escape,false)) CancelEditor();
-            else if(ImGui.IsKeyPressed(ImGuiKey.Enter,false)) SaveEditor();
-        },scroll:true);
+            if(interactive && ImGui.IsKeyPressed(ImGuiKey.Escape,false)) CancelEditor();
+            else if(interactive && ImGui.IsKeyPressed(ImGuiKey.Enter,false)) SaveEditor();
+        },scroll:true,interactive:interactive);
     }
     private bool Button(string text)
     {

@@ -32,6 +32,17 @@ public abstract class MapDrawContext
 #else
         new DalamudMapDrawContext();
 #endif
+    public virtual bool IsPvP => false;
+    public PvpMapPolicy Pvp { get; } = new();
+    public void SynchronizePvp()
+    {
+        Config.PvpMapOnly = true;
+        if (!Pvp.Synchronize(IsPvP)) return;
+        Spotlight?.Cancel("PvP state changed: discard previous target");
+        MarkerTargets.Targets.Clear();
+        EdgePointers.ClearPvp();
+        Markers.Begin();
+    }
     public MapFrameTrace? Trace { get; set; }
     public bool ReportCapture { get; set; }
     public MapAssistance? Assistance { get; set; }

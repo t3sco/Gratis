@@ -27,6 +27,7 @@ public partial class MapRenderer
 
                 DrawHelpers.DrawMapMarker(new MarkerInfo
                 {
+                    Source = Rendering.MapMarkerSource.NativeWaymark,
                     Offset = DrawPosition,
                     Scale = Scale,
                     Position = markerPosition * Scale,

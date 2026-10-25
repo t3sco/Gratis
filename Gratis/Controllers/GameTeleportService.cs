@@ -14,6 +14,7 @@ internal sealed class GameTeleportService
     public static bool CanTeleport() => BlockedReason().Length == 0;
     public static unsafe string BlockedReason()
     {
+        if (Service.ClientState.IsPvP) return "Teleport unavailable in PvP";
         if (!Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer == null) return "Teleport unavailable";
         if (Service.Condition[ConditionFlag.BetweenAreas] || Service.Condition[ConditionFlag.BetweenAreas51]) return "Changing areas";
         if (AgentMap.Instance()->IsPlayerMoving) return "Stop moving to teleport";
@@ -25,6 +26,7 @@ internal sealed class GameTeleportService
 
     public unsafe string Request(PlaceEntry place, bool confirmed, bool enabled = true)
     {
+        if (Service.ClientState.IsPvP) { pending = null; return "Teleport unavailable in PvP"; }
         if (!System.SystemConfig.IsGratis || !enabled || place.IsShard || place.Kind != PlaceKind.Aetheryte || place.AetheryteId == 0)
             return "This place is display-only.";
         if (!Service.ClientState.IsLoggedIn || !UIState.Instance()->IsAetheryteUnlocked(place.AetheryteId))

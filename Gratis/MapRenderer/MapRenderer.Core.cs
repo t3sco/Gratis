@@ -23,11 +23,11 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private readonly Rendering.MapRendererFrame frame;
     public Rendering.MapRendererFrame Frame => frame;
-    public Vector2 DrawOffset { get => frame.DrawOffset; set => frame.CenterOnOffset(value); }
+    public Vector2 DrawOffset { get => frame.DrawOffset; set => frame.CenterOnOffset(value, false); }
     private static void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "")
     {
         if (System.MapRenderer is { } renderer) {
-            renderer.frame.SetViewportScale(value);
+            renderer.frame.SetViewportScale(value, false);
             renderer.frame.viewportMotion.Written("scale", writer);
         }
         else System.SystemConfig.MapScale = value;
@@ -38,17 +38,22 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     private string blendedPath = string.Empty;
     private readonly MapContentCache mapContents = new(path => LoadMapPixels(path));
     private Rendering.MapContentBounds? contentBounds;
+    private bool nativeTextureReady;
+    private long viewSession = global::System.Diagnostics.Stopwatch.GetTimestamp();
+    private void OnViewTerritoryChanged(uint territory) => global::System.Threading.Interlocked.Increment(ref viewSession);
 
     public MapRenderer()
     {
         cameraHeading = new CameraHeadingReader();
         frame = new Rendering.MapRendererFrame(this);
         LoadFogHooks();
+        Service.ClientState.TerritoryChanged += OnViewTerritoryChanged;
     }
 
     public void Dispose()
     {
         UnloadFogHooks();
+        Service.ClientState.TerritoryChanged -= OnViewTerritoryChanged;
         cameraHeading.Dispose();
         mapColours.Dispose();
         mapContents.Dispose();
@@ -56,7 +61,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         fogTexture?.Dispose();
     }
 
-    public void CenterOnGameObject(IGameObject obj) => CenterOnCoordinate(new Vector2(obj.Position.X, obj.Position.Z));
+    public void CenterOnGameObject(IGameObject obj) => frame.CenterOnCoordinate(new Vector2(obj.Position.X, obj.Position.Z), false);
 
     public void CenterOnCoordinate(Vector2 coord) => frame.CenterOnCoordinate(coord);
 
@@ -72,6 +77,9 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->CurrentTerritoryId << 32) | AgentMap.Instance()->SelectedMapId;
     Rendering.MapContentBounds? Rendering.IMapRendererHost.ContentBounds => contentBounds;
     bool Rendering.IMapRendererHost.SmallMapHint => DrawHelpers.GetMapScaleFactor() >= 2;
+    bool Rendering.IMapRendererHost.TextureReady => nativeTextureReady;
+    bool Rendering.IMapRendererHost.InstanceMap => Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
+    long Rendering.IMapRendererHost.ViewSession => viewSession;
     Vector2 Rendering.IMapRendererHost.CoordinateOffset(Vector2 position) => CoordinateOffset(position);
     void Rendering.IMapRendererHost.DrawBackgroundTexture() => DrawBackgroundTexture();
     void Rendering.IMapRendererHost.DrawFogOfWar() => DrawFogOfWar();
@@ -80,23 +88,25 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     void Rendering.IMapRendererHost.DrawTextMarkers() => DrawStaticTextMarkers();
     void Rendering.IMapRendererHost.CollectMarkers()
     {
+        Rendering.MapDrawContext.Current.SynchronizePvp();
         DrawStaticMapMarkers();
         DrawDynamicMarkers();
         DrawGameObjects();
         DrawGroupMembers();
         DrawTemporaryMarkers();
-        DrawGatheringMarkers();
+        if (!Service.ClientState.IsPvP) DrawGatheringMarkers();
         DrawFieldMarkers();
     }
 
     private void DrawBackgroundTexture()
     {
+        nativeTextureReady = false;
         contentBounds = System.SystemConfig.IsGratis && System.SystemConfig.FitSmallRoomsToContent
             ? mapContents.Get(AgentMap.Instance()->SelectedMapId, $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex") : null;
         if (AgentMap.Instance()->SelectedMapBgPath.Length is 0) {
             var texture = Service.TextureProvider.GetFromGame($"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
 
-            ImGui.SetCursorPos(DrawPosition);
+            nativeTextureReady = texture.Handle != default && texture.Width >= 16 && texture.Height >= 16;
             var path = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
             DrawColouredMapImage(texture, path, () => LoadMapPixels(path));
         }
@@ -112,7 +122,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
             }
 
             if (blendedTexture is not null) {
-                ImGui.SetCursorPos(DrawPosition);
+                nativeTextureReady = blendedTexture.Handle != default && blendedTexture.Width >= 16 && blendedTexture.Height >= 16;
                 DrawColouredMapImage(blendedTexture, source, () => LoadMapPixels(foregroundPath, backgroundPath));
             }
         }

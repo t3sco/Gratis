@@ -115,6 +115,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
 
     public void Open(string text = "")
     {
+        if (MapDrawContext.Current.IsPvP) { Close(false); return; }
         IsOpen = CapturesInput = true; focusSearch = true; query = text; scope = 0; selected = 0;
         queryInputId = $"##place-query-{++openSerial}";
         revision = -1; searchedScope = -1; confirming = null; message = ""; expansion = null; browserSelection = 0;
@@ -124,6 +125,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
 
     public void Prepare(MapDrawingConfig config, bool focused)
     {
+        if (MapDrawContext.Current.IsPvP) { Close(false); CapturesInput = false; return; }
         CapturesInput = IsOpen;
         if (!config.IsGratis || !config.Palette) { IsOpen = false; CapturesInput = false; return; }
         if (swallowEscape) {

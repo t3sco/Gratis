@@ -49,6 +49,7 @@ public static partial class UiMotion
         interactive = page.Shown == requested;
         alpha = !Full || age >= 2 * half ? 1 : age < half ? 1 - InterfaceMotionTokens.Ease((float)(age / half), InterfaceCurve.Exit)
             : InterfaceMotionTokens.Ease((float)((age - half) / half), InterfaceCurve.Enter);
+        if (alpha < 1) presentationActive++;
         pages[key] = page; return page.Shown;
     }
 

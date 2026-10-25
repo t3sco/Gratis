@@ -3,6 +3,7 @@ using System.Text.Json;
 using Gratis.Data;
 using Gratis.Rendering;
 using Gratis.Windows;
+using ImGuiNET;
 
 namespace Gratis.Preview;
 
@@ -107,6 +108,25 @@ internal static class InterfaceMotionVerification
         d.Step(new(1.83)); var reduced = UiMotion.Value(0xfac39001, 0, 1, opacity: true);
         Check(reduced > 0 && reduced < 1, "Reduced opacity has an intermediate state");
         d.Step(new(1.87)); Check(UiMotion.Value(0xfac39001, 0, 1, opacity: true) == 1, "Reduced opacity settles in 60ms");
+        c.InterfaceAnimations = InterfaceAnimationMode.Full;
+        var pins = PinVerification.Attach(d); pins.Edit(1, Vector2.Zero);
+        d.Step(new(2.1)); d.Step(new(2.3));
+        var editor = ChromePolishVerification.Center(pins.EditorBounds); pins.CancelEditor();
+        d.Step(new(2.32, Mouse: editor)); d.Step(new(2.34, Left: true));
+        var editorDrag = d.Step(new(2.36, Mouse: editor + new Vector2(30, 25))); d.Step(new(2.38, Left: false));
+        Check(pins.Draft == null && !pins.CapturesInput && editorDrag.Dragging, "Retained pin-editor exit has no live form or map hit capture");
+        d.Context.Blurs.Clear(); ImGui.NewFrame();
+        ImGui.SetNextWindowPos(new(80)); ImGui.SetNextWindowSize(new(250));
+        ImGui.Begin("Motion glass regression", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings);
+        var list = ImGui.GetWindowDrawList(); var origin = ImGui.GetCursorScreenPos();
+        using (var fade = new UiMotion.VisualScope(list, origin, .25f, Vector2.Zero))
+            MapWindowDrawing.DrawSurface(list, origin, origin + new Vector2(100, 60), 8);
+        Check(d.Context.Blurs.Count == 1 && MathF.Abs(d.Context.Blurs[0].Opacity - .25f) < .001f && UiMotion.BackdropAlpha == 1,
+            "Glass blur receives animated opacity and nested scopes restore it");
+        using (var fade = new UiMotion.VisualScope(list, origin, 0, Vector2.Zero))
+            MapWindowDrawing.DrawSurface(list, origin, origin + new Vector2(100, 60), 8);
+        Check(d.Context.Blurs.Count == 1, "Invisible animation never submits a full-strength blur");
+        ImGui.End(); ImGui.Render();
         Console.WriteLine("Interface frames: travel enter/exit, immediate exit hit fallthrough, list wheel vs map zoom and Off.");
     }
     public static void Unfade()

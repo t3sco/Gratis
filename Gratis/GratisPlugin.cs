@@ -17,6 +17,7 @@ public sealed class GratisPlugin : IDalamudPlugin
     private readonly Gratis.Rendering.ReportLogBuffer reportLogs = new();
     private readonly Gratis.Classes.ReportPluginLog reportLogger;
     private readonly Gratis.Classes.ReportCommand reportCommand;
+    private readonly Gratis.Classes.PvpDiagnosticCommand pvpDiagnosticCommand;
 
     public GratisPlugin(IDalamudPluginInterface pluginInterface)
     {
@@ -51,6 +52,7 @@ public sealed class GratisPlugin : IDalamudPlugin
         System.IntegrationsController = new IntegrationsController();
         System.ZoneSwitchController = new ZoneSwitchController();
         reportCommand = new Gratis.Classes.ReportCommand(screenshotCapture, reportLogs);
+        pvpDiagnosticCommand = new Gratis.Classes.PvpDiagnosticCommand();
 
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
@@ -83,6 +85,7 @@ public sealed class GratisPlugin : IDalamudPlugin
 
     public void Dispose()
     {
+        pvpDiagnosticCommand.Dispose();
         reportCommand.Dispose();
         screenshotCapture.Dispose();
         glassDiagnosticCommand.Dispose();

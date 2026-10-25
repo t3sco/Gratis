@@ -17,6 +17,9 @@ public static partial class UiMotion
     private static readonly Dictionary<uint, string> exitNames = new(64);
     private static int frame = -1;
     private static int ghostActive, ghostKeys;
+    public static float BackdropAlpha { get; private set; } = 1;
+    private static int transformedVertices;
+    private static int presentationActive;
     public static void IncludeGhost(int active, int keys) { ghostActive = active; ghostKeys = keys; }
     public static uint Item { get; private set; }
     public static void ItemId(string id) => Item = ImGui.GetID(id);
@@ -35,7 +38,7 @@ public static partial class UiMotion
         }
         var next = ImGui.GetFrameCount();
         if (frame == next) return;
-        frame = next; Store.Begin(ImGui.GetTime(), next);
+        frame = next; transformedVertices = presentationActive = 0; Store.Begin(ImGui.GetTime(), next);
     }
     public static float Duration(float seconds)
     {
@@ -100,6 +103,7 @@ public static partial class UiMotion
             io.DeltaTime / Duration(1), !Full);
         if (MathF.Abs(next - ImGui.GetScrollY()) > .01f) ImGui.SetScrollY(next);
         scrolls[id] = state;
+        if (MathF.Abs(state.Position - state.Target) > .05f || MathF.Abs(state.Velocity) > .1f) presentationActive++;
     }
     public static void ScrollToItem()
     {
@@ -110,7 +114,7 @@ public static partial class UiMotion
             ImGui.GetWindowHeight() - ImGui.GetStyle().WindowPadding.Y * 2);
         scrolls[id] = state;
     }
-    public static string Diagnostics() => $"interface active={Store.Active + ghostActive} keys={Store.Count + ghostKeys}/{InterfaceMotionStore.Capacity + 1} scrolls={scrolls.Count}/64 samples={Store.Samples} costEstimateMs={(Store.Samples + ghostActive) * .00015:0.000} (operation estimate)";
+    public static string Diagnostics() => $"interface active={Store.Active + ghostActive + presentationActive} keys={Store.Count + ghostKeys}/{InterfaceMotionStore.Capacity + 1} scrolls={scrolls.Count}/64 pages={pages.Count}/32 samples={Store.Samples} vertices={transformedVertices} costEstimateMs={((Store.Samples + ghostActive + presentationActive) * .00015 + transformedVertices * .000003):0.000} (operation estimate)";
 
     public readonly struct VisualScope : IDisposable
     {
@@ -118,13 +122,19 @@ public static partial class UiMotion
         private readonly int first;
         private readonly Vector2 pivot, offset;
         private readonly float alpha, scale;
+        private readonly float previousBackdrop;
         public float Alpha => alpha;
         public bool Visible => alpha > .001f;
         public VisualScope(ImDrawListPtr list, Vector2 pivot, float alpha, Vector2 offset, float scale = 1, int start = -1)
-        { this.list = list; first = start < 0 ? list.VtxBuffer.Size : start; this.pivot = pivot; this.alpha = alpha; this.offset = offset; this.scale = scale; }
+        {
+            this.list = list; first = start < 0 ? list.VtxBuffer.Size : start; this.pivot = pivot; this.alpha = alpha; this.offset = offset; this.scale = scale;
+            previousBackdrop = BackdropAlpha; BackdropAlpha *= alpha;
+        }
         public unsafe void Dispose()
         {
+            BackdropAlpha = previousBackdrop;
             if (alpha == 1 && scale == 1 && offset == Vector2.Zero) return;
+            transformedVertices += list.VtxBuffer.Size - first;
             var vertices = (ImDrawVert*)list.VtxBuffer.Data;
             for (var i = first; i < list.VtxBuffer.Size; i++) {
                 var position = (Vector2*)(vertices + i); *position = pivot + (*position - pivot) * scale + offset;

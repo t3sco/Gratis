@@ -14,7 +14,9 @@ internal sealed record ScriptFrame(double Time, Vector2? Mouse = null, bool? Lef
     Vector2? Player = null, float? Heading = null, bool? SettingsOpen = null,
     Vector2? Size = null, uint? MapId = null, int? Redraws = null, string? Screenshot = null, bool? Alt = null, ScriptQuestLink? QuestLink = null, bool Escape = false, uint? TerritoryId = null,
     ImGuiKey[]? Keys = null, string? Text = null, bool? Moving = null, bool MapKey = false,
-    SubZoneLocation? SubZone = null, long? UnixTime = null, float? CameraYaw = null, float? NativeConeDegrees = null);
+    SubZoneLocation? SubZone = null, long? UnixTime = null, float? CameraYaw = null, float? NativeConeDegrees = null, bool? IsPvP = null,
+    bool? TextureReady = null, Vector2? TextureSize = null, bool? ContentReady = null, MapContentBounds? Content = null,
+    Vector2? ViewportSize = null, float? Dpi = null);
 
 internal sealed record ScriptQuestLink(Vector2? Target, uint MapId, bool SameMap = true, uint? Icon = null);
 
@@ -32,6 +34,8 @@ internal sealed class FrameScript
     public string? Config { get; set; }
     public string? Texture { get; set; }
     public bool SmallInstance { get; set; }
+    public bool AutoFit { get; set; }
+    public bool InstanceMap { get; set; }
     public uint MapId { get; set; } = 1;
     public uint TerritoryId { get; set; } = 1;
     public Vector2 MapOffset { get; set; }
@@ -46,7 +50,7 @@ internal sealed class FrameScript
 }
 
 internal sealed record ScriptMarker(uint Icon, Vector2 World, MarkerType Kind = MarkerType.Unknown,
-    bool Objective = false, bool Relevant = true);
+    bool Objective = false, bool Relevant = true, MapMarkerSource Source = MapMarkerSource.Unspecified);
 
 internal readonly record struct FrameSnapshot(double Time, int Frame, float Scale, Vector2 Offset,
     Vector2 DrawPosition, Vector2 Viewport, float ChromeProgress, FollowState Follow, bool Dragging,
@@ -73,6 +77,14 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     private readonly nint native;
     private readonly MapDrawContext previous;
     private readonly DrawTexture map;
+    private Vector2? textureSizeOverride;
+    private MapContentBounds? scannedContent, contentOverride;
+    private bool contentReady = true;
+    private (ulong Map, long Session)? seededManualView;
+    public bool TextureReady { get; private set; } = true;
+    public Vector2? ViewportOverride { get; private set; }
+    public long ViewSession { get; private set; }
+    public bool InstanceMap => script.InstanceMap;
     private readonly Action<ToolbarAction> activate;
     private readonly Action layers;
     private bool focused = true, left, right, shift, control, alt;
@@ -159,7 +171,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         io.Fonts.SetTexID(Textures.Add(width, height, atlas));
         var id = script.SmallInstance ? SmallInstanceVerification.CreateTexture(Textures) : script.Texture is null ? Terrain.Create(Textures, 2048) : Textures.Load(script.Texture);
         var texture = Textures.Get(id);
-        ContentBounds = script.SmallInstance || script.Texture is not null ? MapContent.Scan(texture.Pixels, texture.Width, texture.Height) : null;
+        scannedContent = script.SmallInstance || script.Texture is not null ? MapContent.Scan(texture.Pixels, texture.Width, texture.Height) : null;
         if (!Config.MapColour.Parameters.IsIdentity)
             id = Textures.Add(texture.Width, texture.Height, MapColour.Apply(texture.Pixels, Config.MapColour.Parameters));
         map = new DrawTexture(id, new Vector2(texture.Width, texture.Height));
@@ -169,7 +181,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         layers = DrawLayers;
         foreach (var marker in script.Markers) {
             Markers.Add(new MarkerInfo { Position = marker.World, Offset = Vector2.Zero, Scale = 1,
-                IconId = marker.Icon, MarkerType = marker.Kind, IsObjective = marker.Objective,
+                Source = marker.Source, IconId = marker.Icon, MarkerType = marker.Kind, IsObjective = marker.Objective,
                 IsRelevant = marker.Relevant, DataId = (uint)Markers.Count + 1 });
         }
     }
@@ -182,6 +194,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         var io = ImGui.GetIO();
         io.DeltaTime = (float)Math.Max(.000001, started ? frame.Time - Now : frame.Time);
         Now = frame.Time; started = true;
+        if (frame.IsPvP is { } pvp) { Context.PvP = pvp; Context.SynchronizePvp(); }
         mouse = frame.Mouse ?? mouse; left = frame.Left ?? left; right = frame.Right ?? right;
         shift = frame.Shift ?? shift; control = frame.Control ?? control; alt = frame.Alt ?? alt;
         focused = frame.Focused ?? focused; SettingsOpen = frame.SettingsOpen ?? SettingsOpen;
@@ -192,11 +205,20 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         nativeConeDegrees = frame.NativeConeDegrees ?? nativeConeDegrees;
         redraws = frame.Redraws ?? redraws; MapId = frame.MapId ?? MapId;
         TerritoryId = frame.TerritoryId ?? TerritoryId;
+        if (frame.TerritoryId.HasValue) ViewSession++;
+        TextureReady = frame.TextureReady ?? TextureReady;
+        textureSizeOverride = frame.TextureSize ?? textureSizeOverride;
+        contentReady = frame.ContentReady ?? contentReady; contentOverride = frame.Content ?? contentOverride;
+        ViewportOverride = frame.ViewportSize ?? ViewportOverride;
+        if (frame.Dpi is { } dpi) Context.DpiScale = dpi;
         subZone = frame.SubZone ?? subZone;
         if (frame.UnixTime is { } unix) Context.ClockUnixSeconds = unix;
         if (frame.QuestLink is { } quest)
             Renderer.BeginQuestSpotlight(quest.Target, quest.MapId, quest.SameMap, quest.Icon);
         if (frame.Size is { } size) Config.WindowSize = size;
+        if (!script.AutoFit && !script.SmallInstance && seededManualView != (MapKey, ViewSession)) {
+            Renderer.UseManualView("scripted explicit viewport", true); seededManualView = (MapKey, ViewSession);
+        }
         io.AddMousePosEvent(mouse.X, mouse.Y);
         io.AddMouseButtonEvent(0, left); io.AddMouseButtonEvent(1, right);
         io.AddMouseWheelEvent(0, frame.Wheel);
@@ -276,18 +298,18 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
 
     public void UpdateWindow() { }
     public Vector2 CoordinateOffset(Vector2 position) => -position * script.MapSizeFactor + script.MapOffset * script.MapSizeFactor;
-    public MapContentBounds? ContentBounds { get; }
+    public MapContentBounds? ContentBounds => contentReady ? contentOverride ?? scannedContent : null;
     public bool SmallMapHint => script.SmallInstance;
     public unsafe void DrawBackgroundTexture()
     {
         MapDrawList = (nint)ImGui.GetWindowDrawList().NativePtr;
-        Renderer.DrawMapImage(map);
+        Renderer.DrawMapImage(map with { Size = textureSizeOverride ?? map.Size });
     }
     public void DrawFogOfWar()
     {
         if (redraws < 2) return;
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0);
-        Renderer.DrawMapImage(map);
+        Renderer.DrawMapImage(map with { Size = textureSizeOverride ?? map.Size });
         ImGui.PopStyleVar();
     }
     public void CollectMarkers()

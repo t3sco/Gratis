@@ -18,7 +18,8 @@ public sealed class MapMarkerTargets
     public void Begin(MapRendererFrame frame) { renderer = frame; MapId = frame.ViewedMapId; Targets.Clear(); }
     public void Observe(MarkerInfo marker)
     {
-        if (renderer == null || !MapDrawContext.Current.Config.IsGratis) return;
+        if (renderer == null || !MapDrawContext.Current.Config.IsGratis ||
+            MapDrawContext.Current.IsPvP && PvpMapPolicy.IsPlayer(marker)) return;
         Targets.Add((marker, renderer.ScreenToWorld(ImGui.GetWindowPos() + marker.Position + marker.Offset, ImGui.GetWindowPos())));
     }
     public IEnumerable<PlaceEntry> Entries
@@ -27,6 +28,7 @@ public sealed class MapMarkerTargets
             if (renderer == null) yield break;
             for (var i = 0; i < Targets.Count; i++) {
                 var (marker, world) = Targets[i];
+                if (MapDrawContext.Current.IsPvP && PvpMapPolicy.IsPlayer(marker)) continue;
                 yield return new PlaceEntry($"frame:{MapId}:{i}", marker.IsFlag ? PlaceKind.Flag :
                     MarkerIcon.Family(marker) == MarkerIconFamily.Quest ? PlaceKind.Quest : PlaceKind.Marker,
                     marker.PrimaryText?.Invoke() ?? MarkerIcon.Family(marker).ToString(), "Current map", MapId, 0, world) { Icon = marker.IconId };

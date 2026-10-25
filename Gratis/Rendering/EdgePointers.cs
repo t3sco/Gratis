@@ -22,8 +22,10 @@ public sealed class EdgePointers
         Drawn.Exists(p => Vector2.Abs(ImGui.GetMousePos() - p.Center) is var d && d.X <= 38 * MapDrawContext.Current.GlobalScale && d.Y <= 13 * MapDrawContext.Current.GlobalScale);
     private MapRendererFrame? renderer;
     public void Begin(MapRendererFrame frame) { renderer = frame; targets.Clear(); }
+    public void ClearPvp() { targets.Clear(); Drawn.Clear(); InputActive = false; }
     public void Observe(MarkerInfo marker)
     {
+        if (MapDrawContext.Current.IsPvP && PvpMapPolicy.IsPlayer(marker)) return;
         var config = MapDrawContext.Current.Config;
         if (!config.IsGratis || !config.EdgePointers || renderer == null) return;
         var quest = MarkerIcon.TryQuest(marker.IconId, out var q) && q.MainScenario && q.State is QuestMarkerState.InProgress or QuestMarkerState.Complete;

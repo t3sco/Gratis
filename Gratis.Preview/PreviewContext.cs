@@ -11,6 +11,8 @@ internal readonly record struct BackdropBlur(nint List, int IndexOffset, Vector2
 internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config = null) : MapDrawContext, IDisposable
 {
     public List<BackdropBlur> Blurs { get; } = [];
+    public bool PvP { get; set; }
+    public override bool IsPvP => PvP;
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
     public string? RequestedSettingsSection { get; private set; }

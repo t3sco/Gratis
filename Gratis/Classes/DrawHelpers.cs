@@ -15,6 +15,7 @@ namespace Gratis.Classes;
 
 public class MarkerInfo
 {
+    public MapMarkerSource Source { get; init; }
     public required Vector2 Position { get; set; }
     public required Vector2 Offset { get; set; }
     public required float Scale { get; set; }
@@ -67,6 +68,9 @@ public static class DrawHelpers
         if (markerInfo.IconId is 0) return;
 
         var context = MapDrawContext.Current;
+        context.SynchronizePvp();
+        context.Pvp.BeginFrame(context.IsPvP, ImGui.GetFrameCount());
+        if (!context.Pvp.Consider(markerInfo)) return;
         if (context.Config.IsGratis) {
             markerInfo.IconId = markerInfo.IconId switch {
                 >= 60483 and <= 60494 when markerInfo.IsObjective || markerInfo.MarkerType is MarkerType.Fate or MarkerType.Stellar => QuestionMarkIcon,
@@ -77,8 +81,10 @@ public static class DrawHelpers
             context.Visibility.BeginFrame(context);
             if (!context.PrepareMarker(markerInfo) && context.Spotlight?.Matches(markerInfo) != true) return;
             context.Visibility.Count(markerInfo);
-            context.EdgePointers.Observe(markerInfo);
-            context.MarkerTargets.Observe(markerInfo);
+            if (!context.IsPvP || !PvpMapPolicy.IsPlayer(markerInfo)) {
+                context.EdgePointers.Observe(markerInfo);
+                context.MarkerTargets.Observe(markerInfo);
+            }
         }
 
         if (!MapShape.Contains(markerInfo.Position + markerInfo.Offset + ImGui.GetWindowPos())) return;
@@ -118,6 +124,7 @@ public static class DrawHelpers
 
     internal static void DrawPreparedMarker(MarkerInfo markerInfo)
     {
+        if (!PvpMapPolicy.Allows(MapDrawContext.Current.IsPvP, markerInfo)) return;
         var alpha = MarkerVisual.Alpha(markerInfo);
         if (markerInfo.IsFlag) alpha *= MapDrawContext.Current.FlagArrival.FlagAlpha;
         alpha *= MapDrawContext.Current.Spotlight?.MarkerAlpha(markerInfo) ?? 1;
@@ -142,6 +149,7 @@ public static class DrawHelpers
             else if (!DrawIcon(markerInfo)) return;
         }
         AetheryteAttunementDrawing.Ring(markerInfo);
+        context.Pvp.RecordDrawn(markerInfo);
         context.Trace?.DrawnMarkers.Add(markerInfo);
         if (!context.WindowMoveInputBlocked) {
             ProcessInteractions(markerInfo);

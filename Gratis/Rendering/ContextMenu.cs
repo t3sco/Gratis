@@ -142,7 +142,7 @@ public sealed partial class ContextMenu
         }
         finally { ImGui.PopStyleColor(); ImGui.PopStyleVar(3); }
         if (details.Length > 0) {
-            ImGui.BeginTooltip(); ImGui.TextUnformatted(details); ImGui.EndTooltip();
+            UiMotion.TooltipText(details);
         }
     }
     private void Activate(ContextMenuItem item)

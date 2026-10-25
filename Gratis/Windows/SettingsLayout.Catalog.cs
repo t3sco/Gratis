@@ -22,6 +22,10 @@ public sealed partial class SettingsLayout
         bool ConicRing(SystemConfig c) => c.IsGratis && !c.NeutralFrame && c.FramePreset == FramePreset.Hairline;
         bool FlatMarkers(SystemConfig c) => c.IsGratis && c.MarkerStyle == 1 && c.Markers.IconStyle != MarkerIconStyle.Game;
 
+        Group("Map", "PvP");
+        Add("PvpMapOnly", "PvP: show only what the game map shows", when: _ => false,
+            tip: "Mandatory in both styles. Party/alliance use group data. Unverified enemies and nearby actors are omitted. The native map remains available in PvP.");
+
         Group("Appearance", "Style");
         Add("VisualStyle", "Visual style", choices: "Gratis|Classic");
         Add("MapCircle", "Circular map");

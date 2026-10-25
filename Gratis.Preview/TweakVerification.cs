@@ -22,7 +22,8 @@ internal static class TweakVerification
             Check(tweak.Default == tweak.Get(defaults), "Tweak default differs from config: " + tweak.Id);
             tweak.Set(config, !tweak.Default);
             var modified = TweakCatalog.Find(config, modifiedOnly: true);
-            Check(modified.Length == 1 && modified[0] == tweak, "Tweak must be independently editable: " + tweak.Id);
+            if (tweak.Locked) Check(tweak.Get(config) && modified.Length == 0, "Mandatory policy cannot be disabled");
+            else Check(modified.Length == 1 && modified[0] == tweak, "Tweak must be independently editable: " + tweak.Id);
             tweak.Reset(config);
             Check(tweak.Get(config) == tweak.Default && !tweak.IsModified(config), "Reset missed default: " + tweak.Id);
             if (tweak.ConfigureSection is not null) {
@@ -40,7 +41,7 @@ internal static class TweakVerification
         Check(TweakCatalog.Find(config, "eorzea chip").Any(t => t.Id == "eorzea-time"), "Search must match all words");
         Check(TweakCatalog.Find(config, "lifestream").Single().Id == "travel-actions", "Search must include integration notes");
         Check(TweakCatalog.Find(config, "unlikely-no-match").Length == 0, "Search must reject unrelated results");
-        foreach (var tweak in all.Take(3)) tweak.Set(config, !tweak.Default);
+        foreach (var tweak in all.Where(t => !t.Locked).Take(3)) tweak.Set(config, !tweak.Default);
         Check(TweakCatalog.Find(config, "   ", true).Length == 3 &&
             TweakCatalog.Find(config, "flag", true).Single().Id == "flag-arrival", "Modified filter must intersect search results");
         config.LastSeenTweakVersion = "3.1.0";

@@ -20,6 +20,7 @@ public partial class MapRenderer
 {
     private unsafe void DrawGameObjects()
     {
+        if (Service.ClientState.IsPvP) return;
         if (AgentMap.Instance()->SelectedMapId != AgentMap.Instance()->CurrentMapId) return;
 
         if (Service.ObjectTable is not { LocalPlayer: { } player }) return;
@@ -40,6 +41,7 @@ public partial class MapRenderer
 
             DrawHelpers.DrawMapMarker(new MarkerInfo
             {
+                Source = Rendering.MapMarkerSource.ObjectTable,
                 Position = (obj.GetMapPosition() -
                             DrawHelpers.GetMapOffsetVector() +
                             DrawHelpers.GetMapCenterOffsetVector()) * Scale,

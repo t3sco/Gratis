@@ -17,6 +17,7 @@ public static class MapMarkerDataExtensions
         {
             Position = (marker.Position.AsMapVector() * DrawHelpers.GetMapScaleFactor() - DrawHelpers.GetMapOffsetVector() + DrawHelpers.GetMapCenterOffsetVector()) * scale,
             Offset = offset,
+            Source = Rendering.MapMarkerSource.NativeEvent,
             Scale = scale,
             IconId = marker.IconId,
             Radius = marker.Radius,

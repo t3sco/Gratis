@@ -18,6 +18,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     private bool loggedBlurSuccess;
     private bool loggedBlurFailure;
 
+    public override bool IsPvP => Service.ClientState.IsPvP;
     public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
     public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false)
     {
@@ -57,7 +58,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     public override bool LensGatheringClass => Service.ObjectTable.LocalPlayer?.ClassJob.RowId is 16 or 17 or 18;
     public override bool LensNearNode {
         get {
-            if (Service.ObjectTable.LocalPlayer is not { } player) return false;
+            if (IsPvP || Service.ObjectTable.LocalPlayer is not { } player) return false;
             foreach (var obj in Service.ObjectTable)
                 if (obj.ObjectKind == global::Dalamud.Game.ClientState.Objects.Enums.ObjectKind.GatheringPoint && Vector3.DistanceSquared(player.Position, obj.Position) < 900) return true;
             return false;

@@ -137,6 +137,10 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
 
     public unsafe void Refresh()
     {
+        if (Service.ClientState.IsPvP) {
+            ResetPvpState();
+            return;
+        }
         var now = ImGui.GetTime(); var agent = AgentMap.Instance();
         var character = Service.ObjectTable.LocalPlayer?.GameObjectId ?? 0;
         if (now - refreshed < .75 && lastMap == agent->SelectedMapId && lastCharacter == character) return;
@@ -203,6 +207,11 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
 
     public PlaceAccess Access(PlaceEntry place) => access.GetValueOrDefault(place.AetheryteId);
     public void Invalidate() => refreshed = double.NegativeInfinity;
+    public void ResetPvpState()
+    {
+        dynamic = []; Context = default; Overlay.Close(false);
+        Invalidate(); revision++;
+    }
 
     public unsafe void Show(PlaceEntry place)
     {

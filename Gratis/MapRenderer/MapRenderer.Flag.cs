@@ -13,6 +13,7 @@ public partial class MapRenderer
 
             DrawHelpers.DrawMapMarker(new MarkerInfo
             {
+                Source = Rendering.MapMarkerSource.NativeFlag,
                 Position = new Vector2(flagMarker.XFloat, flagMarker.YFloat) * Scale * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetCombinedOffsetVector() * Scale,
                 IconId = flagMarker.MapMarker.IconId,
                 Category = Rendering.MarkerCategory.Objective,

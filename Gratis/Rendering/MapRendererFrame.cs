@@ -17,6 +17,10 @@ public interface IMapRendererHost
     ulong MapKey { get; }
     MapContentBounds? ContentBounds => null;
     bool SmallMapHint => false;
+    bool TextureReady => true;
+    bool InstanceMap => false;
+    long ViewSession => 0;
+    Vector2? ViewportOverride => null;
     Vector2 CoordinateOffset(Vector2 position);
     void DrawBackgroundTexture();
     void DrawFogOfWar();
@@ -39,19 +43,22 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         viewportMotion.Written("offset", writer);
     }
     private (float Scale, Vector2 Offset) Constrain(float scale, Vector2 offset) => ViewportMath.Constrain(host.Config,
-        viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize, viewportTextureSize, scale, offset);
-    public void SetViewportScale(float scale)
+        viewportSize.X > 1 && viewportSize.Y > 1 ? viewportSize : host.Config.WindowSize,
+        viewportTextureSize.X > 1 && viewportTextureSize.Y > 1 ? viewportTextureSize : new Vector2(2048), scale, offset);
+    public void SetViewportScale(float scale, bool manual = true)
     {
-        TouchSmallRoomView();
+        ObserveViewIdentity();
+        if (manual) UseManualView("explicit zoom");
+        else if (host.Config.IsGratis && AutoFit.Mode == ViewportViewMode.Manual) return;
         CancelViewportMotion();
         restoringView = null;
         var constrained = Constrain(scale, DrawOffset);
         WriteScale(constrained.Scale);
         WriteOffset(constrained.Offset);
     }
-    public void CenterOnOffset(Vector2 offset)
+    public void CenterOnOffset(Vector2 offset, bool manual = true)
     {
-        TouchSmallRoomView();
+        if (manual) UseManualView("explicit pan/centre");
         Spotlight.Cancel("cancelled: explicit centre/zone switch");
         CancelViewportMotion();
         restoringView = null;
@@ -59,10 +66,10 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         WriteOffset(offset);
     }
     private void WriteScale(float value, [global::System.Runtime.CompilerServices.CallerMemberName] string writer = "") { host.Config.MapScale = value; viewportMotion.Written("scale", writer); }
-    public void CenterOnCoordinate(Vector2 position)
+    public void CenterOnCoordinate(Vector2 position, bool manual = true)
     {
         var offset = host.CoordinateOffset(position);
-        CenterOnOffset(offset);
+        CenterOnOffset(offset, manual);
         PingTexturePosition(new Vector2(1024) - offset);
     }
 
@@ -91,14 +98,22 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void PrepareViewport(Vector2 textureSize)
     {
+        ObserveViewIdentity();
         if (viewportMotion.HasAdvanced(host.FrameId)) return;
-        if (textureSize.X > 0 && textureSize.Y > 0) viewportTextureSize = textureSize;
+        var validWindow = ValidSize(viewportSize);
+        if (host.Config.IsGratis && (!validWindow || !host.TextureReady || !ValidSize(textureSize))) {
+            viewportReady = false; AutoFit.Wait(host.Now, validWindow); return;
+        }
+        if (ValidSize(textureSize)) viewportTextureSize = textureSize;
+        viewportReady = true;
         PrepareSmallRoomView();
         PrepareRememberedView();
+        PreparePendingSpotlightReturn();
         wasFollowing = host.Config.FollowPlayer;
         MapDrawContext.Current.Trace?.MotionAdvance();
         AdvanceViewportMotion();
         AdvanceRememberedView();
+        ApplyAutoFit();
         var constrained = Constrain(Scale, DrawOffset);
         host.Config.MapScale = constrained.Scale;
         DrawOffset = constrained.Offset;
@@ -107,7 +122,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void ZoomViewport(float requestedScale, Vector2 cursorFromCenter, bool animate = true)
     {
-        TouchSmallRoomView();
+        if (host.Config.IsGratis && !viewportReady) return;
+        UseManualView("wheel/cluster zoom");
         var config = host.Config;
         viewportMotion.CancelPan();
         if (!animate) CancelViewportMotion();
@@ -161,7 +177,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void InteractWithViewport(bool drag = false)
     {
-        TouchSmallRoomView();
+        if (host.Config.IsGratis && !viewportReady) return;
+        UseManualView(drag ? "drag pan" : "viewport input");
         restoringView = null;
         if (Spotlight.OwnsViewport) { Spotlight.End(host.Now, "input: restoring viewport"); return; }
         host.Config.FollowPlayer = viewportMotion.Interact(host.Config, host.Now, drag);
@@ -169,6 +186,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void PanViewport(Vector2 delta)
     {
+        if (host.Config.IsGratis && !viewportReady) return;
         if (delta == Vector2.Zero) return;
         InteractWithViewport(true);
         var before = DrawOffset;
@@ -216,6 +234,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     public void DrawMapImage(DrawTexture texture)
     {
         PrepareViewport(texture.Size);
+        if (host.Config.IsGratis && !viewportReady) { ImGui.Dummy(Vector2.Zero); return; }
         MapDrawContext.Current.Trace?.TexturePass();
         ImGui.SetCursorPos(DrawPosition);
         using var alpha = new MapMotion.AlphaScope(MapDrawContext.Current.Motion.ZoneProgress(host.Now));
@@ -225,16 +244,21 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     public void DrawBaseTexture()
     {
         MapDrawContext.Current.Spotlight = Spotlight;
+        MapDrawContext.Current.SynchronizePvp();
+        MapDrawContext.Current.Pvp.BeginFrame(MapDrawContext.Current.IsPvP, host.FrameId);
         MapDrawContext.Current.Motion.BeginMap(host.MapId, host.Now);
         FlushPendingPing();
-        viewportSize = ImGui.GetContentRegionAvail();
+        viewportSize = host.ViewportOverride ?? ImGui.GetContentRegionAvail();
+        ObserveViewIdentity();
         if (MapDrawContext.Current.ReportCapture)
             ImGui.GetWindowDrawList().AddRectFilled(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), 0xff1f1916);
         host.DrawBackgroundTexture();
+        if (host.Config.IsGratis && !viewportMotion.HasAdvanced(host.FrameId)) PrepareViewport(Vector2.Zero);
     }
 
     public void DrawDynamicElements()
     {
+        if (host.Config.IsGratis && !viewportReady) return;
         var motion = MapDrawContext.Current.Motion;
         using var alpha = new MapMotion.AlphaScope(motion.ZoneProgress(host.Now));
         host.DrawFogOfWar();

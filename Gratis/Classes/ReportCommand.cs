@@ -67,6 +67,8 @@ internal sealed class ReportCommand : IDisposable
             get {
                 var ctx = MapDrawContext.Current;
                 yield return ("Fonts", ctx.TextDiagnostics());
+                ctx.SynchronizePvp();
+                yield return ("PvP", ctx.Pvp.Diagnostics());
                 yield return ("Marker paths", ctx.MarkerRendering.Diagnostics());
                 yield return ("Glass", ctx.Blur.Status(Settings, false));
                 yield return ("Chrome", ctx.Chrome.TakeDiagnostics(Settings, ImGui.GetTime()));

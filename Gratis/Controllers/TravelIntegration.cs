@@ -38,10 +38,12 @@ internal sealed class TravelIntegration
         var teleport = pi.GetIpcSubscriber<uint, byte, bool>("Lifestream.Teleport");
         var abort = pi.GetIpcSubscriber<object>("Lifestream.Abort");
         var provider = new LifestreamTravelProvider(
-            () => busy.HasFunction && hop.HasFunction && teleport.HasFunction && abort.HasAction
+            () => !Service.ClientState.IsPvP && busy.HasFunction && hop.HasFunction && teleport.HasFunction && abort.HasAction
                 ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString() : null,
-            () => busy.InvokeFunc(), () => active.InvokeFunc(), id => hop.InvokeFunc(id),
-            (id, sub) => teleport.InvokeFunc(id, sub), () => abort.InvokeAction());
+            () => !Service.ClientState.IsPvP && busy.InvokeFunc(), () => Service.ClientState.IsPvP ? 0 : active.InvokeFunc(),
+            id => !Service.ClientState.IsPvP && hop.InvokeFunc(id),
+            (id, sub) => !Service.ClientState.IsPvP && teleport.InvokeFunc(id, sub),
+            () => { if (!Service.ClientState.IsPvP) abort.InvokeAction(); });
         Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save, GameTeleportService.BlockedReason);
         Ui.PinLayer = new PinOverlay(new PinStore(System.SystemConfig, () => {
             SystemConfig.Save(); System.MapWindow.PlacePalette.Invalidate();

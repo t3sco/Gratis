@@ -5,6 +5,8 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("frames-auto-fit", AutoFitVerification.Run),
+        ("frames-pvp", PvpVerification.Frames),
         ("interface-motion", InterfaceMotionVerification.Maths),
         ("interface-scroll", InterfaceMotionVerification.Scroll),
         ("interface-motion-config", InterfaceMotionVerification.Config),

@@ -99,7 +99,9 @@ public sealed partial class SettingsLayout
                     TestRows.Add((tweak.ConfigPath, new(pos.X, pos.Y, pos.X + width, pos.Y + 36 * s),
                         new(control.X, control.Y, control.X + 36 * s, control.Y + 36 * s)));
 #endif
+                    ImGui.BeginDisabled(tweak.Locked);
                     if (SettingsTheme.Toggle("##toggle", ref value, GratisTheme.WarmAccent)) { tweak.Set(config, value); changed = true; }
+                    ImGui.EndDisabled();
 #if GRATIS_PREVIEW
                     RecordTweakAction(tweak.Id + "/toggle");
 #endif

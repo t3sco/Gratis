@@ -12,6 +12,7 @@ public static class TempMapMarkerExtensions
         {
             Position = (new Vector2(marker.MapMarker.X, marker.MapMarker.Y) / 16.0f * DrawHelpers.GetMapScaleFactor() + DrawHelpers.GetCombinedOffsetVector()) * scale,
             Offset = offset,
+            Source = Rendering.MapMarkerSource.NativeTemporary,
             Scale = scale,
             IconId = marker.MapMarker.IconId,
             IsDynamicMarker = true,

@@ -22,6 +22,7 @@ public static class MapMarkerInfoExtensions {
             Position = new Vector2(marker.MapMarker.X, marker.MapMarker.Y) / 16.0f * scale +
                        DrawHelpers.GetMapCenterOffsetVector() * scale,
             Offset = offset,
+            Source = Rendering.MapMarkerSource.NativeStatic,
             Scale = scale,
             Radius = marker.MapMarker.Scale,
             RadiusColor = KnownColor.MediumPurple.Vector(),
@@ -72,6 +73,7 @@ public static class MapMarkerInfoExtensions {
     }
 
     private static void OnMarkerClicked(ref MapMarkerInfo marker) {
+        if (Service.ClientState.IsPvP) return;
         switch (marker.DataType) {
             case 1:
                 OnMapLinkMarkerClicked(ref marker);

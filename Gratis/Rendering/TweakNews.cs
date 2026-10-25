@@ -15,6 +15,8 @@ public sealed record TweakRelease(string Version, string Date, IReadOnlyList<str
 public static class TweakNews
 {
     public static IReadOnlyList<TweakRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new TweakRelease("3.2.3", "2026-10-25", Array.AsReadOnly(new[] { "pvp-map-only" }),
+            "Mandatory PvP marker-source policy; native map fallback and /gratis pvp diagnostics."),
         new TweakRelease("3.2.2", "2026-10-25", Array.AsReadOnly(new[] { "interface-motion" }), "One consistent motion language for controls, popovers, scrolling and hover opacity."),
         new TweakRelease("3.2.1", "2026-10-25", Array.AsReadOnly(new[] { "location-card", "coordinates-card" }),
             "Centre your location and coordinates together, with selectable area detail and player/cursor rows."),

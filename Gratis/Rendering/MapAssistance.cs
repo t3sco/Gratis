@@ -37,8 +37,8 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     private double cardCreated, cardUntil, cardDrawn;
     private bool playerMoving;
     private Vector2? anchorWorld;
-    private bool TravelReady => !playerMoving && canTravel() && !provider.IsBusy;
-    public string UnavailableReason => playerMoving ? "Stop moving to teleport" : !canTravel() ? blockedReason?.Invoke() ?? "Teleport unavailable" : provider.IsBusy ? "Already travelling" : "";
+    private bool TravelReady => !MapDrawContext.Current.IsPvP && !playerMoving && canTravel() && !provider.IsBusy;
+    public string UnavailableReason => MapDrawContext.Current.IsPvP ? "Travel unavailable in PvP" : playerMoving ? "Stop moving to teleport" : !canTravel() ? blockedReason?.Invoke() ?? "Teleport unavailable" : provider.IsBusy ? "Already travelling" : "";
     private uint pendingCost;
     private bool available;
     private readonly List<(Vector2 Min, Vector2 Max)> panelBounds = [];
@@ -49,6 +49,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     public void Prepare(MapDrawingConfig config, bool moving = false)
     {
+        if (MapDrawContext.Current.IsPvP) { InputActive = available = false; return; }
         playerMoving = moving;
         InputActive = config.IsGratis && TravelReady && panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false));
         panelBounds.Clear();
@@ -90,6 +91,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     public string Request(PlaceEntry place, bool confirmed = false)
     {
+        if (MapDrawContext.Current.IsPvP) { pending = null; return Message = "Travel unavailable in PvP"; }
         places.Refresh();
         if (!CanOffer(place)) return Message = "Travel is unavailable now.";
         if (!provider.Available && !place.IsShard) {
@@ -115,15 +117,16 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     public void Draw(IMapWindowHost host)
     {
-        if (!host.Config.IsGratis) return;
+        if (!host.Config.IsGratis || MapDrawContext.Current.IsPvP) return;
         OfferClickedObjective(host);
         DrawAetheryteChip(host);
         if (host.Config.TravelActions) {
-            if (available && provider.IsBusy) DrawProgress(host);
+            if (available) DrawProgress(host);
             DrawTravelCard(host);
         }
         PinLayer?.Draw(host, this);
-        InputActive |= PinLayer?.InputActive == true;
+        InputActive = panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false)) ||
+            PinLayer?.InputActive == true || PinLayer?.CapturesInput == true;
         if (PinLayer?.CapturesInput == true) CapturePinKeys?.Invoke();
     }
 
@@ -165,6 +168,9 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     private void DrawProgress(IMapWindowHost host)
     {
+        var busy = provider.IsBusy;
+        var alpha = UiMotion.Visibility(ImGui.GetID("##travel-progress"), busy);
+        if (!busy && alpha <= .001f) return;
         var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
         var size = new Vector2(MathF.Min(310 * s, max.X - min.X), 104 * s);
         var bounds = ChromeLayout.Place("travel-progress", size, host.Config.TravelCardAnchor);
@@ -173,7 +179,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
             CardHeading("Travelling", DestinationName.Length == 0 ? "Your destination" : DestinationName, "");
             if (QuietButton("Cancel")) { provider.Abort(); Message = "Travel cancelled."; }
             CancelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
-        });
+        }, interactive: busy);
     }
 
     private void DismissTravel() { hovered = pending = null; panelBounds.Clear(); InputActive = PinLayer?.CapturesInput == true; }

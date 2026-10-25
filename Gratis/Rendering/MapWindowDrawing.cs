@@ -32,7 +32,7 @@ public static class MapWindowDrawing
         if (surface is GlassSurface.Toolbar or GlassSurface.Title or GlassSurface.Coordinates)
             context.Trace?.Chrome(surface.ToString());
         var glass = config.IsGratis && config.GlassEnabled;
-        var effectiveAlpha = alpha * ImGui.GetStyle().Alpha;
+        var effectiveAlpha = alpha * ImGui.GetStyle().Alpha * (config.IsGratis ? UiMotion.BackdropAlpha : 1);
         if (!float.IsFinite(effectiveAlpha) || effectiveAlpha < 1 / 255f) {
             context.Blur.Refuse(BlurRefusal.Alpha, surface);
             return;

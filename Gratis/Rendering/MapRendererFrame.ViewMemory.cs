@@ -12,7 +12,7 @@ public sealed partial class MapRendererFrame
     private float restoreZoomVelocity;
     private double lastViewSave;
     private bool viewDirty;
-    public void RestoreMapViewOnOpen() => rememberedMap = null;
+    public void RestoreMapViewOnOpen() { rememberedMap = null; AutoFit.Invalidate(); }
     public string ViewMemoryDiagnostics() => $"map={host.MapId} rememberView/lens={host.Config.RememberMapView}/{host.Config.RememberMapLens} " +
         $"entries={ViewMemory.Normalize(host.Config.MapViews).Count}/{MapViewMemory.Capacity} restoring={restoringView is not null} follow={host.Config.FollowPlayer}";
 
@@ -23,7 +23,8 @@ public sealed partial class MapRendererFrame
         rememberedMap = host.MapId;
         restorePanVelocity = Vector2.Zero; restoreZoomVelocity = 0;
         var saved = ViewMemory.Find(host.Config, host.MapId, true);
-        restoringView = host.Config.RememberMapView ? saved : null;
+        restoringView = host.Config.RememberMapView && saved?.CanRestore(host.MapKey, host.ViewSession, host.InstanceMap, viewportTextureSize) == true ? saved : null;
+        if (restoringView is not null) { AutoFit.Manual(host.Now, "remembered manual view"); restoredMetadata = restoringView; }
         if (host.Config.RememberMapLens && saved is not null)
             host.Config.ActiveLens = Lenses.Find(host.Config, saved.Lens).Name;
     }
@@ -51,7 +52,8 @@ public sealed partial class MapRendererFrame
                 restoringView = null;
         }
         if (restoringView is null && !Spotlight.OwnsViewport)
-            viewDirty |= ViewMemory.Capture(config, host.MapId, Scale, DrawOffset, viewportSize);
+            viewDirty |= ViewMemory.Capture(config, host.MapId, Scale, DrawOffset, viewportSize,
+                AutoFit.Mode == ViewportViewMode.Manual, viewportTextureSize, host.MapKey, host.ViewSession);
         if (viewDirty && host.Now - lastViewSave >= 2) {
             MapDrawContext.Current.SaveConfig(); lastViewSave = host.Now; viewDirty = false;
         }
@@ -59,8 +61,11 @@ public sealed partial class MapRendererFrame
 
     private void RememberSpotlightReturn()
     {
+        ObserveViewIdentity();
+        if (!viewportReady) return;
         PrepareRememberedView();
         if (!Spotlight.OwnsViewport && restoringView is null)
-            ViewMemory.Capture(host.Config, host.MapId, Scale, DrawOffset, viewportSize.X > 0 ? viewportSize : host.Config.WindowSize);
+            ViewMemory.Capture(host.Config, host.MapId, Scale, DrawOffset, viewportSize.X > 0 ? viewportSize : host.Config.WindowSize,
+                AutoFit.Mode == ViewportViewMode.Manual, viewportTextureSize, host.MapKey, host.ViewSession);
     }
 }

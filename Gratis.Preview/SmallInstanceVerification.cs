@@ -45,7 +45,8 @@ internal static class SmallInstanceVerification
                 "Synthetic non-background bounds must preserve the room");
             Check(renderer.ZoomLimits.Small && MathF.Abs(renderer.Scale - renderer.ZoomLimits.Fit) < .001f, "Small room must start at padded content fit: " + renderer.ViewportDiagnostics());
             var origin = renderer.DrawPosition;
-            Check((origin + bounds.Min * renderer.Scale).X >= 30 && (origin + bounds.Max * renderer.Scale).X <= renderer.ViewportSize.X - 30,
+            var inset = ViewportMath.FitPadding(renderer.ViewportSize).X - .1f;
+            Check((origin + bounds.Min * renderer.Scale).X >= inset && (origin + bounds.Max * renderer.Scale).X <= renderer.ViewportSize.X - inset,
                 "Room must fit the narrow or wide frame with padding");
             foreach (var request in new[] { .0001f, 1000, float.NaN, 2, 80 }) {
                 renderer.SetViewportScale(request); renderer.CenterOnCoordinate(new(10000, -10000));
