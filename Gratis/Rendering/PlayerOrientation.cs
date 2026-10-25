@@ -5,7 +5,8 @@ namespace Gratis.Rendering;
 
 public enum PlayerArrowDirection { Camera, Character }
 
-public readonly record struct PlayerAngleSelection(float Character, float? Camera, float Raw, PlayerArrowDirection Source, bool Fallback);
+public readonly record struct PlayerAngleSelection(float Character, float? Camera, float Raw, PlayerArrowDirection Source, bool Fallback,
+    float? NativeConeDegrees, float? ManagerYaw, float CharacterRotation);
 
 public sealed class PlayerOrientation
 {
@@ -15,30 +16,41 @@ public sealed class PlayerOrientation
     public PlayerArrowDirection Preference { get; private set; }
     public long LastFrame { get; private set; } = -1;
     public static float CameraAngle(float yaw) => (float)PlayerHeading.Wrap(yaw - Math.PI / 2);
+    public static float NativeConeAngle(float degrees) => (float)PlayerHeading.Wrap(-degrees * Math.PI / 180 - Math.PI / 2);
     public static float CharacterAngle(float rotation) => (float)PlayerHeading.Wrap(-rotation + Math.PI / 2);
-    public static PlayerAngleSelection Select(PlayerArrowDirection preference, float characterRotation, float? cameraYaw)
+    public static PlayerAngleSelection Select(PlayerArrowDirection preference, float characterRotation, float? cameraYaw, float? nativeConeDegrees = null)
     {
         var character = CharacterAngle(float.IsFinite(characterRotation) ? characterRotation : 0);
-        float? camera = cameraYaw is { } yaw && float.IsFinite(yaw) ? CameraAngle(yaw) : null;
+        float? cone = nativeConeDegrees is { } value && float.IsFinite(value) ? value : null;
+        float? camera = cone is { } degrees ? NativeConeAngle(degrees) : null;
         var useCamera = preference == PlayerArrowDirection.Camera && camera.HasValue;
         return new(character, camera, useCamera ? camera!.Value : character,
-            useCamera ? PlayerArrowDirection.Camera : PlayerArrowDirection.Character, preference == PlayerArrowDirection.Camera && !useCamera);
+            useCamera ? PlayerArrowDirection.Camera : PlayerArrowDirection.Character, preference == PlayerArrowDirection.Camera && !useCamera,
+            cone, cameraYaw is { } yaw && float.IsFinite(yaw) ? yaw : null, characterRotation);
     }
     public float Advance(MapDrawingConfig config, float characterRotation, float? cameraYaw, double now,
-        long frame, ulong map, Vector3 position)
+        long frame, ulong map, Vector3 position, float? nativeConeDegrees = null)
     {
         if (frame >= 0 && LastFrame == frame) {
             Smoothing.Advance(Selection.Raw, now, config.PlayerArrowSmoothing, map, position, config.ReduceMotion || !config.IsGratis, frame);
             return Angle;
         }
         Preference = config.IsGratis ? config.ArrowPoints : PlayerArrowDirection.Character;
-        Selection = Select(Preference, characterRotation, cameraYaw);
+        Selection = Select(Preference, characterRotation, cameraYaw, nativeConeDegrees);
         LastFrame = frame;
         Angle = Smoothing.Advance(Selection.Raw, now, config.PlayerArrowSmoothing, map, position, config.ReduceMotion || !config.IsGratis, frame);
         return Angle;
     }
-    public string CameraDiagnostics(string readState) => FormattableString.Invariant(
-        $"cameraAngle={Degrees(Selection.Camera)} characterAngle={Degrees(Selection.Character)} requested={Preference} source={Selection.Source} fallback={Selection.Fallback} cameraRead={readState} lastDrawFrame={LastFrame} (degrees, east=0 clockwise)");
+    public string CameraDiagnostics(string readState)
+    {
+        var estimate = Selection.ManagerYaw is { } yaw ? CameraAngle(yaw) : (float?)null;
+        var mismatch = estimate is { } manager && Selection.Camera is { } camera ? (float?)PlayerHeading.Wrap(manager - camera) : null;
+        return $"nativeConeRotation={Selection.NativeConeDegrees?.ToString("0.##", global::System.Globalization.CultureInfo.InvariantCulture) ?? "unavailable"}deg " +
+            $"cameraManagerYaw={Degrees(Selection.ManagerYaw)}deg managerEstimate={Degrees(estimate)}deg managerVsCone={Degrees(mismatch)}deg " +
+            $"characterRotation={Degrees(Selection.CharacterRotation)}deg cameraAngle={Degrees(Selection.Camera)} characterAngle={Degrees(Selection.Character)} " +
+            $"finalArrowAngle={Degrees(Angle)} requested={Preference} source={Selection.Source} fallback={Selection.Fallback} " +
+            $"cameraRead={readState} cameraContract=native-map-cone lastDrawFrame={LastFrame} (map angles: degrees, east=0 clockwise)";
+    }
     public string MotionDiagnostics(MapDrawingConfig config, string clock = "host") => Smoothing.Diagnostics() +
         $" source={Selection.Source} fallback={Selection.Fallback} reduceMotion={config.ReduceMotion} classicBypass={!config.IsGratis} " +
         $"bypass={(!config.IsGratis ? "Classic" : config.ReduceMotion ? "ReduceMotion" : config.PlayerArrowSmoothing == PlayerArrowSmoothing.Off ? "Off" : "none")} clock={clock}";

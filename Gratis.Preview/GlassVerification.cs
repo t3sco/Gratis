@@ -86,7 +86,7 @@ internal static class GlassVerification
             if (frame == 1) {
                 Require(context.Blur.SurfaceStatus(GlassSurface.Toolbar) == "blurred" && context.Blurs.Count == 1 &&
                     context.Blurs[0].List == parent, $"{(segmented ? "Pill" : "Standard")} glass uses the map list");
-                if (segmented) Require(context.Blurs[0].Max - context.Blurs[0].Min == new Vector2(3 * GratisTheme.ControlHeight + 8, GratisTheme.ToolbarHeight), "Full pill rim escapes the child inset clip");
+                if (segmented) Require(context.Blurs[0].Max - context.Blurs[0].Min == new Vector2(MapToolbarDrawing.CollapsedWidth(3), GratisTheme.ToolbarHeight), "Full pill rim escapes the child inset clip");
             }
             ImGui.End(); ImGui.Render();
         }

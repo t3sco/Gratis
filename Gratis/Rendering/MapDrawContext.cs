@@ -72,7 +72,7 @@ public abstract class MapDrawContext
     public virtual IDrawFont? GetIconFont(float size) => null;
     public virtual bool TryIconGlyphBounds(char glyph, out Vector4 bounds) => DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out bounds);
     public virtual string IconFontDiagnostics() => "icon-fonts=host-unavailable";
-    public virtual string TextDiagnostics() => $"text fontChoice={Config.FrameFont} uiScale={GlobalScale:0.###} " +
+    public virtual string TextDiagnostics() => $"text face={(Config.IsGratis ? "Geist-Regular" : "Classic")} legacyFontChoice={Config.FrameFont}(ignored-in-Gratis) uiScale={GlobalScale:0.###} " +
         $"nativePixels=true positionSnap=integer sizeLadder=[{string.Join(",", TextDrawing.Sizes)}] {TextDrawing.LastDraw}";
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);
     public abstract float SettingsButtonWidth { get; }

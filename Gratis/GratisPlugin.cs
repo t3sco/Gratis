@@ -1,4 +1,3 @@
-using Dalamud.Interface.GameFonts;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiLib.Classes;
@@ -24,14 +23,6 @@ public sealed class GratisPlugin : IDalamudPlugin
         pluginInterface.Create<Service>();
         reportLogger = new Gratis.Classes.ReportPluginLog(Service.Log, reportLogs);
         Service.Log = reportLogger;
-
-        System.LargeAxisFontHandle = Service.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle
-        {
-            SizePt = 72.0f,
-            FamilyAndSize = GameFontFamilyAndSize.Axis36,
-            Italic = true,
-            BaseSkewStrength = 16f,
-        });
 
         System.SystemConfig = SystemConfig.Load();
         System.IconConfig = IconConfig.Load();

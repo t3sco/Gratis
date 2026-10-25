@@ -126,14 +126,15 @@ public sealed partial class MapWindowFrame
             host.Renderer.UpdateFollowInteraction(!moveBlocked && mapInteracting,
                 !moveBlocked && mouseOverFrame, mapFocused, host.PlayerPosition);
             if (host.Config.IsGratis) MapDrawContext.Current.Visibility.BeginFrame(MapDrawContext.Current);
-            using (var moveInput = new MoveHandleInput.InputScope(moveBlocked || paletteInput)) {
-            using (var measureInput = new MoveHandleInput.InputScope(measureGesture)) DrawMapElements(host);
+            using (var moveInput = new MoveHandleInput.InputScope(moveBlocked)) {
+            using (var measureInput = new MoveHandleInput.InputScope(measureGesture || paletteInput)) DrawMapElements(host);
 
             ImGui.SetCursorPos(Vector2.Zero);
             ImGui.Dummy(Vector2.Zero);
             if (host.Config.IsGratis) DrawFrameEffects();
             MapDrawContext.Current.Trace?.Chrome("toolbar-call");
             DrawToolbar(host);
+            using (var paletteBlock = new MoveHandleInput.InputScope(paletteInput)) {
             MapDrawContext.Current.Trace?.Chrome("coordinates-call");
             DrawCoordinateBar(host);
             if (!host.Config.IsGratis) DrawFrameEffects();
@@ -146,6 +147,7 @@ public sealed partial class MapWindowFrame
             MoveHandle.Draw(host.Config);
             MapDrawContext.Current.Measure.Draw(host, MoveHandle.Geometry);
             MapDrawContext.Current.EdgePointers.Draw(host);
+            }
             }
             if (!MapDrawContext.Current.Measure.InputActive) MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.DrawHint(host.Config);
@@ -204,6 +206,7 @@ public sealed partial class MapWindowFrame
 
     private bool ShouldShowToolbar(IMapWindowHost host)
     {
+        if (host.Config.IsGratis && host.Palette?.IsOpen == true) return true;
         if (host.Config.IsGratis && (host.Config.AutoHideChrome || host.Config.PinChrome))
             return MapDrawContext.Current.Chrome.ControlsAlpha(host.Config) * ImGui.GetStyle().Alpha >= .05f;
         if (isDragStarted) return false;

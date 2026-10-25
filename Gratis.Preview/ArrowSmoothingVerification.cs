@@ -27,9 +27,9 @@ internal static class ArrowSmoothingVerification
         var config = new MapDrawingConfig { PlayerArrowSmoothing = PlayerArrowSmoothing.High };
         Check(!config.ReduceMotion, "Reduce motion must default off");
         var orientation = new PlayerOrientation();
-        orientation.Advance(config, 0, MathF.PI / 2, 0, 0, 1, Vector3.Zero);
+        orientation.Advance(config, 0, MathF.PI / 2, 0, 0, 1, Vector3.Zero, -90);
         for (var i = 1; i <= 90; i++)
-            orientation.Advance(config, 0, MathF.PI, i / 60d, i, 1, new(i * .1f, 0, 0));
+            orientation.Advance(config, 0, MathF.PI, i / 60d, i, 1, new(i * .1f, 0, 0), -180);
         var h = orientation.Smoothing;
         Check(h.ResetCount == 1 && h.LastResetReason == "initial-sample", "Walking/camera updates must not reset every frame");
         Check(h.AdvanceCallsPerFrame == 1 && h.IntegratedCallsPerFrame == 1 && h.Tau == .5, "Exactly one valid integration per frame");
@@ -40,10 +40,10 @@ internal static class ArrowSmoothingVerification
         orientation.Advance(config, 0, null, 91 / 60d, 91, 1, new(9.1f, 0, 0));
         Check(orientation.Selection.Fallback && h.ResetCount == 1, "Temporary camera fallback must keep the smoother alive");
         config.ReduceMotion = true;
-        var raw = PlayerOrientation.CameraAngle(0);
-        Check(orientation.Advance(config, 0, 0, 92 / 60d, 92, 1, new(9.2f, 0, 0)) == raw && h.LastResetReason == "reduce-motion-enabled", "Reduce motion intentionally bypasses");
+        var raw = PlayerOrientation.NativeConeAngle(0);
+        Check(orientation.Advance(config, 0, 0, 92 / 60d, 92, 1, new(9.2f, 0, 0), 0) == raw && h.LastResetReason == "reduce-motion-enabled", "Reduce motion intentionally bypasses");
         var resets = h.ResetCount;
-        orientation.Advance(config, 0, 0, 93 / 60d, 93, 1, new(9.3f, 0, 0));
+        orientation.Advance(config, 0, 0, 93 / 60d, 93, 1, new(9.3f, 0, 0), 0);
         Check(h.ResetCount == resets, "Reduced frames must not inflate reset counts");
         Check(orientation.MotionDiagnostics(config).Contains("bypass=ReduceMotion") && orientation.MotionDiagnostics(config).Contains("AdvanceCallsPerFrame=1"), "Diagnostics must expose the actual bypass and frame calls");
         var reset = new PlayerHeading();

@@ -297,6 +297,7 @@ public static class DrawHelpers
     private static unsafe void DrawTooltip(MarkerInfo markerInfo)
     {
         if (MapDrawContext.Current.ReportCapture) return;
+        using var textFont = MapDrawContext.Current.Config.IsGratis ? MapDrawContext.Current.GetChromeFont(14 * MapDrawContext.Current.GlobalScale, ChromeFontRole.Body)?.Push() : null;
         if (MapDrawContext.Current.GetIconSetting(markerInfo.IconId) is { AllowTooltip: false } && !DebugMode) {
             return;
         }

@@ -18,7 +18,6 @@ public partial class MapDrawingConfig
     [JsonIgnore] public bool ViewportSmallMap { get; set; }
 
     public bool Palette = true;
-    public string PaletteShortcut = "Ctrl+K";
     public bool PaletteTeleportButton = true;
     public bool PaletteShowUnattuned = true;
     public int PaletteMaxResults = 8;

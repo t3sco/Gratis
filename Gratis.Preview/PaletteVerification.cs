@@ -74,19 +74,21 @@ internal static class PaletteVerification
 
     public static void Frames()
     {
+        ToolbarSearchVerification.Run();
         using (var driver = new ScriptedFrameDriver(Config(), new FrameScript { Palette = true })) {
             driver.Step(new(0)); driver.Step(new(.02)); driver.Step(new(2));
             driver.Step(new(2.1, Control: true, Keys: [ImGuiKey.K]));
             var overlay = driver.Palette!;
-            Require(overlay.IsOpen, "Ctrl+K opens when map focused");
-            driver.Step(new(2.12, Control: false)); driver.Step(new(2.14, Text: "limsa"));
+            Require(!overlay.IsOpen, "Ctrl+K is never handled");
+            overlay.Open();
+            driver.Step(new(2.12, Control: false)); driver.Step(new(2.13)); driver.Step(new(2.14, Text: "limsa"));
             Require(overlay.Query == "limsa" && overlay.Results.Count > 0, "Native text input filters");
             driver.Step(new(2.16, Keys: [ImGuiKey.DownArrow]));
             Require(overlay.Selected == 1, "Arrow navigation");
             var target = overlay.Results[overlay.Selected].Place;
             driver.Step(new(2.18)); driver.Step(new(2.2, Keys: [ImGuiKey.Enter]));
             Require(!overlay.IsOpen && driver.PlaceSource!.Shown == target, "Enter selects and closes");
-            driver.Step(new(2.22)); driver.Step(new(2.24, Control: true, Keys: [ImGuiKey.K])); driver.Step(new(2.26, Control: false));
+            driver.Step(new(2.22)); overlay.Open(); driver.Step(new(2.24)); driver.Step(new(2.26, Control: false));
             var before = driver.Snapshot(); var point = (overlay.PanelMin + overlay.PanelMax) / 2;
             driver.Step(new(2.28, Mouse: point, Left: true, Wheel: 1));
             var during = driver.Step(new(2.3, Mouse: point + new Vector2(30, 40)));
@@ -96,8 +98,8 @@ internal static class PaletteVerification
             driver.Step(new(2.32, Left: false, Escape: true)); Require(!overlay.IsOpen, "Esc closes palette");
             driver.Step(new(2.325, Escape: true)); driver.Step(new(2.33, Escape: true));
             Require(overlay.CapturesInput, "Held Escape remains consumed until release, protecting the underlying map");
-            driver.Step(new(2.34, Mouse: new(-1000))); driver.Step(new(2.36, Control: true, Keys: [ImGuiKey.K]));
-            Require(overlay.IsOpen, "Esc restores map focus for shortcut");
+            driver.Step(new(2.34, Mouse: new(-1000))); overlay.Open(); driver.Step(new(2.36));
+            Require(overlay.IsOpen, "Esc restores map focus for reopening search");
             driver.Step(new(2.38, Control: false, Escape: true)); driver.Step(new(2.4));
             driver.Config.PinChrome = true;
             driver.Step(new(2.41));
@@ -134,7 +136,7 @@ internal static class PaletteVerification
             driver.Config.PinChrome = false;
             driver.Step(new(4, Focused: true, Mouse: driver.Window.MoveHandle.Geometry.Center));
             Require(driver.Window.MoveHandle.BlocksMapInput, "Fixture hovered the actual move handle");
-            driver.Step(new(4.02, Control: true, Keys: [ImGuiKey.K]));
+            overlay.Open(); driver.Step(new(4.02));
             driver.Step(new(4.04, Control: false, Mouse: new(-1000))); var idle = driver.Step(new(6));
             Require(overlay.IsOpen && idle.ChromeProgress == 0, "Opening from a hovered move handle must release stale move ownership and allow chrome to hide");
         }

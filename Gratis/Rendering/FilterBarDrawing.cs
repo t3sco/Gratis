@@ -22,6 +22,7 @@ public static class FilterBarDrawing
     public static Vector4 OverflowBounds { get; private set; }
     public static Vector4 SettingsBounds { get; private set; }
     public static Vector4 DeclutterBounds { get; private set; }
+    public static Vector4 PopoverBounds { get; private set; }
     public static Vector4[] ChipBounds { get; } = new Vector4[MarkerVisibility.GroupCount];
     public static bool Hovered { get; private set; }
     public static bool InputActive { get; private set; }
@@ -41,9 +42,7 @@ public static class FilterBarDrawing
     private static void Tooltip(string text)
     {
         LastTooltip = text;
-        using var style = new ChromePopupStyle();
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale, ChromeFontRole.Body)?.Push();
-        ImGui.BeginTooltip(); ImGui.TextUnformatted(text); ImGui.EndTooltip();
+        ChromeControls.Tooltip(text, windowBounds: MapToolbarDrawing.WindowBounds);
     }
     private static bool ShowGroup(MarkerGroup group) => MapDrawContext.Current.Config.FilterOptions.Contains(group) &&
         (MapDrawContext.Current.Visibility.Counts[(int)group] > 0 || MapDrawContext.Current.Visibility.Overrides[(int)group] == MarkerVisibilityState.Hidden);
@@ -91,13 +90,15 @@ public static class FilterBarDrawing
         LastBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
         OverflowBounds = new(pos.X, pos.Y, pos.X + triggerWidth, pos.Y + button);
         var onButton = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(triggerWidth, button), false);
+        var toolbar = MapToolbarDrawing.ButtonBounds[2];
+        onButton |= toolbar != Vector4.Zero && ImGui.IsMouseHoveringRect(new(toolbar.X, toolbar.Y), new(toolbar.Z, toolbar.W), false);
         var close = popupFrame >= ImGui.GetFrameCount() - 1 && onButton && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
         if (close) suppressOpen = true;
         ImGui.SetCursorScreenPos(pos);
         var clicked = ChromeControls.Button("##filter-overflow", new Vector2(triggerWidth, button));
         Hovered |= ImGui.IsItemHovered();
         if (ReferenceEquals(toggleContext, context)) {
-            if (popupFrame >= ImGui.GetFrameCount() - 1) close = true; else ImGui.OpenPopup(Popup);
+            if (popupFrame >= ImGui.GetFrameCount() - 1) close = true; else if (!suppressOpen) ImGui.OpenPopup(Popup);
             toggleContext = null;
         }
         if (clicked && !suppressOpen) ImGui.OpenPopup(Popup);
@@ -143,13 +144,15 @@ public static class FilterBarDrawing
     private static void DrawPopover(Vector2 anchor, float button, float stride, int visible, bool close)
     {
         var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
-        var viewport = ImGui.GetWindowViewport(); var min = viewport.Pos + new Vector2(GratisTheme.Inset * s);
-        var max = viewport.Pos + viewport.Size - new Vector2(GratisTheme.Inset * s);
+        var (min, max) = ChromeLayout.SafeBounds();
         var budget = Math.Clamp((int)((max.X - min.X - 24 * s) / stride), 1, 7);
         var columns = Math.Clamp(visible + 1, 1, budget); var rows = (visible + columns) / columns;
         var size = new Vector2(MathF.Min(MathF.Max(240 * s, columns * stride + 20 * s), max.X - min.X), MathF.Min(rows * stride + 60 * s, max.Y - min.Y));
-        var top = context.Config.FilterBarAnchor < ChromeAnchor.BottomLeft ? anchor.Y + button + 8 * s : anchor.Y - size.Y - 8 * s;
-        ImGui.SetNextWindowPos(Vector2.Clamp(new(anchor.X, top), min, Vector2.Max(min, max - size)));
+        var toolbar = MapToolbarDrawing.ButtonBounds[2];
+        var trigger = toolbar != Vector4.Zero ? toolbar : new Vector4(anchor.X, anchor.Y, anchor.X + button, anchor.Y + button);
+        PopoverBounds = ChromePopoverMath.Place(trigger, size, min, max, GratisTheme.Gap * s);
+        size = new(PopoverBounds.Z - PopoverBounds.X, PopoverBounds.W - PopoverBounds.Y);
+        ImGui.SetNextWindowPos(new(PopoverBounds.X, PopoverBounds.Y));
         ImGui.SetNextWindowSize(size);
         using var style = new ChromePopupStyle(transparent: true);
         if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) return;

@@ -16,6 +16,7 @@ internal static partial class Program
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
             if (args is ["--selftest", var test]) return RunSelftests(test);
+            if (TryWindowPresetsScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             if (TryArrowSmoothingScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             if (TryCameraScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
             if (TrySmallInstanceScene(args)) { ImGuiErrors.ThrowIfNewErrors(0); return 0; }
@@ -40,7 +41,7 @@ internal static partial class Program
     private static unsafe void Run(Options options, bool chromeSelftest = false)
     {
         if (IsLensScene(options.Scene)) { RenderLensScene(options); return; }
-        if (options.Scene.StartsWith("settings-", StringComparison.Ordinal)) { RenderSettings(options); return; }
+        if (options.Scene.StartsWith("settings-", StringComparison.Ordinal) || options.Scene.StartsWith("tweaks-", StringComparison.Ordinal)) { RenderSettings(options); return; }
         if (options.Scene is "spotlight" or "spotlight-circular") { RenderSpotlightSheet(options); return; }
         if (options.Scene == "player-heading") { RenderHeadingSheet(options); return; }
         if (options.Scene == "map-recolor-sheet") { RenderRecolourSheet(options); return; }
@@ -280,7 +281,7 @@ internal static partial class Program
                     default: throw new ArgumentException($"Unknown option {key}.");
                 }
             }
-            if (!IsLensScene(scene) && scene is not ("player-heading" or "player-heading-frame") && !FollowScenes.Contains(scene) && !Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
+            if (!IsLensScene(scene) && scene is not ("player-heading" or "player-heading-frame" or "tweaks-page" or "tweaks-page-search" or "tweaks-whatsnew") && !FollowScenes.Contains(scene) && !Scenes.Contains(scene) && !IsViewportScene(scene) && !FrameScenes.Contains(scene) && !IsMarkerScene(scene) && !IsMotionScene(scene)) throw new ArgumentException($"Unknown scene '{scene}'. Expected {string.Join(", ", Scenes.Concat(ViewportScenes).Concat(FrameScenes))}.");
             if (width < 320 || height < 240 || width > 8192 || height > 8192 || (long)width * height > 16777216)
                 throw new ArgumentException("Size must be 320x240 to 8192x8192, with at most 16 megapixels.");
             if (map is not null && (!File.Exists(map) || !Path.GetExtension(map).Equals(".png", StringComparison.OrdinalIgnoreCase)))

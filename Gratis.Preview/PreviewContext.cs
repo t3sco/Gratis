@@ -30,6 +30,8 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     private readonly Dictionary<(ChromeFontRole Role, int Size), ImFontPtr> chromeFonts = [];
     private readonly Dictionary<ImFontPtr, Font> textFontScopes = [];
     private ImFontPtr defaultTextFont;
+    public FontAtlasBudget TextBudget { get; } = new(FontAtlasBudget.MaximumTextHandles, FontAtlasBudget.MaximumArea / 2);
+    private global::System.Runtime.InteropServices.GCHandle textRanges;
     public bool TextFontsReady { get; set; } = true;
     public override MapDrawingConfig Config { get; } = config ?? new() {
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
@@ -47,11 +49,11 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public bool IconFontsEnabled { get; set; } = true;
     public char MissingIconGlyph { get; set; }
     private global::System.Runtime.InteropServices.GCHandle iconRanges;
-    public void Dispose() { if (iconRanges.IsAllocated) iconRanges.Free(); }
+    public void Dispose() { if (iconRanges.IsAllocated) iconRanges.Free(); if (textRanges.IsAllocated) textRanges.Free(); }
     public override IDrawFont? GetIconFont(float size)
     {
         if (!Config.IsGratis || !IconFontsEnabled) return null;
-        var pixels = TextDrawing.PixelSize(size);
+        var pixels = TextDrawing.IconPixelSize(size);
         var nearest = -1;
         foreach (var entry in iconFonts)
             if (nearest < 0 || Math.Abs(entry.Key - pixels) < Math.Abs(nearest - pixels)) nearest = entry.Key;
@@ -74,7 +76,7 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
         try {
             defaultTextFont = atlas.AddFontFromFileTTF(path, 18);
             textFontScopes[defaultTextFont] = new Font(defaultTextFont);
-            foreach (var size in Config.IsGratis && Config.FrameFont != 0 ? TextDrawing.Sizes : new[] { 14, 18 }) {
+            foreach (var size in Config.IsGratis ? Array.Empty<int>() : new[] { 14, 18 }) {
                 fonts[size] = atlas.AddFontFromFileTTF(path, size, Config.IsGratis ? new ImFontConfigPtr(fontConfig) : default);
                 textFontScopes[fonts[size]] = new Font(fonts[size]);
             }
@@ -82,13 +84,23 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
                 var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
                 if (File.Exists(iconPath)) {
                     iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
-                    foreach (var size in TextDrawing.Sizes) {
+                    foreach (var size in TextDrawing.IconSizes) {
                         iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, new ImFontConfigPtr(fontConfig), iconRanges.AddrOfPinnedObject());
                         iconDrawFonts[size] = new Font(iconFonts[size]);
                     }
                 }
             }
-            foreach (var role in Enum.GetValues<ChromeFontRole>()) {
+            if (Config.IsGratis) {
+                textRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(FontAtlasBudget.TextRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
+                foreach (var size in TextDrawing.Sizes) {
+                    if (!TextBudget.Reserve(10, size, FontAtlasBudget.TextGlyphs)) throw new InvalidOperationException("Geist inventory exceeded its budget");
+                    var font = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Geist-Regular.ttf"), size,
+                        new ImFontConfigPtr(fontConfig), textRanges.AddrOfPinnedObject());
+                    textFontScopes[font] = new Font(font);
+                    foreach (var role in Enum.GetValues<ChromeFontRole>()) chromeFonts[(role, size)] = font;
+                }
+            }
+            else foreach (var role in Enum.GetValues<ChromeFontRole>()) {
                 var filename = role switch {
                     ChromeFontRole.Title => "Geist-SemiBold.ttf", ChromeFontRole.Chip => "Geist-Medium.ttf",
                     ChromeFontRole.Coordinates => "GeistMono-Regular.ttf", _ => "Geist-Regular.ttf",
@@ -139,10 +151,11 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     }
     public override bool PrepareMarker(MarkerInfo marker) => !GetIconSetting(marker.IconId).Hide || Config.IsGratis && MarkerVisibility.IsPriority(marker);
     public override bool IsRadiusHovered(Vector2 center, float radius) => Vector2.Distance(ImGui.GetMousePos(), center) <= radius && ImGui.IsWindowHovered();
-    public override IDisposable? PushLargeFont() => null;
+    public override IDisposable? PushLargeFont() => Config.IsGratis ? GetChromeFont(24, ChromeFontRole.Body)?.Push() : null;
     public override IDisposable PushDefaultTextFont() => textFontScopes[defaultTextFont].Push();
     public override IDrawFont? GetTitleFont(int choice, float size)
     {
+        if (Config.IsGratis) return GetChromeFont(size, ChromeFontRole.Body);
         if (choice <= 0) return null;
         var nearest = -1;
         foreach (var entry in fonts)
@@ -153,9 +166,14 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     {
         if (!Config.IsGratis) return null;
         if (!TextFontsReady) return textFontScopes[defaultTextFont];
-        if (Config.FrameFont != 0) return GetTitleFont(Config.FrameFont == 2 ? 0 : 1, size);
         return chromeFonts.TryGetValue((role, TextDrawing.PixelSize(size)), out var font)
             ? textFontScopes[font] : textFontScopes[defaultTextFont];
+    }
+    public override string TextDiagnostics()
+    {
+        long iconArea = 0;
+        foreach (var size in iconFonts.Keys) iconArea += FontAtlasBudget.Estimate(size, GratisIcons.GlyphRanges.Length / 2);
+        return base.TextDiagnostics() + $" handles={TextBudget.Count}/{FontAtlasBudget.MaximumTextHandles} estimatedArea={TextBudget.EstimatedArea + iconArea}/{FontAtlasBudget.MaximumArea}px textArea={TextBudget.EstimatedArea} iconArea={iconArea} budgetWarning={TextBudget.Denied > 0 || TextBudget.EstimatedArea + iconArea > FontAtlasBudget.MaximumArea / 2} denied={TextBudget.Denied}";
     }
 
     private sealed class Font(ImFontPtr font) : IDrawFont

@@ -22,13 +22,13 @@ internal static class ChromePolishVerification
         void Click(Vector2 mouse) { Step(mouse); Step(mouse, true); Step(mouse, false); Step(mouse); }
         Step(); Step();
         var toolbar = MapToolbarDrawing.LastBounds;
-        Require(toolbar.Z - toolbar.X == 6 * GratisTheme.ControlHeight + 8 && driver.Trace.WidgetCount == 6,
+        Require(toolbar.Z - toolbar.X == MapToolbarDrawing.CollapsedWidth(6) && driver.Trace.WidgetCount == 6,
             "Six deliberate toolbar concepts replace the busy navigation row");
-        Click(new(toolbar.X + 4 + 1.5f * GratisTheme.ControlHeight, toolbar.Y + GratisTheme.ToolbarHeight / 2));
+        Click(Center(MapToolbarDrawing.ButtonBounds[1]));
         Require(MapToolbarDrawing.MapMenuOpen, "Lens button opens the lens/navigation menu");
         driver.Step(new(time += .04, Escape: true)); Step();
         toolbar = MapToolbarDrawing.LastBounds;
-        Click(new(toolbar.X + 4 + 2.5f * GratisTheme.ControlHeight, toolbar.Y + GratisTheme.ToolbarHeight / 2));
+        Click(Center(MapToolbarDrawing.ButtonBounds[2]));
         Require(FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds[(int)MarkerGroup.Quests] != Vector4.Zero,
             $"Toolbar Filters opens the same drawer as the bottom trigger: open={FilterBarDrawing.PopoverOpen}, lens={MapToolbarDrawing.MapMenuOpen}, quests={driver.Context.Visibility.Counts[(int)MarkerGroup.Quests]}");
         Require(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Housing] == Vector4.Zero, "Empty map groups do not crowd the drawer");

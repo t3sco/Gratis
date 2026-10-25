@@ -13,7 +13,7 @@ using Gratis.Rendering;
 namespace Gratis.Classes.MapWindowComponents;
 
 public unsafe class MapToolbar {
-    public void Draw() => Rendering.MapToolbarDrawing.Draw(Activate, DrawLayersContextMenu);
+    public void Draw() => Rendering.MapToolbarDrawing.Draw(Activate, DrawLayersContextMenu, System.MapWindow.PlacePalette.Overlay);
 
     private static void Activate(Rendering.ToolbarAction action)
     {

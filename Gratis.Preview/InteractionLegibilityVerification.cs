@@ -131,6 +131,6 @@ internal static class InteractionLegibilityVerification
             "Invalid saved size must fall back safely");
         ImGui.End();
         ImGui.Render();
-        Console.WriteLine("Text: native atlas sizes for all Geist/Mono roles and label sizes, pixel origins and invalid-size fallback passed.");
+        Console.WriteLine("Text: shared regular Geist sizes for every role/label, pixel origins and invalid-size fallback passed.");
     }
 }

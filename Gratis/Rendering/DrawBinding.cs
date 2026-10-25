@@ -9,6 +9,16 @@ namespace Gratis.Rendering;
 
 internal static class DrawBinding
 {
+    public static unsafe float GlyphAdvance(ImFontPtr font, char codepoint)
+    {
+#if GRATIS_PREVIEW
+        var glyph = (float*)font.FindGlyph(codepoint).NativePtr;
+        return glyph == null ? 0 : glyph[1];
+#else
+        var glyph = font.FindGlyph(codepoint);
+        return glyph == null ? 0 : glyph->AdvanceX;
+#endif
+    }
     public static unsafe bool ValidTextFont(ImFontPtr font)
     {
 #if GRATIS_PREVIEW

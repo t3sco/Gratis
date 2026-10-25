@@ -27,7 +27,6 @@ public sealed partial class SettingsLayout
         Add("MapCircle", "Circular map");
         Group("Appearance", "Gratis style", Gratis);
         Add("AccentColor", "Accent colour");
-        Add("FrameFont", "Chrome font", choices: "Geist|Noto Sans|Game");
         Add("FramePreset", "Frame preset", choices: "Hairline|Double ring|Inset glow|Notched corners|Soft shadow|None",
             tip: "The preset owns the frame edge and stays visible when controls fade.");
         Add("NeutralFrame", "Use Gratis frame", tip: "Disable with Hairline to use the conic ring and saved legacy edge. Legacy edge styling is editable in Classic.");
@@ -107,7 +106,6 @@ public sealed partial class SettingsLayout
         Add("AutoZoomScaleFactor", "Auto zoom factor", .2f, 1, "%.2fx", when: c => c.AutoZoom);
         Group("Map", "Place search", Gratis);
         Add("Palette", "Command palette");
-        Add("PaletteShortcut", "Search shortcut", tip: "Ctrl+K by default; supports Ctrl, Shift, Alt and a letter, for example Ctrl+Shift+P.");
         Add("PaletteTeleportButton", "Allow palette teleports", tip: "Show locations with Enter. Alt+Enter teleports only when attuned and the game permits it.");
         Add("PaletteShowUnattuned", "Show unattuned aetherytes");
         Add("PaletteImagery", "Location imagery", tip: "Load location artwork from the game. A flat illustrated placeholder appears while loading or when unavailable.");

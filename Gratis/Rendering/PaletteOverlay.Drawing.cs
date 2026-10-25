@@ -16,14 +16,15 @@ public sealed partial class PaletteOverlay
         if (!IsOpen || !config.IsGratis || !config.Palette) return;
         Search(config);
         var scale = GratisTheme.ChromeScale;
-        var (min, max) = Classes.MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        var (min, max) = ChromeLayout.SafeBounds();
         var area = max - min;
-        if (config.MapCircle) { var inset = area * ((1 - .70710678f) / 2); min += inset; max -= inset; area = max - min; }
         var rows = Math.Clamp(results.Length, 2, Math.Clamp(config.PaletteMaxResults, 2, 12));
-        var size = Vector2.Min(new Vector2(940, Home ? 740 : 178 + rows * 80) * scale,
+        var size = Vector2.Min(new Vector2(940, Home ? 740 : 118 + rows * 80) * scale,
             Vector2.Max(Vector2.One, area - new Vector2(GratisTheme.Gap * 2 * scale)));
-        PanelMin = min + (area - size) / 2; PanelMax = PanelMin + size;
-        if (size.X < 150 * scale || size.Y < 112 * scale) return;
+        var anchor = FieldBounds.Z > FieldBounds.X ? FieldBounds : MapToolbarDrawing.LastBounds;
+        var bounds = ChromePopoverMath.Place(anchor, size, min, max, GratisTheme.Gap * scale);
+        PanelMin = new(bounds.X, bounds.Y); PanelMax = new(bounds.Z, bounds.W); size = PanelMax - PanelMin;
+        if (size.X < 100 * scale || size.Y < 64 * scale) return;
         using var font = MapDrawContext.Current.GetChromeFont((GratisTheme.TextSize + 2) * scale, ChromeFontRole.Body)?.Push();
         var list = ImGui.GetWindowDrawList();
         list.AddRectFilled(PanelMin + new Vector2(0, 7 * scale), PanelMax + new Vector2(0, 7 * scale),
@@ -45,13 +46,6 @@ public sealed partial class PaletteOverlay
                 surface.PushClipRect(PanelMin, PanelMax, false);
                 MapWindowDrawing.DrawSurface(surface, PanelMin, PanelMax, GratisTheme.CardRadius * scale, surfaceOpacity: 1);
                 surface.PopClipRect();
-                if (size.Y >= 350 * scale) {
-                    using var title = MapDrawContext.Current.GetChromeFont((GratisTheme.TextSize + 10) * scale, ChromeFontRole.Title)?.Push();
-                    ImGui.TextUnformatted("Where will you venture?");
-                }
-                if (focusSearch) { ImGui.SetKeyboardFocusHere(); focusSearch = false; }
-                ImGui.SetNextItemWidth(-1);
-                ImGui.InputTextWithHint(queryInputId, "Search places, zones, quests...", ref query, 256);
                 if (ImGui.IsKeyPressed(ImGuiKey.Tab, false)) {
                     var current = Array.IndexOf(scopes, PlaceSearch.Parse(query, scopes[scope]).Scope);
                     ChangeScope((current + (ImGui.GetIO().KeyShift ? scopes.Length - 1 : 1)) % scopes.Length);
@@ -74,7 +68,7 @@ public sealed partial class PaletteOverlay
                         var textSize = TextDrawing.Measure(label);
                         TextDrawing.Draw(surface, new Vector2(compact ? (chipMin.X + chipMax.X - textSize.X) / 2 : chipMin.X + 28 * scale,
                             (chipMin.Y + chipMax.Y - textSize.Y) / 2), ImGui.GetColorU32(GratisTheme.Primary), label);
-                        ChromeControls.Tooltip(labels[i]);
+                        ChromeControls.Tooltip(labels[i], windowBounds: MapToolbarDrawing.WindowBounds);
                         ImGui.PopStyleColor();
                     }
                 }

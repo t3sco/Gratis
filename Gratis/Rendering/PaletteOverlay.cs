@@ -49,6 +49,44 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
     public string Query => query;
     public Vector2 PanelMin { get; private set; }
     public Vector2 PanelMax { get; private set; }
+    public Vector4 FieldBounds { get; private set; }
+    public Vector4 ClearBounds { get; private set; }
+    private float inlineWidth;
+    private double widthTime;
+    public float InlineWidth(float scale)
+    {
+        var now = ImGui.GetTime();
+        var target = IsOpen ? 240 : 0;
+        var elapsed = Math.Clamp(now - widthTime, 0, .1); widthTime = now;
+        inlineWidth = MapDrawContext.Current.Config.ReduceMotion ? target
+            : target + (inlineWidth - target) * MathF.Exp(-(float)elapsed / .09f);
+        if (IsOpen) inlineWidth = MathF.Max(96, inlineWidth);
+        else if (inlineWidth < 1) inlineWidth = 0;
+        return inlineWidth * scale;
+    }
+
+    public void DrawInline(Vector2 position, Vector2 size)
+    {
+        var s = GratisTheme.ChromeScale;
+        FieldBounds = new(position.X, position.Y, position.X + size.X, position.Y + size.Y);
+        ClearBounds = Vector4.Zero;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
+        ImGui.SetCursorScreenPos(position);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
+        ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
+        var clearSize = MathF.Min(size.Y, size.X / 3);
+        ImGui.SetNextItemWidth(MathF.Max(1, size.X - clearSize));
+        if (focusSearch) { ImGui.SetKeyboardFocusHere(); focusSearch = false; }
+        ImGui.InputTextWithHint(queryInputId, "Search places...", ref query, 256);
+        ImGui.PopStyleColor(2); ImGui.PopStyleVar(2);
+        var clearPos = position + new Vector2(size.X - clearSize, 0);
+        ImGui.SetCursorScreenPos(clearPos);
+        ClearBounds = new(clearPos.X, clearPos.Y, clearPos.X + clearSize, clearPos.Y + size.Y);
+        if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y), windowBounds: MapToolbarDrawing.WindowBounds)) SetQuery("");
+        Search(MapDrawContext.Current.Config);
+    }
     private PlaceResult[] results = [];
     private int windowPresetRevision = -1;
     private WindowPresetSettings? windowPresetSettings;
@@ -83,8 +121,15 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
             if (swallowEscape) { CapturesInput = true; ImGui.SetNextFrameWantCaptureKeyboard(true); }
         }
         if (IsOpen && !focused) { Close(false); CapturesInput = false; return; }
-        if (focused && Shortcut(config.PaletteShortcut)) { if (IsOpen) Close(); else Open(); CapturesInput = true; }
         if (!IsOpen) return;
+        if ((ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right)) &&
+            !Contains(FieldBounds, ImGui.GetMousePos()) &&
+            !Contains(new(PanelMin.X, PanelMin.Y, PanelMax.X, PanelMax.Y), ImGui.GetMousePos()) &&
+            !Contains(MapToolbarDrawing.ButtonBounds[0], ImGui.GetMousePos())) {
+            Close(); CapturesInput = false;
+            ImGui.SetNextFrameWantCaptureKeyboard(false); ImGui.SetNextFrameWantCaptureMouse(false);
+            return;
+        }
         CapturesInput = true;
         ImGui.SetNextFrameWantCaptureKeyboard(true);
         ImGui.SetNextFrameWantCaptureMouse(true);
@@ -92,16 +137,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         source.Refresh();
     }
 
-    private static bool Shortcut(string shortcut)
-    {
-        var parts = (shortcut ?? "Ctrl+K").Split('+', StringSplitOptions.TrimEntries);
-        if (!Enum.TryParse<ImGuiKey>(parts[^1], true, out var key) || key < ImGuiKey.A || key > ImGuiKey.Z) return false;
-        var io = ImGui.GetIO();
-        return io.KeyCtrl == Array.Exists(parts, p => p.Equals("Ctrl", StringComparison.OrdinalIgnoreCase))
-            && io.KeyShift == Array.Exists(parts, p => p.Equals("Shift", StringComparison.OrdinalIgnoreCase))
-            && io.KeyAlt == Array.Exists(parts, p => p.Equals("Alt", StringComparison.OrdinalIgnoreCase))
-            && ImGui.IsKeyPressed(key, false);
-    }
+    private static bool Contains(Vector4 rect, Vector2 p) => rect.Z > rect.X && rect.W > rect.Y && p.X >= rect.X && p.X <= rect.Z && p.Y >= rect.Y && p.Y <= rect.W;
 
     private void Search(MapDrawingConfig config)
     {
@@ -157,23 +193,10 @@ public sealed partial class PaletteOverlay(IPaletteSource source)
         message = MapDrawContext.Current.Assistance?.CanOffer(place) == true
             ? MapDrawContext.Current.Assistance.Request(place, confirmed) : source.Teleport(place, confirmed);
         confirming = message.StartsWith("Confirm ", StringComparison.Ordinal) ? place : null;
+        if (message.Length == 0 || message == "Teleport requested.") Close();
     }
 
     public void DrawHint(MapDrawingConfig config)
     {
-        if (IsOpen || !config.IsGratis || !config.Palette || config.PaletteHintSeen) return;
-        var scale = MapDrawContext.Current.GlobalScale;
-        if (ImGui.GetWindowWidth() < 220 * scale || ImGui.GetWindowHeight() < 180 * scale) return;
-        using var font = MapDrawContext.Current.GetChromeFont(11 * scale, ChromeFontRole.Chip)?.Push();
-        var position = new Vector2(10, 49) * scale;
-        if (config.MapCircle) {
-            var (min, max) = Classes.MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
-            var radius = (max.X - min.X) / 2;
-            var half = (ImGui.CalcTextSize($"Search places ({config.PaletteShortcut})").X + ImGui.GetStyle().FramePadding.X * 2) / 2;
-            if (half + 8 * scale >= radius) return;
-            position = (min + max) / 2 - new Vector2(half, MathF.Sqrt(radius * radius - half * half) - 49 * scale);
-        }
-        ImGui.SetCursorPos(position);
-        if (ImGui.SmallButton($"Search places ({config.PaletteShortcut})")) Open();
     }
 }

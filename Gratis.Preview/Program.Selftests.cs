@@ -5,6 +5,9 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("window-presets", WindowPresetVerification.State),
+        ("frames-window-presets", WindowPresetVerification.Frames),
+        ("tweaks", TweakVerification.Run),
         ("arrow-smoothing", ArrowSmoothingVerification.Run),
         ("camera", CameraVerification.Run),
         ("report", ReportVerification.Run),

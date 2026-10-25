@@ -12,7 +12,11 @@ public partial class MapRenderer
 {
     private readonly Rendering.PlayerOrientation playerOrientation = new();
     private readonly CameraHeadingReader cameraHeading;
-    public string CameraDiagnostics() => playerOrientation.CameraDiagnostics(cameraHeading.Latest.State.ToString());
+    public string CameraDiagnostics()
+    {
+        var sample = cameraHeading.Latest;
+        return playerOrientation.CameraDiagnostics($"cone:{sample.ConeState}/manager:{sample.State}");
+    }
     public string HeadingDiagnostics() => playerOrientation.MotionDiagnostics(System.SystemConfig, "ImGui.GetTime");
 
     private unsafe void DrawPlayer()
@@ -33,8 +37,9 @@ public partial class MapRenderer
 
             var config = Rendering.MapDrawContext.Current.Config;
             var raw = -localPlayer.Rotation + MathF.PI / 2.0f;
-            var angle = playerOrientation.Advance(config, localPlayer.Rotation, cameraHeading.Latest.Yaw, ImGui.GetTime(),
-                ImGui.GetFrameCount(), AgentMap.Instance()->CurrentMapId, localPlayer.Position);
+            var camera = cameraHeading.Latest;
+            var angle = playerOrientation.Advance(config, localPlayer.Rotation, camera.Yaw, ImGui.GetTime(),
+                ImGui.GetFrameCount(), AgentMap.Instance()->CurrentMapId, localPlayer.Position, camera.NativeConeDegrees);
             Rendering.PlayerDrawing.DrawLookLine(position, Scale,
                 config.IsGratis ? angle : GetCameraRotation());
             DrawPlayerIcon(position, config.IsGratis ? angle : raw);

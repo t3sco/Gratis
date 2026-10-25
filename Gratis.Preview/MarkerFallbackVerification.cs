@@ -52,9 +52,9 @@ internal static class MarkerFallbackVerification
         ImGui.NewFrame(); ImGui.Begin("Icon lookup verification");
         foreach (var pixels in new[] { 8.1f, 13.37f, 15.99f, 24.8f, 31.6f }) {
             var font = context.GetIconFont(pixels);
-            Require(ReferenceEquals(font, context.GetIconFont(TextDrawing.PixelSize(pixels))), "Fractional sizes must reuse the snapped cached handle");
+            Require(ReferenceEquals(font, context.GetIconFont(TextDrawing.IconPixelSize(pixels))), "Fractional sizes must reuse the snapped cached icon handle");
             using var scope = font!.Push();
-            Require(ImGui.GetFont().FontSize == TextDrawing.PixelSize(pixels), "Lookup must return the nearest built native size");
+            Require(ImGui.GetFont().FontSize == TextDrawing.IconPixelSize(pixels), "Lookup must return the nearest built native icon size");
         }
         _ = context.GetIconFont(13.37f);
         var allocated = GC.GetAllocatedBytesForCurrentThread();

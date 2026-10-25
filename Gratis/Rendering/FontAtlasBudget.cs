@@ -4,12 +4,13 @@ using System.Numerics;
 
 namespace Gratis.Rendering;
 
-public sealed class FontAtlasBudget
+public sealed class FontAtlasBudget(int handleLimit = FontAtlasBudget.MaximumHandles, long areaLimit = FontAtlasBudget.MaximumArea)
 {
     public const int MaximumHandles = 16;
     public const long MaximumArea = 4 * 1024 * 1024;
-    public static readonly ushort[] TextRanges = [0x20, 0x024f, 0x2000, 0x206f, 0];
-    public const int TextGlyphs = 672;
+    public const int MaximumTextHandles = 8;
+    public static readonly ushort[] TextRanges = [0x20, 0x00ff, 0x2000, 0x206f, 0];
+    public const int TextGlyphs = 336;
     private readonly HashSet<(int Face, int Size)> reserved = [];
     public int Count => reserved.Count;
     public long EstimatedArea { get; private set; }
@@ -19,7 +20,7 @@ public sealed class FontAtlasBudget
     {
         if (reserved.Contains((face, size))) return false;
         var area = Estimate(size, glyphs);
-        if (Count >= MaximumHandles || area > MaximumArea - EstimatedArea) { Denied++; return false; }
+        if (Count >= handleLimit || area > areaLimit - EstimatedArea) { Denied++; return false; }
         reserved.Add((face, size)); EstimatedArea += area;
         return true;
     }

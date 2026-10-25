@@ -355,19 +355,19 @@ public static class MapWindowDrawing
         var text = left + (left.Length > 0 && right.Length > 0 ? separator : "") + right;
         if (time.Length > 0) text += (text.Length > 0 ? separator : "") + time;
         var budget = MathF.Min(available.X * .54f, 360 * scale);
-        if (ImGui.CalcTextSize(text).X + 24 * scale > budget && left.Length > 0) {
+        if (TextDrawing.Measure(text, tabularDigits: true).X + 24 * scale > budget && left.Length > 0) {
             right = ""; text = left + (time.Length > 0 ? separator + time : "");
         }
-        var size = new Vector2(ImGui.CalcTextSize(text).X + 24 * scale, GratisTheme.ControlHeight * scale);
+        var size = new Vector2(TextDrawing.Measure(text, tabularDigits: true).X + 24 * scale, GratisTheme.ControlHeight * scale);
         if (size.X > available.X) return;
         var bounds = ChromeLayout.Place("coordinates", size, context.Config.CoordinateAnchor);
         if (bounds == Vector4.Zero) return;
         var pos = ChromeLayout.Position(bounds);
         RecordBounds(pos, pos + size, false);
-        CoordinateCopy.Record(pos, size, ImGui.CalcTextSize(left).X, ImGui.CalcTextSize(right).X, ImGui.CalcTextSize(separator).X);
+        CoordinateCopy.Record(pos, size, TextDrawing.Measure(left, tabularDigits: true).X, TextDrawing.Measure(right, tabularDigits: true).X, TextDrawing.Measure(separator, tabularDigits: true).X);
         ImGui.SetCursorScreenPos(pos); ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();
         DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Coordinates);
-        list.AddText(pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
+        TextDrawing.Draw(list, pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text, tabularDigits: true);
     }
 }

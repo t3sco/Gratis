@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static bool TryPaletteScene(string[] args)
     {
+        if (TryToolbarSearchScene(args)) return true;
         var at = Array.IndexOf(args, "--scene");
         if (at < 0 || at + 1 >= args.Length || !args[at + 1].StartsWith("palette-", StringComparison.Ordinal)) return false;
         var scene = args[at + 1];
