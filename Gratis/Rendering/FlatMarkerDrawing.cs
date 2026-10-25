@@ -76,13 +76,14 @@ public static class FlatMarkerDrawing
         var list = ImGui.GetWindowDrawList();
         if (context.Visibility.State(MarkerVisibility.Group(marker), MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Loud)
             list.AddCircle(center, radius + 2 * context.GlobalScale, ImGui.GetColorU32(config.AccentColor with { W = .25f }), 24, context.GlobalScale);
-        Symbol(list, center, radius, marker);
+        var path = Symbol(list, center, radius, marker);
+        context.MarkerRendering.Record(path, marker, radius * 1.9f);
         if (hover > 0) list.AddCircle(center, radius + 3 * context.GlobalScale,
             ImGui.GetColorU32(config.AccentColor with { W = hover }), 24, context.GlobalScale);
         return true;
     }
 
-    public static void Symbol(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker, float alpha = 1)
+    public static MarkerDrawPath Symbol(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker, float alpha = 1)
     {
         if (MarkerIcon.Family(marker) is MarkerIconFamily.Neutral or MarkerIconFamily.Hunt) {
             var scale = MapDrawContext.Current.GlobalScale;
@@ -91,16 +92,17 @@ public static class FlatMarkerDrawing
             list.AddCircle(center, radius, ImGui.GetColorU32(new Vector4(1, 1, 1, .55f * alpha)), 24, 4 * scale);
             list.AddCircleFilled(center, radius, ImGui.GetColorU32(neutral with { W = neutral.W * alpha }), 24);
             list.AddCircle(center, radius, ImGui.GetColorU32(GratisTheme.Outline with { W = .35f * alpha }), 24, scale);
-            return;
+            return MarkerDrawPath.Dot;
         }
         if (PlayerDrawing.IsPlayerMarker(marker)) {
             PlayerDrawing.DrawDot(list, center, radius, MarkerIcon.Family(marker), MapDrawContext.Current.GetIconSetting(marker.IconId).Color, alpha);
-            return;
+            return MarkerDrawPath.Dot;
         }
         var color = Color(Category(marker)) * MapDrawContext.Current.GetIconSetting(marker.IconId).Color;
-        if (MapDrawContext.Current.Config.Markers.IconStyle != MarkerIconStyle.Shapes &&
-            ContextualMarkerDrawing.Draw(list, center, radius, marker, color, alpha)) return;
+        if (MapDrawContext.Current.Config.Markers.IconStyle != MarkerIconStyle.Shapes)
+            return ContextualMarkerDrawing.Draw(list, center, radius, marker, color, alpha);
         Shape(list, center, radius, Category(marker), color, alpha);
+        return MarkerDrawPath.Shape;
     }
 
     public static void Shape(ImDrawListPtr list, Vector2 center, float radius, MarkerCategory category, Vector4 color, float alpha = 1)

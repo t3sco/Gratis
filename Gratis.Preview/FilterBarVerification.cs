@@ -20,6 +20,7 @@ internal static class FilterBarVerification
     private static bool Overlap(Vector4 a, Vector4 b) => Valid(a) && Valid(b) && a.X < b.Z && a.Z > b.X && a.Y < b.W && a.W > b.Y;
     public static void Run()
     {
+        Presentation();
         using (var driver = new ScriptedFrameDriver(Config(new Vector2(960, 640)), Fixture())) {
             double time = 0;
             FrameSnapshot Step(Vector2? mouse = null, bool left = false, bool right = false, bool control = false, bool alt = false) =>
@@ -102,5 +103,55 @@ internal static class FilterBarVerification
                 }
             }
         Console.WriteLine("Quick filters: native chip mute, Ctrl/Alt solo, priority protection, right click, peek/restore, counts, custom cycling, auto-hide, and 10 real-frame chrome/shape layouts verified.");
+    }
+
+    private static void Presentation()
+    {
+        var json = ScriptedFrameDriver.Json;
+        var saved = global::System.Text.Json.JsonSerializer.Deserialize<SystemConfig>("{}", json)!;
+        Require(saved.FilterOptions.Mode == FilterBarMode.Collapsed && Enum.GetValues<MarkerGroup>().All(saved.FilterOptions.Contains), "Old configs default to collapsed with all categories available");
+        saved.Filters = null!;
+        Require(saved.FilterOptions.Quests, "Explicit null filter options acquire safe defaults");
+        saved.FilterOptions.Mode = FilterBarMode.AlwaysExpanded; saved.FilterOptions.Services = false;
+        saved = global::System.Text.Json.JsonSerializer.Deserialize<SystemConfig>(global::System.Text.Json.JsonSerializer.Serialize(saved, json), json)!;
+        Require(saved.FilterOptions.Mode == FilterBarMode.AlwaysExpanded && !saved.FilterOptions.Services, "Mode and category selection round trip");
+        Gratis.Windows.SettingsLayout.Reset(saved, "Filters");
+        Require(saved.FilterOptions.Mode == FilterBarMode.Collapsed && saved.FilterOptions.Services && saved.ActiveLens == "Explore", "Filters section resets mode, categories and lenses");
+        Require(Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "Filters.Mode") &&
+            Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "CustomLenses"), "Filter/lens controls share the dedicated settings section");
+        Require(FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Normal) == "FATEs" &&
+            FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Hidden) == "FATEs \u00b7 Muted" &&
+            Enum.GetValues<MarkerVisibilityState>().All(s => !FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, s).Contains('\n')), "One-line tooltips contain only category and state");
+        foreach (var size in new[] { new Vector2(360, 280), new Vector2(960, 640) }) {
+            using var driver = new ScriptedFrameDriver(Config(size), Fixture());
+            double time = 0;
+            void Step(Vector2? mouse = null, bool left = false) => driver.Step(new(time += .04, Mouse: mouse ?? new(-1000), Left: left));
+            void Click(Vector4 bounds) { var mouse = Center(bounds); Step(mouse); Step(mouse, true); Step(mouse); Step(mouse); }
+            Step(); Step();
+            Require(FilterBarDrawing.LastBounds.Z - FilterBarDrawing.LastBounds.X == GratisTheme.ControlHeight &&
+                FilterBarDrawing.ChipBounds.All(b => !Valid(b)) && FilterBarDrawing.ActiveCount == 0, "Each session starts with one compact Filters button");
+            Click(FilterBarDrawing.OverflowBounds);
+            Require(FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds.All(Valid), "Click expands all selected categories as icon chips");
+            var fate = Center(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Fates]);
+            Step(fate); Require(FilterBarDrawing.LastTooltip == "FATEs", "Actual hover uses the short FATEs label");
+            Step(fate, true); Step(fate);
+            Require(FilterBarDrawing.LastTooltip == "FATEs \u00b7 Muted" && FilterBarDrawing.ActiveCount == 1, "Muted state has a compact cue and active-filter badge");
+            driver.Context.Visibility.ResetFilters(); driver.Config.FilterOptions.Quests = false;
+            Step();
+            Require(!Valid(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Quests]) && driver.Trace.DrawnMarkers.Any(m => m.IconId == 71001), "Removing a category control never hides its priority markers");
+            Click(FilterBarDrawing.OverflowBounds);
+            Require(!FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds.All(b => !Valid(b)), "Clicking the Filters button again collapses");
+            Click(FilterBarDrawing.OverflowBounds);
+            Click(new(1080, 780, 1084, 784)); Step();
+            Require(!FilterBarDrawing.PopoverOpen, "Clicking away collapses");
+            driver.Config.FilterOptions.Mode = FilterBarMode.AlwaysExpanded; Step();
+            Require(FilterBarDrawing.ChipBounds.Any(Valid) && Valid(FilterBarDrawing.SettingsBounds), "Always expanded retains an icon row and settings gear at both sizes");
+            Require(!Overlap(FilterBarDrawing.LastBounds, MapToolbarDrawing.LastBounds) &&
+                !Overlap(FilterBarDrawing.LastBounds, MapWindowDrawing.TitleBounds) &&
+                !Overlap(FilterBarDrawing.LastBounds, MapWindowDrawing.CoordinateBounds), "Always-expanded row avoids the other anchored controls");
+            var gear = FilterBarDrawing.SettingsBounds; Click(gear);
+            Require(driver.Context.RequestedSettingsSection == "Filters", "Gear opens the Filters settings section");
+        }
+        Console.WriteLine("Filter presentation: collapsed sessions, icon popovers/rows, button-toggle/outside dismissal, short hover text, badge, category-only preferences, settings route, old/null configs and reset at small/normal sizes.");
     }
 }

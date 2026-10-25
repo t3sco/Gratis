@@ -204,6 +204,7 @@ public static class DrawHelpers
             }
         }
         ImGui.Image(texture.Handle, iconSize, Vector2.Zero, Vector2.One, MapDrawContext.Current.GetIconSetting(markerInfo.IconId).Color);
+        MapDrawContext.Current.MarkerRendering.Record(MarkerDrawPath.GameIcon, markerInfo);
 
         if (DebugMode) {
             foreach (var x in Enumerable.Range(-1, 3)) {

@@ -13,21 +13,27 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout
 {
-    public static readonly string[] Sections = ["Appearance", "Map", "Markers", "Chrome & motion", "Modules / tools", "Advanced"];
+    public static readonly string[] Sections = ["Appearance", "Map", "Markers", "Chrome & motion", "Modules / tools", "Advanced", "Filters"];
     private static readonly char[] SectionIcons = [GratisIcons.Eye, GratisIcons.Compass, GratisIcons.MapPin,
-        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings];
+        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid];
     public string Search = "";
     public int SelectedSection;
     public static SettingsEntry[] Entries { get; } = CreateEntries();
 
-    public static SettingsEntry[] Find(SystemConfig config, string section, string search) => Entries
-        .Where(entry => entry.Section == section && entry.Visible(config) && entry.Matches(search)).ToArray();
+    public static SettingsEntry[] Find(SystemConfig config, string section, string search)
+    {
+        _ = config.FilterOptions;
+        return Entries.Where(entry => entry.Section == section && entry.Visible(config) && entry.Matches(search)).ToArray();
+    }
 
     public static void Reset(SystemConfig config, string section)
     {
         var entries = Find(config, section, "");
         var defaults = new SystemConfig();
         foreach (var entry in entries) entry.Reset(config, defaults);
+        if (section == "Filters" && config.IsGratis) {
+            config.ResetFilterBar(); MapDrawContext.Current?.Visibility.ResetFilters();
+        }
         if (section == "Markers" && config.IsGratis) {
             config.ResetMarkers(); config.MarkerStyle = 1;
             config.IconScale = defaults.IconScale;
@@ -57,6 +63,7 @@ public sealed partial class SettingsLayout
             var navWidth = 180 * scale;
             if (ImGui.BeginChild("settings-navigation", new Vector2(navWidth, available.Y))) {
                 for (var index = 0; index < Sections.Length; index++) {
+                    if (Sections[index] == "Filters") continue;
                     var start = ImGui.GetCursorScreenPos();
                     var rowHeight = 38 * scale;
                     if (ImGui.Selectable($"##section-{index}", SelectedSection == index, ImGuiSelectableFlags.None,

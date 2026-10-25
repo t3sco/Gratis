@@ -13,6 +13,8 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public List<BackdropBlur> Blurs { get; } = [];
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
+    public string? RequestedSettingsSection { get; private set; }
+    public override void OpenFilterSettings() => RequestedSettingsSection = "Filters";
     public override MapColourPreset ActiveColourPreset => ColourPreset;
     public override unsafe bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false)
     {
@@ -38,10 +40,26 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public override float MapSizeFactor => SizeFactor;
 
     private readonly Dictionary<int, ImFontPtr> iconFonts = [];
+    private readonly Dictionary<int, Font> iconDrawFonts = [];
+    public bool IconFontsEnabled { get; set; } = true;
+    public char MissingIconGlyph { get; set; }
     private global::System.Runtime.InteropServices.GCHandle iconRanges;
     public void Dispose() { if (iconRanges.IsAllocated) iconRanges.Free(); }
-    public override IDrawFont? GetIconFont(float size) => !Config.IsGratis || iconFonts.Count == 0 ? null :
-        new Font(iconFonts.OrderBy(x => Math.Abs(x.Key - size)).First().Value);
+    public override IDrawFont? GetIconFont(float size)
+    {
+        if (!Config.IsGratis || !IconFontsEnabled) return null;
+        var pixels = TextDrawing.PixelSize(size);
+        var nearest = -1;
+        foreach (var entry in iconFonts)
+            if (nearest < 0 || Math.Abs(entry.Key - pixels) < Math.Abs(nearest - pixels)) nearest = entry.Key;
+        return nearest >= 0 ? iconDrawFonts[nearest] : null;
+    }
+    public override bool TryIconGlyphBounds(char glyph, out Vector4 bounds)
+    {
+        if (glyph == MissingIconGlyph) { bounds = default; return false; }
+        return base.TryIconGlyphBounds(glyph, out bounds);
+    }
+    public override string IconFontDiagnostics() => $"icon-fonts enabled={IconFontsEnabled} built=[{string.Join(",", iconFonts.Keys)}]";
 
     public unsafe void BuildFonts(string path)
     {
@@ -58,8 +76,10 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
                 var iconPath = Path.Combine(Path.GetDirectoryName(path)!, "Fonts", "Lucide", "lucide.ttf");
                 if (File.Exists(iconPath)) {
                     iconRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(GratisIcons.GlyphRanges, global::System.Runtime.InteropServices.GCHandleType.Pinned);
-                    foreach (var size in TextDrawing.Sizes)
+                    foreach (var size in TextDrawing.Sizes) {
                         iconFonts[size] = atlas.AddFontFromFileTTF(iconPath, size, new ImFontConfigPtr(fontConfig), iconRanges.AddrOfPinnedObject());
+                        iconDrawFonts[size] = new Font(iconFonts[size]);
+                    }
                 }
             }
             foreach (var role in Enum.GetValues<ChromeFontRole>()) {

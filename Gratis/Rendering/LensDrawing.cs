@@ -36,7 +36,6 @@ public static class LensDrawing
         var pos = Position(size.X, size.Y);
         if (pos.Y == float.MinValue) return;
         DrawChip(pos, size);
-        DrawPopup();
     }
     public static void DrawChip(Vector2 pos, Vector2 size, bool compact = false)
     {
@@ -45,12 +44,12 @@ public static class LensDrawing
         var list = ImGui.GetWindowDrawList();
         LastBounds = new Vector4(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
         ImGui.SetCursorScreenPos(pos);
-        if (ImGui.InvisibleButton("##lens-switcher", size)) ImGui.OpenPopup("Gratis_Lenses");
+        if (ImGui.InvisibleButton("##lens-switcher", size)) context.OpenFilterSettings();
         InputActive |= ImGui.IsItemHovered();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * GratisTheme.ChromeScale);
         GratisIcons.Draw(list, pos + new Vector2(15 * GratisTheme.ChromeScale, size.Y / 2), GratisIcons.Layers, context.Config.AccentColor, 14 * GratisTheme.ChromeScale);
         if (!compact) list.AddText(pos + new Vector2(29 * GratisTheme.ChromeScale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), context.Visibility.EffectiveLens);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Lens presets · priority markers stay visible\nAuto is opt-in. Hold {context.Config.PeekKey}: peek.");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Lens: " + context.Visibility.EffectiveLens);
     }
     public static bool DrawSelector(MapDrawingConfig config)
     {
@@ -105,23 +104,6 @@ public static class LensDrawing
             recordingKey = false; return true;
         }
         return false;
-    }
-    public static void DrawPopup()
-    {
-        using var popupStyle = new ChromePopupStyle();
-        if (!ImGui.BeginPopup("Gratis_Lenses")) return;
-        InputActive = true;
-        MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());
-        var context = MapDrawContext.Current;
-        var config = context.Config;
-        var changed = DrawSelector(config);
-        changed |= ImGui.Checkbox("Auto (duty / gathering context)", ref config.LensAuto);
-        changed |= ImGui.Checkbox("Lens map tint", ref config.LensTintsMap);
-        changed |= DrawKeyBinding(config);
-        ImGui.Separator();
-        changed |= DrawEditor(config);
-        if (changed) context.SaveConfig();
-        ImGui.EndPopup();
     }
     public static void DrawMapHint()
     {

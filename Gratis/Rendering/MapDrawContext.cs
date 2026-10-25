@@ -42,11 +42,13 @@ public abstract class MapDrawContext
     public BlurDiagnostics Blur { get; } = new();
     public int HoverCardFrame { get; set; } = -1;
     public MarkerBatch Markers { get; } = new();
+    public MarkerRendering MarkerRendering { get; } = new();
     public MarkerVisibility Visibility { get; } = new();
     public virtual bool LensInDuty => false;
     public virtual bool LensGatheringClass => false;
     public virtual bool LensNearNode => false;
     public virtual void SaveConfig() { }
+    public virtual void OpenFilterSettings() { }
     public virtual long UnixTimeSeconds => global::System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     public FlagArrivalOverlay FlagArrival { get; } = new();
     public ContextMenu ContextMenu { get; } = new();
@@ -65,6 +67,8 @@ public abstract class MapDrawContext
     public abstract IDrawFont? GetTitleFont(int choice, float size);
     public abstract IDrawFont? GetChromeFont(float size, ChromeFontRole role);
     public virtual IDrawFont? GetIconFont(float size) => null;
+    public virtual bool TryIconGlyphBounds(char glyph, out Vector4 bounds) => DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out bounds);
+    public virtual string IconFontDiagnostics() => "icon-fonts=host-unavailable";
     public virtual string TextDiagnostics() => $"text fontChoice={Config.FrameFont} uiScale={GlobalScale:0.###} " +
         $"nativePixels=true positionSnap=integer sizeLadder=[{string.Join(",", TextDrawing.Sizes)}] {TextDrawing.LastDraw}";
     public abstract bool IconButton(ToolbarAction action, string id, string tooltip);

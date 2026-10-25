@@ -10,89 +10,131 @@ namespace Gratis.Rendering;
 
 public static class FilterBarDrawing
 {
-    private static readonly string[] ShortNames = ["Quests", "Side quests", "FATEs", "Travel", "Links", "Services", "Housing", "Gathering", "Treasure", "Party", "Other", "Pins"];
-    private static readonly string[] CountLabels = BuildCounts();
+    private const string Popup = "Gratis_Filter_Overflow";
+    private static readonly string[] Names = ["Quests", "Side quests", "FATEs", "Aetherytes", "Exits", "Services", "Housing", "Gathering / hunts", "Treasure", "Party", "Other", "Pins"];
     private static readonly string[] Ids = BuildIds();
     private static MapDrawContext? drawnContext;
+    private static int popupFrame = -2;
+    private static bool suppressOpen;
     public static Vector4 LastBounds { get; private set; }
     public static Vector4 OverflowBounds { get; private set; }
+    public static Vector4 SettingsBounds { get; private set; }
     public static Vector4[] ChipBounds { get; } = new Vector4[MarkerVisibility.GroupCount];
     public static bool Hovered { get; private set; }
     public static bool InputActive { get; private set; }
+    public static bool PopoverOpen { get; private set; }
+    public static int ActiveCount { get; private set; }
+    public static string LastTooltip { get; private set; } = "";
     public static bool PointerOver => ReferenceEquals(drawnContext, MapDrawContext.Current) &&
-        ImGui.IsMouseHoveringRect(new Vector2(LastBounds.X, LastBounds.Y), new Vector2(LastBounds.Z, LastBounds.W), false);
-    private static string[] BuildCounts() { var result = new string[1000]; for (var i = 0; i < result.Length; i++) result[i] = i.ToString(global::System.Globalization.CultureInfo.InvariantCulture); return result; }
+        ImGui.IsMouseHoveringRect(new(LastBounds.X, LastBounds.Y), new(LastBounds.Z, LastBounds.W), false);
     private static string[] BuildIds() { var result = new string[MarkerVisibility.GroupCount]; for (var i = 0; i < result.Length; i++) result[i] = "##filter-" + i; return result; }
+    public static string TooltipLabel(MarkerGroup group, MarkerVisibilityState state) => Names[(int)group] + (state switch {
+        MarkerVisibilityState.Hidden => " \u00b7 Muted", MarkerVisibilityState.Loud => " \u00b7 Loud",
+        MarkerVisibilityState.Quiet => " \u00b7 Quiet", _ => "",
+    });
+    private static void Tooltip(string text) { LastTooltip = text; ImGui.SetTooltip(text); }
+
     public static void Draw()
     {
         var context = MapDrawContext.Current;
+        if (!ReferenceEquals(drawnContext, context)) { popupFrame = -2; suppressOpen = false; }
         drawnContext = context; LensDrawing.BeginDraw();
-        LastBounds = OverflowBounds = Vector4.Zero; Hovered = false; Array.Clear(ChipBounds);
-        InputActive = false;
+        LastBounds = OverflowBounds = SettingsBounds = Vector4.Zero; Array.Clear(ChipBounds);
+        Hovered = InputActive = PopoverOpen = false; LastTooltip = ""; ActiveCount = 0;
         if (!context.Config.IsGratis) return;
         using var alpha = new ChromeVisibility.AlphaScope(true, context.Chrome.ControlsAlpha(context.Config));
         if (!alpha.Visible) return;
-        var scale = GratisTheme.ChromeScale;
-        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
-        var (min, max) = Classes.MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
+        var options = context.Config.FilterOptions;
+        var s = GratisTheme.ChromeScale;
+        using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
+        var button = GratisTheme.ControlHeight * s; var gap = 4 * s; var stride = button + gap;
         var available = ChromeLayout.AvailableWidth(context.Config.FilterBarAnchor);
-        var compact = available < 240 * scale;
-        var lensWidth = compact ? 36 * scale : MathF.Min(160 * scale, ImGui.CalcTextSize(context.Visibility.EffectiveLens).X + 44 * scale);
-        var overflowWidth = compact ? 36 * scale : 92 * scale;
-        var count = 0; var used = lensWidth + 4 * scale;
-        while (count < MarkerVisibility.GroupCount) {
-            var next = ImGui.CalcTextSize(ShortNames[count]).X + 34 * scale;
-            if (used + next + overflowWidth + 4 * scale > available) break;
-            used += next + 4 * scale; count++;
+        var slots = options.Mode == FilterBarMode.AlwaysExpanded ? Math.Max(0, (int)((available - 2 * stride) / stride)) : 0;
+        var visible = 0;
+        for (var i = 0; i < MarkerVisibility.GroupCount; i++) {
+            if (context.Visibility.Overrides[i] is { } state && state != MarkerVisibilityState.Normal) ActiveCount++;
+            if (options.Contains((MarkerGroup)i)) visible++;
         }
-        var overflow = count < MarkerVisibility.GroupCount;
-        var size = new Vector2(used + (overflow ? overflowWidth : 0), GratisTheme.ControlHeight * scale);
+        var count = Math.Min(slots, visible);
+        var expanded = options.Mode == FilterBarMode.AlwaysExpanded;
+        var size = new Vector2(expanded ? (count + 2) * stride - gap : button, button);
         var pos = LensDrawing.Position(size.X, size.Y);
         if (pos.Y == float.MinValue) return;
         LastBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
-        LensDrawing.DrawChip(pos, new Vector2(lensWidth, size.Y), compact);
+        OverflowBounds = new(pos.X, pos.Y, pos.X + button, pos.Y + button);
+        var onButton = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(button), false);
+        var close = popupFrame >= ImGui.GetFrameCount() - 1 && onButton && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+        if (close) suppressOpen = true;
+        ImGui.SetCursorScreenPos(pos);
+        var clicked = ImGui.InvisibleButton("##filter-overflow", new Vector2(button));
         Hovered |= ImGui.IsItemHovered();
-        var x = pos.X + lensWidth + 4 * scale;
-        for (var i = 0; i < count; i++) {
-            var chipWidth = ImGui.CalcTextSize(ShortNames[i]).X + 34 * scale;
-            DrawChip((MarkerGroup)i, new Vector2(x, pos.Y), new Vector2(chipWidth, size.Y));
-            x += chipWidth + 4 * scale;
+        if (clicked && !suppressOpen) ImGui.OpenPopup(Popup);
+        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + new Vector2(button), GratisTheme.CardRadius * s);
+        GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(button / 2), GratisIcons.LayoutGrid, GratisTheme.Primary, GratisTheme.IconSize * s);
+        if (ActiveCount > 0) {
+            using var badgeFont = context.GetChromeFont(10 * s, ChromeFontRole.Chip)?.Push();
+            var center = pos + new Vector2(button - 6 * s, 6 * s);
+            var label = ActiveCount.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            var labelSize = ImGui.CalcTextSize(label);
+            ImGui.GetWindowDrawList().AddCircleFilled(center, 8 * s, ImGui.GetColorU32(GratisTheme.WarmAccent), 20);
+            ImGui.GetWindowDrawList().AddText(center - labelSize / 2, ImGui.GetColorU32(GratisTheme.Surface with { W = 1 }), label);
         }
-        if (overflow) {
-            var start = new Vector2(x, pos.Y);
-            var buttonSize = new Vector2(overflowWidth, size.Y);
-            OverflowBounds = new(start.X, start.Y, start.X + buttonSize.X, start.Y + buttonSize.Y);
-            ImGui.SetCursorScreenPos(start);
-            if (ImGui.InvisibleButton("##filter-overflow", buttonSize)) ImGui.OpenPopup("Gratis_Filter_Overflow");
-            Hovered |= ImGui.IsItemHovered();
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), start, start + buttonSize, 8 * scale);
-            GratisIcons.Draw(ImGui.GetWindowDrawList(), start + new Vector2(18 * scale, size.Y / 2), GratisIcons.LayoutGrid, GratisTheme.Primary, 14 * scale);
-            if (!compact) ImGui.GetWindowDrawList().AddText(start + new Vector2(33 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), "Filters");
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Marker filters · click to expand");
+        if (ImGui.IsItemHovered()) Tooltip(ActiveCount > 0 ? $"Filters \u00b7 {ActiveCount} active" : "Filters");
+        var x = pos.X + stride; var submitted = 0;
+        if (expanded) {
+            for (var i = 0; i < MarkerVisibility.GroupCount && submitted < count; i++) {
+                if (!options.Contains((MarkerGroup)i)) continue;
+                DrawChip((MarkerGroup)i, new(x, pos.Y), new(button)); x += stride; submitted++;
+            }
+            DrawSettings(new(x, pos.Y), new(button));
         }
-        LensDrawing.DrawPopup();
-        InputActive = Hovered || LensDrawing.InputActive;
-        using var popupStyle = new ChromePopupStyle();
-        if (!ImGui.BeginPopup("Gratis_Filter_Overflow")) return;
-        InputActive = true; context.Chrome.Reveal(ImGui.GetTime());
-        ImGui.TextUnformatted("Marker filters");
-        ImGui.TextDisabled("Click: mute · Ctrl/Alt: solo · Right-click: loud/quiet");
-        ImGui.Separator();
+        InputActive = Hovered;
+        DrawPopover(pos, button, stride, visible, close);
+        if (!ImGui.IsMouseDown(ImGuiMouseButton.Left)) suppressOpen = false;
+    }
+
+    private static void DrawSettings(Vector2 pos, Vector2 size)
+    {
+        SettingsBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
+        ImGui.SetCursorScreenPos(pos);
+        var clicked = ImGui.InvisibleButton("##filter-settings", size);
+        Hovered |= ImGui.IsItemHovered();
+        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.CardRadius * GratisTheme.ChromeScale);
+        GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + size / 2, GratisIcons.Settings, GratisTheme.Secondary, GratisTheme.IconSize * GratisTheme.ChromeScale);
+        if (ImGui.IsItemHovered()) Tooltip("Filter settings");
+        if (!clicked) return;
+        if (PopoverOpen) ImGui.CloseCurrentPopup();
+        MapDrawContext.Current.OpenFilterSettings();
+    }
+
+    private static void DrawPopover(Vector2 anchor, float button, float stride, int visible, bool close)
+    {
+        var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
+        var viewport = ImGui.GetWindowViewport(); var min = viewport.Pos + new Vector2(GratisTheme.Inset * s);
+        var max = viewport.Pos + viewport.Size - new Vector2(GratisTheme.Inset * s);
+        var budget = Math.Clamp((int)((max.X - min.X - 20 * s) / stride), 1, 6);
+        var columns = Math.Clamp(visible, 1, budget); var rows = (visible + columns - 1) / columns;
+        var size = new Vector2(columns * stride + 20 * s, MathF.Min(rows * stride + 64 * s, max.Y - min.Y));
+        var top = context.Config.FilterBarAnchor < ChromeAnchor.BottomLeft ? anchor.Y + button + 8 * s : anchor.Y - size.Y - 8 * s;
+        ImGui.SetNextWindowPos(Vector2.Clamp(new(anchor.X, top), min, Vector2.Max(min, max - size)));
+        ImGui.SetNextWindowSize(size);
+        using var style = new ChromePopupStyle();
+        if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) return;
+        if (close) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); return; }
+        PopoverOpen = InputActive = true; popupFrame = ImGui.GetFrameCount(); context.Chrome.Reveal(ImGui.GetTime());
+        var origin = ImGui.GetCursorScreenPos(); var index = 0;
         for (var i = 0; i < MarkerVisibility.GroupCount; i++) {
-            var start = ImGui.GetCursorScreenPos();
-            DrawChip((MarkerGroup)i, start, new Vector2(310 * scale, GratisTheme.ControlHeight * scale), true);
+            if (!context.Config.FilterOptions.Contains((MarkerGroup)i)) continue;
+            DrawChip((MarkerGroup)i, origin + new Vector2(index % columns * stride, index / columns * stride), new(button)); index++;
         }
-        if (ImGui.Button("Reset filters to lens")) context.Visibility.ResetFilters();
-        ImGui.TextDisabled($"Hold {context.Config.PeekKey} over the map to peek.");
+        DrawSettings(origin + new Vector2((columns - 1) * stride, rows * stride + 4 * s), new(button));
         ImGui.EndPopup();
     }
-    private static void DrawChip(MarkerGroup group, Vector2 pos, Vector2 size, bool label = false)
+
+    private static void DrawChip(MarkerGroup group, Vector2 pos, Vector2 size)
     {
-        var context = MapDrawContext.Current;
-        var model = context.Visibility;
-        var index = (int)group;
-        var scale = GratisTheme.ChromeScale;
-        var count = model.Counts[index];
+        var context = MapDrawContext.Current; var model = context.Visibility; var index = (int)group;
+        var s = GratisTheme.ChromeScale; var count = model.Counts[index];
         var state = model.State(group, count > 0 && model.PriorityCounts[index] == count);
         ChipBounds[index] = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
         ImGui.SetCursorScreenPos(pos);
@@ -100,26 +142,20 @@ public static class FilterBarDrawing
         var hovered = ImGui.IsItemHovered(); Hovered |= hovered;
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right)) model.Emphasize(group);
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
-            if (ImGui.GetIO().KeyAlt || ImGui.GetIO().KeyCtrl) model.Solo(group);
-            else model.Toggle(group);
+            if (ImGui.GetIO().KeyAlt || ImGui.GetIO().KeyCtrl) model.Solo(group); else model.Toggle(group);
         }
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * scale);
-        if (hovered || state is MarkerVisibilityState.Loud or MarkerVisibilityState.Normal)
-            list.AddRectFilled(pos + new Vector2(scale), pos + size - new Vector2(scale), ImGui.GetColorU32(context.Config.AccentColor with { W = hovered ? .16f : state == MarkerVisibilityState.Loud ? .16f : .06f }), 7 * scale);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
+        if (hovered || state == MarkerVisibilityState.Loud)
+            list.AddRectFilled(pos + new Vector2(s), pos + size - new Vector2(s), ImGui.GetColorU32(new Vector4(1, 1, 1, hovered ? .1f : .06f)), GratisTheme.ButtonRadius * s);
+        var ink = GratisTheme.FilterTints[index];
+        ink.W = state == MarkerVisibilityState.Hidden ? .5f : state == MarkerVisibilityState.Quiet || count == 0 ? .75f : 1;
+        var glyph = group == MarkerGroup.Other ? GratisIcons.Info : MarkerVisibility.Icons[index];
+        GratisIcons.Draw(list, pos + size / 2, glyph, ink, GratisTheme.IconSize * s);
+        if (state == MarkerVisibilityState.Hidden)
+            list.AddLine(pos + size * new Vector2(.25f, .75f), pos + size * new Vector2(.75f, .25f), ImGui.GetColorU32(GratisTheme.Primary), s);
         if (state == MarkerVisibilityState.Loud)
-            list.AddLine(pos + new Vector2(8 * scale, size.Y - scale), pos + new Vector2(size.X - 8 * scale, size.Y - scale), ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .65f }), scale);
-        var ink = count == 0 ? GratisTheme.Secondary with { W = .8f } : state == MarkerVisibilityState.Hidden
-            ? GratisTheme.Secondary : state == MarkerVisibilityState.Loud ? context.Config.AccentColor : GratisTheme.Primary;
-        if (state == MarkerVisibilityState.Quiet && count > 0) ink.W = .85f;
-        GratisIcons.Draw(list, pos + new Vector2(13 * scale, size.Y / 2), MarkerVisibility.Icons[index], ink, 13 * scale);
-        var text = count >= CountLabels.Length ? "999+" : CountLabels[Math.Max(0, count)];
-        if (label) {
-            list.AddText(pos + new Vector2(30 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), MarkerVisibility.Names[index]);
-            list.AddText(pos + new Vector2(size.X - 38 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), text);
-        }
-        else list.AddText(pos + new Vector2(28 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), ShortNames[index]);
-        if (state == MarkerVisibilityState.Hidden) list.AddLine(pos + new Vector2(7, 24) * scale, pos + new Vector2(19, 12) * scale, ImGui.GetColorU32(ink), scale);
-        if (hovered) ImGui.SetTooltip($"{MarkerVisibility.Names[index]} · {count} · {state}\nClick: Normal / Hidden (explicit category mute)\nAlt/Ctrl-click: solo; all others Quiet\nRight-click: Loud / Quiet\nPriority markers survive lenses and solo; a category mute hides them.");
+            list.AddLine(pos + new Vector2(8 * s, size.Y - s), pos + new Vector2(size.X - 8 * s, size.Y - s), ImGui.GetColorU32(GratisTheme.WarmAccent), s);
+        if (hovered) Tooltip(TooltipLabel(group, state));
     }
 }

@@ -17,22 +17,22 @@ public static class ContextualMarkerDrawing
     private static readonly Vector4 Purple = new(.65f, .48f, .91f, 1);
     private static readonly Vector4 Blue = new(.31f, .64f, .93f, 1);
 
-    public static bool Draw(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker, Vector4 color, float alpha)
+    public static MarkerDrawPath Draw(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker, Vector4 color, float alpha)
     {
         var family = MarkerIcon.Family(marker);
         var glyph = MarkerIcon.Glyph(family);
-        if (!GratisIcons.Available(glyph, radius * 1.9f)) return false;
+        var glyphs = MapDrawContext.Current.MarkerRendering.UseGlyphs;
         var tint = MapDrawContext.Current.GetIconSetting(marker.IconId).Color;
         if (family is MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet) {
             Crystal(list, center, radius, family == MarkerIconFamily.Aethernet, color, alpha);
-            return true;
+            return MarkerDrawPath.VectorPlate;
         }
         if (family == MarkerIconFamily.Quest) {
             MarkerIcon.TryQuest(marker.IconId, out var quest);
             if (marker.IconId is 60071 or 60094 or 60095 or 60096 or 60098 or 60099)
                 quest = quest with { State = QuestMarkerState.InProgress };
-            Quest(list, center, radius, quest, tint, alpha);
-            return true;
+            return Quest(list, center, radius, quest, tint, alpha, glyphs)
+                ? MarkerDrawPath.GlyphPlate : MarkerDrawPath.PlateFallback;
         }
         var fate = family is MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or
             MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial;
@@ -54,8 +54,31 @@ public static class ContextualMarkerDrawing
             list.AddRectFilled(center - half, center + half, fill, 2.5f * stroke);
             list.AddRect(center - half, center + half, dark, 2.5f * stroke, ImDrawFlags.None, stroke);
         }
-        GratisIcons.Draw(list, center, glyph, new Vector4(1, 1, 1, color.W * alpha), radius * 1.9f);
-        return true;
+        var ink = new Vector4(1, 1, 1, color.W * alpha);
+        if (glyphs && GratisIcons.Draw(list, center, glyph, ink, radius * 1.9f)) return MarkerDrawPath.GlyphPlate;
+        FallbackMark(list, center, radius, FlatMarkerDrawing.Category(marker), ink);
+        return MarkerDrawPath.PlateFallback;
+    }
+
+    private static void FallbackMark(ImDrawListPtr list, Vector2 center, float r, MarkerCategory category, Vector4 color)
+    {
+        var ink = Ink(color, 1);
+        var stroke = MathF.Max(1, MapDrawContext.Current.GlobalScale * 1.5f);
+        if (category == MarkerCategory.Link) {
+            var half = new Vector2(.36f, .56f) * r;
+            list.AddRect(center - half, center + half, ink, 0, ImDrawFlags.None, stroke);
+            list.AddCircleFilled(center + new Vector2(.14f * r, 0), stroke * .65f, ink, 8);
+        }
+        else if (category == MarkerCategory.Service) {
+            list.AddRect(center - new Vector2(.44f, .3f) * r, center + new Vector2(.44f, .44f) * r, ink, 0, ImDrawFlags.None, stroke);
+            list.AddLine(center + new Vector2(-.5f, -.3f) * r, center + new Vector2(0, -.6f) * r, ink, stroke);
+            list.AddLine(center + new Vector2(0, -.6f) * r, center + new Vector2(.5f, -.3f) * r, ink, stroke);
+        }
+        else if (category == MarkerCategory.Objective) {
+            list.AddLine(center + new Vector2(-.3f, .2f) * r, center + new Vector2(0, -.2f) * r, ink, stroke);
+            list.AddLine(center + new Vector2(0, -.2f) * r, center + new Vector2(.3f, .2f) * r, ink, stroke);
+        }
+        else list.AddCircleFilled(center, MathF.Max(stroke, r * .22f), ink, 12);
     }
 
     private static uint Ink(Vector4 color, float alpha) => ImGui.GetColorU32(color with { W = color.W * alpha });
@@ -87,7 +110,7 @@ public static class ContextualMarkerDrawing
         }
     }
 
-    private static void Quest(ImDrawListPtr list, Vector2 center, float r, QuestMarker quest, Vector4 tint, float alpha)
+    private static bool Quest(ImDrawListPtr list, Vector2 center, float r, QuestMarker quest, Vector4 tint, float alpha, bool glyphs)
     {
         var scale = MapDrawContext.Current.GlobalScale;
         var color = (quest.State == QuestMarkerState.Locked ? new Vector4(.68f, .31f, .29f, 1) :
@@ -104,17 +127,39 @@ public static class ContextualMarkerDrawing
         var glyphCenter = center - new Vector2(0, .13f * r);
         var ink = quest.MainScenario ? new Vector4(.27f, .13f, .4f, 1) : new Vector4(.16f, .13f, .22f, 1);
         if (quest.State == QuestMarkerState.Complete) {
-            GratisIcons.Draw(list, glyphCenter, GratisIcons.Check, new Vector4(.13f, .35f, .17f, tint.W * alpha), r * 1.8f);
+            glyphs = glyphs && GratisIcons.Draw(list, glyphCenter, GratisIcons.Check, new Vector4(.13f, .35f, .17f, tint.W * alpha), r * 1.8f);
         }
         else if (quest.Repeatable || quest.State == QuestMarkerState.Locked) {
-            GratisIcons.Draw(list, glyphCenter, quest.State == QuestMarkerState.Locked ? GratisIcons.Lock : GratisIcons.Repeat,
+            glyphs = glyphs && GratisIcons.Draw(list, glyphCenter, quest.State == QuestMarkerState.Locked ? GratisIcons.Lock : GratisIcons.Repeat,
                 ink with { W = tint.W * alpha }, r * 1.9f);
         }
-        else {
+        else if (glyphs) {
             using var font = MapDrawContext.Current.GetChromeFont(r * 2, ChromeFontRole.Title)?.Push();
             var text = quest.State == QuestMarkerState.Available ? "!" : "?";
             TextDrawing.Draw(list, glyphCenter - TextDrawing.Measure(text) / 2,
                 Ink(ink with { W = tint.W }, alpha), text);
+        }
+        if (!glyphs) {
+            var mark = Ink(ink with { W = tint.W }, alpha);
+            if (quest.State == QuestMarkerState.Complete) {
+                list.AddLine(glyphCenter + new Vector2(-.35f, 0) * r, glyphCenter + new Vector2(-.08f, .3f) * r, mark, 1.5f * scale);
+                list.AddLine(glyphCenter + new Vector2(-.08f, .3f) * r, glyphCenter + new Vector2(.4f, -.3f) * r, mark, 1.5f * scale);
+            }
+            else if (quest.State == QuestMarkerState.Locked || quest.Repeatable)
+                FallbackMark(list, glyphCenter, r * .8f, MarkerCategory.Link, ink with { W = tint.W * alpha });
+            else {
+                if (quest.State == QuestMarkerState.InProgress) {
+                    list.PathLineTo(glyphCenter + new Vector2(-.28f, -.35f) * r);
+                    list.PathLineTo(glyphCenter + new Vector2(-.12f, -.52f) * r);
+                    list.PathLineTo(glyphCenter + new Vector2(.25f, -.45f) * r);
+                    list.PathLineTo(glyphCenter + new Vector2(.28f, -.15f) * r);
+                    list.PathLineTo(glyphCenter + new Vector2(0, .04f) * r);
+                    list.PathLineTo(glyphCenter + new Vector2(0, .15f) * r);
+                    list.PathStroke(mark, ImDrawFlags.None, 1.7f * scale);
+                }
+                else list.AddLine(glyphCenter - new Vector2(0, .48f * r), glyphCenter + new Vector2(0, .12f * r), mark, 1.7f * scale);
+                list.AddCircleFilled(glyphCenter + new Vector2(0, .4f * r), MathF.Max(scale, r * .1f), mark, 10);
+            }
         }
         if (quest.MainScenario) {
             for (var i = -1; i <= 1; i++) {
@@ -127,5 +172,6 @@ public static class ContextualMarkerDrawing
             list.AddLine(badge - new Vector2(.29f * r, 0), badge + new Vector2(.29f * r, 0), Ink(Gold * tint, alpha), 2 * scale);
             list.AddLine(badge - new Vector2(0, .29f * r), badge + new Vector2(0, .29f * r), Ink(Gold * tint, alpha), 2 * scale);
         }
+        return glyphs;
     }
 }

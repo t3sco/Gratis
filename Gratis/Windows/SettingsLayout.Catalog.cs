@@ -145,13 +145,19 @@ public sealed partial class SettingsLayout
         Add("SmallAreaTextScale", "Small label size", .5f, 3, "%.2fx", when: c => c.ShowTextLabels);
         Add("ShowFogOfWar", "Fog of war");
 
-        Group("Markers", "Lenses", Gratis);
+        Group("Filters", "Filter bar", Gratis);
+        Add("QuickFilterBar", "Show filter bar");
+        Add("Filters.Mode", "Filter bar", choices: "Collapsed (default)|Always expanded");
+        Group("Filters", "Categories in the list", Gratis);
+        foreach (var category in Enum.GetValues<MarkerGroup>())
+            Add("Filters." + category, MarkerVisibility.Names[(int)category],
+                tip: "Show this category's button. This does not change which map markers are visible.");
+        Group("Filters", "Lenses", Gratis);
         Add("ActiveLens", "Active lens");
         Add("CustomLenses", "Custom lenses");
         Add("LensTintsMap", "Lens map tint");
         Add("LensAuto", "Auto lens", tip: "Opt in to Minimal in duties, Gather near nodes on a gathering class, Explore otherwise.");
         Add("LensCycleKey", "Lens cycle key");
-        Add("QuickFilterBar", "Quick filter bar");
         Add("PeekKey", "Hold to peek", tip: "Right Alt by default, only while the map is focused or hovered; never consumes the game's key. No binding can be guaranteed free of custom game hotkeys.");
         Group("Markers", "Pins and notes", Gratis);
         Add("Pins", "User pins");

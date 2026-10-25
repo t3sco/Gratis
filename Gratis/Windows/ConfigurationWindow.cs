@@ -21,6 +21,14 @@ public class ConfigurationWindow : Window
         });
     }
 
+    public void OpenSection(string section)
+    {
+        var index = global::System.Array.IndexOf(SettingsLayout.Sections, section);
+        if (index < 0) return;
+        layout.SelectedSection = index; layout.Search = "";
+        UnCollapseOrShow(); ImGui.SetWindowFocus(WindowName);
+    }
+
     private SettingsTheme? theme;
 
     public override void PreDraw() => theme = SettingsTheme.Push(System.SystemConfig);

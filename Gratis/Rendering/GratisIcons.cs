@@ -107,10 +107,11 @@ public static class GratisIcons
 
     public static bool Available(char codepoint, float pixels)
     {
-        var handle = MapDrawContext.Current.GetIconFont(pixels);
+        var context = MapDrawContext.Current;
+        var handle = context.GetIconFont(TextDrawing.PixelSize(pixels));
         if (handle is null) return false;
         using var scope = handle.Push();
-        return DrawBinding.TryGlyphBounds(ImGui.GetFont(), codepoint, out _);
+        return context.TryIconGlyphBounds(codepoint, out _);
     }
 
     public static char ForAction(ToolbarAction action, bool following) => action switch {
@@ -123,11 +124,12 @@ public static class GratisIcons
 
     public static bool Draw(ImDrawListPtr list, Vector2 center, char codepoint, Vector4 color, float pixels)
     {
-        var handle = MapDrawContext.Current.GetIconFont(pixels);
+        var context = MapDrawContext.Current;
+        var handle = context.GetIconFont(TextDrawing.PixelSize(pixels));
         if (handle is null) return false;
         using var scope = handle.Push();
         var font = ImGui.GetFont();
-        if (!DrawBinding.TryGlyphBounds(font, codepoint, out var bounds)) return false;
+        if (!context.TryIconGlyphBounds(codepoint, out var bounds)) return false;
         pixels = font.FontSize;
         var ratio = pixels / font.FontSize;
         var position = TextDrawing.Snap(center - new Vector2(bounds.X + bounds.Z, bounds.Y + bounds.W) * (.5f * ratio));

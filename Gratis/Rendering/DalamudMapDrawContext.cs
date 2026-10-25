@@ -18,6 +18,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     private bool loggedBlurSuccess;
     private bool loggedBlurFailure;
 
+    public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
     public override bool TryBlurBehind(ImDrawListPtr list, Vector2 min, Vector2 max, float rounding, float radius, float opacity = 1, bool prepend = false)
     {
         var frame = ImGui.GetFrameCount();
@@ -143,27 +144,50 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
     }
 
     private readonly global::System.Collections.Generic.Dictionary<int, IFontHandle> iconFonts = [];
+    private readonly global::System.Collections.Generic.Dictionary<int, Font> iconDrawFonts = [];
     private bool iconFontFailed;
 
     public override IDrawFont? GetIconFont(float size)
     {
         if (iconFontFailed) return null;
         var pixels = TextDrawing.PixelSize(size);
-        if (!iconFonts.TryGetValue(pixels, out var handle)) {
-            handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
-                try {
-                    using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream("Gratis.Assets.Fonts.Lucide.lucide.ttf")
-                        ?? throw new global::System.IO.FileNotFoundException("Lucide");
-                    toolkit.AddFontFromStream(stream, new SafeFontConfig { SizePx = pixels, OversampleH = 2, OversampleV = 1, PixelSnapH = true, GlyphRanges = GratisIcons.GlyphRanges }, false, "Lucide");
-                }
-                catch (Exception error) {
-                    iconFontFailed = true;
-                    Service.Log.Warning(error, "Lucide font unavailable; using primitive icons.");
-                }
-            }));
-            iconFonts[pixels] = handle;
+        if (!iconFonts.ContainsKey(pixels)) {
+            try { CreateIconFont(pixels); }
+            catch (Exception error) {
+                iconFontFailed = true;
+                Service.Log.Warning(error, "Lucide atlas unavailable; retaining contextual vector plates.");
+                return null;
+            }
         }
-        return !iconFontFailed && handle.Available ? new Font(handle) : null;
+        var nearest = -1;
+        foreach (var entry in iconFonts)
+            if (entry.Value.Available && (nearest < 0 || Math.Abs(entry.Key - pixels) < Math.Abs(nearest - pixels))) nearest = entry.Key;
+        return !iconFontFailed && nearest >= 0 ? iconDrawFonts[nearest] : null;
+    }
+
+    private void CreateIconFont(int pixels)
+    {
+        var handle = Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
+            try {
+                using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream("Gratis.Assets.Fonts.Lucide.lucide.ttf")
+                    ?? throw new global::System.IO.FileNotFoundException("Lucide");
+                toolkit.AddFontFromStream(stream, new SafeFontConfig { SizePx = pixels, OversampleH = 2, OversampleV = 1, PixelSnapH = true, GlyphRanges = GratisIcons.GlyphRanges }, false, "Lucide");
+            }
+            catch (Exception error) {
+                iconFontFailed = true;
+                Service.Log.Warning(error, "Lucide font unavailable; using primitive icons.");
+            }
+        }));
+        iconFonts[pixels] = handle;
+        iconDrawFonts[pixels] = new Font(handle);
+    }
+
+    public override string IconFontDiagnostics()
+    {
+        var text = new global::System.Text.StringBuilder($"icon-fonts failed={iconFontFailed} built=[");
+        foreach (var size in TextDrawing.Sizes)
+            if (iconFonts.TryGetValue(size, out var handle)) text.Append($"{size}:{(handle.Available ? "ready" : "pending")},");
+        return text.Append(']').ToString();
     }
 
     public void Dispose()
@@ -172,6 +196,7 @@ internal sealed class DalamudMapDrawContext : MapDrawContext, IDisposable
         titleFonts.Clear();
         foreach (var font in iconFonts.Values) font.Dispose();
         iconFonts.Clear();
+        iconDrawFonts.Clear();
     }
 
     private static readonly global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize[][] GameFontPresets = [

@@ -89,10 +89,16 @@ public sealed partial class SettingsLayout
                     "Appearance" => "Make the map feel at home.",
                     "Map" => "Viewport, navigation and map detail.",
                     "Markers" => "Choose what stands out on your map.",
+                    "Filters" => "Choose the controls in your filter list. Map markers keep their existing visibility.",
                     "Chrome & motion" => "Quiet controls. Deliberate movement.",
                     "Modules / tools" => "Your map's companion tools.",
                     _ => "Window behaviour and diagnostics.",
                 });
+                if (section == "Filters") {
+                    SettingsTheme.Helper("Click: Normal / Muted. Ctrl/Alt-click: Solo (others Quiet). Right-click: Loud / Quiet. " +
+                        $"Hold {config.PeekKey}: Peek. Priority markers stay visible unless you explicitly mute their group.");
+                    if (ImGui.Button("Reset filters to lens")) MapDrawContext.Current.Visibility.ResetFilters();
+                }
                 ImGui.Spacing();
                 if (section == "Markers" && MarkerOptionsMatch(Search) && drawExtension is not null)
                     changed |= drawExtension("Marker options", Search);

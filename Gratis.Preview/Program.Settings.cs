@@ -32,7 +32,7 @@ internal static partial class Program
             var config = new SystemConfig { VisualStyle = options.Scene == "settings-classic" ? 1 : 0 };
             var layout = new SettingsLayout {
                 SelectedSection = options.Scene switch {
-                    "settings-map" => 1, "settings-markers" => 2, "settings-chrome" => 3,
+                    "settings-filters" => Array.IndexOf(SettingsLayout.Sections, "Filters"), "settings-map" => 1, "settings-markers" => 2, "settings-chrome" => 3,
                     "settings-tools" => 4, "settings-advanced" => 5, _ => 0,
                 },
                 Search = options.Scene == "settings-search" ? "zoom" : "",
@@ -68,7 +68,7 @@ internal static partial class Program
             var renderer = new SoftwareRenderer(options.Width, options.Height, textures);
             renderer.Render(ImGui.GetDrawData(), context.Blurs);
             renderer.Save(options.Output);
-            Console.WriteLine("Shared settings layout: six sections, Lucide headers, search, style disclosure and resets. Game extensions are labelled.");
+            Console.WriteLine("Shared settings layout: seven sections, Lucide headers, search, style disclosure and resets. Game extensions are labelled.");
             if (options.Verify) SettingsVerification.Run();
         }
         finally { ImGuiErrors.DestroyContext(native); }

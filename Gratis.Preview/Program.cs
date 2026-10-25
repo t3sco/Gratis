@@ -9,7 +9,7 @@ namespace Gratis.Preview;
 
 internal static partial class Program
 {
-    private static readonly string[] Scenes = ["spotlight", "spotlight-circular", "settings-window", "settings-appearance", "settings-classic", "settings-search", "settings-map", "settings-markers", "settings-chrome", "settings-tools", "settings-advanced", "map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-on", "glass-off", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable", "chrome-hidden", "chrome-visible", "chrome-fading", "map-recolor-midnight", "map-recolor-mono", "map-recolor-blueprint", "map-recolor-sepia", "map-recolor-original", "map-recolor-custom", "map-recolor-sheet"];
+    private static readonly string[] Scenes = ["spotlight", "spotlight-circular", "settings-window", "settings-filters", "settings-appearance", "settings-classic", "settings-search", "settings-map", "settings-markers", "settings-chrome", "settings-tools", "settings-advanced", "map-default", "map-circular", "hover-tooltip", "markers", "toolbar", "map-classic", "map-glint", "map-glint-circular", "map-feather", "map-feather-circular", "map-edge-legacy", "map-edge-legacy-circular", "glass-on", "glass-off", "glass-toolbar", "glass-card", "glass-tinted", "glass-circle", "glass-unavailable", "chrome-hidden", "chrome-visible", "chrome-fading", "map-recolor-midnight", "map-recolor-mono", "map-recolor-blueprint", "map-recolor-sepia", "map-recolor-original", "map-recolor-custom", "map-recolor-sheet"];
 
     public static int Main(string[] args)
     {
