@@ -134,7 +134,7 @@ internal static class FrameRegressionVerification
             Require(snapshot.Blurred >= 4 && snapshot.Blurred == driver.Context.Blurs.Count && snapshot.Refused == 0, driver.Context.Blur.Status(config));
             Require(driver.Context.Blurs[1].List == driver.MapDrawList,
                 "Toolbar blur must use the full map-list surface, outside the child clip");
-            if (segmented) Require(driver.Context.Blurs[1].Max - driver.Context.Blurs[1].Min == new Vector2(232, 36), "Blur covers the full toolbar rim");
+            if (segmented) Require(driver.Context.Blurs[1].Max - driver.Context.Blurs[1].Min == new Vector2(8 * GratisTheme.ControlHeight + 8, GratisTheme.ToolbarHeight), "Blur covers the full toolbar rim");
             Require(snapshot.Widgets == 8, "Each toolbar action is submitted exactly once");
             Counts(snapshot);
         }

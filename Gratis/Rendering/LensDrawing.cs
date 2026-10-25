@@ -20,25 +20,8 @@ public static class LensDrawing
     public static void BeginDraw() { LastBounds = Vector4.Zero; InputActive = false; }
     public static Vector2 Position(float width, float height)
     {
-        var context = MapDrawContext.Current;
-        var scale = context.GlobalScale;
-        var origin = ImGui.GetWindowPos();
-        var (min, max) = Classes.MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
-        var bottom = max.Y - 10 * scale;
-        var coordinates = MapWindowDrawing.CoordinateBounds;
-        if (coordinates.W > coordinates.Y) bottom = MathF.Min(bottom, coordinates.Y - origin.Y - 8 * scale);
-        var title = MapWindowDrawing.TitleBounds;
-        if (title.W > title.Y && title.Y > origin.Y + (max.Y - min.Y) / 2) bottom = MathF.Min(bottom, title.Y - origin.Y - 8 * scale);
-        var x = min.X + 10 * scale;
-        var y = bottom - height;
-        if (context.Config.MapCircle) {
-            var radius = (max.X - min.X) / 2;
-            x = (min.X + max.X - width) / 2;
-            var half = width / 2 + 10 * scale;
-            y = MathF.Min(y, max.Y - radius + MathF.Sqrt(MathF.Max(0, radius * radius - half * half)) - height - 10 * scale);
-            y = MathF.Min(y, MathF.Max(min.Y + 88 * scale, max.Y - 176 * scale));
-        }
-        return origin + new Vector2(x, y);
+        var bounds = ChromeLayout.Place("filters", new Vector2(width, height), MapDrawContext.Current.Config.FilterBarAnchor);
+        return bounds == Vector4.Zero ? new Vector2(float.MinValue) : ChromeLayout.Position(bounds);
     }
     public static void Draw()
     {
@@ -48,10 +31,10 @@ public static class LensDrawing
         using var alpha = new ChromeVisibility.AlphaScope(true, context.Chrome.ControlsAlpha(context.Config));
         LastBounds = Vector4.Zero;
         if (!alpha.Visible) return;
-        using var font = context.GetChromeFont(12 * context.GlobalScale, ChromeFontRole.Chip)?.Push();
-        var size = new Vector2(MathF.Min(160 * context.GlobalScale, ImGui.CalcTextSize(context.Visibility.EffectiveLens).X + 44 * context.GlobalScale), 28 * context.GlobalScale);
+        using var font = context.GetChromeFont(GratisTheme.TextSize * GratisTheme.ChromeScale, ChromeFontRole.Chip)?.Push();
+        var size = new Vector2(MathF.Min(160 * GratisTheme.ChromeScale, ImGui.CalcTextSize(context.Visibility.EffectiveLens).X + 44 * GratisTheme.ChromeScale), GratisTheme.ControlHeight * GratisTheme.ChromeScale);
         var pos = Position(size.X, size.Y);
-        if (pos.Y < ImGui.GetWindowPos().Y + 88 * context.GlobalScale) return;
+        if (pos.Y == float.MinValue) return;
         DrawChip(pos, size);
         DrawPopup();
     }
@@ -64,9 +47,9 @@ public static class LensDrawing
         ImGui.SetCursorScreenPos(pos);
         if (ImGui.InvisibleButton("##lens-switcher", size)) ImGui.OpenPopup("Gratis_Lenses");
         InputActive |= ImGui.IsItemHovered();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * context.GlobalScale);
-        GratisIcons.Draw(list, pos + new Vector2(15 * context.GlobalScale, size.Y / 2), GratisIcons.Layers, context.Config.AccentColor, 14 * context.GlobalScale);
-        if (!compact) list.AddText(pos + new Vector2(29, 7) * context.GlobalScale, ImGui.GetColorU32(GratisTheme.Primary), context.Visibility.EffectiveLens);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * GratisTheme.ChromeScale);
+        GratisIcons.Draw(list, pos + new Vector2(15 * GratisTheme.ChromeScale, size.Y / 2), GratisIcons.Layers, context.Config.AccentColor, 14 * GratisTheme.ChromeScale);
+        if (!compact) list.AddText(pos + new Vector2(29 * GratisTheme.ChromeScale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), context.Visibility.EffectiveLens);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Lens presets · priority markers stay visible\nAuto is opt-in. Hold {context.Config.PeekKey}: peek.");
     }
     public static bool DrawSelector(MapDrawingConfig config)
@@ -125,6 +108,7 @@ public static class LensDrawing
     }
     public static void DrawPopup()
     {
+        using var popupStyle = new ChromePopupStyle();
         if (!ImGui.BeginPopup("Gratis_Lenses")) return;
         InputActive = true;
         MapDrawContext.Current.Chrome.Reveal(ImGui.GetTime());

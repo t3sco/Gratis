@@ -15,11 +15,11 @@ public static class MapTextureDrawing
     {
         var size = texture.Size * scale;
         var rounding = MapShape.Rounding(ImGui.GetWindowSize());
-        if (MapShape.FeatherWidth > 0) {
+        if (MapShape.FeatherWidth > 0 || MapDrawContext.Current.Config.IsGratis && rounding > 0) {
             var origin = ImGui.GetCursorScreenPos();
             ImGui.Dummy(size);
             FeatheredMapDrawing.Draw(ImGui.GetWindowDrawList(), texture, origin, size,
-                ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), rounding, MapShape.FeatherWidth);
+                ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), rounding, MathF.Max(.5f, MapShape.FeatherWidth));
             return;
         }
         if (rounding <= 0.0f) {

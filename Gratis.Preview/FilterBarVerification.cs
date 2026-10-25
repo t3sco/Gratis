@@ -25,10 +25,16 @@ internal static class FilterBarVerification
             FrameSnapshot Step(Vector2? mouse = null, bool left = false, bool right = false, bool control = false, bool alt = false) =>
                 driver.Step(new ScriptFrame(time += .04, Mouse: mouse ?? new Vector2(-1000), Left: left, Right: right, Control: control, Alt: alt));
             void Click(MarkerGroup group, bool right = false, bool control = false, bool alt = false) {
-                var bounds = FilterBarDrawing.ChipBounds[(int)group]; Require(Valid(bounds), "Expected chip is in the row");
+                Step();
+                if (!Valid(FilterBarDrawing.ChipBounds[(int)group])) {
+                    var overflow = Center(FilterBarDrawing.OverflowBounds);
+                    Step(overflow); Step(overflow, left: true); Step(overflow); Step(overflow);
+                }
+                var bounds = FilterBarDrawing.ChipBounds[(int)group]; Require(Valid(bounds), $"Expected {group} chip in bar/overflow; row={FilterBarDrawing.LastBounds}; overflow={FilterBarDrawing.OverflowBounds}; input={FilterBarDrawing.InputActive}");
                 var position = Center(bounds);
                 Step(position, control: control, alt: alt); Step(position, !right, right, control, alt);
                 Step(position); Step();
+                driver.Step(new ScriptFrame(time += .04, Escape: true)); Step();
             }
             driver.Context.GetIconSetting(60436).Hide = true;
             Step(); Step();

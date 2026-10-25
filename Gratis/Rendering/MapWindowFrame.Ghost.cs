@@ -36,12 +36,14 @@ public sealed partial class MapWindowFrame
     {
         if (!host.Config.IsGratis || !host.Config.GhostMode || host.Now >= hintUntil) return;
         const string text = "Ghost mode: hover the map to restore input";
-        var scale = MapDrawContext.Current.GlobalScale;
-        using var font = MapDrawContext.Current.GetChromeFont(12 * scale, ChromeFontRole.Chip)?.Push();
-        var size = ImGui.CalcTextSize(text) + new Vector2(16, 12) * scale;
-        var pos = ImGui.GetWindowPos() + new Vector2((ImGui.GetWindowSize().X - size.X) / 2, 76 * scale);
+        var scale = GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
+        var size = ImGui.CalcTextSize(text) + new Vector2(24, 16) * scale;
+        var bounds = ChromeLayout.Place("ghost-hint", size, ChromeAnchor.TopCenter);
+        if (bounds == Vector4.Zero) return;
+        var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, 6 * scale);
-        list.AddText(pos + new Vector2(8, 6) * scale, ImGui.GetColorU32(GratisTheme.Primary), text);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
+        list.AddText(pos + new Vector2(12, 8) * scale, ImGui.GetColorU32(GratisTheme.Primary), text);
     }
 }

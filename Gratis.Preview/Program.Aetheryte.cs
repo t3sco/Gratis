@@ -11,7 +11,7 @@ internal static partial class Program
         var outAt=Array.IndexOf(args,"--out");
         var output=Path.GetFullPath(outAt<0?"_preview/aetheryte-chip.png":args[outAt+1]);
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-        var config=PaletteVerification.Config(); config.WindowSize=new(820,620);
+        var config=PaletteVerification.Config(); config.WindowSize=new(820,620); config.TravelActions=true;
         using var driver=new ScriptedFrameDriver(config,new FrameScript{Width=960,Height=740});
         driver.Context.Assistance=new MapAssistance(NullTravelProvider.Instance,new TravelFixture(driver),()=>true,()=>{});
         driver.Step(new(0)); driver.Step(new(.02));

@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -17,7 +18,7 @@ public static class CoordinateCopy
     public static void Record(Vector2 pos, Vector2 size, float playerWidth, float cursorWidth, float separator)
     {
         layoutFrame = ImGui.GetFrameCount(); layoutContext = MapDrawContext.Current;
-        var s = layoutContext.GlobalScale;
+        var s = GratisTheme.ChromeScale;
         var x = pos.X + 12 * s;
         PlayerBounds = playerWidth > 0 ? new(x, pos.Y, x + playerWidth, pos.Y + size.Y) : Vector4.Zero;
         x += playerWidth + (playerWidth > 0 && cursorWidth > 0 ? separator : 0);
@@ -35,7 +36,7 @@ public static class CoordinateCopy
             if (ImGui.InvisibleButton(id, width)) context.ContextMenu.Copy(CoordinateShare.Text(value,
                 ImGui.GetIO().KeyShift ? context.ContextMenu.Actions?.MapName : null));
             if (ImGui.IsItemHovered() || ImGui.IsItemActive()) { inputFrame = ImGui.GetFrameCount(); inputContext = context; }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Copy coordinates · Shift: include map name");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip((cursor is { } mouse ? FormattableString.Invariant($"Cursor {mouse.X:F1} / {mouse.Y:F1}\n") : "") + "Copy coordinates · Shift: include map name");
         }
         void Target(string id, Vector4 bounds, Vector2? value)
         {

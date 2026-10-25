@@ -213,7 +213,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             ImGui.SetNextWindowPos(Config.WindowPosition);
             ImGui.SetNextWindowSize(Config.WindowSize);
         }
-        else if (!Context.ContextMenu.IsOpen) ImGui.SetNextWindowFocus();
+        else if (!Context.ContextMenu.IsOpen && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId | ImGuiPopupFlags.AnyPopupLevel))
+            ImGui.SetNextWindowFocus();
         var neutral = Config.IsGratis && Config.NeutralFrame;
         if (neutral) {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);

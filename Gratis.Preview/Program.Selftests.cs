@@ -5,6 +5,10 @@ namespace Gratis.Preview;
 internal static partial class Program
 {
     private static (string Name, Action Run)[] Selftests() => [
+        ("chrome-layout", ChromeLayoutVerification.Layout),
+        ("frames-hover-opacity", ChromeLayoutVerification.HoverFade),
+        ("frames-quest-travel", ChromeLayoutVerification.QuestTravel),
+        ("chrome-corner-clip", ChromeCornerVerification.Run),
         ("imgui-errors", ImGuiErrorVerification.Run),
         ("aetheryte-attunement", AttunementVerification.State), ("frames-attunement", AttunementVerification.Frames),
         ("measure-tool", MeasureVerification.Maths), ("frames-measure", MeasureVerification.Frames),

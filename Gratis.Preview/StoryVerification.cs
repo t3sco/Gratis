@@ -22,6 +22,7 @@ internal static class StoryVerification
     public static void Frames()
     {
         using var driver=new ScriptedFrameDriver(PaletteVerification.Config(),new FrameScript{Palette=true,Markers=[new(71003,new(700,0),Objective:true)]});
+        driver.Config.TravelActions = true;
         driver.Step(new(0)); driver.Step(new(.02)); driver.Palette!.Open("msq"); driver.Step(new(.04));
         Require(driver.Palette.Results.Any(r=>r.Place.Id==MainStoryObjective.Action.Id),"Palette story action");
         driver.Step(new(.06,Keys:[ImGuiKey.Enter]));

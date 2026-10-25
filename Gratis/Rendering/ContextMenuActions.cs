@@ -51,6 +51,10 @@ public sealed partial class ContextMenu
             SpotlightSource.Search, IncludePlayer: true));
         if (Marker is { } marker) {
             Add("Spotlight", GratisIcons.Sparkles, Spotlight);
+            if (host.Config.TravelActions && MapDrawContext.Current.Assistance is { } objectiveTravel &&
+                (marker.IsObjective || MarkerIcon.Family(marker) is MarkerIconFamily.Quest or MarkerIconFamily.Leve))
+                Add("Show nearest aetheryte", GratisIcons.Compass, () =>
+                    objectiveTravel.OfferContextTarget(new(World, host.Renderer.ViewedMapId, SpotlightSource.Quest, Icon: marker.IconId), host.Now));
             if (actions != null) Add("Set flag on it", GratisIcons.Flag, () => actions.SetFlag(World));
             Add("Copy name", GratisIcons.Copy, () => Copy(marker.PrimaryText?.Invoke() ?? FlatMarkerDrawing.Label(marker)));
             Add("Copy coordinates", GratisIcons.Copy, CopyCoordinates);
@@ -70,14 +74,10 @@ public sealed partial class ContextMenu
                 Add("Add pin here", GratisIcons.MapPin, () => pins.Edit(host.Renderer.ViewedMapId, World));
             Add("Copy coordinates", GratisIcons.Copy, CopyCoordinates);
             if (actions != null) Add("Copy map link text", GratisIcons.Copy, () => Copy(actions.MapLink(World)));
-            if (MapDrawContext.Current.Assistance is { } assistance) {
+            if (host.Config.TravelActions && MapDrawContext.Current.Assistance is { } assistance) {
                 Add("Show nearest aetheryte", GratisIcons.LocateFixed, () => {
                     Spotlight();
                     assistance.OfferContextTarget(new(World, host.Renderer.ViewedMapId, SpotlightSource.Search), host.Now);
-                    var nearest = AetheryteSelection.Nearest(assistance.Places.Entries,
-                        host.Renderer.ViewedMapId, World, assistance.Places.Access,
-                        assistance.Provider.ActiveAetheryte, assistance.Provider.Available);
-                    if (nearest is { } choice) assistance.HoverPlace(choice.Destination, anchor);
                 });
             }
             if (Measure != null) Add("Measure from here", GratisIcons.Crosshair, () => Measure.Begin(host.Renderer.ViewedMapId, World));

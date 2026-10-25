@@ -70,6 +70,21 @@ public partial class MapDrawingConfig
     public float ChromeTitleMinAlpha = .35f;
     public float ChromeControlsMinAlpha = 0;
     public bool PinChrome = false;
+    public float ChromeScale = 1;
+    public bool RestoreOpacityOnHover = false;
+    public ChromeAnchor ToolbarAnchor = ChromeAnchor.TopLeft;
+    public ChromeAnchor FilterBarAnchor = ChromeAnchor.BottomLeft;
+    public ChromeAnchor LocationAnchor = ChromeAnchor.BottomRight;
+    public ChromeAnchor CoordinateAnchor = ChromeAnchor.BottomRight;
+    public ChromeAnchor TravelCardAnchor = ChromeAnchor.TopCenter;
+
+    public void ResetChromeLayout()
+    {
+        ChromeScale = 1; RestoreOpacityOnHover = false;
+        ToolbarAnchor = ChromeAnchor.TopLeft; FilterBarAnchor = ChromeAnchor.BottomLeft;
+        LocationAnchor = CoordinateAnchor = ChromeAnchor.BottomRight;
+        TravelCardAnchor = ChromeAnchor.TopCenter;
+    }
 
     public void ResetChromeVisibility()
     {
@@ -80,6 +95,7 @@ public partial class MapDrawingConfig
         ChromeTitleMinAlpha = defaults.ChromeTitleMinAlpha;
         ChromeControlsMinAlpha = defaults.ChromeControlsMinAlpha;
         PinChrome = defaults.PinChrome;
+        ResetChromeLayout();
     }
 
     public bool NeutralFrame = true;

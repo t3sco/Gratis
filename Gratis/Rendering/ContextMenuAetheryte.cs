@@ -6,7 +6,7 @@ public sealed partial class MapAssistance
     private double contextTargetUntil;
     public void OfferContextTarget(SpotlightRequest target, double now)
     {
-        contextTarget = target; contextTargetUntil = now + 12;
+        contextTarget = target; contextTargetUntil = now + 12; dismissedTarget = null; chipConfirm = false; ChipMessage = "";
     }
     private SpotlightRequest? ContextTarget(IMapWindowHost host)
     {

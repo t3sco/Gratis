@@ -28,11 +28,11 @@ public sealed class SettingsTheme
         ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(12, 6) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.CardRadius * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.CardRadius * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 4 * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.CardRadius * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
-        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 6 * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 10 * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 8 * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, 4 * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.DisabledAlpha, .7f);
@@ -96,16 +96,18 @@ public sealed class SettingsTheme
         var start = ImGui.GetCursorScreenPos();
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
         var width = 36 * scale + (label is null ? 0 : 8 * scale + ImGui.CalcTextSize(label).X);
-        var changed = ImGui.Button(id, new Vector2(width, 20 * scale));
+        var height = GratisTheme.ControlHeight * scale;
+        var changed = ImGui.Button(id, new Vector2(width, height));
         ImGui.PopStyleVar();
         if (changed) value = !value;
         var list = ImGui.GetWindowDrawList();
-        var end = start + new Vector2(36, 20) * scale;
-        list.AddRectFilled(start, end, ImGui.GetColorU32(value ? accent : new Vector4(1, 1, 1, .12f)), 10 * scale);
-        list.AddRect(start, end, ImGui.GetColorU32(GratisTheme.Border), 10 * scale);
-        list.AddCircleFilled(start + new Vector2(value ? 26 : 10, 10) * scale, 6 * scale,
+        var track = start + new Vector2(0, (height - 20 * scale) / 2);
+        var end = track + new Vector2(36, 20) * scale;
+        list.AddRectFilled(track, end, ImGui.GetColorU32(value ? accent : new Vector4(1, 1, 1, .12f)), 10 * scale);
+        list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), 10 * scale);
+        list.AddCircleFilled(track + new Vector2(value ? 26 : 10, 10) * scale, 6 * scale,
             ImGui.GetColorU32(GratisTheme.Primary));
-        if (label is not null) list.AddText(start + new Vector2(44 * scale, (20 * scale - ImGui.GetFontSize()) / 2),
+        if (label is not null) list.AddText(start + new Vector2(44 * scale, (height - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(GratisTheme.Primary), label);
         return changed;
     }

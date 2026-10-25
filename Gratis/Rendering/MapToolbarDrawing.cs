@@ -17,7 +17,7 @@ public static class MapToolbarDrawing
         var context = MapDrawContext.Current;
         using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
         if (!chromeAlpha.Interactive) return;
-        if (context.Config.IsGratis && context.Config.SegmentedToolbar) {
+        if (context.Config.IsGratis) {
             DrawSegmented(activate, drawLayersContextMenu);
             return;
         }
@@ -104,48 +104,55 @@ public static class MapToolbarDrawing
     }
 
     private static readonly (ToolbarAction Action, string Tooltip)[] Buttons = [
+        (ToolbarAction.Search, "Search places"), (ToolbarAction.CenterPlayer, "Center on Player"),
         (ToolbarAction.Parent, "Open Parent Map"), (ToolbarAction.Layers, "Show Map Layers"),
-        (ToolbarAction.Follow, "Toggle Follow Player"), (ToolbarAction.CenterPlayer, "Center on Player"),
-        (ToolbarAction.CenterMap, "Center on Map"), (ToolbarAction.Search, "Search for Map"),
+        (ToolbarAction.CenterMap, "Center on Map"), (ToolbarAction.Follow, "Toggle Follow Player"),
         (ToolbarAction.Settings, "Open Settings"), (ToolbarAction.Close, "Close Map"),
     ];
 
     private static void DrawSegmented(Action<ToolbarAction> activate, Action drawLayersContextMenu)
     {
         var context = MapDrawContext.Current;
-        var scale = context.GlobalScale;
+        var scale = GratisTheme.ChromeScale;
         var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
         var area = areaMax - areaMin;
-        var compact = area.X < 300 * scale || area.Y < 280 * scale;
+        var (safeMin, safeMax) = ChromeLayout.SafeBounds();
+        var available = safeMax.X - safeMin.X;
+        var compact = available < 8 * GratisTheme.ControlHeight * scale + 8 * scale || area.Y < 280 * scale;
         var count = compact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : context.Config.UseCustomWindowChrome ? 8 : 7;
-        if (area.X < (count * 28 + 24) * scale || area.Y < 64 * scale) return;
-        var width = (count * 28 + 8) * scale;
-        var offset = MapWindowDrawing.ToolbarOffset(count);
-        ImGui.SetCursorPos(offset);
+        if (available < (count * GratisTheme.ControlHeight + 8) * scale) count = 2;
+        var width = context.Config.SegmentedToolbar ? (count * GratisTheme.ControlHeight + 8) * scale : available;
+        var height = GratisTheme.ToolbarHeight * scale;
+        var bounds = ChromeLayout.Place("toolbar", new Vector2(width, height), context.Config.ToolbarAnchor);
+        if (bounds == Vector4.Zero) return;
         var surfaceList = ImGui.GetWindowDrawList();
-        var surfaceOrigin = ImGui.GetCursorScreenPos();
-        LastBounds = new(surfaceOrigin.X, surfaceOrigin.Y, surfaceOrigin.X + width, surfaceOrigin.Y + 36 * scale);
+        var surfaceOrigin = ChromeLayout.Position(bounds);
+        ImGui.SetCursorScreenPos(surfaceOrigin); ImGui.Dummy(Vector2.Zero);
+        ImGui.SetCursorScreenPos(surfaceOrigin);
+        LastBounds = bounds;
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
-        var visible = ImGui.BeginChild("toolbar_child", new Vector2(width, 36 * scale));
+        var visible = ImGui.BeginChild("toolbar_child", new Vector2(width, height));
         try {
             if (!visible) return;
             var origin = ImGui.GetWindowPos();
             var list = ImGui.GetWindowDrawList();
-            MapWindowDrawing.DrawSurface(surfaceList, surfaceOrigin, surfaceOrigin + new Vector2(width, 36 * scale), 18 * scale,
+            MapWindowDrawing.DrawSurface(surfaceList, surfaceOrigin, surfaceOrigin + new Vector2(width, height), GratisTheme.CardRadius * scale,
                 surface: GlassSurface.Toolbar);
             for (var index = 0; index < count; index++) {
-                var (action, tooltip) = Buttons[compact ? index == 0 ? 2 : index + 5 : index];
-                var min = origin + new Vector2(4 + index * 28, 4) * scale;
+                var (action, tooltip) = Buttons[compact || count == 2 ? index == 0 ? 0 : index + 5 : index];
+                var buttonX = !context.Config.SegmentedToolbar && index >= count - (context.Config.UseCustomWindowChrome ? 2 : 1)
+                    ? width / scale - 4 - (count - index) * GratisTheme.ControlHeight : 4 + index * GratisTheme.ControlHeight;
+                var min = origin + new Vector2(buttonX, 4) * scale;
                 var active = action == ToolbarAction.Follow && context.Config.FollowPlayer || action == ToolbarAction.Layers && ImGui.IsPopupOpen("Gratis_Show_Layers");
                 ImGui.SetCursorScreenPos(min);
                 var buttonId = $"##gratis-{action}";
                 context.Trace?.Widget(ImGui.GetID(buttonId));
-                var clicked = ImGui.InvisibleButton(buttonId, new Vector2(28 * scale));
+                var clicked = ImGui.InvisibleButton(buttonId, new Vector2(GratisTheme.ControlHeight * scale));
                 var hovered = ImGui.IsItemHovered();
                 var lift = HoverAnimation.Progress($"toolbar/{ImGui.GetID(action.ToString())}", hovered);
-                if (active || lift > 0) list.AddRectFilled(min, min + new Vector2(28 * scale),
+                if (active || lift > 0) list.AddRectFilled(min, min + new Vector2(GratisTheme.ControlHeight * scale),
                     ImGui.GetColorU32(active ? context.Config.AccentColor with { W = .12f } : new Vector4(1, 1, 1, .06f * lift)), GratisTheme.ButtonRadius * scale);
-                DrawGlyph(list, min + new Vector2(14 * scale), action, active ? context.Config.AccentColor : GratisTheme.Primary, scale, context.Config.FollowPlayer);
+                DrawGlyph(list, min + new Vector2(GratisTheme.ControlHeight / 2 * scale), action, active ? context.Config.AccentColor : GratisTheme.Primary, scale, context.Config.FollowPlayer);
                 if (hovered) {
                     if (context.Config.HoverCardStyle == 0) HoverCardDrawing.Draw($"toolbar/{action}", tooltip);
                     else ImGui.SetTooltip(tooltip);

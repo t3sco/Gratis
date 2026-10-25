@@ -73,15 +73,15 @@ public sealed partial class ContextMenu
     }
     private void DrawPopup(IMapWindowHost host)
     {
-        var context = MapDrawContext.Current; var s = context.GlobalScale;
+        var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         if (host.Config.MapCircle) { var inset = (max - min) * .14644661f; min += inset; max -= inset; }
-        min += new Vector2(6 * s); max -= new Vector2(6 * s);
-        var rowHeight = 26 * s;
-        var size = Vector2.Min(new Vector2(246 * s, current.Count * rowHeight + 12 * s), Vector2.Max(new Vector2(1), max - min));
+        min += new Vector2(GratisTheme.Inset * s); max -= new Vector2(GratisTheme.Inset * s);
+        var rowHeight = GratisTheme.ControlHeight * s;
+        var size = Vector2.Min(new Vector2(286 * s, current.Count * rowHeight + 12 * s), Vector2.Max(new Vector2(1), max - min));
         Min = Vector2.Clamp(anchor, min, Vector2.Max(min, max - size)); Max = Min + size;
         ImGui.SetNextWindowPos(Min); ImGui.SetNextWindowSize(size);
-        using var font = context.GetChromeFont(12 * s, ChromeFontRole.Body)?.Push();
+        using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(6 * s));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
@@ -89,7 +89,7 @@ public sealed partial class ContextMenu
         try {
             if (!ImGui.BeginPopup(Popup, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings)) { IsOpen = false; return; }
             Capture(); context.Chrome.Reveal(host.Now);
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, 10 * s, surfaceOpacity: 1);
+            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, GratisTheme.CardRadius * s, surfaceOpacity: 1);
             if (ImGui.IsKeyPressed(ImGuiKey.Escape, false) || current.Count == 0) { Close(); ImGui.EndPopup(); return; }
             if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) selected = (selected + 1) % current.Count;
             if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) selected = (selected + current.Count - 1) % current.Count;
@@ -101,8 +101,8 @@ public sealed partial class ContextMenu
                 var hovered = ImGui.IsItemHovered();
                 if (hovered && ImGui.GetIO().MouseDelta != Vector2.Zero) selected = i;
                 if (i == selected) ImGui.GetWindowDrawList().AddRectFilled(pos, pos + new Vector2(size.X - 12 * s, rowHeight), ImGui.GetColorU32(new Vector4(1, 1, 1, .09f)), 5 * s);
-                GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(13, 13) * s, item.Icon, GratisTheme.Secondary, 14 * s);
-                ImGui.GetWindowDrawList().AddText(pos + new Vector2(28, 6) * s, ImGui.GetColorU32(GratisTheme.Primary), item.Label);
+                GratisIcons.Draw(ImGui.GetWindowDrawList(), pos + new Vector2(16 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary, 14 * s);
+                ImGui.GetWindowDrawList().AddText(pos + new Vector2(34 * s, (rowHeight - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), item.Label);
                 if (enter && selected == i || clicked) { Activate(item); break; }
             }
             ImGui.EndPopup();
@@ -126,8 +126,8 @@ public sealed partial class ContextMenu
     private void DrawToast()
     {
         if (toast.Length == 0 || ImGui.GetTime() >= toastUntil) return;
-        var context = MapDrawContext.Current; var s = context.GlobalScale;
-        using var font = context.GetChromeFont(12 * s, ChromeFontRole.Chip)?.Push();
+        var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
+        using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         var size = ImGui.CalcTextSize(toast) + new Vector2(24, 16) * s;
         var pos = MapAssistance.ConstrainPanel(ImGui.GetWindowPos() + new Vector2((ImGui.GetWindowWidth() - size.X) / 2, ImGui.GetWindowHeight() - 112 * s), size);
         MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, 8 * s, surfaceOpacity: 1);

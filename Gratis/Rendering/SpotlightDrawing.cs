@@ -114,15 +114,14 @@ internal static class SpotlightDrawing
     {
         if (spotlight.Opacity <= 0 || !spotlight.DistanceChip || !spotlight.IncludePlayer) return;
         var context = MapDrawContext.Current;
-        var scale = context.GlobalScale;
-        using var font = context.GetChromeFont(12 * scale, ChromeFontRole.Chip)?.Push();
+        var scale = GratisTheme.ChromeScale;
+        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
         var label = $"{spotlight.Distance:0} yalms";
-        var half = (ImGui.CalcTextSize(label) + new Vector2(18, 10) * scale) / 2;
+        var half = (ImGui.CalcTextSize(label) + new Vector2(24, 16) * scale) / 2;
         var center = origin + (spotlight.TargetTexture + spotlight.PlayerTexture) * .5f * zoom + new Vector2(0, 25) * scale;
         if (!Fits(center, half + new Vector2(2))) return;
         var list = ImGui.GetWindowDrawList();
-        list.AddRectFilled(center - half, center + half, ImGui.GetColorU32(GratisTheme.Outline with { W = .92f * spotlight.Opacity }), half.Y);
-        list.AddRect(center - half, center + half, ImGui.GetColorU32(context.Config.AccentColor with { W = .4f * spotlight.Opacity }), half.Y);
-        list.AddText(center - half + new Vector2(9, 5) * scale, ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
+        MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.CardRadius * scale, spotlight.Opacity, surfaceOpacity: 1);
+        list.AddText(center - half + new Vector2(12, 8) * scale, ImGui.GetColorU32(Vector4.One with { W = spotlight.Opacity }), label);
     }
 }

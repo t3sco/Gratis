@@ -82,7 +82,7 @@ public sealed partial class SettingsLayout
         Add("MapVignette", "Edge vignette");
 
         Group("Map", "Travel", Gratis);
-        Add("TravelActions", "Lifestream travel actions", tip: "Available when Lifestream is loaded. Enabled on first detection.");
+        Add("TravelActions", "Travel actions", tip: "Offer objective teleports using native Teleport and optional Lifestream/Aethernet. Enabled on first Lifestream detection.");
         Add("TravelConfirmGil", "Confirm travel cost", 0, 10000, "%.0f gil");
         Add("AetheryteChips", "Nearest aetheryte chips");
         Group("Map", "Viewport");
@@ -200,6 +200,17 @@ public sealed partial class SettingsLayout
         Add("GhostRestoreDelay", "Stationary restore delay", 0, 5, "%.1f s", when: c => c.GhostMode);
         Add("AutoHideChrome", "Auto-hide chrome", tip: "Hover or interact to reveal the title, toolbar and coordinates.");
         Add("PinChrome", "Pin chrome");
+        Add("RestoreOpacityOnHover", "Restore full opacity on hover", tip: "Restore ordinary faded-map opacity while hovered. Ghost mode already restores opacity and input.");
+        Group("Chrome & motion", "Chrome layout", Gratis);
+        Add("ChromeScale", "Chrome size", .8f, 1.6f, "%.2fx");
+        const string anchors = "Top left|Top centre|Top right|Bottom left|Bottom centre|Bottom right";
+        Add("ToolbarAnchor", "Toolbar anchor", choices: anchors);
+        Add("FilterBarAnchor", "Filter bar anchor", choices: anchors);
+        Add("LocationAnchor", "Location card anchor", choices: anchors);
+        Add("CoordinateAnchor", "Coordinates anchor", choices: anchors);
+        Add("TravelCardAnchor", "Travel card anchor", choices: anchors,
+            tip: "Cards and controls sharing an anchor stack inward. Location and coordinates flow together on one row when there is room. Reset section restores the default layout.");
+        Group("Chrome & motion", "Chrome visibility", Gratis);
         Add("ChromeIdleDelay", "Idle delay", 0, 10, "%.1f s", when: c => c.AutoHideChrome && !c.PinChrome);
         Add("ChromeFadeDurationMs", "Fade duration", 0, 2000, "%.0f ms", when: c => c.AutoHideChrome && !c.PinChrome);
         Add("ChromeTitleMinAlpha", "Minimum title opacity", when: c => c.AutoHideChrome && !c.PinChrome);
@@ -267,6 +278,9 @@ public sealed partial class SettingsLayout
         Add("Motion.TrailOpacity", "Trail opacity", .05f, .5f, when: c => !c.ReduceMotion && c.Motion.PlayerTrail);
         Add("Motion.EaseFollow", "Ease player follow", when: c => !c.ReduceMotion);
         Add("Motion.EaseZoom", "Ease wheel zoom", when: c => !c.ReduceMotion);
+        Add("Motion.PanInertia", "Drag pan inertia", when: c => !c.ReduceMotion);
+        Add("Motion.PanInertiaStrength", "Pan inertia strength", .1f, 1, "%.2f s", when: c => !c.ReduceMotion && c.Motion.PanInertia,
+            tip: "Time to lose 99% of release speed. A click, wheel zoom or follow snap stops the glide.");
         Add("Motion.SettleSeconds", "Pan and zoom settle time", .05f, .3f, "%.2f s", when: c => !c.ReduceMotion && (c.Motion.EaseFollow || c.Motion.EaseZoom));
         Add("Motion.ZoneTransition", "Zone fade and slide", when: c => !c.ReduceMotion);
         Add("Motion.ZoneSeconds", "Zone transition duration", .08f, .4f, "%.2f s", when: c => !c.ReduceMotion && c.Motion.ZoneTransition);

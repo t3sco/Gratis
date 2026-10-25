@@ -118,7 +118,7 @@ internal static class ChromeVerification
         var activations = 0;
         try {
             for (var step = 0; step < 5; step++) {
-                var mouse = step < 2 ? new Vector2(-1000) : new Vector2(54, 50);
+                var mouse = step < 2 ? new Vector2(-1000) : new Vector2(64, 60);
                 io.AddMousePosEvent(mouse.X, mouse.Y);
                 io.AddMouseButtonEvent(0, step == 3);
                 ImGui.NewFrame();
@@ -139,16 +139,16 @@ internal static class ChromeVerification
                     Require(context.Blurs.Count == 0 && list.VtxBuffer.Size == start, "Hidden glass emits no surface or blur");
                     Near(context.Chrome.Progress, 0, "Input fixture starts hidden");
                 }
-                MapToolbarDrawing.Draw(action => { if (action == ToolbarAction.Follow) activations++; }, () => { });
+                MapToolbarDrawing.Draw(action => { if (action == ToolbarAction.Search) activations++; }, () => { });
                 ImGui.End();
                 ImGui.Render();
                 if (step >= 2) Near(context.Chrome.Progress, 1, "Hover reveals before input");
             }
-            Require(activations == 1, $"Revealed follow click dispatched {activations} times");
+            Require(activations == 1, $"Revealed search click dispatched {activations} times");
             var mapClicks = 0;
             var hiddenToolbarClicks = 0;
             for (var step = 0; step < 4; step++) {
-                io.AddMousePosEvent(54, 50);
+                io.AddMousePosEvent(64, 60);
                 io.AddMouseButtonEvent(0, step == 2);
                 ImGui.NewFrame();
                 ImGui.SetNextWindowPos(new Vector2(28, 24));

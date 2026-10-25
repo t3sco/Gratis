@@ -22,7 +22,7 @@ internal static class ContextMenuVerification
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
     public static void Nearest()
     {
-        var config = PaletteVerification.Config(); config.WindowSize = new(700,600);
+        var config = PaletteVerification.Config(); config.WindowSize = new(700,600); config.TravelActions = true;
         using var driver = new ScriptedFrameDriver(config,new FrameScript{Width=960,Height=800});
         var source = new TravelFixture(driver);
         var assistance = driver.Context.Assistance = new MapAssistance(NullTravelProvider.Instance,source,()=>true,()=>{});

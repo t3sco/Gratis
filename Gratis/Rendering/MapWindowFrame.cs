@@ -87,7 +87,9 @@ public sealed partial class MapWindowFrame
         MapDrawOffset = ImGui.GetCursorScreenPos();
         var ghostEnabled = host.Config.IsGratis && host.Config.GhostMode;
         using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
-            ghostEnabled ? Ghost.Opacity : host.Config.FadePercent, ghostEnabled || host.ShouldFade);
+            ghostEnabled ? Ghost.Opacity : host.Config.FadePercent, ghostEnabled || host.ShouldFade && !(host.Config.IsGratis && host.Config.RestoreOpacityOnHover &&
+                ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) &&
+                ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false)));
         using (var renderChild = FrameScopes.Child("render_child", ImGui.GetContentRegionAvail(), ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar |
             (Ghost.ClickThrough ? ImGuiWindowFlags.NoInputs : ImGuiWindowFlags.None))) {
             if (!renderChild.Visible) return;

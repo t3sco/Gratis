@@ -15,13 +15,13 @@ public static class HoverCardDrawing
         var context = MapDrawContext.Current;
         context.HoverCardFrame = ImGui.GetFrameCount();
         var attuned = AetheryteAttunement.Status(context.Config, marker);
-        if (attuned.HasValue) secondary = (attuned.Value ? "Attuned" : "Not attuned") + (string.IsNullOrWhiteSpace(secondary) ? "" : "\n" + secondary);
+        if (attuned.HasValue) secondary = (attuned.Value ? "Attuned" : "Not yet attuned") + (string.IsNullOrWhiteSpace(secondary) ? "" : "\n" + secondary);
         if (marker != null && context.Assistance?.HoverTransport(marker, title) == true) return;
         context.Chrome.Reveal(ImGui.GetTime());
-        var scale = context.GlobalScale;
+        var scale = GratisTheme.ChromeScale;
         var fade = HoverAnimation.Progress("card/" + key, true);
         var viewport = ImGui.GetWindowViewport();
-        var margin = new Vector2(8 * scale);
+        var margin = new Vector2(GratisTheme.Inset * scale);
         var available = Vector2.Max(new Vector2(1), viewport.Size - margin * 2);
         var padding = new Vector2(12 * scale);
         var swatch = (context.Config.HoverCardSwatch && category.HasValue ? 24 * scale : 0) + (attuned.HasValue ? 18 * scale : 0);

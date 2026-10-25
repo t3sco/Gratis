@@ -13,7 +13,7 @@ public sealed partial class MeasureTool
 {
     private void DrawRuler(IMapWindowHost host)
     {
-        var context = MapDrawContext.Current; var s = context.GlobalScale;
+        var context = MapDrawContext.Current; var s = GratisTheme.ChromeScale;
         var origin = ImGui.GetWindowPos(); var (min, max) = MapShape.Bounds(origin, ImGui.GetWindowSize());
         var a = host.Renderer.WorldToScreen(Start, origin); var b = host.Renderer.WorldToScreen(End, origin);
         var rounding = MapShape.Rounding(max - min);
@@ -29,7 +29,7 @@ public sealed partial class MeasureTool
                 list.AddCircleFilled(endpoint, 3 * s, colour, 16);
             }
         var first = host.Renderer.WorldToMapCoordinates(Start); var second = host.Renderer.WorldToMapCoordinates(End);
-        using var font = context.GetChromeFont(11 * s, ChromeFontRole.Chip)?.Push();
+        using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         var text = FormattableString.Invariant($"{Distance:0.0}y  ·  ({first.X:0.0}, {first.Y:0.0}) to ({second.X:0.0}, {second.Y:0.0})");
         var size = ImGui.CalcTextSize(text) + new Vector2(16, 10) * s;
         var center = (clippedA + clippedB) / 2;
@@ -38,7 +38,7 @@ public sealed partial class MeasureTool
         if (size.X > safeMax.X - safeMin.X || size.Y > safeMax.Y - safeMin.Y) return;
         var pos = Vector2.Clamp(center - size / 2, safeMin, safeMax - size);
         ChipMin = pos; ChipMax = pos + size;
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, 7 * s, surfaceOpacity: 1);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s, surfaceOpacity: 1);
         list.AddText(pos + new Vector2(8, 5) * s, ImGui.GetColorU32(GratisTheme.Primary), text);
         if (ImGui.IsMouseHoveringRect(pos, pos + size, false)) ImGui.SetTooltip("Ruler · right-click to copy distance · Esc clears");
     }

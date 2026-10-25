@@ -24,7 +24,6 @@ public static class MapWindowDrawing
         if (title) titleBounds = new(min.X, min.Y, max.X, max.Y);
         else coordinateBounds = new(min.X, min.Y, max.X, max.Y);
     }
-    private static (int Frame, uint Window, float Top) coordinateLayout;
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1, float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other)
     {
         var context = MapDrawContext.Current;
@@ -256,6 +255,11 @@ public static class MapWindowDrawing
         if (!isBottom && config.TitleBelowToolbar && isRight) y += ImGui.GetFrameHeight();
 
         var boxMin = windowPos + new Vector2(x, y);
+        if (config.IsGratis) {
+            var anchored = ChromeLayout.Place("location", boxSize, config.LocationAnchor);
+            if (anchored == Vector4.Zero) return;
+            boxMin = ChromeLayout.Position(anchored);
+        }
         var boxMax = boxMin + boxSize;
         var drawList = ImGui.GetWindowDrawList();
 
@@ -297,107 +301,73 @@ public static class MapWindowDrawing
 
     private static void DrawCompactTitle(string title)
     {
-        var context = MapDrawContext.Current;
-        var scale = context.GlobalScale;
-        var parts = title.Split(" - ", global::System.StringSplitOptions.RemoveEmptyEntries | global::System.StringSplitOptions.TrimEntries);
+        var context = MapDrawContext.Current; var scale = GratisTheme.ChromeScale;
+        var (min, max) = ChromeLayout.SafeBounds();
+        var available = max - min;
+        if (available.X < 240 * scale || available.Y < 180 * scale) return;
+        var parts = title.Split(" - ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length == 0) return;
         var name = parts[^1];
-        var region = parts.Length > 1 ? string.Join(" / ", parts[..^1]) : "";
-        using var titleFont = context.GetChromeFont(14 * scale, ChromeFontRole.Chip)?.Push();
-        var font = ImGui.GetFont();
-        var window = ImGui.GetWindowSize();
-        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, window);
-        var area = areaMax - areaMin;
-        if (area.X < 160 * scale || area.Y < 160 * scale) return;
-        var compact = area.X < 480 * scale || area.Y < 360 * scale;
-        if (compact) region = "";
-        var padding = new Vector2(compact ? 8 : 12, compact ? 6 : 8) * scale;
-        var wrap = MathF.Max(1, MathF.Min(280 * scale,
-            (context.Config.MapCircle ? area.X * .72f : area.X - 32 * scale) - padding.X * 2));
-        var primary = DrawBinding.MeasureText(14 * scale, name, wrap);
-        Vector2 secondary;
-        using (context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push())
-            secondary = DrawBinding.MeasureText(12 * scale, region, wrap);
-        var size = new Vector2(MathF.Max(primary.X, secondary.X), primary.Y + (region.Length > 0 ? secondary.Y + 4 * scale : 0)) + padding * 2;
-        if (size.Y > area.Y * .35f) return;
-        var config = MapDrawContext.Current.Config;
-        var count = config.UseCustomWindowChrome ? 8 : 7;
-        var y = 8 * scale;
-        if (config.MapCircle) {
-            var half = area.X / 2;
-            var rimInset = half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X / 4));
-            var bottom = coordinateLayout.Frame == ImGui.GetFrameCount() && coordinateLayout.Window == ImGui.GetID("coordinate-layout")
-                ? coordinateLayout.Top - ImGui.GetWindowPos().Y : areaMax.Y - rimInset;
-            y = MathF.Max(8 * scale, bottom - size.Y - 8 * scale);
-        }
-        if (!config.MapCircle && size.X + (count * 28 + 32) * scale > window.X) y = 52 * scale;
-        var inset = 8 * scale;
-        var radius = MapShape.Current;
-        if (y < radius) inset += radius - MathF.Sqrt(MathF.Max(0, radius * radius - (radius - y) * (radius - y)));
-        var x = config.MapCircle ? (window.X - size.X) / 2 : MathF.Max(8 * scale, window.X - inset - size.X);
-        var pos = ImGui.GetWindowPos() + new Vector2(x, y);
-        var list = ImGui.GetWindowDrawList();
+        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
+        var width = MathF.Min(220 * scale, ImGui.CalcTextSize(name).X + 24 * scale);
+        var coordinates = CoordinateBounds;
+        if (coordinates != Vector4.Zero && context.Config.LocationAnchor == context.Config.CoordinateAnchor)
+            width = MathF.Min(width, available.X - (coordinates.Z - coordinates.X) - GratisTheme.Gap * scale);
+        if (width < 80 * scale) return;
+        var size = new Vector2(width, GratisTheme.ControlHeight * scale);
+        var bounds = ChromeLayout.Place("location", size, context.Config.LocationAnchor);
+        if (bounds == Vector4.Zero) return;
+        var pos = ChromeLayout.Position(bounds); var list = ImGui.GetWindowDrawList();
         RecordBounds(pos, pos + size, true);
         DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Title);
-        var text = pos + padding;
-        if (region.Length > 0) {
-            using var secondaryFont = context.GetChromeFont(12 * scale, ChromeFontRole.Body)?.Push();
-            list.AddText(ImGui.GetFont(), 12 * scale, text, ImGui.GetColorU32(ChromeSecondary), region, wrap);
-            text.Y += secondary.Y + 4 * scale;
+        var displayed = name;
+        while (displayed.Length > 1 && ImGui.CalcTextSize(displayed + (displayed.Length < name.Length ? "\u2026" : "")).X > size.X - 24 * scale)
+            displayed = displayed[..^1];
+        if (displayed.Length < name.Length) displayed += "\u2026";
+        var textPos = pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2);
+        var firstVertex = list.VtxBuffer.Size;
+        list.AddText(textPos, ImGui.GetColorU32(GratisTheme.Primary), displayed);
+        unsafe {
+            var vertices = (ImDrawVert*)list.VtxBuffer.Data;
+            for (var i = firstVertex; i < list.VtxBuffer.Size; i++) {
+                var position = (Vector2*)(vertices + i);
+                position->X += (textPos.Y + ImGui.GetFontSize() - position->Y) * GratisTheme.AreaLabelSlant;
+            }
         }
-        list.AddText(font, 14 * scale, text, ImGui.GetColorU32(GratisTheme.Primary), name, wrap);
+        ImGui.SetCursorScreenPos(pos); ImGui.InvisibleButton("##location-card", size);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(string.Join(" / ", parts));
     }
 
     public static void DrawCoordinates(Vector2? character, Vector2? cursor)
     {
-        var context = MapDrawContext.Current;
+        var context = MapDrawContext.Current; var scale = GratisTheme.ChromeScale;
         var time = context.Config.IsGratis && context.Config.ShowEorzeaTime ? EorzeaTime.Format(context.UnixTimeSeconds) : "";
         if (character is null && cursor is null && time.Length == 0) return;
-        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
-        var area = areaMax - areaMin;
-        if (context.Config.IsGratis && (area.X < 360 * context.GlobalScale || area.Y < 300 * context.GlobalScale)) return;
-        using var chromeAlpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
-        if (!chromeAlpha.Visible) return;
-        var scale = MapDrawContext.Current.GlobalScale;
-        using var coordinateFont = MapDrawContext.Current.GetChromeFont(14 * scale, ChromeFontRole.Coordinates)?.Push();
-        var font = ImGui.GetFont();
-        var fontSize = 14 * scale;
-        var digit = DrawBinding.MeasureText(fontSize, "0").X;
-        string Format(Vector2 point) => global::System.FormattableString.Invariant($"{point.X,4:F1} / {point.Y,4:F1}");
-        var left = character is { } player ? "PLAYER " + Format(player) : "";
-        var right = cursor is { } mouse ? "CURSOR " + Format(mouse) : "";
-        var text = left + (left.Length > 0 && right.Length > 0 ? "  |  " : "") + right;
-        if (time.Length > 0) text += (text.Length > 0 ? "  |  " : "") + time;
-        float Advance(char glyph) => char.IsDigit(glyph) || glyph == '.' ? digit :
-            glyph == ' ' ? 3 * scale : DrawBinding.MeasureText(12 * scale, glyph.ToString()).X;
-        float TextWidth(string value) { var width = 0f; foreach (var glyph in value) width += Advance(glyph); return width; }
-        var size = new Vector2(TextWidth(text) + 24 * scale, 36 * scale);
-        var window = ImGui.GetWindowSize();
-        if (size.X > window.X - 32 * scale && left.Length > 0) {
-            text = left + (time.Length > 0 ? "  |  " + time : ""); size.X = TextWidth(text) + 24 * scale;
+        var (min, max) = ChromeLayout.SafeBounds(); var available = max - min;
+        if (available.X < 320 * scale || available.Y < 220 * scale) return;
+        using var alpha = new ChromeVisibility.AlphaScope(context.Config.IsGratis, context.Chrome.ControlsAlpha(context.Config));
+        if (!alpha.Visible) return;
+        using var font = context.GetChromeFont(GratisTheme.TextSize * scale, context.Config.StyledCoordinates ? ChromeFontRole.Coordinates : ChromeFontRole.Body)?.Push();
+        string Format(Vector2 point) => FormattableString.Invariant($"{point.X:F1} / {point.Y:F1}");
+        var left = character is { } player ? Format(player) : "";
+        var right = character is null && cursor is { } mouse ? Format(mouse) : "";
+        const string separator = "  ·  ";
+        var text = left + (left.Length > 0 && right.Length > 0 ? separator : "") + right;
+        if (time.Length > 0) text += (text.Length > 0 ? separator : "") + time;
+        var budget = MathF.Min(available.X * .54f, 360 * scale);
+        if (ImGui.CalcTextSize(text).X + 24 * scale > budget && left.Length > 0) {
+            right = ""; text = left + (time.Length > 0 ? separator + time : "");
         }
-        if (size.X > area.X - 32 * scale) return;
-        var pos = ImGui.GetWindowPos() + new Vector2((window.X - size.X) / 2, areaMax.Y - size.Y - 8 * scale);
-        if (MapDrawContext.Current.Config.MapCircle) {
-            var half = area.X * .5f;
-            pos.Y -= half - MathF.Sqrt(MathF.Max(0, half * half - size.X * size.X * .25f));
-        }
-        coordinateLayout = (ImGui.GetFrameCount(), ImGui.GetID("coordinate-layout"), pos.Y);
+        var size = new Vector2(ImGui.CalcTextSize(text).X + 24 * scale, GratisTheme.ControlHeight * scale);
+        if (size.X > available.X) return;
+        var bounds = ChromeLayout.Place("coordinates", size, context.Config.CoordinateAnchor);
+        if (bounds == Vector4.Zero) return;
+        var pos = ChromeLayout.Position(bounds);
         RecordBounds(pos, pos + size, false);
-        CoordinateCopy.Record(pos, size, TextWidth(left), right.Length > 0 && text.Contains(right) ? TextWidth(right) : 0, TextWidth("  |  "));
-        ImGui.SetCursorScreenPos(pos);
-        ImGui.Dummy(size);
+        CoordinateCopy.Record(pos, size, ImGui.CalcTextSize(left).X, ImGui.CalcTextSize(right).X, ImGui.CalcTextSize(separator).X);
+        ImGui.SetCursorScreenPos(pos); ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();
-        DrawSurface(list, pos, pos + size, GratisTheme.ButtonRadius * scale, surface: GlassSurface.Coordinates);
-        var start = pos + new Vector2(12, 8) * scale;
-        for (var index = 0; index < text.Length; index++) {
-            var glyph = text[index].ToString();
-            var numeric = char.IsDigit(text[index]) || text[index] == '.';
-            var glyphSize = numeric ? fontSize : 12 * scale;
-            var width = DrawBinding.MeasureText(glyphSize, glyph).X;
-            var advance = Advance(text[index]);
-            list.AddText(font, glyphSize, start + new Vector2((advance - width) / 2, (fontSize - glyphSize) / 2), ImGui.GetColorU32(numeric ? GratisTheme.Primary : ChromeSecondary), glyph);
-            start.X += advance;
-        }
+        DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale, surface: GlassSurface.Coordinates);
+        list.AddText(pos + new Vector2(12 * scale, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
     }
 }
