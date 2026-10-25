@@ -16,6 +16,7 @@ internal static class HoverAnimation
 
     public static float Progress(string key, bool hovered)
     {
+        if (MapDrawContext.Current.Config.ReduceMotion) return hovered ? 1 : 0;
         var now = ImGui.GetTime();
         if (now < lastPrune || now - lastPrune > 1) {
             foreach (var entry in new List<string>(States.Keys))

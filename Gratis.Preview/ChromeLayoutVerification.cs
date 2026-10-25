@@ -20,6 +20,7 @@ internal static class ChromeLayoutVerification
 
     public static void Layout()
     {
+        ChromePolishVerification.Run();
         ToolbarMigration();
         ToolbarPlacement();
         var c = JsonSerializer.Deserialize<SystemConfig>("{}", new JsonSerializerOptions { IncludeFields = true })!;
@@ -107,14 +108,14 @@ internal static class ChromeLayoutVerification
             double time = 0;
             foreach (var scale in new[] { .8f, 1f, 1.5f })
             foreach (var segmented in new[] { false, true })
-            foreach (var width in new[] { 320f, 340f, 360f, 780f, 1280f }) {
+            foreach (var width in new[] { 256f, 280f, 320f, 780f, 1280f }) {
                 c.ChromeScale = scale; c.SegmentedToolbar = segmented;
                 c.LocationAnchor = ChromeAnchor.TopLeft; c.CoordinateAnchor = ChromeAnchor.TopRight;
                 travel.OfferContextTarget(new(new(400, 0), 1, SpotlightSource.Quest), time);
                 driver.Step(new(time += .04, Size: new Vector2(width, 600) * dpi)); driver.Step(new(time += .04));
                 var toolbar = MapToolbarDrawing.LastBounds; var handle = driver.Window.MoveHandle.Geometry;
                 var totalScale = dpi * scale; var inset = MathF.Ceiling(GratisTheme.Inset * totalScale);
-                var centered = width * dpi - 2 * inset >= (8 * GratisTheme.ControlHeight + 8 + 2 * (GratisTheme.ToolbarCenterMargin - GratisTheme.Inset)) * totalScale;
+                var centered = width * dpi - 2 * inset >= (MapToolbarDrawing.FullButtonCount * GratisTheme.ControlHeight + 8 + 2 * (GratisTheme.ToolbarCenterMargin - GratisTheme.Inset)) * totalScale;
                 Require(Valid(toolbar), $"Toolbar fits at {width}/{scale}/{dpi}");
                 Require(MapToolbarDrawing.EffectiveAnchor == (centered ? ChromeAnchor.TopCenter : ChromeAnchor.TopLeft), "Narrow toolbar falls back to Top-left");
                 Require(toolbar.Y >= handle.HitMax.Y + GratisTheme.Gap * totalScale - .01f &&

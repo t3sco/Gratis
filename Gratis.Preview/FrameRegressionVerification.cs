@@ -135,8 +135,8 @@ internal static class FrameRegressionVerification
             Require(snapshot.Blurred >= 4 && snapshot.Blurred == driver.Context.Blurs.Count && snapshot.Refused == 0, driver.Context.Blur.Status(config));
             Require(driver.Context.Blurs[1].List == driver.MapDrawList,
                 "Toolbar blur must use the full map-list surface, outside the child clip");
-            if (segmented) Require(driver.Context.Blurs[1].Max - driver.Context.Blurs[1].Min == new Vector2(8 * GratisTheme.ControlHeight + 8, GratisTheme.ToolbarHeight), "Blur covers the full toolbar rim");
-            Require(snapshot.Widgets == 8, "Each toolbar action is submitted exactly once");
+            if (segmented) Require(driver.Context.Blurs[1].Max - driver.Context.Blurs[1].Min == new Vector2(MapToolbarDrawing.FullButtonCount * GratisTheme.ControlHeight + 8, GratisTheme.ToolbarHeight), "Blur covers the full toolbar rim");
+            Require(snapshot.Widgets == MapToolbarDrawing.FullButtonCount, "Each toolbar action is submitted exactly once");
             Counts(snapshot);
         }
     }
@@ -192,7 +192,7 @@ internal static class FrameRegressionVerification
         using var driver = new ScriptedFrameDriver(config) { RepeatToolbarForVerification = true };
         driver.Step(new(0));
         var duplicated = driver.Step(new(.02));
-        Require(duplicated.IdCollisions == 8 && duplicated.DuplicateChrome > 0,
+        Require(duplicated.IdCollisions == MapToolbarDrawing.FullButtonCount && duplicated.DuplicateChrome > 0,
             "Repeated actual toolbar submissions must report real ImGui ID collisions and chrome duplication");
         driver.RepeatToolbarForVerification = false;
         var normal = driver.Step(new(.04));

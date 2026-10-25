@@ -122,11 +122,11 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     private void DrawProgress(IMapWindowHost host)
     {
         var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
-        var size = new Vector2(MathF.Min(348 * s, max.X - min.X), 88 * s);
+        var size = new Vector2(MathF.Min(310 * s, max.X - min.X), 104 * s);
         var bounds = ChromeLayout.Place("travel-progress", size, host.Config.TravelCardAnchor);
         if (bounds == Vector4.Zero) return;
         Panel("##travel-progress", ChromeLayout.Position(bounds), size, () => {
-            ImGui.TextUnformatted("Travelling to " + (DestinationName.Length == 0 ? "destination…" : DestinationName));
+            CardHeading("Travelling", DestinationName.Length == 0 ? "Your destination" : DestinationName, "");
             if (QuietButton("Cancel")) { provider.Abort(); Message = "Travel cancelled."; }
             CancelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
         });
@@ -136,7 +136,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     {
         if (hovered == null || !CanOffer(hovered)) return;
         var s = GratisTheme.ChromeScale; var (min, max) = ChromeLayout.SafeBounds();
-        var size = new Vector2(MathF.Min(310 * s, max.X - min.X), (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 144 : 120) * s);
+        var size = new Vector2(MathF.Min(310 * s, max.X - min.X), (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 148 : 104) * s);
         if (size.X < 230 * s) return;
         var bounds = ChromeLayout.Place("hover-travel", size, host.Config.TravelCardAnchor);
         if (bounds == Vector4.Zero) return;
@@ -145,7 +145,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         if (ImGui.IsMouseHoveringRect(pos - new Vector2(12 * s), pos + size + new Vector2(12 * s), false)) lastHover = ImGui.GetTime();
         if (ImGui.GetTime() - lastHover > .6) { hovered = pending = null; return; }
         Panel("##travel-card", pos, size, () => {
-            CardHeading(hovered.IsShard ? "Aethernet" : "Aetheryte", hovered.Name, hovered.IsShard ? "Aethernet" : places.Access(hovered).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable");
+            CardHeading(hovered.IsShard ? "Aethernet" : "Aetheryte", hovered.Name, hovered.IsShard ? "" : places.Access(hovered).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable");
             if (PrimaryTravelButton(pending?.Id == hovered.Id ? $"Confirm {pendingCost:N0} gil" : hovered.IsShard ? "Travel here" : "Teleport", GratisIcons.Compass))
                 Request(hovered, pending?.Id == hovered.Id);
             TravelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
@@ -167,11 +167,16 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
                 ImGui.GetColorU32(GratisTheme.WarmAccent), s);
             ImGui.Dummy(new Vector2(18, 12) * s); ImGui.SameLine(0, 0);
             ImGui.TextColored(GratisTheme.Secondary, label);
+            if (detail.Length > 0) {
+                var x = ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X - ImGui.CalcTextSize(detail).X;
+                if (x > ImGui.GetCursorPosX() + 8 * s) { ImGui.SameLine(x); ImGui.TextColored(GratisTheme.Secondary, detail); }
+            }
         }
-        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
-            ImGui.TextUnformatted(name);
-        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-            ImGui.TextColored(GratisTheme.Secondary, detail);
+        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push()) {
+            var displayed = ChromeControls.FitLabel(name, ImGui.GetContentRegionAvail().X);
+            ImGui.TextUnformatted(displayed);
+            if (displayed != name) ChromeControls.Tooltip(name);
+        }
         ImGui.Spacing();
     }
 
@@ -179,9 +184,9 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
     {
         var s = GratisTheme.ChromeScale; var pos = ImGui.GetCursorScreenPos();
         var size = new Vector2(ImGui.CalcTextSize(text).X + 16 * s, GratisTheme.ControlHeight * s);
-        var clicked = ImGui.InvisibleButton(text, size);
+        var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
-        if (ImGui.IsItemHovered()) list.AddRectFilled(pos, pos + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .06f)), GratisTheme.ButtonRadius * s);
+        ChromeControls.Feedback(list, pos, pos + size);
         list.AddText(pos + new Vector2(8 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Secondary), text);
         return clicked;
     }
@@ -191,12 +196,13 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var s = MapDrawContext.Current.GlobalScale;
         var min = ImGui.GetCursorScreenPos();
         var textSize = ImGui.CalcTextSize(text);
-        var size = textSize + new Vector2(38, 12) * s;
-        var clicked = ImGui.InvisibleButton(text, size);
+        var size = new Vector2(textSize.X + 38 * s, GratisTheme.ControlHeight * s);
+        var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
         list.AddRectFilled(min, min + size, ImGui.GetColorU32(new Vector4(.25f, .48f, .56f, ImGui.IsItemHovered() ? .5f : .27f)), 5 * s);
         GratisIcons.Draw(list, min + new Vector2(13 * s, size.Y / 2), icon, GratisTheme.Transport, 14 * s);
-        list.AddText(min + new Vector2(27, 6) * s, ImGui.GetColorU32(GratisTheme.Primary), text);
+        ChromeControls.Feedback(list, min, min + size, fill: false);
+        list.AddText(min + new Vector2(27 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(GratisTheme.Primary), text);
         return clicked;
     }
 
@@ -205,10 +211,11 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var s = GratisTheme.ChromeScale;
         var min = ImGui.GetCursorScreenPos();
         var size = new Vector2(ImGui.CalcTextSize(text).X + 40 * s, GratisTheme.ControlHeight * s);
-        var clicked = ImGui.InvisibleButton(text, size);
+        var clicked = ChromeControls.Button(text, size);
         var list = ImGui.GetWindowDrawList();
         var ink = GratisTheme.Surface with { W = 1 };
         list.AddRectFilled(min, min + size, ImGui.GetColorU32(GratisTheme.Crystal with { W = ImGui.IsItemHovered() ? 1 : .94f }), GratisTheme.ButtonRadius * s);
+        ChromeControls.Feedback(list, min, min + size, fill: false);
         GratisIcons.Draw(list, min + new Vector2(15 * s, size.Y / 2), icon, ink, GratisTheme.IconSize * s);
         list.AddText(min + new Vector2(30 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), text);
         return clicked;
@@ -229,7 +236,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var cursor = ImGui.GetCursorPos();
         ImGui.SetCursorScreenPos(pos);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12, 10) * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.CardRadius * s);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 4) * s);

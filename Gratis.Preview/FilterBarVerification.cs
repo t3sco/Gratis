@@ -99,7 +99,7 @@ internal static class FilterBarVerification
                     driver.Step(new ScriptFrame(.2, Mouse: button));
                     driver.Step(new ScriptFrame(.24, Mouse: button, Left: true));
                     driver.Step(new ScriptFrame(.28, Mouse: button, Left: false));
-                    Require(FilterBarDrawing.InputActive && FilterBarDrawing.ChipBounds.All(Valid), $"Overflow rows at {size}, circle={circle}: active={FilterBarDrawing.InputActive}, rows={FilterBarDrawing.ChipBounds.Count(Valid)}, button={button}, move={driver.Window.MoveHandle.BlocksMapInput}, drag={driver.Window.Dragging}");
+                    Require(FilterBarDrawing.InputActive && Enumerable.Range(0, MarkerVisibility.GroupCount).Where(i => driver.Context.Visibility.Counts[i] > 0).All(i => Valid(FilterBarDrawing.ChipBounds[i])), $"Present categories fit overflow at {size}, circle={circle}");
                 }
             }
         Console.WriteLine("Quick filters: native chip mute, Ctrl/Alt solo, priority protection, right click, peek/restore, counts, custom cycling, auto-hide, and 10 real-frame chrome/shape layouts verified.");
@@ -131,11 +131,12 @@ internal static class FilterBarVerification
             Require(FilterBarDrawing.LastBounds.Z - FilterBarDrawing.LastBounds.X == GratisTheme.ControlHeight &&
                 FilterBarDrawing.ChipBounds.All(b => !Valid(b)) && FilterBarDrawing.ActiveCount == 0, "Each session starts with one compact Filters button");
             Click(FilterBarDrawing.OverflowBounds);
-            Require(FilterBarDrawing.PopoverOpen && FilterBarDrawing.ChipBounds.All(Valid), "Click expands all selected categories as icon chips");
+            Require(FilterBarDrawing.PopoverOpen && Enumerable.Range(0, MarkerVisibility.GroupCount).Where(i => driver.Context.Visibility.Counts[i] > 0).All(i => Valid(FilterBarDrawing.ChipBounds[i])) &&
+                !Valid(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Housing]), "Popover includes map categories and omits empty groups");
             var fate = Center(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Fates]);
             Step(fate); Require(FilterBarDrawing.LastTooltip == "FATEs", "Actual hover uses the short FATEs label");
             Step(fate, true); Step(fate);
-            Require(FilterBarDrawing.LastTooltip == "FATEs \u00b7 Muted" && FilterBarDrawing.ActiveCount == 1, "Muted state has a compact cue and active-filter badge");
+            Require(FilterBarDrawing.LastTooltip == "FATEs \u00b7 Muted" && FilterBarDrawing.ActiveCount == 1 && FilterBarDrawing.TriggerLabel == "1 muted", "Muted state has a short label and an explicit trigger count");
             driver.Context.Visibility.ResetFilters(); driver.Config.FilterOptions.Quests = false;
             Step();
             Require(!Valid(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Quests]) && driver.Trace.DrawnMarkers.Any(m => m.IconId == 71001), "Removing a category control never hides its priority markers");
