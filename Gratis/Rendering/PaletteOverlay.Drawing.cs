@@ -161,7 +161,7 @@ public sealed partial class PaletteOverlay
         var buttonWidth = canTeleport && width >= 600 * scale ? 108 * scale : 0;
         if (ImGui.InvisibleButton("##show", new Vector2(MathF.Max(1, rowWidth - buttonWidth), rowHeight))) Activate(result.Place);
         var hovered = ImGui.IsItemHovered();
-        if (hovered && ImGui.GetIO().MouseDelta.LengthSquared() > 0) selected = index;
+        if (hovered && !scrollSelection && ImGui.GetIO().MouseDelta.LengthSquared() > 0) selected = index;
         if (scrollSelection && index == selected) UiMotion.ScrollToItem();
         if (!ImGui.IsItemVisible()) {
             ImGui.SetCursorScreenPos(start + new Vector2(0, rowHeight + GratisTheme.Grid * scale));

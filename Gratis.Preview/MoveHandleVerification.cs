@@ -50,6 +50,7 @@ internal static class MoveHandleVerification
     private static FrameSnapshot Warm(ScriptedFrameDriver driver)
     {
         driver.Step(new(0)); driver.Step(new(.02)); driver.Step(new(2));
+        driver.Step(new(2.02));
         return driver.Step(new(2.2));
     }
 

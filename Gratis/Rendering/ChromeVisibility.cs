@@ -60,6 +60,11 @@ public sealed class ChromeVisibility
         lastUpdate = now;
         var delay = Finite(config.ChromeIdleDelay, 1.2f, 0, 10);
         var duration = Finite(config.ChromeFadeDurationMs, 180, 0, 2000) / 1000;
+        if (config.IsGratis) {
+            duration /= Finite(config.AnimationSpeed, 1, .5f, 1.5f);
+            if (config.ReduceMotion || config.EffectiveInterfaceMotion == InterfaceAnimationMode.Off) duration = 0;
+            else if (config.EffectiveInterfaceMotion == InterfaceAnimationMode.Reduced) duration = MathF.Min(duration, .06f);
+        }
         var elapsed = now - lastActivity - delay;
         var t = elapsed <= 0 ? 0 : duration <= 0 ? 1 : (float)Math.Clamp(elapsed / duration, 0, 1);
         Progress = fixedProgress is { } value && float.IsFinite(value) ? Math.Clamp(value, 0, 1) : 1 - t * t * (3 - 2 * t);

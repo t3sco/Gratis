@@ -12,8 +12,6 @@ namespace Gratis.Rendering;
 
 public sealed partial class PaletteOverlay
 {
-    private int highlightedCard = -1;
-    private double highlightedAt;
     public Vector2 FirstCardCenter { get; private set; }
 
     private void SetQuery(string text)
@@ -34,7 +32,8 @@ public sealed partial class PaletteOverlay
         if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.End)) browserSelection = Math.Max(0, count - 1);
         if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.PageDown)) browserSelection = Math.Min(count - 1, browserSelection + columns * 2);
         if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.PageUp)) browserSelection = Math.Max(0, browserSelection - columns * 2);
-        if (previous != browserSelection) scrollSelection = true;
+        var keyboardMoved = previous != browserSelection;
+        if (keyboardMoved) scrollSelection = true;
         if (expansion != null && IsOpen && ImGui.IsKeyPressed(ImGuiKey.Backspace, false)) { BrowseExpansion(null); return; }
         if (count > 0 && IsOpen && ImGui.IsKeyPressed(ImGuiKey.Enter, false)) {
             if (expansion == null) BrowseExpansion(expansions[browserSelection].Id);
@@ -78,7 +77,7 @@ public sealed partial class PaletteOverlay
             var clicked = ImGui.InvisibleButton("##card", cardSize);
             var hovered = ImGui.IsItemHovered();
             if (hovered && ImGui.GetIO().MouseDelta.LengthSquared() > 0) browserSelection = i;
-            if (previous != browserSelection && i == browserSelection) UiMotion.ScrollToItem();
+            if (keyboardMoved && i == browserSelection) UiMotion.ScrollToItem();
             if (i == 0) FirstCardCenter = position + cardSize / 2;
             var cover = expansion == null ? expansions[i].Cover : results[i].Place;
             if (ImGui.IsItemVisible()) {
@@ -163,10 +162,10 @@ public sealed partial class PaletteOverlay
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push())
             TextDrawing.Draw(list, min + new Vector2(12 * scale, size.Y - 27 * scale), ImGui.GetColorU32(GratisTheme.Primary with { W = .7f }), subtitle);
         list.PopClipRect();
-        if (active) {
-            if (highlightedCard != browserSelection) { highlightedCard = browserSelection; highlightedAt = ImGui.GetTime(); }
-            var opacity = config.ReduceMotion ? 1 : .4f + .6f * MotionMath.Transition(ImGui.GetTime(), highlightedAt, GratisTheme.HoverSeconds);
-            list.AddRect(min, max, ImGui.GetColorU32(accent with { W = opacity }), GratisTheme.ButtonRadius * scale, 0, 1.5f * scale);
+        var opacity = UiMotion.Value(ImGui.GetID("##browser-accent"), 7, active ? 1 : 0, initial: 0);
+        if (opacity > .001f) {
+            var indicator = active ? UiMotion.Selection(selectionMotionKey, min) : min;
+            list.AddRect(indicator, indicator + size, ImGui.GetColorU32(accent with { W = opacity }), GratisTheme.ButtonRadius * scale, 0, 1.5f * scale);
         }
     }
 

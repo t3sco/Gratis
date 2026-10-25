@@ -72,6 +72,13 @@ internal static class InterfaceMotionVerification
         var tweak = TweakCatalog.All.Single(t => t.Id == "interface-motion"); tweak.Set(c, false);
         Check(c.InterfaceAnimations == InterfaceAnimationMode.Off, "Tweak Off maps to the shared policy");
         tweak.Reset(c); Check(c.InterfaceAnimations == InterfaceAnimationMode.Full, "Tweak reset restores Full");
+        c.ReduceMotion = false; c.PinChrome = false; c.AutoHideChrome = true; c.ChromeIdleDelay = 0; c.ChromeFadeDurationMs = 1000;
+        c.InterfaceAnimations = InterfaceAnimationMode.Off;
+        var chrome = new ChromeVisibility(); chrome.Update(c, 0, true); chrome.Update(c, .01, false);
+        Check(chrome.Progress == 0, "Off also overrides the existing chrome fade duration");
+        c.InterfaceAnimations = InterfaceAnimationMode.Reduced;
+        chrome = new(); chrome.Update(c, 0, true); chrome.Update(c, .07, false);
+        Check(chrome.Progress == 0, "Reduced caps the existing chrome fade at 60ms");
         c.VisualStyle = 1; Check(c.EffectiveInterfaceMotion == InterfaceAnimationMode.Off, "Classic opts out without changing its saved settings");
         Console.WriteLine("Interface settings: legacy defaults, Full/Reduced/Off precedence, speed/reset and Tweaks routing.");
     }

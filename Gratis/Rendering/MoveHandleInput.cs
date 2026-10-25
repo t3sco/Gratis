@@ -125,7 +125,9 @@ public sealed class MoveHandleInput
         var targetVisibility = Enabled(config) && (topHover || Hovered || Dragging || context.Chrome.ControlsAlpha(config) > .05f);
         var dt = double.IsFinite(lastTime) ? Math.Max(0, host.Now - lastTime) : 0;
         lastTime = host.Now;
-        visibility = Math.Clamp(visibility + (float)(dt / .12) * (targetVisibility ? 1 : -1), 0, 1);
+        visibility = config.IsGratis ? UiMotion.Value(ImGui.GetID("##move-handle-reveal"), 12, targetVisibility ? 1 : 0,
+            InterfaceMotionTokens.Micro, initial: 0, opacity: true)
+            : Math.Clamp(visibility + (float)(dt / .12) * (targetVisibility ? 1 : -1), 0, 1);
     }
 
     private void Apply(IMapWindowHost host, Vector2 position, Vector2 size, Vector2 contentOffset, Vector2 contentSize, float scale, MoveWorkArea? area = null)
