@@ -1,23 +1,115 @@
+<div align="center">
+
 # Gratis
 
-Gratis is a Dalamud plugin providing a flat, minimal map UI for Final Fantasy XIV.
-Open it with `/gratis`.
+**A flat, glassy map for Final Fantasy XIV.**
 
-Based on [harbingerftw/Mappy](https://github.com/harbingerftw/Mappy) version 3.2.0.0,
-with credit to MidoriKami, harbingerftw, and the KamiLib/MappyLib contributors.
+Search for any place in Eorzea, keep your quests in sight, and get to an aetheryte faster.
 
-Licensed under AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
+**Add to Dalamud:** copy this into `/xlsettings` > Experimental > Custom Plugin Repositories.
 
-## Testing builds (custom repository)
+```
+https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
+```
 
-Gratis is in early testing and is not in the official Dalamud repository.
+[Install](#install) · [Features](#features) · [Commands](#commands) · [Feedback](#feedback) · [Credits](#credits)
 
-1. In game, open `/xlsettings` -> Experimental -> Custom Plugin Repositories.
-2. Add this URL, tick Enabled, and save:
+![Status: early testing](https://img.shields.io/badge/status-early%20testing-C9A24B)
+![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-4C8BF5)
+![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
+
+<img src="docs/images/search-browser.png" alt="Gratis place search, browsing by expansion" width="300"> &nbsp; <img src="docs/images/search-places.png" alt="Gratis place search results with aetheryte, flag and marker chips" width="300">
+
+</div>
+
+## Why Gratis
+
+Gratis keeps the maps from the game and replaces the interface around them. It has a flat glass
+look in warm gold and crystal blue, a search built on Eorzea's own place names, and a long list of
+small tweaks that each save a click.
+
+## Features
+
+### Search
+
+![The Gratis search panel with the toolbar and the expansion browser](docs/images/banner-search.png)
+
+- Click the search icon and type a zone, aetheryte, quest, marker or NPC. Each result shows its distance,
+  whether you are attuned, and what kind of place it is.
+- With an empty box you can browse by expansion, each with its own cover art.
+- Recent places, a "Nearest aetheryte" shortcut, and chips for the nearest market board and inn.
+- The keyboard works throughout: arrows to move, Enter to show, Tab to filter, Esc to close. Hovering with the mouse never scrolls the list.
+
+### Interface
+
+- The glass toolbar and info cards fade when the pointer is away. An optional click-through "ghost" mode
+  lets clicks pass to the game.
+- Motion can be interrupted at any point. Choose Full, Reduced or Off, and set the speed.
+- Dragging has inertia, follow mode eases back to you, and each zone remembers its view.
+- Small rooms and raid arenas fit the window, including right after you teleport.
+
+### Markers
+
+![Quest, flag and service markers on a recoloured map, with a quest hover card](docs/images/banner-markers.png)
+
+- Quests, FATEs, objectives, flags, aetherytes and your party count as priority markers. Decluttering and
+  lenses never hide them.
+- Other players are small dots and you are an arrow. The arrow follows your camera, with adjustable smoothing.
+- Three lenses (Explore, Quests, Minimal) and a filter drawer thin out a busy zone.
+- Pets are not drawn.
+
+### Travel
+
+- Aetheryte chips show whether you are attuned and what the teleport costs. They do not take over map clicks.
+- Lifestream integration is optional. Gratis can show and start a trip, but it never moves your character.
+
+### Settings
+
+![The Appearance page in Gratis settings](docs/images/banner-settings.png)
+
+- A Tweaks page lists each small quality-of-life option as one toggle with a one-line description and a reset.
+- Five named window presets, with an optional separate preset for duties.
+- Frame styles, colour presets, a circular map, and a Classic style that looks as it did before.
+- One bundled font, a fixed font budget, and a frame-cost readout in diagnostics.
+
+## Install
+
+Gratis is in early testing and is not yet in the official Dalamud repository.
+
+1. In game, open `/xlsettings`, then Experimental, then Custom Plugin Repositories.
+2. Add this URL, tick Enabled and save:
    `https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json`
 3. Open `/xlplugins`, search for Gratis and install it.
 4. Disable the Mappy plugin while testing so the two do not fight over the map.
 
-If something looks wrong, run `/gratis report` and send the saved report file
-(settings and diagnostics; it contains no character names). Other diagnostics:
-`/gratis text`, `/gratis markers`, `/gratis motion`, `/gratis camera`.
+Open the map with `/gratis`.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `/gratis` | Open or close the map |
+| `/gratis report` | Save a diagnostics report and screenshot (no character names) |
+| `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `pvp` | Focused diagnostics |
+
+## Feedback
+
+This is an early build and has rough edges. If something looks wrong, run `/gratis report`, then open an issue
+or message me with the saved file and a description of what you saw.
+
+## Credits
+
+- [Mappy](https://github.com/harbingerftw/Mappy), by MidoriKami (original author) and harbingerftw (maintainer of the
+  fork this is based on, version 3.2.0.0). The map window, marker handling and plugin structure come from their work.
+- KamiLib and MappyLib, by MidoriKami and contributors, which Gratis still uses.
+- [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License) and [Lucide](https://lucide.dev) icons
+  by Lucide Contributors (ISC).
+- Dalamud (goatcorp), FFXIVClientStructs and Lumina, which Gratis is built against.
+- Bundled libraries: NetStone, HtmlAgilityPack, Newtonsoft.Json and others, each under its own licence.
+
+[NOTICE.md](NOTICE.md) has the full list, with licences and what is derived from what.
+
+FINAL FANTASY XIV is a registered trademark of Square Enix. Gratis is a fan project and is not affiliated with
+or endorsed by Square Enix. Screenshots contain game artwork copyright Square Enix.
+
+Licensed under AGPL-3.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).

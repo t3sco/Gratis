@@ -21,3 +21,44 @@ Lucide Icons and Contributors, ISC license (with MIT notices for Feather-derived
 icons). The complete upstream license is in Gratis/Assets/Fonts/Lucide/LICENSE.txt.
 Only the TTF and license are bundled; named codepoints come from that package's
 font/codepoints.json. The package was downloaded as data; no package scripts ran.
+
+## Authorship of the code this project builds on
+
+Gratis started as a copy of Mappy 3.2.0.0 and its bundled KamiLib source. The git history
+of this repository begins at that point, so it does not show the earlier authors. Their work
+is the foundation of the map window, marker handling, configuration and much of the
+plugin structure:
+
+- MidoriKami: original author of Mappy and KamiLib (copyright 2022, AGPL-3.0; see LICENSE
+  and KamiLib/LICENSE).
+- harbingerftw: maintainer of the Mappy fork this project is based on (version 3.2.0.0).
+- The KamiLib/MappyLib contributors credited in those repositories.
+
+Gratis changes and additions are by t3sco. Files that keep Mappy/KamiLib code remain under the
+AGPL-3.0 with their original copyright notices. Source for every released build is in this
+repository, as the AGPL requires.
+
+## Third-party code shipped in the plugin
+
+These libraries are bundled in the release zip and remain under their own licences:
+
+- NetStone, by goaaats and Koenari (xivapi/NetStone), MIT. Used by the inherited KamiLib code.
+- HtmlAgilityPack, by ZZZ Projects, Simon Mourrier, Jeff Klawiter and Stephan Grell, MIT.
+- Karashiiro.HtmlAgilityPack.CssSelectors.NetCoreFork, by karashiiro and Thibaut Renoncourt;
+  see https://github.com/karashiiro/HtmlAgilityPack.CssSelectors.NetCore for its licence.
+- Newtonsoft.Json, by James Newton-King, MIT.
+- Microsoft.Extensions.ObjectPool, by Microsoft, MIT.
+
+Gratis is built against the Dalamud plugin framework (goatcorp), FFXIVClientStructs
+(aers and contributors) and Lumina (NotAdam and contributors), which are provided by the
+game's plugin host and are not redistributed here. The offline preview tool used for testing
+(not shipped) uses ImGui.NET by Eric Mellino and SkiaSharp by Microsoft, both MIT.
+
+## Game content and inspiration
+
+FINAL FANTASY XIV, its map artwork, icons and other game data are copyright Square Enix.
+Gratis reads this data from the player's own installation and does not redistribute it. Any
+game artwork shown in screenshots here is copyright Square Enix. Gratis is a fan project and is
+not affiliated with or endorsed by Square Enix.
+
+Design inspiration, with no code taken: the WoW addon OpenMap (seamless region view idea).
