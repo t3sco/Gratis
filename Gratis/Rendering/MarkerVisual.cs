@@ -29,7 +29,7 @@ public static class MarkerVisual
         var lensScale = context.Visibility.Visual(marker).Y;
         var zoomScale = settings.ScaleWithZoom ? Math.Clamp(marker.Scale, Math.Clamp(settings.MinimumScale, .1f, 3),
             Math.Clamp(settings.MaximumScale, Math.Clamp(settings.MinimumScale, .1f, 3), 3)) : 1;
-        return lensScale * zoomScale * (spotlight?.MarkerBreath(marker) ?? 1);
+        return lensScale * ViewportMath.SymbolScale(zoomScale) * (spotlight?.MarkerBreath(marker) ?? 1);
     }
 
     public static float Alpha(MarkerInfo marker)
@@ -55,7 +55,8 @@ public static class MarkerVisual
         var iconScale = config.IconScale;
         if (marker.IconId is 60401 or 60402) scale *= 2;
         if (DrawHelpers.IsRegionIcon(marker.IconId)) {
-            if (!config.IsGratis || !config.Markers.ScaleWithZoom) scale = marker.Scale;
+            if (!config.IsGratis) scale = marker.Scale;
+            else scale = ViewportMath.SymbolScale(scale);
             iconScale = .42f;
         }
         return context.GetIcon(marker.IconId).Size * scale * iconScale * setting.Scale / 2 + new Vector2(2 * context.GlobalScale);

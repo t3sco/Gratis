@@ -36,6 +36,8 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private IDalamudTextureWrap? blendedTexture;
     private string blendedPath = string.Empty;
+    private readonly MapContentCache mapContents = new(path => LoadMapPixels(path));
+    private Rendering.MapContentBounds? contentBounds;
 
     public MapRenderer()
     {
@@ -47,6 +49,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     {
         UnloadFogHooks();
         mapColours.Dispose();
+        mapContents.Dispose();
         blendedTexture?.Dispose();
         fogTexture?.Dispose();
     }
@@ -65,6 +68,8 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     int Rendering.IMapRendererHost.FrameId => ImGui.GetFrameCount();
     uint Rendering.IMapRendererHost.MapId => AgentMap.Instance()->SelectedMapId;
     ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->CurrentTerritoryId << 32) | AgentMap.Instance()->SelectedMapId;
+    Rendering.MapContentBounds? Rendering.IMapRendererHost.ContentBounds => contentBounds;
+    bool Rendering.IMapRendererHost.SmallMapHint => DrawHelpers.GetMapScaleFactor() >= 2;
     Vector2 Rendering.IMapRendererHost.CoordinateOffset(Vector2 position) => CoordinateOffset(position);
     void Rendering.IMapRendererHost.DrawBackgroundTexture() => DrawBackgroundTexture();
     void Rendering.IMapRendererHost.DrawFogOfWar() => DrawFogOfWar();
@@ -84,6 +89,8 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private void DrawBackgroundTexture()
     {
+        contentBounds = System.SystemConfig.IsGratis && System.SystemConfig.FitSmallRoomsToContent
+            ? mapContents.Get(AgentMap.Instance()->SelectedMapId, $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex") : null;
         if (AgentMap.Instance()->SelectedMapBgPath.Length is 0) {
             var texture = Service.TextureProvider.GetFromGame($"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
 

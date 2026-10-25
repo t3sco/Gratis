@@ -15,6 +15,8 @@ public interface IMapRendererHost
     int FrameId { get; }
     uint MapId { get; }
     ulong MapKey { get; }
+    MapContentBounds? ContentBounds => null;
+    bool SmallMapHint => false;
     Vector2 CoordinateOffset(Vector2 position);
     void DrawBackgroundTexture();
     void DrawFogOfWar();
@@ -40,6 +42,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize, viewportTextureSize, scale, offset);
     public void SetViewportScale(float scale)
     {
+        TouchSmallRoomView();
         CancelViewportMotion();
         restoringView = null;
         var constrained = Constrain(scale, DrawOffset);
@@ -48,6 +51,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     }
     public void CenterOnOffset(Vector2 offset)
     {
+        TouchSmallRoomView();
         Spotlight.Cancel("cancelled: explicit centre/zone switch");
         CancelViewportMotion();
         restoringView = null;
@@ -89,6 +93,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
     {
         if (viewportMotion.HasAdvanced(host.FrameId)) return;
         if (textureSize.X > 0 && textureSize.Y > 0) viewportTextureSize = textureSize;
+        PrepareSmallRoomView();
         PrepareRememberedView();
         wasFollowing = host.Config.FollowPlayer;
         MapDrawContext.Current.Trace?.MotionAdvance();
@@ -102,18 +107,19 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void ZoomViewport(float requestedScale, Vector2 cursorFromCenter, bool animate = true)
     {
+        TouchSmallRoomView();
         var config = host.Config;
         viewportMotion.CancelPan();
         if (!animate) CancelViewportMotion();
         if (animate) InteractWithViewport();
         if (animate && QueueViewportZoom(requestedScale, cursorFromCenter)) return;
-        if (!config.ClampToMap) {
+        if (!config.ClampToMap && !config.IsGratis) {
             WriteScale(requestedScale);
             return;
         }
         var circle = config.MapCircle && config.IsGratis;
-        var minimum = ViewportMath.MinimumScale(viewportSize, viewportTextureSize, circle);
-        var scale = viewportZoom.Resolve(viewportSize, requestedScale, config.ScaleWithFrame, minimum);
+        var minimum = ViewportMath.Limits(config, viewportSize, viewportTextureSize).Minimum;
+        var scale = Constrain(viewportZoom.Resolve(viewportSize, requestedScale, config.ScaleWithFrame, minimum), DrawOffset).Scale;
         var center = ViewportMath.ZoomAtCursor(new Vector2(1024) - DrawOffset, cursorFromCenter, Scale, scale);
         WriteScale(scale);
         WriteOffset(new Vector2(1024) - ViewportMath.ClampCenter(center,
@@ -155,6 +161,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
 
     public void InteractWithViewport(bool drag = false)
     {
+        TouchSmallRoomView();
         restoringView = null;
         if (Spotlight.OwnsViewport) { Spotlight.End(host.Now, "input: restoring viewport"); return; }
         host.Config.FollowPlayer = viewportMotion.Interact(host.Config, host.Now, drag);
@@ -183,13 +190,13 @@ public sealed partial class MapRendererFrame(IMapRendererHost host)
         var offset = DrawOffset;
         var mapKey = host.MapKey;
         viewportMotion.Advance(host.Config, mapKey, host.Now, host.FrameId,
-            viewportSize, viewportTextureSize, followPlayerPosition, followTargetOffset, followInteracting, followHovered,
+            viewportSize, viewportTextureSize, followPlayerPosition, SmallRoomFollowTarget(followTargetOffset), followInteracting, followHovered,
             followFocused, ref scale, ref offset);
         host.Config.MapScale = scale;
         DrawOffset = offset;
     }
 
-    public string TakeMotionDiagnostics() => viewportMotion.Diagnostics(host.Config, host.Now);
+    public string TakeMotionDiagnostics() => ViewportDiagnostics() + " " + viewportMotion.Diagnostics(host.Config, host.Now);
 
     public void PingTexturePosition(Vector2 position)
     {

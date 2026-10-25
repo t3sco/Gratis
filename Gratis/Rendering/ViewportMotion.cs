@@ -28,8 +28,10 @@ public sealed class ViewportMotion
     public float LastStep { get; private set; }
     public bool HasAdvanced(long frameId) => frame == frameId;
 
-    private static float Minimum(MapDrawingConfig c, Vector2 size, Vector2 texture) => c.ClampToMap
-        ? ViewportMath.MinimumScale(size, texture, c.MapCircle && c.IsGratis) : 0;
+    private static float Minimum(MapDrawingConfig c, Vector2 size, Vector2 texture) => c.IsGratis ? ViewportMath.Limits(c, size, texture).Minimum :
+        c.ClampToMap ? ViewportMath.MinimumScale(size, texture, false) : 0;
+    private float Resolve(MapDrawingConfig c, Vector2 size, Vector2 texture, float scale, float minimum) =>
+        ViewportMath.Constrain(c, size, texture, Zoom.Resolve(size, scale, c.ScaleWithFrame, minimum), Vector2.Zero).Scale;
     private static void Count(Dictionary<string, int> counts, string name) => counts[name] = counts.GetValueOrDefault(name) + 1;
     private void Reason(string name) => Count(reasons, name);
     public void Written(string property, string writer)
@@ -78,7 +80,7 @@ public sealed class ViewportMotion
         if (PendingZoom is { } pending && scale > 0)
             requested = linear ? pending + requested - scale : pending * requested / scale;
         var minimum = MathF.Max(.05f, Minimum(config, size, texture));
-        PendingZoom = Zoom.Resolve(size, requested, config.ScaleWithFrame, minimum);
+        PendingZoom = Resolve(config, size, texture, requested, minimum);
         Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
         zoomCursor = cursor;
         return true;
@@ -101,7 +103,7 @@ public sealed class ViewportMotion
         if (changed || elapsed < 0) { Cancel(); Reason(changed ? "map" : "clock-rewind"); FollowZoomOffset = Vector2.Zero; }
         var minimum = Minimum(config, size, texture);
         var previousScale = scale;
-        scale = Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
+        scale = Resolve(config, size, texture, scale, minimum);
         if (scale != previousScale) Written("scale", "resize/bounds");
         if (Spotlight.Advance(config, mapId, now, LastStep, size, texture,
                 SpotlightTargetTexture, SpotlightPlayerTexture, player, target, interacting, ref scale, ref offset)) {
@@ -165,12 +167,12 @@ public sealed class ViewportMotion
 
         if (PendingZoom is { } zoom) {
             if (previousScale > 0 && scale != previousScale) zoom *= scale / previousScale;
-            zoom = MathF.Max(minimum, zoom);
+            zoom = Math.Clamp(zoom, minimum, ViewportMath.Limits(config, size, texture).Maximum);
             PendingZoom = zoom;
             var next = !enabled || !motion.EaseZoom ? zoom : MotionMath.Damp(scale, zoom, ref zoomVelocity, LastStep, motion.SettleSeconds);
             if (!enabled || !motion.EaseZoom) Reason(!enabled ? "disabled" : "zoom-off");
             if (MathF.Abs(next - zoom) < .0001f) { next = zoom; PendingZoom = null; zoomVelocity = 0; }
-            var resolved = Zoom.Resolve(size, next, config.ScaleWithFrame, minimum);
+            var resolved = Resolve(config, size, texture, next, minimum);
             var center = ViewportMath.ZoomAtCursor(new Vector2(1024) - offset, zoomCursor, scale, resolved);
             var nextOffset = new Vector2(1024) - center;
             if (!returnEnabled && config.FollowPlayer) FollowZoomOffset += nextOffset - offset;

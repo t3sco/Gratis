@@ -31,6 +31,7 @@ internal sealed class FrameScript
     public Vector2? CursorCoordinates { get; set; }
     public string? Config { get; set; }
     public string? Texture { get; set; }
+    public bool SmallInstance { get; set; }
     public uint MapId { get; set; } = 1;
     public uint TerritoryId { get; set; } = 1;
     public Vector2 MapOffset { get; set; }
@@ -151,8 +152,9 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         var atlas = new byte[checked(width * height * 4)];
         Marshal.Copy(pixels, atlas, 0, atlas.Length);
         io.Fonts.SetTexID(Textures.Add(width, height, atlas));
-        var id = script.Texture is null ? Terrain.Create(Textures, 2048) : Textures.Load(script.Texture);
+        var id = script.SmallInstance ? SmallInstanceVerification.CreateTexture(Textures) : script.Texture is null ? Terrain.Create(Textures, 2048) : Textures.Load(script.Texture);
         var texture = Textures.Get(id);
+        ContentBounds = script.SmallInstance || script.Texture is not null ? MapContent.Scan(texture.Pixels, texture.Width, texture.Height) : null;
         if (!Config.MapColour.Parameters.IsIdentity)
             id = Textures.Add(texture.Width, texture.Height, MapColour.Apply(texture.Pixels, Config.MapColour.Parameters));
         map = new DrawTexture(id, new Vector2(texture.Width, texture.Height));
@@ -267,6 +269,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
 
     public void UpdateWindow() { }
     public Vector2 CoordinateOffset(Vector2 position) => -position * script.MapSizeFactor + script.MapOffset * script.MapSizeFactor;
+    public MapContentBounds? ContentBounds { get; }
+    public bool SmallMapHint => script.SmallInstance;
     public unsafe void DrawBackgroundTexture()
     {
         MapDrawList = (nint)ImGui.GetWindowDrawList().NativePtr;
@@ -296,7 +300,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     {
         var center = ImGui.GetWindowPos() + Renderer.DrawPosition +
             (new Vector2(1024) - CoordinateOffset(player)) * Config.MapScale;
-        PlayerDrawing.DrawLookLine(center, heading, heading);
+        PlayerDrawing.DrawLookLine(center, Config.MapScale, heading);
         PlayerDrawing.DrawPlayerIcon(center, Context.GetIcon(60443), heading, Config.MapScale);
     }
     public void DrawToolbar()

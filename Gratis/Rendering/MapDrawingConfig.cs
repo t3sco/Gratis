@@ -14,6 +14,8 @@ public partial class MapDrawingConfig
 {
     public bool ScaleWithFrame = true;
     public bool ClampToMap = true;
+    public bool FitSmallRoomsToContent = true;
+    [JsonIgnore] public bool ViewportSmallMap { get; set; }
 
     public bool Palette = true;
     public string PaletteShortcut = "Ctrl+K";
@@ -30,7 +32,7 @@ public partial class MapDrawingConfig
     public bool SpotlightDistanceChip = true;
     public bool SpotlightGuideLine = false;
 
-    public void ResetViewport() => ScaleWithFrame = ClampToMap = true;
+    public void ResetViewport() => ScaleWithFrame = ClampToMap = FitSmallRoomsToContent = true;
 
     public MarkerSettings Markers = new();
     public string ActiveLens = "Explore";

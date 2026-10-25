@@ -32,6 +32,7 @@ public static class PlayerDrawing
     public static void DrawLookLine(Vector2 position, float scale, float angle)
     {
         var config = MapDrawContext.Current.Config;
+        if (config.IsGratis) scale = ViewportMath.SymbolScale(scale);
         var extent = config.IsGratis && config.FlatPlayer
             ? config.SoftConeLength * (config.ScalePlayerCone ? 1 : scale) * MapDrawContext.Current.GlobalScale
             : config.ConeSize * (config.ScalePlayerCone ? 1 : scale);
@@ -90,6 +91,7 @@ public static class PlayerDrawing
     public static void DrawPlayerIcon(Vector2 position, DrawTexture texture, float angle, float mapScale)
     {
         var scale = MapDrawContext.Current.Config.ScaleWithZoom ? mapScale : 1.0f;
+        if (MapDrawContext.Current.Config.IsGratis) scale = ViewportMath.SymbolScale(scale);
         scale *= MapDrawContext.Current.Config.PlayerIconScale;
 
         if (MapDrawContext.Current.Config is { IsGratis: true, FlatPlayer: true } config) {

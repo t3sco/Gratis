@@ -99,15 +99,19 @@ public sealed partial class Spotlight
             savedScale * relativeScale * Safe(options.MaxZoomMultiplier, 1, 20, 3));
         var fit = ViewportMath.FitBounds(targetTexture, IncludePlayer ? playerTexture : targetTexture,
             frame, texture, config.MapCircle, config.ClampToMap, maximum,
-            new Vector4(48, 80, 48, 80) * UiScale);
+            new Vector4(48, 80, 48, 80) * UiScale, config.IsGratis ? ViewportMath.Limits(config, frame, texture).Minimum : null);
         FitZoom = fit.Scale;
         var restoring = !Active;
         var targetScale = restoring ? savedScale * relativeScale : fit.Scale;
         var targetOffset = restoring ? (savedFollow ? followOffset : savedOffset) : fit.Offset;
         if (config.ClampToMap) {
-            targetScale = MathF.Max(targetScale, ViewportMath.MinimumScale(frame, texture, config.MapCircle));
+            targetScale = MathF.Max(targetScale, ViewportMath.Limits(config, frame, texture).Minimum);
             targetOffset = new Vector2(1024) - ViewportMath.ClampCenter(new Vector2(1024) - targetOffset,
                 frame, texture, targetScale, config.MapCircle);
+        }
+        if (config.IsGratis) {
+            var safe = ViewportMath.Constrain(config, frame, texture, targetScale, targetOffset);
+            targetScale = safe.Scale; targetOffset = safe.Offset;
         }
         var motion = config.Motion ??= new MotionSettings();
         var enabled = MapMotion.IsEnabled(config);

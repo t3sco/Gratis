@@ -184,7 +184,8 @@ public static class DrawHelpers
         }
 
         if (IsRegionIcon(markerInfo.IconId)) {
-            if (!MapDrawContext.Current.Config.IsGratis || !MapDrawContext.Current.Config.Markers.ScaleWithZoom) scale = markerInfo.Scale;
+            if (!MapDrawContext.Current.Config.IsGratis) scale = markerInfo.Scale;
+            else scale = ViewportMath.SymbolScale(scale);
             iconScale = 0.42f;
         }
 

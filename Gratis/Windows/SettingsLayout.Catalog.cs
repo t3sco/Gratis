@@ -90,6 +90,8 @@ public sealed partial class SettingsLayout
         Add("RememberMapLens", "Remember map lenses", when: Gratis);
         Add("ScaleWithFrame", "Scale with frame", tip: "Uses the shorter side; resizing preserves your zoom.");
         Add("ClampToMap", "Clamp to map", tip: "Keep the viewport inside the map texture, including near an edge.");
+        Add("FitSmallRoomsToContent", "Fit small rooms to content", when: Gratis,
+            tip: "Fit the room with padding on first visit. Zoom out to see the whole texture; artwork is capped at 4x native pixels.");
         Add("FollowPlayer", "Follow player");
         Add("FollowReturnToPlayer", "Return to player after panning", when: c => c.IsGratis,
             tip: "Keep Follow player enabled while exploring. Classic keeps drag-to-unfollow.");

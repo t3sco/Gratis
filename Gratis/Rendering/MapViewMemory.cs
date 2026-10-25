@@ -12,8 +12,8 @@ public sealed class RememberedMapView
     public string Lens = "Explore";
 
     public float ResolveScale(MapDrawingConfig config, Vector2 frame, Vector2 texture) =>
-        MathF.Max(config.ClampToMap ? ViewportMath.MinimumScale(frame, texture, config.MapCircle) : .05f,
-            Math.Clamp(Scale * (config.ScaleWithFrame ? ViewportMath.FrameExtent(frame) / FrameExtent : 1), .05f, 100));
+        ViewportMath.Constrain(config, frame, texture,
+            Math.Clamp(Scale * (config.ScaleWithFrame ? ViewportMath.FrameExtent(frame) / MathF.Max(1, FrameExtent) : 1), .05f, 100), Vector2.Zero).Scale;
 }
 
 public sealed class MapViewMemory
