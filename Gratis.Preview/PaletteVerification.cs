@@ -1,6 +1,7 @@
 using System.Numerics;
 using Gratis.Controllers;
 using Gratis.Data;
+using Gratis.Rendering;
 using ImGuiNET;
 
 namespace Gratis.Preview;
@@ -99,7 +100,9 @@ internal static class PaletteVerification
             Require(overlay.IsOpen, "Esc restores map focus for shortcut");
             driver.Step(new(2.38, Control: false, Escape: true)); driver.Step(new(2.4));
             driver.Config.PinChrome = true;
-            var search = driver.Config.WindowPosition + new Vector2(8 + 4 + 5 * 28 + 14, 8 + 4 + 14);
+            driver.Step(new(2.41));
+            var toolbar = MapToolbarDrawing.LastBounds;
+            var search = new Vector2(toolbar.X + 4 + GratisTheme.ControlHeight / 2, toolbar.Y + GratisTheme.ToolbarHeight / 2);
             driver.Step(new(2.42, Mouse: search)); driver.Step(new(2.44, Left: true)); driver.Step(new(2.46, Left: false));
             Require(overlay.IsOpen, "Toolbar Search routes to the palette");
             driver.Config.PaletteTeleportButton = false; var teleports = driver.PlaceSource!.Teleports;
@@ -118,13 +121,13 @@ internal static class PaletteVerification
             overlay.Open("a:summer"); driver.Config.PaletteTeleportButton = true; driver.Step(new(3.3)); driver.Step(new(3.32));
             driver.Step(new(3.34, Alt: true, Keys: [ImGuiKey.Enter]));
             Require(driver.PlaceSource.Teleports == teleports && overlay.IsOpen, $"Unattuned result cannot teleport: open={overlay.IsOpen}, teleports={driver.PlaceSource.Teleports}, query={overlay.Query}, selected={overlay.Results.ElementAtOrDefault(overlay.Selected).Place?.Id}");
-            var row = overlay.PanelMin + new Vector2(80, 88);
+            var row = overlay.FirstResultCenter;
             driver.Step(new(3.36, Alt: false, Mouse: row, Left: true)); driver.Step(new(3.38, Left: false));
             Require(driver.PlaceSource.Shown?.AetheryteId == 2 && !overlay.IsOpen, "Click shows an unattuned location");
             overlay.Open("a:cryst"); driver.Step(new(3.4, Mouse: new(-1000))); driver.Step(new(3.42));
             driver.Step(new(3.44, Alt: true, Keys: [ImGuiKey.Enter]));
             Require(driver.PlaceSource.Teleports == teleports && overlay.IsOpen, "High cost waits for confirmation");
-            var confirm = new Vector2(overlay.PanelMin.X + 65, overlay.PanelMax.Y - 20);
+            var confirm = overlay.ConfirmationCenter;
             driver.Step(new(3.46, Alt: false, Mouse: confirm, Left: true)); driver.Step(new(3.48, Left: false));
             Require(driver.PlaceSource.Teleports == teleports + 1, "High-cost confirmation button invokes action once");
             driver.Step(new(3.5, Focused: false)); Require(!overlay.IsOpen, "Focus loss releases palette input capture");

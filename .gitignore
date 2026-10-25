@@ -4,3 +4,4 @@ bin/
 *.user
 _shots/
 _preview/
+_artifacts/

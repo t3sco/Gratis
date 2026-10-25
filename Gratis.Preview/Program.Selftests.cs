@@ -24,6 +24,7 @@ internal static partial class Program
         ("diff", ImageDiff.Verify), ("live", VerifyLiveScene),
         ("palette-ranking", PaletteVerification.Ranking), ("palette-index", PaletteVerification.Index),
         ("frames-palette", PaletteVerification.Frames),
+        ("palette-browser", PaletteBrowserVerification.Run),
         ("heading", HeadingVerification.Run), ("marker-classification", MarkerClassificationVerification.Run),
         ("markers", MarkerDeclutterVerification.Run), ("settings", SettingsVerification.Run),
         ("marker-visibility", MarkerVisibilityVerification.Run),

@@ -16,11 +16,14 @@ public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string S
     uint MapId, uint TerritoryId, Vector2? World = null, uint AetheryteId = 0,
     uint HubId = 0, string Aliases = "", uint Expansion = 0)
 {
+    public string ExpansionName { get; init; } = "";
+    public string ArtPath { get; init; } = "";
+    public uint ExpansionIcon { get; init; }
     public uint Icon { get; init; }
     public uint AethernetNameId { get; init; }
     public string SearchName { get; } = PlaceSearch.Normalize(Name);
     public string SearchAliases { get; } = PlaceSearch.Normalize(Aliases);
-    public string SearchContext { get; } = PlaceSearch.Normalize(Subtitle);
+    public string SearchContext { get; init; } = PlaceSearch.Normalize(Subtitle);
     public bool IsShard => Kind == PlaceKind.Aetheryte && HubId != 0 && HubId != AetheryteId;
 }
 

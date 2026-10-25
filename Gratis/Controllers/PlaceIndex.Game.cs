@@ -36,6 +36,8 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
     private ulong lastCharacter;
     private readonly GameTeleportService teleportService = new();
     public Func<IEnumerable<PlaceEntry>>? Pins { get; set; }
+    private readonly PaletteGameImages images = new();
+    public PaletteImage Image(PlaceEntry place) => images.Get(place);
     public PaletteOverlay Overlay { get; }
     public IEnumerable<PlaceEntry> Entries => index.Entries.Concat(dynamic);
     public int Revision => index.Revision + revision;
@@ -69,8 +71,12 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
             var territory = m.TerritoryType.ValueNullable;
             return new PlaceMapRow(m.RowId, m.TerritoryType.RowId, m.PlaceName.Value.Name.ExtractText(),
                 m.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? "", m.PlaceNameSub.ValueNullable?.Name.ExtractText() ?? "",
-                Alias(m.PlaceName.RowId), territory?.ExVersion.RowId ?? 0, territory?.ExVersion.ValueNullable?.Name.ExtractText() ?? "");
+                Alias(m.PlaceName.RowId), territory?.ExVersion.RowId ?? 0, territory?.ExVersion.ValueNullable?.Name.ExtractText() ?? "",
+                territory?.LoadingImage.ValueNullable is { } loading && loading.FileName.ToString().Length > 0
+                    ? $"ui/loadingimage/{loading.FileName}_hr1.tex" : "",
+                (uint)(territory?.ExVersion.ValueNullable?.Icon ?? 0));
         }).ToArray();
+        var mapMetadata = mapRows.ToDictionary(m => m.Id);
         var markers = data.GetSubrowExcelSheet<MapMarker>().SelectMany(row => row).ToArray();
         var markerGroups = markers.GroupBy(m => m.RowId).ToDictionary(g => g.Key, g => g.ToArray());
         var aetherytes = new List<PlaceAetheryteRow>();
@@ -105,6 +111,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
         foreach (var map in maps) {
             cancellation.ThrowIfCancellationRequested();
             if (!markerGroups.TryGetValue(map.MapMarkerRange, out var mapMarkers)) continue;
+            var metadata = mapMetadata[map.RowId];
             foreach (var marker in mapMarkers) {
                 if (marker.Icon == 0) continue;
                 var family = MarkerIcon.Family(new MarkerInfo { Position = default, Offset = default, Scale = 1, IconId = marker.Icon });
@@ -113,7 +120,8 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
                 if (name.Length == 0) continue;
                 yield return new PlaceEntry($"m:{map.RowId}:{marker.SubrowId}", PlaceKind.Marker, name,
                     (map.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? "") + " > " + map.PlaceName.Value.Name.ExtractText(),
-                    map.RowId, map.TerritoryType.RowId, MarkerWorld(map, marker), Aliases: Alias(marker.PlaceNameSubtext.RowId)) { Icon = marker.Icon };
+                    map.RowId, map.TerritoryType.RowId, MarkerWorld(map, marker), Aliases: Alias(marker.PlaceNameSubtext.RowId), Expansion: metadata.Expansion) { Icon = marker.Icon,
+                    ExpansionName = metadata.ExpansionName, ArtPath = metadata.ArtPath, ExpansionIcon = metadata.ExpansionIcon };
             }
         }
     }
@@ -184,7 +192,13 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
         static (uint, string, int, int) Key(PlaceEntry entry) => (entry.MapId, entry.SearchName,
             (int)MathF.Round(entry.World?.X ?? 0), (int)MathF.Round(entry.World?.Y ?? 0));
         var known = index.Entries.Where(p => p.Kind == PlaceKind.Marker && p.MapId == lastMap).Select(Key).ToHashSet();
-        dynamic = live.Where(p => p.Kind != PlaceKind.Marker || known.Add(Key(p))).ToArray(); revision++;
+        var zones = index.Entries.Where(p => p.Kind == PlaceKind.Zone).GroupBy(p => p.MapId).ToDictionary(g => g.Key, g => g.First());
+        dynamic = live.Where(p => p.Kind != PlaceKind.Marker || known.Add(Key(p))).Select(p => {
+            if (!zones.TryGetValue(p.MapId, out var zone)) return p;
+            return p with { Subtitle = p.Subtitle.StartsWith("Current map", StringComparison.Ordinal) ? zone.Subtitle : p.Subtitle,
+                Expansion = zone.Expansion, ExpansionName = zone.ExpansionName, ArtPath = zone.ArtPath, ExpansionIcon = zone.ExpansionIcon,
+                SearchContext = PlaceSearch.Normalize(zone.Subtitle + " " + p.Subtitle) };
+        }).ToArray(); revision++;
     }
 
     public PlaceAccess Access(PlaceEntry place) => access.GetValueOrDefault(place.AetheryteId);
@@ -232,5 +246,5 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable
             (result.Place.Kind == PlaceKind.Aetheryte ? result.Access.Attuned ? " [Attuned]" : " [Not attuned]" : ""));
     }
 
-    public void Dispose() { index.Dispose(); System.CommandManager.RemoveCommand("/find"); System.CommandManager.RemoveCommand("/nearest"); System.CommandManager.RemoveCommand("/msq"); }
+    public void Dispose() { images.Dispose(); index.Dispose(); System.CommandManager.RemoveCommand("/find"); System.CommandManager.RemoveCommand("/nearest"); System.CommandManager.RemoveCommand("/msq"); }
 }

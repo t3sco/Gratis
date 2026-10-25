@@ -5,7 +5,7 @@ using System.Numerics;
 namespace Gratis.Controllers;
 
 public sealed record PlaceMapRow(uint Id, uint Territory, string Name, string Region, string Layer = "",
-    string Aliases = "", uint Expansion = 0, string ExpansionName = "");
+    string Aliases = "", uint Expansion = 0, string ExpansionName = "", string ArtPath = "", uint ExpansionIcon = 0);
 public sealed record PlaceAetheryteRow(uint Id, uint Map, uint Territory, string Name, bool IsHub,
     uint Group, Vector2? World = null, string Aliases = "", uint AethernetNameId = 0);
 
@@ -21,7 +21,7 @@ public static class PlaceIndexBuilder
         var mapRows = maps.Where(m => m.Id != 0 && m.Name.Length > 0).ToDictionary(m => m.Id);
         foreach (var map in mapRows.Values)
             yield return new PlaceEntry($"z:{map.Id}", PlaceKind.Zone, map.Name + (map.Layer.Length > 0 ? " · " + map.Layer : ""),
-                Group(map), map.Id, map.Territory, Aliases: map.Aliases, Expansion: map.Expansion);
+                Group(map), map.Id, map.Territory, Aliases: map.Aliases, Expansion: map.Expansion) { ExpansionName = map.ExpansionName, ArtPath = map.ArtPath, ExpansionIcon = map.ExpansionIcon };
         var rows = aetherytes.ToArray();
         var hubs = rows.Where(a => a.IsHub && a.Group != 0).GroupBy(a => a.Group).ToDictionary(g => g.Key, g => g.First());
         foreach (var row in rows) {
@@ -31,7 +31,7 @@ public static class PlaceIndexBuilder
             yield return new PlaceEntry($"a:{row.Id}", PlaceKind.Aetheryte, row.Name,
                 Group(map) + (!row.IsHub && hub != null ? " > " + hub.Name : ""),
                 mapId, row.Territory != 0 ? row.Territory : map.Territory, row.World,
-                row.Id, row.IsHub ? row.Id : hub?.Id ?? row.Id, row.Aliases, map.Expansion) { AethernetNameId = row.AethernetNameId };
+                row.Id, row.IsHub ? row.Id : hub?.Id ?? row.Id, row.Aliases, map.Expansion) { AethernetNameId = row.AethernetNameId, ExpansionName = map.ExpansionName, ArtPath = map.ArtPath, ExpansionIcon = map.ExpansionIcon };
         }
     }
 }

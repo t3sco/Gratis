@@ -108,6 +108,7 @@ public sealed partial class SettingsLayout
         Add("PaletteShortcut", "Search shortcut", tip: "Ctrl+K by default; supports Ctrl, Shift, Alt and a letter, for example Ctrl+Shift+P.");
         Add("PaletteTeleportButton", "Allow palette teleports", tip: "Show locations with Enter. Alt+Enter teleports only when attuned and the game permits it.");
         Add("PaletteShowUnattuned", "Show unattuned aetherytes");
+        Add("PaletteImagery", "Location imagery", tip: "Load location artwork from the game. A flat illustrated placeholder appears while loading or when unavailable.");
         Add("AetheryteAttunementStyle", "Style unattuned map markers", tip: "Dim unattuned crystals and shards, add a dashed ring and hover-card status. Unknown state stays normal.");
         Add("PaletteMaxResults", "Visible search rows", 1, 12, "%.0f");
         Group("Map", "On open");
