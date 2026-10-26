@@ -6,6 +6,14 @@ using System.Linq;
 namespace Gratis.Rendering;
 
 public static class QuestLogText {
+    public const string NearbySubtitle = "Quests available nearby";
+    public const string Available = "Available";
+    public static string TabLabel(QuestLogTab tab) => tab == QuestLogTab.Unaccepted ? Available : tab.ToString();
+    public static string EmptyTab(QuestLogTab tab) => $"No {TabLabel(tab).ToLowerInvariant()} quests.";
+
+    public static bool MoreConditions(int previousCount, byte previousJoin, bool hasLocks) =>
+        hasLocks || previousCount > 1 && previousJoin != 1;
+
     public static string SheetName(string id) {
         var suffix = id.LastIndexOf('_');
         return suffix < 0 || !uint.TryParse(id.AsSpan(suffix + 1), NumberStyles.None,

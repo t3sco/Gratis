@@ -8,8 +8,11 @@ public sealed class FontAtlasBudget(int handleLimit = FontAtlasBudget.MaximumHan
     public const int MaximumHandles = 16;
     public const long MaximumArea = 4 * 1024 * 1024;
     public const int MaximumTextHandles = 8;
-    public static readonly ushort[] TextRanges = [0x20, 0x00ff, 0x2000, 0x206f, 0];
-    public const int TextGlyphs = 336;
+    public static readonly ushort[] TextRanges = [0x20, 0x00ff, 0x0300, 0x036f, 0x2000, 0x206f, 0x221e, 0x221e, 0];
+    public static readonly ushort[] FallbackRanges = [0x0370, 0x03ff, 0x2502, 0x2502, 0x2523, 0x2523,
+        0x2528, 0x2528, 0x2573, 0x2573, 0];
+    public static readonly ushort[] GameSymbolRanges = [0xe0be, 0xe0bf, 0];
+    public const int TextGlyphs = 336 + 112 + 1 + 148 + 2;
     private readonly HashSet<(int Face, int Size)> reserved = [];
     public int Count => reserved.Count;
     public long EstimatedArea { get; private set; }

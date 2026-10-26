@@ -85,17 +85,13 @@ public sealed partial class QuestLogGame {
         if (row.ClassJobCategory1.RowId != 0)
             jobs += " / " + row.ClassJobCategory1.ValueNullable?.Name.ExtractText();
         var required = row.ClassJobRequired.ValueNullable?.Name.ExtractText() ?? "";
-        var previous = row.PreviousQuest.Where(q => q.RowId != 0).Select(q => Prerequisite(q.RowId));
-        var locks = row.QuestLock.Where(q => q.RowId != 0).Select(q => Prerequisite(q.RowId));
-        var previousText = string.Join("; ", previous);
-        var lockText = string.Join("; ", locks);
+        var previous = row.PreviousQuest.Where(q => q.RowId != 0).Select(q => Prerequisite(q.RowId)).ToArray();
         return quest with {
             Start = (string.IsNullOrWhiteSpace(npc) ? "Start NPC unavailable" : npc) + " · " + area,
             Requirements = $"Level {quest.Level} · {jobs}" + (required.Length > 0 ? " · " + required : ""),
-            Prerequisites = (previousText.Length > 0 ? $"Previous quests (game join rule {row.PreviousQuestJoin}): " + previousText + "\n" : "")
-                + (lockText.Length > 0 ? $"Quest locks (game join rule {row.QuestLockJoin}): " + lockText + "\n" : "")
-                + (previousText.Length > 0 || lockText.Length > 0
-                    ? "Join / branch conditions and other requirements: check the game Journal. Availability unknown." : ""),
+            Prerequisites = string.Join("\n", previous),
+            MoreConditions = QuestLogText.MoreConditions(previous.Length, row.PreviousQuestJoin,
+                row.QuestLock.Any(q => q.RowId != 0)),
         };
     }
 

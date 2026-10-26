@@ -187,7 +187,7 @@ public static class BottomCardsDrawing {
             else
                 GratisIcons.Draw(list, icon, GratisIcons.Crosshair, ink, GratisTheme.IconSize * s);
             var textPos = start + new Vector2(22 * s, 0);
-            var text = value is { } point ? Axis(point.X) + " / " + Axis(point.Y) : "--.- / --.-";
+            var text = value is { } point ? Axis(point.X).PadLeft(4) + " / " + Axis(point.Y).PadRight(4) : "--.- / --.-";
             DrawFixed(list, textPos, text, ImGui.GetColorU32(ink));
             var bounds = new Vector4(cardPos.X, cardPos.Y, cardPos.X + cardWidth, cardPos.Y + cardSize.Y);
             if (isPlayer)
@@ -207,7 +207,7 @@ public static class BottomCardsDrawing {
         ImGui.Dummy(size);
     }
 
-    private static string Axis(float n) => n.ToString("0.0", CultureInfo.InvariantCulture).PadLeft(4);
+    private static string Axis(float n) => n.ToString("0.0", CultureInfo.InvariantCulture);
     public static void DrawFixed(ImDrawListPtr list, Vector2 pos, string text, uint ink) {
         foreach (var ch in text) {
             var glyph = ch is >= '0' and <= '9' ? Digits[ch - '0'] : ch switch {

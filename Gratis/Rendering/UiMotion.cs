@@ -203,10 +203,13 @@ public static partial class UiMotion {
         Begin();
         var s = scale ?? GratisTheme.ChromeScale;
         var key = ImGui.GetID(id);
-        var backdrop = ImGui.GetStyle().Colors[(int)ImGuiCol.PopupBg].W > 0;
+        using var style = new NativePopupStyle(s);
+        var viewport = ImGui.GetWindowViewport();
+        flags &= ~ImGuiWindowFlags.NoBackground;
+        ImGui.SetNextWindowViewport(viewport.ID);
         ImGui.SetNextWindowPos(min);
         ImGui.SetNextWindowSize(size);
-        var native = desired && ImGui.BeginPopup(id, flags | ImGuiWindowFlags.NoBackground);
+        var native = desired && ImGui.BeginPopup(id, flags);
         var alpha = Visibility(key, native);
         if (!native) {
             if (!desired && ImGui.BeginPopup(id, flags)) {
@@ -222,16 +225,27 @@ public static partial class UiMotion {
             }
             ImGui.SetNextWindowPos(min);
             ImGui.SetNextWindowSize(size);
+            ImGui.SetNextWindowViewport(viewport.ID);
             ImGui.Begin(name, flags | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoFocusOnAppearing |
-                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground);
+                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings);
         }
         var visual = new VisualScope(ImGui.GetWindowDrawList(), min, alpha,
             Full ? new Vector2(0, (1 - alpha) * InterfaceMotionTokens.Slide * s) : Vector2.Zero,
             Full ? .97f + .03f * alpha : 1, start: 0);
-        if (backdrop)
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), min, min + size,
-                GratisTheme.Radius.Popup * s, surfaceOpacity: 1, blur: false);
+        DrawPopupEdge(s);
+        PopupDiagnostics.Capture(native ? "popup" : "exit", GratisTheme.Radius.Popup * s);
         return new(native, visual);
+    }
+
+    internal static void DrawPopupEdge(float scale) {
+        var min = ImGui.GetWindowPos();
+        var max = min + ImGui.GetWindowSize();
+        var list = ImGui.GetWindowDrawList();
+        var stroke = MapDrawContext.Current.GlobalScale;
+        list.PushClipRect(min, max, false);
+        FrameMaterialDrawing.DrawStroke(list, min, max, GratisTheme.Radius.Popup * scale, stroke,
+            GratisTheme.Border);
+        list.PopClipRect();
     }
 
     public readonly struct PopupScope(bool interactive, VisualScope visual) : IDisposable {

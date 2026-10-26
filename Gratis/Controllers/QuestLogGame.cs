@@ -27,6 +27,7 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
     private int revision;
     private bool loggedFailure;
     public QuestLogSnapshot Snapshot => Volatile.Read(ref snapshot);
+    public IItemTooltipSource Items { get; } = new ItemTooltipProvider();
 
     public QuestLogGame() => Service.Framework.Update += Update;
 

@@ -345,11 +345,10 @@ public sealed partial class QuestLogPanel {
         }
         if (!shortPanel) {
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-                ImGui.TextColored(GratisTheme.Secondary, $"{Tab} quests · {filtered.Length}");
+                ImGui.TextColored(GratisTheme.Secondary, $"{QuestLogText.TabLabel(Tab)} quests · {filtered.Length}");
         }
         if (Tab == QuestLogTab.Unaccepted)
-            ImGui.TextWrapped("Availability unknown · client-known map offers"
-                + (context.Config.QuestLogShowLocked ? " and locked quests" : ""));
+            ImGui.TextWrapped(QuestLogText.NearbySubtitle);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryLoading)
             ImGui.TextWrapped("Checking completion history...");
         if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
@@ -378,7 +377,7 @@ public sealed partial class QuestLogPanel {
                 return;
             }
             if (filtered.Length == 0) {
-                ImGui.TextWrapped(query.Length > 0 ? "No quests match your search." : $"No {Tab.ToString().ToLowerInvariant()} quests.");
+                ImGui.TextWrapped(query.Length > 0 ? "No quests match your search." : QuestLogText.EmptyTab(Tab));
                 return;
             }
             var top = ImGui.GetCursorScreenPos().Y + ImGui.GetScrollY();
@@ -408,7 +407,7 @@ public sealed partial class QuestLogPanel {
             }
             TabBounds[i] = ItemBounds();
             ChromeControls.Feedback(ImGui.GetWindowDrawList(), min, min + size, Tab == (QuestLogTab)i);
-            var label = ((QuestLogTab)i).ToString();
+            var label = QuestLogText.TabLabel((QuestLogTab)i);
             var text = TextDrawing.Measure(label);
             TextDrawing.Draw(ImGui.GetWindowDrawList(), min + (size - text) / 2,
                 ImGui.GetColorU32(Tab == (QuestLogTab)i ? GratisTheme.WarmAccent : GratisTheme.Secondary), label);
@@ -578,7 +577,7 @@ public sealed partial class QuestLogPanel {
                 ChromeControls.FitLabel(quest.Name, MathF.Max(1, textWidth - levelWidth - 8 * s)));
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
                 var dutyWidth = quest.Duty.Length > 0 ? TextDrawing.Measure("Duty").X + 12 * s : 0;
-                var objective = quest.Objective.Length > 0 ? quest.Objective
+                var objective = Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : quest.Objective.Length > 0 ? quest.Objective
                     : quest.Targets.Count == 0 ? "No map destination" : "Objective unavailable";
                 TextDrawing.Draw(list, text + new Vector2(0, 20 * s), ImGui.GetColorU32(muted),
                     ChromeControls.FitLabel(objective, MathF.Max(1, textWidth - (dutyWidth > 0 ? dutyWidth + 8 * s : 0))));

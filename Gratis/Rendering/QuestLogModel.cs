@@ -20,6 +20,7 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public string Start { get; init; } = "";
     public string Requirements { get; init; } = "";
     public string Prerequisites { get; init; } = "";
+    public bool MoreConditions { get; init; }
 }
 
 public sealed record QuestLogRewards(uint Gil, uint? Exp, IReadOnlyList<QuestLogRewardItem> Items);
@@ -42,6 +43,7 @@ public sealed record QuestLogSnapshot(int Revision, QuestLogStatus Status, IRead
 
 public interface IQuestLogSource {
     QuestLogSnapshot Snapshot { get; }
+    IItemTooltipSource? Items => null;
     bool Show(QuestLogQuest quest);
     void RequestDetail(uint id) { }
 }

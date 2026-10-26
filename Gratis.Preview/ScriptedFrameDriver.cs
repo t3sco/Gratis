@@ -303,7 +303,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     public Vector2 CoordinateOffset(Vector2 position) => -position * script.MapSizeFactor + script.MapOffset
         * script.MapSizeFactor;
     public MapContentBounds? ContentBounds => contentReady ? contentOverride ?? scannedContent : null;
-    public bool SmallMapHint => script.SmallInstance;
+    public bool SmallMapHint => script.SmallInstance || script.MapSizeFactor >= 2;
     public unsafe void DrawBackgroundTexture() {
         MapDrawList = (nint)ImGui.GetWindowDrawList().NativePtr;
         Renderer.DrawMapImage(map with { Size = textureSizeOverride ?? map.Size });

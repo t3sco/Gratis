@@ -73,7 +73,8 @@ internal static partial class Program {
         }
     }
 
-    private static bool TrySpecialScene(string[] args) => TryAutoFitScene(args) || TryWindowPresetsScene(args)
+    private static bool TrySpecialScene(string[] args) => TryViewportCoverScene(args) || TryAutoFitScene(args)
+        || TryWindowPresetsScene(args)
         || TryArrowSmoothingScene(args) || TryCameraScene(args) || TrySmallInstanceScene(args)
         || TryChromeLayoutScene(args) || TryMeasureScene(args) || TryNearestScene(args) || TryEdgePointerScene(args)
         || TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args)

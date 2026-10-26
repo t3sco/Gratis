@@ -127,8 +127,6 @@ public sealed partial class ContextMenu {
             if (popup.Interactive)
                 Capture();
             context.Chrome.Reveal(host.Now);
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, GratisTheme.Radius.Popup * s,
-                surfaceOpacity: 1);
             if (current.Count == 0) {
                 if (popup.Interactive)
                     Close();

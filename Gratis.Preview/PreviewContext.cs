@@ -53,6 +53,7 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public FontAtlasBudget TextBudget { get; } = new(FontAtlasBudget.MaximumTextHandles,
         FontAtlasBudget.MaximumArea / 2);
     private global::System.Runtime.InteropServices.GCHandle textRanges;
+    private global::System.Runtime.InteropServices.GCHandle fallbackRanges;
     public bool TextFontsReady { get; set; } = true;
     public override MapDrawingConfig Config { get; } = config ?? new() {
         HideWindowFrame = true, MapRounding = 24, MapBorder = true, MapGlow = true,
@@ -75,6 +76,8 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
             iconRanges.Free();
         if (textRanges.IsAllocated)
             textRanges.Free();
+        if (fallbackRanges.IsAllocated)
+            fallbackRanges.Free();
     }
 
     public override IDrawFont? GetIconFont(float size) {
@@ -128,12 +131,21 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
             if (Config.IsGratis) {
                 textRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(FontAtlasBudget.TextRanges,
                     global::System.Runtime.InteropServices.GCHandleType.Pinned);
+                fallbackRanges = global::System.Runtime.InteropServices.GCHandle.Alloc(FontAtlasBudget.FallbackRanges,
+                    global::System.Runtime.InteropServices.GCHandleType.Pinned);
                 foreach (var size in TextDrawing.Sizes) {
                     if (!TextBudget.Reserve(10, size, FontAtlasBudget.TextGlyphs))
                         throw new InvalidOperationException("Geist inventory exceeded its budget");
                     var font = atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!, "Fonts",
                         "Geist-Regular.ttf"),
                         size, new ImFontConfigPtr(fontConfig), textRanges.AddrOfPinnedObject());
+                    fontConfig->MergeMode = 1;
+                    try {
+                        atlas.AddFontFromFileTTF(Path.Combine(Path.GetDirectoryName(path)!,
+                            "NotoSansCJK-Glyphs.otf"), size, new ImFontConfigPtr(fontConfig),
+                            fallbackRanges.AddrOfPinnedObject());
+                    }
+                    finally { fontConfig->MergeMode = 0; }
                     textFontScopes[font] = new Font(font);
                     foreach (var role in Enum.GetValues<ChromeFontRole>())
                         chromeFonts[(role, size)] = font;

@@ -123,6 +123,18 @@ internal sealed partial class DalamudMapDrawContext {
                 PixelSnapH = true,
                 GlyphRanges = FontAtlasBudget.TextRanges
             }, false, filename);
+            toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, new SafeFontConfig {
+                SizePx = pixels,
+                OversampleH = 1,
+                OversampleV = 1,
+                PixelSnapH = true,
+                MergeFont = toolkit.Font,
+                GlyphRanges = FontAtlasBudget.FallbackRanges,
+            });
+            toolkit.AddGameGlyphs(new global::Dalamud.Interface.GameFonts.GameFontStyle {
+                FamilyAndSize = global::Dalamud.Interface.GameFonts.GameFontFamilyAndSize.Axis14,
+                SizePx = pixels,
+            }, FontAtlasBudget.GameSymbolRanges, toolkit.Font);
         }));
     }
 
@@ -142,7 +154,7 @@ internal sealed partial class DalamudMapDrawContext {
         foreach (var pair in titleFonts) {
             textDrawFonts.TryGetValue(pair.Value, out var font);
             var ranges = pair.Key.Choice == 1 ? "legacy" : pair.Key.Choice is >= 2 and <= 5 ? "game-bitmap"
-                : "0020-00FF,2000-206F";
+                : "0020-00FF,0300-03FF,2000-206F,221E,2502,2523,2528,2573,E0BE-E0BF";
             message.Append($"; text({pair.Key.Choice},{pair.Key.Size}) built={pair.Value.Available} "
                 + $"loadError={pair.Value.LoadException?.GetType().Name ?? "none"} ranges={ranges} "
                 + $"validity={font?.Validity ?? "not-checked"} fallbacks={font?.Fallbacks ?? 0}");

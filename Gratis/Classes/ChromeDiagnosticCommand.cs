@@ -13,6 +13,13 @@ internal sealed class ChromeDiagnosticCommand {
         var diagnostics = new ChromeDiagnosticCommand();
         Service.PluginInterface.Inject(diagnostics);
         System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/popups",
+            Delegate = _ => {
+                PopupDiagnostics.Pending = line => diagnostics.ChatGui.Print(line);
+                diagnostics.ChatGui.Print("[Gratis] Popup capture armed; open a menu or hover a tooltip.");
+            },
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/chrome",
             Delegate = _ => diagnostics.ChatGui.Print("[Gratis] "
                 + MapDrawContext.Current.Chrome.TakeDiagnostics(System.SystemConfig, ImGui.GetTime())),

@@ -15,6 +15,7 @@ internal static partial class QuestLogVerification {
     private static bool Valid(Vector4 b) => b.Z > b.X && b.W > b.Y;
 
     public static void Model() {
+        SummaryModel();
         ObjectiveText();
         var json = Configuration.SerializerOptions;
         var legacy = JsonSerializer.Deserialize<SystemConfig>("{\"CenterOnQuest\":false}", json)!;
@@ -217,6 +218,7 @@ internal static partial class QuestLogVerification {
                     "Classic has no quest widgets or capture even when open-with-map is enabled");
             }
         DetailFrames();
+        SummaryFrames();
         ClassicPixels();
         Console.WriteLine("Quest Log: accepted fixtures, progress, collapse/search, input, Spotlight, lifecycle, "
             + "six anchors, circle/narrow, Full/Reduced/Off and Classic pixels passed.");

@@ -245,8 +245,7 @@ public sealed class ViewportMotion {
     private static Vector2 ClampOffset(MapDrawingConfig config, Vector2 size, Vector2 texture, float scale,
         Vector2 value) =>
 
-        config.ClampToMap ? ViewportMath.ClampOffset(value, size, texture, scale, config.MapCircle && config.IsGratis)
-            : value;
+        config.ClampToMap ? ViewportMath.Constrain(config, size, texture, scale, value).Offset : value;
 
     public string Diagnostics(MapDrawingConfig config, double now) {
         while (calls.Count > 0 && calls.Peek() < now - 1)

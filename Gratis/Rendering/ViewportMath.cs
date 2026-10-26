@@ -23,15 +23,17 @@ public static class ViewportMath {
     public static ZoomLimits Limits(MapDrawingConfig config, Vector2 frame, Vector2 texture,
         MapContentBounds? content = null, float dpi = 1) {
         texture = Vector2.Max(Vector2.One, texture);
-        frame = Vector2.Max(Vector2.One, HalfFrame(frame, config.MapCircle && config.IsGratis) * 2);
         var small = config.IsGratis
             && (config.ViewportSmallMap || MathF.Max(texture.X, texture.Y) <= 1024
                 || content?.IsSmall(texture) == true);
+        frame = Vector2.Max(Vector2.One, HalfFrame(frame, small && config.MapCircle) * 2);
         var cover = MinimumScale(frame, texture, false);
         var contain = MathF.Max(.001f,
             MathF.Min(MathF.Max(1, frame.X - 32) / texture.X, MathF.Max(1, frame.Y - 32) / texture.Y));
-        var min = config.ClampToMap ? (small || config.IsGratis && cover > NativeMaximum ? contain : cover) : .05f;
+        var min = config.ClampToMap ? (small ? contain : cover) : .05f;
         var max = config.IsGratis ? NativeMaximum : float.MaxValue;
+        if (!small)
+            max = MathF.Max(max, min);
         min = MathF.Min(min, max);
         var bounds = small && config.FitSmallRoomsToContent && content.HasValue ? content.Value.Size : texture;
         var available = Vector2.Max(Vector2.One, frame - FitPadding(frame, dpi) * 2);
@@ -43,8 +45,8 @@ public static class ViewportMath {
         float scale, Vector2 offset) {
         if (!config.ClampToMap && !config.IsGratis)
             return (scale, offset);
-        var circle = config.MapCircle && config.IsGratis;
         var limits = Limits(config, frame, texture);
+        var circle = config.MapCircle && limits.Small;
         scale = Math.Clamp(float.IsFinite(scale) ? scale : limits.Fit, limits.Minimum, limits.Maximum);
         if (!float.IsFinite(offset.X) || !float.IsFinite(offset.Y))
             offset = Vector2.Zero;

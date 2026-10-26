@@ -54,8 +54,10 @@ public sealed partial class MapRendererFrame {
         sawLocks = true;
         previousZoomLock = config.ZoomLocked;
         previousCenterLock = config.LockCenterOnMap;
-        roomBounds = host.ContentBounds;
-        if (roomBounds is null && host.SmallMapHint) {
+        roomBounds = host.InstanceMap
+            || viewportTextureSize.X <= 1024 && viewportTextureSize.Y <= 1024
+            ? host.ContentBounds : null;
+        if (roomBounds is null && host.InstanceMap && host.SmallMapHint) {
             var center = new Vector2(1024) - host.CoordinateOffset(followPlayerPosition);
             var min = center;
             var max = center;

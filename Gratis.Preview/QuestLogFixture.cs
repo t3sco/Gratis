@@ -8,6 +8,7 @@ internal sealed class QuestLogFixture : IQuestLogSource {
     private readonly ScriptedFrameDriver driver;
     public QuestLogSnapshot Snapshot { get; set; }
     public uint? Shown { get; private set; }
+    public IItemTooltipSource Items { get; } = new SummaryItemsFixture();
     public QuestLogFixture(ScriptedFrameDriver driver) {
         this.driver = driver;
         QuestLogQuest Quest(uint id, string name, ushort level, QuestBucket bucket, string objective,
@@ -37,10 +38,10 @@ internal sealed class QuestLogFixture : IQuestLogSource {
         ], "Beyond the Mountains", new(5, "Dawntrail", 61880, 127, 143), 1) {
             Completed = [Quest(66001, "A Journey Remembered", 50, QuestBucket.Scenario, "", target: false)
                 with { Completed = true, Repeatable = true, Start = "Tataru · Mor Dhona",
-                    Requirements = "Level 50 · Disciple of War or Magic", Prerequisites = "Previous quests: A New Beginning" }],
-            Unaccepted = [Quest(66002, "A Familiar Face", 50, QuestBucket.SideQuests, "Availability unknown")
+                    Requirements = "Level 50 · Disciple of War or Magic", Prerequisites = "A New Beginning" }],
+            Unaccepted = [Quest(66002, "A Familiar Face", 50, QuestBucket.SideQuests, "Available")
                 with { ClientKnown = true },
-                Quest(66003, "A Future Secret", 100, QuestBucket.SideQuests, "Availability unknown", target: false)],
+                Quest(66003, "A Future Secret", 100, QuestBucket.SideQuests, "Available", target: false)],
         };
     }
 

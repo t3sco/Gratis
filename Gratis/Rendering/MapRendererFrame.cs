@@ -306,9 +306,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
         if (progress < 1) {
             offset += new Vector2((1 - progress) * config.Motion.ZoneSlidePixels / Scale, 0);
             if (config.ClampToMap)
-                offset = new Vector2(1024)
-                    - ViewportMath.ClampCenter(new Vector2(1024) - offset, viewportSize, viewportTextureSize, Scale,
-                        config.MapCircle && config.IsGratis);
+                offset = Constrain(Scale, offset).Offset;
         }
         DrawPosition = ViewportMath.DrawPosition(viewportSize, offset, Scale);
     }

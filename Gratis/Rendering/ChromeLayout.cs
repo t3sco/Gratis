@@ -45,7 +45,7 @@ public static class ChromeLayout {
     }
 
     public static (Vector2 Min, Vector2 Max) PopoverBounds() {
-        var viewport = ImGui.GetMainViewport();
+        var viewport = ImGui.GetWindowViewport();
         var margin = new Vector2(MathF.Ceiling(GratisTheme.Inset * GratisTheme.ChromeScale));
         return (viewport.WorkPos + margin, Vector2.Max(viewport.WorkPos + margin, viewport.WorkPos + viewport.WorkSize - margin));
     }

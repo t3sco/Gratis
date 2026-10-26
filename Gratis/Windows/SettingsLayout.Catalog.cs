@@ -139,7 +139,7 @@ public sealed partial class SettingsLayout {
         Add("PaletteMaxResults", "Search results shown", 1, 12, "%.0f");
         Group("Map", "Quest Log", Gratis);
         Add("QuestLogShowLocked", "Show quests you have not unlocked",
-            tip: "Off by default. Unaccepted names come only from client-known map markers. Turn on to browse other quests; availability remains unknown.");
+            tip: "Off by default. Available shows client-known map offers without checking every requirement. Turn on to browse other quests, including locked quests.");
         Add("QuestLogOpenWithMap", "Open quest log with the map",
             tip: "Initial visibility when the map opens. You can close it unless Keep quest log pinned is enabled.");
         Add("QuestLogPinned", "Keep quest log pinned",

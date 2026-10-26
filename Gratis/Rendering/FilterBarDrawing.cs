@@ -168,7 +168,7 @@ public static class FilterBarDrawing {
         size = new(bounds.Z - bounds.X, bounds.W - bounds.Y);
         ImGui.SetNextWindowPos(new(bounds.X, bounds.Y));
         ImGui.SetNextWindowSize(size);
-        using var style = new ChromePopupStyle(transparent: true);
+        using var style = new ChromePopupStyle();
         using var popup = UiMotion.Popup(Popup, !close && !ImGui.IsKeyPressed(ImGuiKey.Escape, false),
             new(bounds.X, bounds.Y), size, ImGuiWindowFlags.NoMove
                 | ImGuiWindowFlags.NoSavedSettings
@@ -182,8 +182,6 @@ public static class FilterBarDrawing {
         if (popup.Interactive)
             popupFrame = ImGui.GetFrameCount();
         context.Chrome.Reveal(ImGui.GetTime());
-        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowPos() + size,
-            GratisTheme.Radius.Popup * s);
         var origin = ImGui.GetCursorScreenPos();
         var index = 0;
         for (var i = 0; i < MarkerVisibility.GroupCount; i++) {

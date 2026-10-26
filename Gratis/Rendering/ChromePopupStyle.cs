@@ -18,6 +18,7 @@ internal readonly struct ChromePopupStyle : IDisposable {
         ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.Radius.Popup * s);
         if (gratis) {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.Radius.Popup * s);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
             ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.Radius.Card * s);
             ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * s, 2 * s));
             ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new(ImGui.GetStyle().ScrollbarSize)));
@@ -27,6 +28,7 @@ internal readonly struct ChromePopupStyle : IDisposable {
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 7) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 4) * s);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, transparent ? Vector4.Zero : GratisTheme.Surface with { W = 1 });
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, transparent ? Vector4.Zero : GratisTheme.Surface with { W = 1 });
         ImGui.PushStyleColor(ImGuiCol.Border, GratisTheme.Border);
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         ImGui.PushStyleColor(ImGuiCol.TextDisabled, GratisTheme.Secondary);
@@ -42,7 +44,7 @@ internal readonly struct ChromePopupStyle : IDisposable {
     }
 
     public void Dispose() {
-        ImGui.PopStyleColor(13);
-        ImGui.PopStyleVar(gratis ? 10 : 6);
+        ImGui.PopStyleColor(14);
+        ImGui.PopStyleVar(gratis ? 11 : 6);
     }
 }

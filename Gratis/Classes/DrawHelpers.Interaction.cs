@@ -3,7 +3,6 @@ using System.Numerics;
 using ImGuiNET;
 #else
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility.Raii;
 #endif
 using Gratis.Rendering;
 
@@ -57,11 +56,13 @@ public static partial class DrawHelpers {
                         category, marker);
                     return;
                 }
-#if GRATIS_PREVIEW
+                using var popupStyle = MapDrawContext.Current.Config.IsGratis ? new ChromePopupStyle() : (ChromePopupStyle?)null;
+                ImGui.SetNextWindowViewport(ImGui.GetWindowViewport().ID);
                 ImGui.BeginTooltip();
-#else
-                using var tooltip = ImRaii.Tooltip();
-#endif
+                if (MapDrawContext.Current.Config.IsGratis) {
+                    UiMotion.DrawPopupEdge(GratisTheme.ChromeScale);
+                    PopupDiagnostics.Capture("marker-tooltip", GratisTheme.Radius.Popup * GratisTheme.ChromeScale);
+                }
 
                 ImGui.Image(MapDrawContext.Current.GetIcon(marker.IconId).Handle,
                     new Vector2(32.0f) * MapDrawContext.Current.GlobalScale);
@@ -78,9 +79,7 @@ public static partial class DrawHelpers {
                     ImGui.TextUnformatted($"\n{secondaryText}");
                     ImGui.PopStyleColor();
                 }
-#if GRATIS_PREVIEW
                 ImGui.EndTooltip();
-#endif
             }
         }
     }

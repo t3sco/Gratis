@@ -41,7 +41,7 @@ public class QuestListWindow : Window {
 public unsafe class UnacceptedQuestsTabItem : ITabItem {
     private const float ElementHeight = 48.0f;
 
-    public string Name => "Unaccepted Quests";
+    public string Name => "Available Quests";
 
     public bool Disabled => false;
 

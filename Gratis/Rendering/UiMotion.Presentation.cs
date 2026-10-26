@@ -73,6 +73,7 @@ public static partial class UiMotion {
     private static Vector4 tooltipBounds;
     private static int tooltipSeen = -2, tooltipDrawn = -2;
     private static float tooltipWrap, tooltipScale;
+    private static uint tooltipViewport;
     private const uint TooltipId = 0xfac31101;
     public static void TooltipText(string text, float? scale = null) {
         if (!PolicyConfig.IsGratis) {
@@ -95,6 +96,7 @@ public static partial class UiMotion {
         tooltipBounds = bounds;
         tooltipWrap = wrap;
         tooltipScale = scale ?? GratisTheme.ChromeScale;
+        tooltipViewport = ImGui.GetWindowViewport().ID;
         tooltipSeen = ImGui.GetFrameCount();
         DrawTooltipTail();
     }
@@ -118,14 +120,47 @@ public static partial class UiMotion {
             ChromeFontRole.Body)?.Push();
         ImGui.SetNextWindowPos(new(tooltipBounds.X, tooltipBounds.Y));
         ImGui.SetNextWindowSize(new(tooltipBounds.Z - tooltipBounds.X, tooltipBounds.W - tooltipBounds.Y));
+        ImGui.SetNextWindowViewport(tooltipViewport);
         ImGui.BeginTooltip();
         using (var motion = new VisualScope(ImGui.GetWindowDrawList(), new(tooltipBounds.X, tooltipBounds.Y), alpha,
             Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0)) {
+            DrawPopupEdge(s);
+            PopupDiagnostics.Capture(open ? "tooltip" : "tooltip-exit", GratisTheme.Radius.Popup * s);
             ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + tooltipWrap);
             ImGui.TextUnformatted(tooltip);
             ImGui.PopTextWrapPos();
         }
         ImGui.EndTooltip();
+    }
+
+    private static int contentTooltipSeen = -2;
+    private static double contentTooltipBegan;
+    public static void TooltipContent(Action draw, Vector2 size, float? scale = null) {
+        Begin();
+        var s = scale ?? GratisTheme.ChromeScale;
+        var viewport = ImGui.GetWindowViewport();
+        size = Vector2.Min(size, Vector2.Max(Vector2.One, viewport.Size - new Vector2(16 * s)));
+        var p = ImGui.GetMousePos() + new Vector2(18, 24) * s;
+        p = Vector2.Clamp(p, viewport.Pos + new Vector2(8 * s),
+            Vector2.Max(viewport.Pos + new Vector2(8 * s), viewport.Pos + viewport.Size - size - new Vector2(8 * s)));
+        var frame = ImGui.GetFrameCount();
+        if (contentTooltipSeen < frame - 1) contentTooltipBegan = ImGui.GetTime();
+        contentTooltipSeen = tooltipDrawn = frame;
+        var alpha = !Full ? 1 : InterfaceMotionTokens.Ease((float)Math.Clamp(
+            (ImGui.GetTime() - contentTooltipBegan) / Duration(InterfaceMotionTokens.Micro), 0, 1), InterfaceCurve.Enter);
+        using var style = new ChromePopupStyle(scale: s);
+        ImGui.SetNextWindowPos(p);
+        ImGui.SetNextWindowSize(size);
+        ImGui.SetNextWindowViewport(viewport.ID);
+        ImGui.BeginTooltip();
+        try {
+            using var motion = new VisualScope(ImGui.GetWindowDrawList(), p, alpha,
+                Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0);
+            DrawPopupEdge(s);
+            PopupDiagnostics.Capture("item-tooltip", GratisTheme.Radius.Popup * s);
+            draw();
+        }
+        finally { ImGui.EndTooltip(); }
     }
 
     public static void ResetPresentation() {

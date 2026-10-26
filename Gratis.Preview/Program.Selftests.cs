@@ -4,6 +4,7 @@ namespace Gratis.Preview;
 
 internal static partial class Program {
     private static (string Name, Action Run)[] Selftests() => [
+        ("frames-viewport-cover", ViewportCoverVerification.Run),
         ("frames-auto-fit", AutoFitVerification.Run),
         ("frames-pvp", PvpVerification.Frames),
         ("interface-motion", InterfaceMotionVerification.Maths),
@@ -27,6 +28,7 @@ internal static partial class Program {
         ("report", ReportVerification.Run),
         ("small-instance", SmallInstanceVerification.Run),
         ("font-safety", FontSafetyVerification.Run),
+        ("quest-glyphs", QuestGlyphVerification.Run),
         ("marker-icon-fallback", MarkerFallbackVerification.Run),
         ("chrome-layout", ChromeLayoutVerification.Layout),
         ("label-layout", LabelLayoutVerification.Run),

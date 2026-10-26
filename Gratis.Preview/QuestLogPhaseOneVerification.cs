@@ -50,7 +50,7 @@ internal static class QuestLogPhaseOneVerification {
             Click(panel.DetailCloseBounds);
             Click(panel.TabBounds[2]);
             Require(!panel.DetailOpen && panel.Results.Count == 1 && panel.Results.All(q => q.ClientKnown), "Tab switching closes details and hides unknown future names");
-            driver.Save(Path.Combine(directory, "tabs-unaccepted.png"));
+            driver.Save(Path.Combine(directory, "tabs-available.png"));
             driver.Config.QuestLogShowLocked = true;
             Settle();
             Require(panel.Results.Count == 2, "Spoiler opt-in exposes future quests");
@@ -141,8 +141,28 @@ internal static class QuestLogPhaseOneVerification {
         Require(state.Draw(false, true, true) == JournalMirrorAction.Restore && !state.Mirroring,
             "Opt-out, logout, PvP and dispose restore immediately");
         state.Show(true, true);
-        Require(state.Draw(true, false, true) == JournalMirrorAction.Restore && !state.Mirroring,
-            "Losing the Gratis map restores the native Journal");
+        Require(state.Draw(true, false, true) == (JournalMirrorAction.CloseNative | JournalMirrorAction.CloseLog
+            | JournalMirrorAction.PushOffscreen) && state.ClosingNative,
+            "Losing the Gratis map closes the native Journal without restoring it");
+        Require(state.Draw(true, false, true) == JournalMirrorAction.PushOffscreen,
+            "A pending native close cannot restore or close recursively");
+        state.EndClose(true, false);
+        Require(state.Draw(true, false, true) == JournalMirrorAction.PushOffscreen,
+            "Map loss keeps the native close fade offscreen");
+        state.Draw(true, false, false);
+        state.Show(true, true, openedMap: true);
+        Require(state.Show(true, true) == JournalMirrorAction.PushOffscreen && state.OpenedMap,
+            "Repeated PreShow preserves map ownership");
+        Require(state.Hide(false) == (JournalMirrorAction.CloseLog | JournalMirrorAction.CloseMap),
+            "Journal hidden while mirroring closes the map when we opened it");
+        Require(state.Hide(false) == JournalMirrorAction.None,
+            "Repeated PreHide cannot close the map twice");
+        state.Show(true, true, openedMap: true);
+        Require(state.Hide(true) == JournalMirrorAction.None, "Pinned log preserves the map on native hide");
+        state.Show(true, true, openedMap: true);
+        Require(state.LocalClose() == (JournalMirrorAction.CloseNative | JournalMirrorAction.CloseMap),
+            "Closing our log also closes a map opened for it");
+        state.EndClose(true, false);
     }
 
 }

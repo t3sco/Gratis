@@ -11,6 +11,7 @@ public partial class MapWindow {
     protected override void DrawContents() {
         windowFrame.Draw(this);
         PlacePalette.CaptureGameKeys();
+        System.JournalController?.ReleasePassiveKeyboardCapture();
     }
 
     SystemConfig Rendering.IMapWindowHost.Config => System.SystemConfig;
