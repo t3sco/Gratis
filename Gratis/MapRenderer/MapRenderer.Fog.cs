@@ -47,13 +47,13 @@ public unsafe partial class MapRenderer {
     }
 
     private void UnloadFogHooks() {
-        immediateContextProcessCommandsHook?.Dispose();
-        Service.Framework.Update -= UploadFogTexture;
         lock (fogGate) {
             fogDisposed = true;
             Interlocked.Increment(ref fogGeneration);
             fogUploads.Clear();
         }
+        Service.Framework.Update -= UploadFogTexture;
+        immediateContextProcessCommandsHook?.Dispose();
     }
 
     private void OnImmediateContextProcessCommands(ImmediateContext* commands, RenderCommandBufferGroup* bufferGroup,

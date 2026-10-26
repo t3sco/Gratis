@@ -74,6 +74,8 @@ public static class MapMarkerInfoExtensions {
         var opacity = marker.MapMarker.SubtextStyle is 1 ? System.SystemConfig.LargeAreaTextOpacity
             : System.SystemConfig.SmallAreaTextOpacity;
         var fade = Rendering.MapDrawContext.Current.Config.IsGratis && float.IsFinite(opacity);
+        if (fade && opacity <= .01f)
+            return;
         if (fade)
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * Math.Clamp(opacity, 0, 1));
         DrawHelpers.DrawText(markerInfo, tooltipText);

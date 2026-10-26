@@ -17,20 +17,22 @@ public partial class MapRenderer {
     }
 
     private unsafe void DrawStaticTextMarkers() {
-        var indices = Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount);
-        if (Rendering.MapDrawContext.Current.Config.IsGratis)
-            indices = indices.OrderByDescending(i => AgentMap.Instance()->MapMarkers[i].MapMarker.SubtextStyle is 1);
-        foreach (var index in indices) {
-            ref var marker = ref AgentMap.Instance()->MapMarkers[index];
+        var gratis = Rendering.MapDrawContext.Current.Config.IsGratis;
+        for (var pass = gratis ? 0 : 1; pass < 2; pass++) {
+            foreach (var index in Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount)) {
+                ref var marker = ref AgentMap.Instance()->MapMarkers[index];
 
-            if (marker.MapMarker.IconId is not 0)
-                continue;
-            if (marker.MapMarker.Index is 0)
-                continue;
-            if (marker.MapMarker.SubtextOrientation is 0)
-                continue;
+                if (marker.MapMarker.IconId is not 0)
+                    continue;
+                if (marker.MapMarker.Index is 0)
+                    continue;
+                if (marker.MapMarker.SubtextOrientation is 0)
+                    continue;
+                if (gratis && (marker.MapMarker.SubtextStyle is 1) != (pass == 0))
+                    continue;
 
-            marker.Draw(DrawPosition, Scale);
+                marker.Draw(DrawPosition, Scale);
+            }
         }
     }
 }

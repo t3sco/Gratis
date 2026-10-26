@@ -85,23 +85,37 @@ public sealed class GratisPlugin : IDalamudPlugin {
 
     private unsafe void OpenMapWindow() => AgentMap.Instance()->Show();
 
+    private static void Release(string name, global::System.Action step) {
+        try {
+            step();
+        }
+        catch (global::System.Exception error) {
+            Service.Log.Error(error, "[Gratis] {Step} failed while unloading.", name);
+        }
+    }
+
     public void Dispose() {
-        updateWatcher.Dispose();
-        pvpDiagnosticCommand.Dispose();
-        reportCommand.Dispose();
-        screenshotCapture.Dispose();
-        glassDiagnosticCommand.Dispose();
-        lensCommand.Dispose();
-        System.ZoneSwitchController?.Dispose();
-        System.ZoneSwitchController = null;
-        System.MapWindow.OnClose();
-        System.MapWindow.PlacePalette.Dispose();
-        System.WindowManager.Dispose();
-        System.IntegrationsController.Dispose();
-        System.AreaMapController.Dispose();
-        System.FlagController.Dispose();
-        System.MapRenderer.Dispose();
-        (Rendering.MapDrawContext.Current as global::System.IDisposable)?.Dispose();
+        Release("update watcher", updateWatcher.Dispose);
+        Release("pvp command", pvpDiagnosticCommand.Dispose);
+        Release("report command", reportCommand.Dispose);
+        Release("screenshot capture", screenshotCapture.Dispose);
+        Release("glass command", glassDiagnosticCommand.Dispose);
+        Release("lens command", lensCommand.Dispose);
+        Release("zone switch", () => {
+            System.ZoneSwitchController?.Dispose();
+            System.ZoneSwitchController = null;
+        });
+        Release("map window", () => {
+            System.MapWindow.OnClose();
+            System.MapWindow.PlacePalette.Dispose();
+        });
+        Release("windows", System.WindowManager.Dispose);
+        Release("integrations", System.IntegrationsController.Dispose);
+        Release("area map", System.AreaMapController.Dispose);
+        Release("flag", System.FlagController.Dispose);
+        Release("renderer", System.MapRenderer.Dispose);
+        Release("draw context", () => (Rendering.MapDrawContext.Current as global::System.IDisposable)?.Dispose());
+        Release("commands", System.CommandManager.Dispose);
 
         Service.PluginInterface.UiBuilder.OpenMainUi -= OpenMapWindow;
         reportLogger.Dispose();

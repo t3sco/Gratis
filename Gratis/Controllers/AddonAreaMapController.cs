@@ -53,7 +53,8 @@ public unsafe class AddonAreaMapController : IDisposable {
 
         var addonAreaMap = Service.GameGui.GetAddonByName<AddonAreaMap>("AreaMap");
         if (addonAreaMap is not null) {
-            addonAreaMap->RootNode->SetPositionFloat(addonAreaMap->X, addonAreaMap->Y);
+            if (addonAreaMap->RootNode is not null)
+                addonAreaMap->RootNode->SetPositionFloat(addonAreaMap->X, addonAreaMap->Y);
 
             if (System.SystemConfig.SuppressNativeMapOpenSound) {
                 addonAreaMap->ShowSoundEffectId = 23;

@@ -22,6 +22,8 @@ internal sealed class UpdateWatcher : IDisposable {
             while (!stop.IsCancellationRequested) {
                 try {
                     var update = await Service.PluginInterface.CheckForUpdateAsync().ConfigureAwait(false);
+                    if (stop.IsCancellationRequested)
+                        return;
                     UpdateNotice.Available = update is { } found && current is not null && found.Version > current
                         ? found.Version.ToString() : "";
                 }
@@ -37,7 +39,6 @@ internal sealed class UpdateWatcher : IDisposable {
 
     public void Dispose() {
         stop.Cancel();
-        stop.Dispose();
         UpdateNotice.OpenInstaller = null;
         UpdateNotice.Available = "";
     }

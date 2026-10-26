@@ -58,9 +58,9 @@ small tweaks that each save a click.
 ![Quest, flag and service markers on a recoloured map, with a quest hover card](docs/images/banner-markers.png)
 
 - Quests, FATEs, objectives, flags, aetherytes and your party count as priority markers. Decluttering and
-  lenses never hide them.
+  lenses never hide them; only a filter you set yourself can.
 - Other players are small dots and you are an arrow. The arrow follows your camera, with adjustable smoothing.
-- Three lenses (Explore, Quests, Minimal) and a filter drawer thin out a busy zone.
+- Six lenses (Explore, Quests, Gather, Hunt, Travel, Minimal) and a filter drawer thin out a busy zone.
 - Pets are not drawn.
 
 ### Travel
@@ -103,7 +103,8 @@ This is an early build and has rough edges. If something looks wrong, run `/grat
 or message me with the saved file and a description of what you saw.
 
 You can also use the speech-bubble button in the bottom-left corner of the map. It opens a small form that sends
-your message to me. This is the only time Gratis contacts a server of its own: nothing is sent until you press Send,
+your message to me. It goes to a small relay hosted on Vercel, which posts it to a private Discord forum that only I
+can read. This is the only time Gratis contacts a server of its own: nothing is sent until you press Send,
 and only your message and the Gratis version go. Tick "Include a diagnostic report" to add the same report that
 `/gratis report` makes (settings and technical details, no character name or chat). The relay that receives it is in
 [`relay/`](relay). Turn the button off under Settings > Feedback button.
@@ -116,7 +117,6 @@ and only your message and the Gratis version go. Tick "Include a diagnostic repo
 - [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License), [Lucide](https://lucide.dev) icons
   by Lucide Contributors (ISC) and [Phosphor](https://phosphoricons.com) icons by Phosphor Icons (MIT).
 - Dalamud (goatcorp), FFXIVClientStructs and Lumina, which Gratis is built against.
-- Bundled libraries: NetStone, HtmlAgilityPack, Newtonsoft.Json and others, each under its own licence.
 
 [NOTICE.md](NOTICE.md) has the full list, with licences and what is derived from what.
 

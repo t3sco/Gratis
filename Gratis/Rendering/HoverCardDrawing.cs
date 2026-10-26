@@ -16,6 +16,8 @@ public static class HoverCardDrawing {
         Classes.MarkerInfo? Marker);
 
     private static readonly List<Entry> queued = [], shown = [];
+    private static readonly (Entry Entry, float Swatch, Vector2 Primary, Vector2 Secondary)[] layout =
+        new (Entry, float, Vector2, Vector2)[MaxRows];
     private static MapDrawContext? owner;
     private static int queuedFrame = -1, seen = -2;
     private static Vector2 mouse;
@@ -45,8 +47,10 @@ public static class HoverCardDrawing {
             queuedFrame = ImGui.GetFrameCount();
             owner = context;
         }
-        if (!queued.Exists(e => e.Key == key))
-            queued.Add(new(key, title, secondary, category, marker));
+        foreach (var other in queued)
+            if (marker != null ? ReferenceEquals(other.Marker, marker) : other.Key == key)
+                return;
+        queued.Add(new(key, title, secondary, category, marker));
     }
 
     public static void DrawTail() {
@@ -85,7 +89,6 @@ public static class HoverCardDrawing {
         var rows = Math.Min(shown.Count, MaxRows);
         Rows = shown.Count;
         var hidden = shown.Count - rows;
-        var layout = new (Entry Entry, float Swatch, Vector2 Primary, Vector2 Secondary)[rows];
         var width = 0f;
         var height = 0f;
         for (var i = 0; i < rows; i++) {

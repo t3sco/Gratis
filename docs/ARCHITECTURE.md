@@ -2,8 +2,8 @@
 
 Gratis targets Dalamud API 15 and .NET 10. The plugin owns game services and
 native window lifecycle. Gratis.Preview runs the same map frame, geometry and
-interaction with scripted data and a software renderer. See [PARITY.md](PARITY.md)
-for builds, fixtures, diagnostics and offline verification limits.
+interaction with scripted data and a software renderer; see
+[Gratis.Preview/README.md](../Gratis.Preview/README.md) for how to run it.
 
 ## Execution and ownership
 

@@ -41,7 +41,6 @@ marker and exercises all four chrome surfaces; `glass-toolbar` hovers Settings.
 Their PNGs must match. `glass-on` and `glass-off` share an identical fixture.
 `glass-circle` adds a fully visible circle, supported by a rounded-square host mask.
 Partially clipped circles use tint; chrome glass never blurs the whole map.
-See [glass diagnostics and defaults](../docs/RENDERING.md#feather-frames-and-glass).
 
 Harness blur is a **CPU box-blur approximation** of the already-drawn backdrop at
 the surface's index position, using an immutable padded snapshot and a rounded mask.
@@ -135,7 +134,7 @@ new defaults and round-trip compatibility using the plugin's serializer options.
 Settings checks cover search, 37 Classic-only controls and scoped resets. Game-owned
 marker controls are labelled placeholders; game tool buttons are disabled in preview.
 Their shared placement renders, while the exact game adapters need an in-game check.
-See [the settings audit](../docs/SETTINGS_AUDIT.md) for every field and its reader.
+See [the settings catalogue](../Gratis/Windows/SettingsLayout.Catalog.cs) for every setting.
 
 
 ## Scripted window frames and live parity
@@ -150,5 +149,3 @@ dotnet run --project Gratis.Preview -c Release -- --scene live --config "$env:AP
 dotnet run --project Gratis.Preview -c Release -- --diff _preview/ours.png _shots/reference.png --out _preview/diff.png
 ```
 
-See [PARITY.md](../docs/PARITY.md) for the state schema, `/gratis shot` workflow,
-read-only saved configs, mutation evidence and the exact/approximated boundary.

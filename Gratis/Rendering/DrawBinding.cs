@@ -50,13 +50,16 @@ internal static class DrawBinding {
 
     public static void PopTexture(ImDrawListPtr list) => list.PopTextureID();
 
-    public static void PushFontTexture(ImDrawListPtr list) =>
+    public static void PushFontTexture(ImDrawListPtr list) {
 #if GRATIS_PREVIEW
         list.PushTextureID(ImGui.GetFont().ContainerAtlas.TexID);
 #else
-        list.PushTextureID(ImGui.GetFont(
-            ).ContainerAtlas.Textures[ImGui.GetFont().ContainerAtlas.TextureIndexCommon].TexID);
+        var atlas = ImGui.GetFont().ContainerAtlas;
+        var textures = atlas.Textures;
+        var index = atlas.TextureIndexCommon;
+        list.PushTextureID(textures[index >= 0 && index < textures.Size ? index : 0].TexID);
 #endif
+    }
 
     public static unsafe bool TryGlyphBounds(ImFontPtr font, char codepoint, out Vector4 bounds) {
 #if GRATIS_PREVIEW
