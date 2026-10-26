@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility;
@@ -75,6 +75,7 @@ public partial class MapWindow {
         }
 
         if (!PlacePalette.Overlay.IsOpen && !PlacePalette.Overlay.CapturesInput
+            && !Rendering.LocationMenuDrawing.CapturesKeyboard
             && Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput != true
             && !Rendering.MapDrawContext.Current.ContextMenu.CapturesInput && Service.KeyState[VirtualKey.ESCAPE]
             && IsFocused && !IsMapLocked()) {

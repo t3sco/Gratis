@@ -9,13 +9,21 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 internal readonly struct ChromePopupStyle : IDisposable {
-    public ChromePopupStyle() : this(false) { }
-    public ChromePopupStyle(bool transparent) {
-        var s = GratisTheme.ChromeScale;
+    private readonly bool gratis;
+    public ChromePopupStyle() : this(false, null) { }
+    public ChromePopupStyle(bool transparent = false, float? scale = null) {
+        gratis = UiMotion.IsGratis;
+        var s = gratis ? scale ?? GratisTheme.ChromeScale : GratisTheme.ChromeScale;
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * s);
-        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.CardRadius * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.Radius.Popup * s);
+        if (gratis) {
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.Radius.Popup * s);
+            ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.Radius.Card * s);
+            ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * s, 2 * s));
+            ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new(ImGui.GetStyle().ScrollbarSize)));
+        }
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 0);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.Radius.Control * s);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 7) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 4) * s);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, transparent ? Vector4.Zero : GratisTheme.Surface with { W = 1 });
@@ -35,6 +43,6 @@ internal readonly struct ChromePopupStyle : IDisposable {
 
     public void Dispose() {
         ImGui.PopStyleColor(13);
-        ImGui.PopStyleVar(6);
+        ImGui.PopStyleVar(gratis ? 10 : 6);
     }
 }

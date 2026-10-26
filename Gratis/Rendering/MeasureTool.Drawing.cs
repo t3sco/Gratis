@@ -23,7 +23,7 @@ public sealed partial class MeasureTool {
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Chip)?.Push();
         using var motion = new UiMotion.VisualScope(list, labelPos, alpha,
             UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero);
-        MapWindowDrawing.DrawSurface(list, labelPos, labelPos + labelSize, GratisTheme.CardRadius * s,
+        MapWindowDrawing.DrawSurface(list, labelPos, labelPos + labelSize, GratisTheme.Radius.Card * s,
             surfaceOpacity: 1);
         GratisIcons.Draw(list, labelPos + new Vector2(18 * s, labelSize.Y / 2), GratisIcons.Crosshair,
             GratisTheme.Crystal, GratisTheme.IconSize * s);
@@ -68,7 +68,7 @@ public sealed partial class MeasureTool {
         labelPos = pos;
         labelSize = size;
         using var motion = UiMotion.Surface("##measure-label", pos);
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s, surfaceOpacity: 1);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s, surfaceOpacity: 1);
         GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Crosshair, GratisTheme.Crystal,
             GratisTheme.IconSize * s);
         list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2),

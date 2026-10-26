@@ -15,6 +15,7 @@ public unsafe class MapContextMenu {
     }
 
     public void Draw(Vector2 mapDrawOffset) {
+        using var style = System.SystemConfig.IsGratis ? new Rendering.ChromePopupStyle() : (Rendering.ChromePopupStyle?)null;
         using var contextMenu = ImRaii.ContextPopup("Gratis_Context_Menu");
 
         if (!contextMenu)

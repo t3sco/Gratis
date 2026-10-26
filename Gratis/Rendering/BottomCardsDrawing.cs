@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Numerics;
 #if GRATIS_PREVIEW
@@ -114,7 +114,7 @@ public static class BottomCardsDrawing {
         var size = new Vector2(locationBounds.Z - pos.X, Height * s);
         MapWindowDrawing.RecordBounds(pos, pos + size, true);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s, surface: GlassSurface.Title);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s, surface: GlassSurface.Title);
         using (c.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             list.AddText(pos + new Vector2(12, 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
                 ChromeControls.FitLabel(LocationSecondary, size.X - 24 * s));
@@ -123,10 +123,14 @@ public static class BottomCardsDrawing {
                 LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2),
                 ImGui.GetColorU32(GratisTheme.Primary), ChromeControls.FitLabel(LocationPrimary, size.X - 24 * s));
         ImGui.SetCursorScreenPos(pos);
-        ImGui.Dummy(size);
-        if (ImGui.IsItemHovered())
-            UiMotion.TooltipText(LocationSecondary.Length > 0 ? LocationSecondary + " · " + LocationPrimary
-                : LocationPrimary);
+        var fullText = LocationSecondary.Length > 0 ? LocationSecondary + " · " + LocationPrimary : LocationPrimary;
+        if (c.Config.IsGratis)
+            LocationMenuDrawing.Draw(locationBounds, fullText);
+        else {
+            ImGui.Dummy(size);
+            if (ImGui.IsItemHovered())
+                UiMotion.TooltipText(fullText);
+        }
     }
 
     public static void DrawCoordinates(Vector2? player, Vector2? cursor) {
@@ -156,7 +160,7 @@ public static class BottomCardsDrawing {
         var size = new Vector2(coordinatesBounds.Z - pos.X, Height * s);
         MapWindowDrawing.RecordBounds(pos, pos + size, false);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s,
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s,
             surface: GlassSurface.Coordinates);
         var mode = Enum.IsDefined(c.Config.CoordinatesShow) ? c.Config.CoordinatesShow : CoordinateContent.Both;
         var both = mode == CoordinateContent.Both;

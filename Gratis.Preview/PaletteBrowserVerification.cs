@@ -59,16 +59,32 @@ internal static class PaletteBrowserVerification {
             var overlay = driver.Palette!;
             overlay.Open();
             driver.Step(new(.04));
+            var source = driver.PlaceSource!;
+            source.CrestRequests.Clear();
             driver.Step(new(.06, Keys: [ImGuiKey.RightArrow]));
+            Require(source.CrestRequests.Count > 0
+                && source.CrestRequests.All(p => expansions.Any(e => e.Cover.Id == p.Id))
+                && source.CrestRequests.Select(p => p.Id).Distinct().Count() == source.CrestRequests.Count,
+                "Only visible expansion cards request crests; nearby cards do not");
             Require(overlay.BrowserSelection == 1, "Native Right selects the next expansion");
+            source.CrestsReady = false;
+            source.CrestRequests.Clear();
             driver.Step(new(.08));
+            Require(source.CrestRequests.Count > 0 && !source.Crest(source.CrestRequests[0]).Ready,
+                "Visible expansion cards tolerate unavailable crests");
+            source.CrestsReady = true;
             driver.Step(new(.10, Keys: [ImGuiKey.Enter]));
+            source.CrestRequests.Clear();
             driver.Step(new(.12));
+            Require(source.CrestRequests.Count == 0, "Zone and aetheryte cards do not request crests");
             Require(overlay.BrowsedExpansion == 1 && overlay.Results.All(p => p.Place.Expansion == 1),
                 "Enter drills into the selected expansion");
+            driver.Step(new(.125, Keys: [ImGuiKey.Enter]));
+            driver.Step(new(.13, Keys: [ImGuiKey.DownArrow]));
+            driver.Step(new(.135));
             driver.Step(new(.14, Keys: [ImGuiKey.Enter]));
             Require(!overlay.IsOpen && driver.PlaceSource!.Shown?.Expansion == 1,
-                "Enter shows selected place from grid");
+                "Enter shows selected place under its zone");
             driver.Step(new(.16));
             overlay.Open();
             driver.Step(new(.18));
@@ -85,9 +101,12 @@ internal static class PaletteBrowserVerification {
             driver.Step(new(.28, Keys: [ImGuiKey.Backspace]));
             driver.Step(new(.30));
             Require(overlay.BrowsedExpansion == null, "Backspace returns to expansions");
+            source.CrestRequests.Clear();
             driver.Step(new(.32, Text: "limsa"));
+            Require(source.CrestRequests.Count == 0, "Search result thumbnails do not request crests");
             Require(overlay.Query == "limsa" && overlay.Results.Count > 0, "Typing switches to ranked results");
         }
+        CategoryFrames();
         foreach (var scale in new[] { .8f, 1f, 1.6f })
             foreach (var circle in new[] { false, true }) {
                 var config = PaletteVerification.Config();
@@ -117,5 +136,106 @@ internal static class PaletteBrowserVerification {
             }
         Console.WriteLine("Palette browser: expansion grouping, exact duplicates, useful labels, "
             + "settings/default/reset, native card navigation, drill/show/mouse/type, small/scaled/circular bounds.");
+    }
+
+    private static void CategoryFrames() {
+        foreach (var kind in new[] { PlaceKind.Aetheryte, PlaceKind.Zone, PlaceKind.Quest, PlaceKind.Marker }) {
+            using var driver = new ScriptedFrameDriver(PaletteVerification.Config(), new FrameScript { Palette = true });
+            var source = driver.PlaceSource!;
+            source.AdditionalPlaces.Add(new("z:browse", PlaceKind.Zone, "A browse zone", "Region > A browse zone", 50, 50));
+            if (kind != PlaceKind.Zone)
+                for (var i = 0; i < 10; i++)
+                    source.AdditionalPlaces.Add(new($"browse:{i}", kind, $"Browse sample {i}", "Region > A browse zone",
+                        50, 50, new(i * 10)));
+            source.AdditionalPlaces.Add(new("browse:other", kind, "Browse other expansion", "Dravania > Idyllshire",
+                7, 6, new(40), Expansion: 1));
+            if (kind == PlaceKind.Marker)
+                source.AdditionalPlaces.Add(new("browse:current", kind, "Browse current map", "La Noscea > Limsa Lominsa",
+                    1, 1, new(80)));
+            driver.Step(new(0));
+            driver.Step(new(.02));
+            var overlay = driver.Palette!;
+            overlay.Open();
+            var time = .04;
+            driver.Step(new(time));
+            for (var tab = 0; tab < (int)kind; tab++) {
+                driver.Step(new(time += .02, Keys: [ImGuiKey.Tab]));
+                driver.Step(new(time += .02));
+            }
+            var expected = PaletteBrowser.Distinct(PlaceSearch.Find(source.Entries, "", kind, source.Context,
+                new Dictionary<string, long>(), source.Access, currentMapMarkersOnly: false));
+            Require(overlay.Query == "" && overlay.BrowsedExpansion == null
+                && overlay.Results.Select(r => r.Place.Id).SequenceEqual(expected.Select(r => r.Place.Id)),
+                $"{kind}: empty tab uses the browser's complete kind snapshot; query='{overlay.Query}', "
+                    + $"actual={string.Join(',', overlay.Results.Select(r => r.Place.Id))}, "
+                    + $"expected={string.Join(',', expected.Select(r => r.Place.Id))}");
+            Require(overlay.Expansions.Sum(e => e.Places) == expected.Length
+                && overlay.Expansions.All(e => e.Places == expected.Count(r => r.Place.Expansion == e.Id)),
+                $"{kind}: expansion counts contain only eligible entries of this kind");
+            var covers = PaletteBrowser.Expansions(source.Entries);
+            Require(overlay.Expansions.All(e => e.Cover == covers.Single(c => c.Id == e.Id).Cover),
+                $"{kind}: cards reuse the All browser's covers");
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Enter]));
+            driver.Step(new(time += .02));
+            Require(overlay.BrowsedExpansion == 0 && overlay.Results.All(r => r.Place.Kind == kind
+                && r.Place.Expansion == 0), $"{kind}: Enter drills into the expansion");
+            var zones = PaletteBrowser.Zones(overlay.Results, source.Entries);
+            Require(zones[0].Name == "A browse zone" && zones[0].MapId == 50,
+                $"{kind}: headers use zone metadata rather than an objective or shard name");
+            driver.Step(new(time += .02, Keys: [ImGuiKey.End]));
+            Require(overlay.BrowserSelection == zones.Length - 1, $"{kind}: zones start collapsed");
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Home]));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.RightArrow]));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.End]));
+            Require(overlay.BrowserSelection == zones.Length - 1 + Math.Min(4, zones[0].Places.Length)
+                + (zones[0].Places.Length > 4 ? 1 : 0), $"{kind}: an open zone is limited to four entries");
+            if (kind != PlaceKind.Zone) {
+                driver.Step(new(time += .02, Keys: [ImGuiKey.Home]));
+                for (var row = 0; row < 5; row++) {
+                    driver.Step(new(time += .02, Keys: [ImGuiKey.DownArrow]));
+                    driver.Step(new(time += .02));
+                }
+                driver.Step(new(time += .02, Keys: [ImGuiKey.Enter]));
+                driver.Step(new(time += .02, Keys: [ImGuiKey.End]));
+                Require(overlay.BrowserSelection == zones.Length - 1 + 8 + 1,
+                    $"{kind}: Show more reveals one further page");
+            }
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Home]));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.LeftArrow]));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.End]));
+            Require(overlay.BrowserSelection == zones.Length - 1, $"{kind}: Left collapses the selected zone");
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Backspace]));
+            driver.Step(new(time += .02));
+            Require(overlay.IsOpen && overlay.BrowsedExpansion == null, $"{kind}: Backspace returns home");
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Enter]));
+            driver.Step(new(time += .02));
+            driver.Step(new(time += .02, Escape: true));
+            Require(overlay.IsOpen && overlay.BrowsedExpansion == null, $"{kind}: Escape returns home");
+            driver.Step(new(time += .02, Escape: false));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.Enter]));
+            driver.Step(new(time += .02));
+            driver.Step(new(time += .02, Keys: [ImGuiKey.RightArrow]));
+            driver.Step(new(time += .02));
+            driver.Step(new(time += .02));
+            var rowCenter = overlay.FirstResultCenter;
+            driver.Step(new(time += .02, Mouse: rowCenter));
+            driver.Step(new(time += .02));
+            Require(overlay.BrowserSelection == 1 && overlay.FirstResultCenter == rowCenter,
+                $"{kind}: hovering selects a row without scrolling its zone");
+            driver.Step(new(time += .02, Text: "browse"));
+            var ranked = PaletteBrowser.Distinct(PlaceSearch.Find(source.Entries, "browse", kind, source.Context,
+                new Dictionary<string, long>(), source.Access));
+            Require(overlay.Query == "browse"
+                && overlay.Results.Select(r => r.Place.Id).SequenceEqual(ranked.Select(r => r.Place.Id))
+                && (kind == PlaceKind.Marker || overlay.Results.Any(r => r.Place.Expansion == 1)),
+                $"{kind}: typing ignores the drilled expansion and preserves ranked search; "
+                    + $"query='{overlay.Query}', open={overlay.IsOpen}, expansion={overlay.BrowsedExpansion}, "
+                    + $"actual={string.Join(',', overlay.Results.Select(r => r.Place.Id))}, "
+                    + $"expected={string.Join(',', ranked.Select(r => r.Place.Id))}");
+            driver.Step(new(time += .02, Escape: true));
+            Require(!overlay.IsOpen, $"{kind}: Escape closes ranked search");
+        }
+        Console.WriteLine("Palette categories: four empty-query tabs, scoped counts/covers, zone headers, "
+            + "collapse/page/navigation, Backspace/Escape and unchanged ranked query override.");
     }
 }

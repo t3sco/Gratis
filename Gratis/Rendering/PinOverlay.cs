@@ -166,7 +166,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
                 var position = center + new Vector2(19 * s, -size.Y / 2);
                 if (Classes.MapShape.ContainsSymbol(position + size / 2, size / 2)) {
                     list.AddRectFilled(position, position + size,
-                        ImGui.GetColorU32(GratisTheme.Outline with { W = .95f }), 5 * s);
+                        ImGui.GetColorU32(GratisTheme.Outline with { W = .95f }), GratisTheme.Radius.Control * s);
                     TextDrawing.Draw(list, position + new Vector2(6, 3) * s,
                         ImGui.GetColorU32(GratisTheme.Primary with { W = GratisTheme.Primary.W * presentation.X }),
                         pin.Title);
@@ -230,7 +230,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
         var toastAlpha = UiMotion.Visibility(ImGui.GetID("##pin-notice"),
             Toast.Length > 0 && ImGui.GetTime() < toastUntil);
         if (toastAlpha > .001f) {
-            var s = MapDrawContext.Current.GlobalScale;
+            var s = GratisTheme.ChromeScale;
             var size = new Vector2(MathF.Min(310 * s, ImGui.GetWindowWidth() * .65f), 36 * s);
             var pos = MapAssistance.ConstrainPanel(ImGui.GetWindowPos()
                 + new Vector2((ImGui.GetWindowWidth() - size.X) / 2, ImGui.GetWindowHeight() - 130 * s),
@@ -238,7 +238,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             using var font = MapDrawContext.Current.GetChromeFont(12 * s, ChromeFontRole.Body)?.Push();
             using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pos, toastAlpha,
                 UiMotion.Full ? new Vector2(0, (1 - toastAlpha) * 6 * s) : Vector2.Zero);
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, 8 * s, surfaceOpacity: 1);
+            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.Radius.Card * s, surfaceOpacity: 1);
             ImGui.GetWindowDrawList().AddText(pos + new Vector2(12, 10) * s, ImGui.GetColorU32(GratisTheme.Primary),
                 Toast);
         }

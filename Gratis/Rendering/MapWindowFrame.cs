@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Gratis.Classes;
 using Gratis.Data;
 #if GRATIS_PREVIEW
@@ -276,7 +276,7 @@ public sealed partial class MapWindowFrame {
             isDragStarted = false;
             return;
         }
-        if (host.Config.IsGratis && FilterBarDrawing.InputActive) {
+        if (host.Config.IsGratis && (FilterBarDrawing.InputActive || LocationMenuDrawing.InputActive)) {
             isDragStarted = false;
             return;
         }

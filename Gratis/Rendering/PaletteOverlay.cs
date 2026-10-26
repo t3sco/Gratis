@@ -24,6 +24,7 @@ public interface IPaletteSource {
     string Teleport(PlaceEntry place, bool confirmed);
     void Used();
     PaletteImage Image(PlaceEntry place) => default;
+    PaletteImage Crest(PlaceEntry place) => default;
 }
 
 public sealed partial class PaletteOverlay(IPaletteSource source) {
@@ -33,6 +34,16 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         PlaceKind.Quest,
         PlaceKind.Marker];
     private static readonly string[] labels = ["All", "Aetherytes", "Zones", "Quests", "Markers"];
+    private static readonly QuestBucket?[] questFilters = [null, QuestBucket.Scenario, QuestBucket.SideQuests,
+        QuestBucket.JobClass, QuestBucket.Chronicles, QuestBucket.AlliedSocieties, QuestBucket.Other];
+    private static readonly string[] questLabels = ["All", "Scenario", "Side quests", "Job & class", "Chronicles",
+        "Allied societies", "Other"];
+    private int questFilter, searchedQuestFilter = -1;
+    private readonly int[] questCounts = new int[questFilters.Length];
+    private readonly Vector4[] questChipBounds = new Vector4[questFilters.Length];
+    public QuestBucket? SelectedQuestBucket => questFilters[questFilter];
+    public IReadOnlyList<int> QuestCounts => questCounts;
+    public IReadOnlyList<Vector4> QuestChipBounds => questChipBounds;
     private readonly Dictionary<string, long> recent = new();
     private string query = "", searched = "", message = "";
     private string queryInputId = "##place-query";
@@ -74,7 +85,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         ImGui.SetCursorScreenPos(position);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding,
             new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
+        var radius = GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, radius);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         var clearSize = MathF.Min(size.Y, size.X / 3);
@@ -90,7 +102,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         ImGui.SetCursorScreenPos(clearPos);
         ClearBounds = new(clearPos.X, clearPos.Y, clearPos.X + clearSize, clearPos.Y + size.Y);
         if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y),
-            windowBounds: MapToolbarDrawing.WindowBounds))
+            windowBounds: MapToolbarDrawing.WindowBounds, radius: radius))
             SetQuery("");
         Search(MapDrawContext.Current.Config);
         ImGui.EndDisabled();
@@ -98,20 +110,25 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
     private PlaceResult[] results = [];
     private PlaceResult[] previousResults = [];
     private PaletteExpansion[] previousExpansions = [];
+    private PaletteZone[] previousBrowserZones = [];
     private uint? previousExpansion;
     private bool previousHome;
+    private int previousScope;
     private int viewRevision;
     private void RememberView() {
         previousResults = results;
         previousExpansions = expansions;
+        previousBrowserZones = browserZones;
         previousExpansion = expansion;
-        previousHome = string.IsNullOrWhiteSpace(searched) && searchedScope == 0;
+        previousHome = string.IsNullOrWhiteSpace(searched);
+        previousScope = Math.Max(0, searchedScope);
         viewRevision++;
     }
     private int windowPresetRevision = -1;
     private WindowPresetSettings? windowPresetSettings;
     private readonly List<string> recentQueries = [];
     private PaletteExpansion[] expansions = [];
+    private PaletteZone[] browserZones = [];
     private uint? expansion;
     private int browserSelection;
     private PlaceResult?[] nearby = new PlaceResult?[NearbyCards.Length];
@@ -120,11 +137,14 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
     public IReadOnlyList<PaletteExpansion> Expansions => expansions;
     public Vector2 FirstResultCenter { get; private set; }
     public Vector2 ConfirmationCenter { get; private set; }
-    private bool Home => string.IsNullOrWhiteSpace(query) && scope == 0;
+    private bool Home => string.IsNullOrWhiteSpace(query);
     public void BrowseExpansion(uint? id) {
         RememberView();
         expansion = id;
         browserSelection = 0;
+        openZones.Clear();
+        zoneLimits.Clear();
+        resetBrowserScroll = true;
         revision = -1;
         scrollSelection = false;
         focusSearch = true;
@@ -139,6 +159,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         focusSearch = true;
         query = text;
         scope = 0;
+        questFilter = 0;
         selected = 0;
         queryInputId = $"##place-query-{++openSerial}";
         revision = -1;
@@ -147,6 +168,9 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         message = "";
         expansion = null;
         browserSelection = 0;
+        openZones.Clear();
+        zoneLimits.Clear();
+        resetBrowserScroll = true;
         source.Opening();
         source.Used();
     }
@@ -199,7 +223,10 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         ImGui.SetNextFrameWantCaptureMouse(true);
         if (ImGui.IsKeyPressed(ImGuiKey.Escape, false)) {
             swallowEscape = true;
-            Close();
+            if (Home && expansion != null)
+                BrowseExpansion(null);
+            else
+                Close();
             return;
         }
         source.Refresh();
@@ -215,37 +242,62 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             windowPresetSettings = config.WindowPresetOptions;
             revision = -1;
         }
-        if (searched == query && searchedScope == scope && revision == source.Revision && context == source.Context
+        if (searched == query && searchedScope == scope && searchedQuestFilter == questFilter
+            && revision == source.Revision && context == source.Context
             && showUnattuned == config.PaletteShowUnattuned)
             return;
-        if (searched != query || searchedScope != scope)
+        var changed = searched != query || searchedScope != scope || searchedQuestFilter != questFilter;
+        if (changed)
             RememberView();
-        if (searched != query)
+        if (changed)
             browserSelection = 0;
-        if (searched != query || searchedScope != scope) {
+        if (searchedScope != scope) {
+            expansion = null;
+            openZones.Clear();
+            zoneLimits.Clear();
+            resetBrowserScroll = true;
+        }
+        if (changed) {
             selected = 0;
             scrollSelection = true;
+            if (Home)
+                resetBrowserScroll = true;
             confirming = null;
             message = "";
         }
         searched = query;
         searchedScope = scope;
+        searchedQuestFilter = questFilter;
         revision = source.Revision;
         context = source.Context;
         showUnattuned = config.PaletteShowUnattuned;
-        var entries = NearestPlaces.Parse(query, out _)
+        var entries = Home ? source.Entries : NearestPlaces.Parse(query, out _)
             ? source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries)
-            : source.Entries.Append(MainStoryObjective.Action);
-        if (config is Gratis.Data.SystemConfig systemConfig && !NearestPlaces.Parse(query, out _))
+            : source.Entries.Append(MainStoryObjective.Action with { QuestBucket = QuestBucket.Scenario });
+        if (!Home && config is Gratis.Data.SystemConfig systemConfig && !NearestPlaces.Parse(query, out _))
             entries = entries.Concat(windows.Commands(systemConfig));
         var snapshot = entries.ToArray();
-        expansions = PaletteBrowser.Expansions(snapshot);
+        var searchable = Home && scope == 0
+            ? snapshot.Where(p => p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte) : snapshot;
+        if (PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest)
+            searchable = searchable.Where(p => p.Kind == PlaceKind.Quest);
+        results = PaletteBrowser.Distinct(PlaceSearch.Find(searchable, query, scopes[scope], context, recent,
+            source.Access, showUnattuned, currentMapMarkersOnly: !Home));
+        Array.Clear(questCounts);
+        if (PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest) {
+            foreach (var result in results) {
+                questCounts[0]++;
+                var index = Array.IndexOf(questFilters, (QuestBucket?)result.Place.QuestBucket);
+                questCounts[index < 0 ? questFilters.Length - 1 : index]++;
+            }
+            if (questFilters[questFilter] is { } bucket)
+                results = results.Where(r => r.Place.QuestBucket == bucket).ToArray();
+        }
+        expansions = PaletteBrowser.Expansions(snapshot, Home ? results.Select(r => r.Place) : null);
         if (Home && expansion is { } ex)
-            snapshot = snapshot.Where(p => p.Expansion == ex
-                && p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte).ToArray();
-        results = PaletteBrowser.Distinct(PlaceSearch.Find(snapshot, query, scopes[scope], context, recent,
-            source.Access, showUnattuned));
-        if (Home && expansion == null)
+            results = results.Where(r => r.Place.Expansion == ex).ToArray();
+        browserZones = Home && expansion != null ? PaletteBrowser.Zones(results, snapshot) : [];
+        if (Home && expansion == null && scope == 0)
             nearby = FindNearby();
         if (NearestPlaces.Parse(query, out _) && context.Player == null)
             message = "Player position is unavailable on the selected map.";
@@ -254,6 +306,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
 
     private void ChangeScope(int next) {
         scope = next;
+        questFilter = 0;
         query = PlaceSearch.Parse(query, PlaceKind.All).Query;
         queryInputId = $"##place-query-{++openSerial}";
         focusSearch = true;

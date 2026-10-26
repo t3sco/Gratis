@@ -46,10 +46,10 @@ public static class FeedbackButtonDrawing {
         LastBounds = bounds;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s);
         ImGui.SetCursorScreenPos(pos);
         if (ChromeControls.IconButton("##feedback", GratisIcons.MessageSquare, "Send feedback or report a bug", size,
-                windowBounds: MapToolbarDrawing.WindowBounds)) {
+                windowBounds: MapToolbarDrawing.WindowBounds, radius: GratisTheme.Radius.Card * s)) {
             FeedbackSender.Reset();
             sentHandled = false;
             ImGui.OpenPopup(Popup);

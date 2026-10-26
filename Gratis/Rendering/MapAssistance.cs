@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -17,7 +17,12 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     public ITravelPlaces Places => places;
 
-    public bool InputActive { get; private set; }
+    private bool inputActive;
+
+    public bool InputActive {
+        get => inputActive || LocationMenuDrawing.InputActive;
+        private set => inputActive = value;
+    }
 
     public bool OverlayOpen => hovered is not null || PinLayer?.CapturesInput == true || PinLayer?.CardVisible == true;
 
@@ -72,6 +77,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
             InputActive = available = false;
             return;
         }
+        LocationMenuDrawing.PrepareInput();
         playerMoving = moving;
         InputActive = config.IsGratis && TravelReady
             && panelBounds.Exists(p => ImGui.IsMouseHoveringRect(p.Min, p.Max, false));

@@ -22,7 +22,7 @@ public sealed partial class MapRendererFrame {
         viewportMotion.Cancel();
         viewportMotion.Follow.Interact(host.Config, host.Now, false);
         Spotlight.Begin(request, host.Config, host.MapKey, Scale, DrawOffset,
-            viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize);
+            viewportSize.X > 0 && viewportSize.Y > 0 ? viewportSize : host.Config.WindowSize, viewportReady);
         pendingSpotlightReturn = !viewportReady;
         if (!replacing && viewportReady && host.Config.RememberMapView
             && ViewMemory.Find(host.Config, host.MapId) is { } saved

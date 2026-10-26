@@ -27,15 +27,15 @@ public sealed class SettingsTheme {
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8, 6) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(12, 4) * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.CardRadius * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.CardRadius * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.CardRadius * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.Radius.Card * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.Radius.Card * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.Radius.Control * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.Radius.Popup * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 10 * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 8 * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, 4 * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new Vector2(10 * scale)));
+        ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * scale, 2 * scale));
         ImGui.PushStyleVar(ImGuiStyleVar.DisabledAlpha, .7f);
         var surface = GratisTheme.Surface with { W = 1 };
         var hover = new Vector4(1, 1, 1, .06f);
@@ -111,12 +111,13 @@ public sealed class SettingsTheme {
             InterfaceCurve.Spring);
         var list = ImGui.GetWindowDrawList();
         using var motion = UiMotion.Control(list, start, start + new Vector2(width, height));
-        ChromeControls.Feedback(list, start, start + new Vector2(width, height), fill: false);
+        ChromeControls.Feedback(list, start, start + new Vector2(width, height), fill: false, scale: scale,
+            radius: GratisTheme.Radius.Control * scale);
         var track = start + new Vector2(0, (height - 20 * scale) / 2);
         var end = track + new Vector2(36, 20) * scale;
         list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), accent, selected)),
-            10 * scale);
-        list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), 10 * scale);
+            GratisTheme.Radius.Pill(end - track));
+        list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Pill(end - track));
         list.AddCircleFilled(track + new Vector2(10 + 16 * selected, 10) * scale, 6 * scale,
             ImGui.GetColorU32(GratisTheme.Primary));
         if (label is not null)
@@ -156,11 +157,13 @@ public sealed class SettingsTheme {
         UiMotion.ItemId(id);
         var height = ImGui.GetItemRectSize().Y;
         var list = ImGui.GetWindowDrawList();
-        ChromeControls.Feedback(list, start, start + new Vector2(trackWidth, height), fill: false);
+        ChromeControls.Feedback(list, start, start + new Vector2(trackWidth, height), fill: false, scale: scale,
+            radius: GratisTheme.Radius.Control * scale);
         if (!ImGui.IsItemActive() || !ImGui.GetIO().WantTextInput) {
             list.AddRectFilled(start + new Vector2(2 * scale),
                 start + new Vector2(trackWidth - 2 * scale, height - 2 * scale),
-                ImGui.ColorConvertFloat4ToU32(GratisTheme.Surface with { W = 1 }));
+                ImGui.ColorConvertFloat4ToU32(GratisTheme.Surface with { W = 1 }),
+                GratisTheme.Radius.Inner(GratisTheme.Radius.Control * scale, 2 * scale));
             var left = start + new Vector2(6 * scale, height / 2);
             var right = start + new Vector2(trackWidth - 6 * scale, height / 2);
             var fraction = Math.Clamp((value - min) / (max - min), 0, 1);

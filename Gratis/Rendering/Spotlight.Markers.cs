@@ -10,7 +10,7 @@ public sealed partial class Spotlight {
         && (request.Icon is null || marker.IconId == request.Icon || marker.IconId == DrawHelpers.QuestionMarkIcon)
         && Vector2.DistanceSquared(marker.Position / marker.Scale, TargetTexture) < 4;
 
-    public float MarkerAlpha(MarkerInfo marker) => !OwnsViewport || Matches(marker)
+    public float MarkerAlpha(MarkerInfo marker) => !Visible || Matches(marker)
         || MarkerRelevance.IsProtected(marker) || PlayerDrawing.IsPlayerMarker(marker)
         ? 1 : 1 - .6f * Opacity;
 

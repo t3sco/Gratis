@@ -30,8 +30,10 @@ public sealed partial class MapAssistance {
         var cursor = ImGui.GetCursorPos();
         ImGui.SetCursorScreenPos(pos);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * s);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, GratisTheme.CardRadius * s);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.Radius.Card * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.Radius.Control * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new(ImGui.GetStyle().ScrollbarSize)));
+        ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * s, 2 * s));
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 4) * s);
         ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(.25f, .48f, .56f, .26f));
@@ -53,7 +55,7 @@ public sealed partial class MapAssistance {
                 if (scroll)
                     UiMotion.Scroll();
                 ImGui.BeginDisabled(!interactive);
-                MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.CardRadius * s,
+                MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.Radius.Card * s,
                     surfaceOpacity: 1);
                 content();
                 ImGui.EndDisabled();
@@ -66,6 +68,6 @@ public sealed partial class MapAssistance {
             ImGui.SetCursorPos(cursor);
             ImGui.Dummy(Vector2.Zero);
         }
-        finally { ImGui.PopStyleColor(3); ImGui.PopStyleVar(4); }
+        finally { ImGui.PopStyleColor(3); ImGui.PopStyleVar(6); }
     }
 }

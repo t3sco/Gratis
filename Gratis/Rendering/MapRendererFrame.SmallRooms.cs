@@ -80,6 +80,8 @@ public sealed partial class MapRendererFrame {
     private void ApplyAutoFit() {
         if (!host.Config.IsGratis)
             return;
+        if (Spotlight.Visible && !Spotlight.OwnsViewport)
+            UseManualView("spotlight released");
         AutoFit.Evaluate(host.Config, viewportSize, viewportTextureSize, MapDrawContext.Current.GlobalScale, roomBounds,
             host.Now);
         if (AutoFit.Mode != ViewportViewMode.AutoFit || Spotlight.OwnsViewport)

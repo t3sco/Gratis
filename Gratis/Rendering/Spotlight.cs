@@ -16,7 +16,8 @@ public sealed record SpotlightRequest(Vector2 Target, uint MapId, SpotlightSourc
 public sealed partial class Spotlight {
     public SpotlightRequest? Request { get; private set; }
     public bool Active => Request is not null && double.IsNaN(ended);
-    public bool OwnsViewport => Request is not null;
+    public bool OwnsViewport => Request is not null && !released;
+    public bool Visible => Request is not null;
     public float Opacity { get; private set; }
     public float FitZoom { get; private set; }
     public string Decision { get; private set; } = "none";
@@ -33,22 +34,25 @@ public sealed partial class Spotlight {
     public float Distance { get; private set; }
     private float savedScale, savedExtent, zoomVelocity, seconds, endOpacity;
     private Vector2 savedOffset, panVelocity;
-    private bool savedFollow, started;
+    private bool savedFollow, started, released, savedKnown;
     private SpotlightOptions options = new();
     private ulong map;
     private double began, ended = double.NaN;
 
     public void Begin(SpotlightRequest request, MapDrawingConfig config, ulong mapKey, float scale, Vector2 offset,
-        Vector2 frame) {
+        Vector2 frame, bool viewportReady = true) {
         if (!OwnsViewport || map != mapKey) {
             savedScale = scale;
             savedOffset = offset;
             savedFollow = config.FollowPlayer;
             savedExtent = ViewportMath.FrameExtent(frame);
         }
+        if (!OwnsViewport || map != mapKey)
+            savedKnown = viewportReady;
         Request = LastRequest = request;
         map = mapKey;
         started = false;
+        released = false;
         ended = double.NaN;
         panVelocity = Vector2.Zero;
         zoomVelocity = 0;
@@ -83,8 +87,16 @@ public sealed partial class Spotlight {
         zoomVelocity = 0;
     }
 
+    public void Release(double now, string reason) {
+        if (Request is null || released)
+            return;
+        End(now, reason);
+        released = true;
+    }
+
     public void Cancel(string reason) {
         Request = null;
+        released = false;
         Opacity = Remaining = 0;
         Decision = reason;
         panVelocity = Vector2.Zero;
@@ -115,7 +127,17 @@ public sealed partial class Spotlight {
         if (Active && Age >= seconds)
             End(began + seconds, "expired: restoring viewport");
         if (Active && interacting)
-            End(now, "input: restoring viewport");
+            Release(now, "input: keeping view");
+        if (!Active && !savedKnown && !released)
+            released = true;
+        if (released) {
+            Opacity = endOpacity * (1 - MotionMath.Transition(now, ended, .2f));
+            if (Opacity <= 0) {
+                Request = null;
+                released = false;
+            }
+            return false;
+        }
         Remaining = Active ? MathF.Max(0, seconds - Age) : 0;
         Opacity = Active ? MotionMath.Transition(now, began, .2f)
             : endOpacity * (1 - MotionMath.Transition(now, ended, .2f));

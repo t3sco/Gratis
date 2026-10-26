@@ -139,6 +139,8 @@ public sealed class ViewportMotion {
             }
             return;
         }
+        if (Spotlight.Visible)
+            Zoom.Resolve(size, scale, config.ScaleWithFrame, minimum);
         var motion = config.Motion ??= new MotionSettings();
         var enabled = MapMotion.IsEnabled(config);
         if (!enabled || !motion.PanInertia)

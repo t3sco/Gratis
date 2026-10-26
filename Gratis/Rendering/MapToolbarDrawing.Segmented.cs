@@ -67,7 +67,7 @@ public static partial class MapToolbarDrawing {
             var origin = ImGui.GetWindowPos();
             var list = ImGui.GetWindowDrawList();
             MapWindowDrawing.DrawSurface(surfaceList, surfaceOrigin, surfaceOrigin + new Vector2(width, height),
-                GratisTheme.CardRadius * scale, surface: GlassSurface.Toolbar);
+                GratisTheme.Radius.Card * scale, surface: GlassSurface.Toolbar);
             var x = 4 * scale;
             var divider = 0;
             for (var index = 0; index < count; index++) {
@@ -88,6 +88,7 @@ public static partial class MapToolbarDrawing {
                         origin.Y + 31 * scale);
                     x += spacing;
                 }
+                var radius = GratisTheme.Radius.Inner(GratisTheme.Radius.Card * scale, 4 * scale);
                 var min = origin + new Vector2(x, 4 * scale);
                 var buttonSize = new Vector2(GratisTheme.ControlHeight * scale);
                 ButtonBounds[buttonIndex] = new(min.X, min.Y, min.X + buttonSize.X, min.Y + buttonSize.Y);
@@ -106,8 +107,8 @@ public static partial class MapToolbarDrawing {
                     list.AddRectFilled(min, min + new Vector2(GratisTheme.ControlHeight * scale),
                         ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .06f * lift),
                             context.Config.AccentColor with { W = .12f }, chosen)),
-                        GratisTheme.ButtonRadius * scale);
-                ChromeControls.Feedback(list, min, min + new Vector2(GratisTheme.ControlHeight * scale), fill: false);
+                        radius);
+                ChromeControls.Feedback(list, min, min + new Vector2(GratisTheme.ControlHeight * scale), fill: false, radius: radius);
                 DrawToolbarGlyph(list, min + buttonSize / 2, buttonIndex, action,
                     active ? context.Config.AccentColor : GratisTheme.Primary, scale);
                 var news = UiMotion.Value(UiMotion.Item, 14,

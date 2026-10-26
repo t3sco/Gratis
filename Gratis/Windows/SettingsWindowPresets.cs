@@ -42,7 +42,7 @@ public static class SettingsWindowPresets {
                 ReferenceEquals(editing, preset) ? GratisTheme.WarmAccent with { W = .2f } : GratisTheme.Surface);
             var start = ImGui.GetCursorScreenPos();
             var height = ImGui.GetFrameHeight();
-            if (ChromeControls.TextButton("##preset-chip", new Vector2(chipWidth, height))) {
+            if (ChromeControls.TextButton("##preset-chip", new Vector2(chipWidth, height), scale: SettingsTheme.Scale)) {
                 editing = preset;
                 name = preset.Name;
             }
@@ -50,31 +50,31 @@ public static class SettingsWindowPresets {
                 + new Vector2(ImGui.GetStyle().FramePadding.X, (height - ImGui.GetFontSize()) / 2),
                 ImGui.GetColorU32(GratisTheme.Primary), label);
             ImGui.PopStyleColor();
-            ChromeControls.Tooltip(preset.Name);
+            ChromeControls.Tooltip(preset.Name, scale: config.IsGratis ? SettingsTheme.Scale : null);
             ImGui.PopID();
         }
         ImGui.BeginDisabled(settings.Presets.Count >= WindowPresetSettings.Limit);
-        if (ChromeControls.TextButton("Save current as preset", new Vector2(width, 0)))
+        if (ChromeControls.TextButton("Save current as preset", new Vector2(width, 0), scale: SettingsTheme.Scale))
             changed |= controller.SaveCurrent(config);
         ImGui.EndDisabled();
         if (editing != null && settings.Find(editing.Slot) == editing) {
             ImGui.SetNextItemWidth(width);
             ImGui.InputText("##window-preset-name", ref name, 80);
-            if (ChromeControls.TextButton("Apply preset", new Vector2(width, 0)))
+            if (ChromeControls.TextButton("Apply preset", new Vector2(width, 0), scale: SettingsTheme.Scale))
                 controller.Request(editing.Slot);
             var half = MathF.Max(1, (width - ImGui.GetStyle().ItemSpacing.X) / 2);
-            if (ChromeControls.TextButton("Rename", new Vector2(half, 0))) {
+            if (ChromeControls.TextButton("Rename", new Vector2(half, 0), scale: SettingsTheme.Scale)) {
                 editing.Name = WindowPresetSettings.CleanName(name, editing.Slot);
                 name = editing.Name;
                 changed = true;
             }
             ImGui.SameLine();
-            if (ChromeControls.TextButton("Delete", new Vector2(half, 0))) {
+            if (ChromeControls.TextButton("Delete", new Vector2(half, 0), scale: SettingsTheme.Scale)) {
                 changed |= settings.Delete(editing.Slot);
                 editing = null;
             }
         }
-        if (ChromeControls.TextButton("Reset window presets", new Vector2(width, 0))) {
+        if (ChromeControls.TextButton("Reset window presets", new Vector2(width, 0), scale: SettingsTheme.Scale)) {
             config.WindowPresets = new();
             editing = null;
             controller.Cancel();
@@ -89,13 +89,13 @@ public static class SettingsWindowPresets {
         var changed = false;
         ImGui.SetNextItemWidth(width);
         if (ImGui.BeginCombo(id, settings.Find(slot)?.Name ?? fallback)) {
-            if (ImGui.Selectable(fallback, slot == 0)) {
+            if (ChromeControls.Selectable(fallback, slot == 0, scale: SettingsTheme.Scale)) {
                 slot = 0;
                 changed = true;
             }
             foreach (var preset in settings.Presets) {
                 ImGui.PushID(preset.Slot);
-                if (ImGui.Selectable(preset.Name + "###choice", slot == preset.Slot)) {
+                if (ChromeControls.Selectable(preset.Name + "###choice", slot == preset.Slot, scale: SettingsTheme.Scale)) {
                     slot = preset.Slot;
                     changed = true;
                 }

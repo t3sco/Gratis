@@ -25,6 +25,15 @@ public static class GratisTheme {
         * global::System.Math.Clamp(float.IsFinite(MapDrawContext.Current.Config.ChromeScale)
             ? MapDrawContext.Current.Config.ChromeScale : 1,
             .8f, 1.6f);
+    public static class Radius {
+        public const float Control = 6;
+        public const float Card = 8;
+        public const float Popup = 8;
+
+        public static float Inner(float outer, float inset) => global::System.MathF.Max(0, outer - inset);
+        public static float Pill(Vector2 size) => global::System.MathF.Max(0, global::System.MathF.Min(size.X, size.Y) / 2);
+    }
+
     public const float CardRadius = 8;
     public const float ButtonRadius = 6;
     public static readonly Vector4 Surface = new(10 / 255f, 10 / 255f, 11 / 255f, .85f);

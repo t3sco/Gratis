@@ -72,28 +72,29 @@ public static partial class UiMotion {
     private static string tooltip = "";
     private static Vector4 tooltipBounds;
     private static int tooltipSeen = -2, tooltipDrawn = -2;
-    private static float tooltipWrap;
+    private static float tooltipWrap, tooltipScale;
     private const uint TooltipId = 0xfac31101;
-    public static void TooltipText(string text) {
+    public static void TooltipText(string text, float? scale = null) {
         if (!PolicyConfig.IsGratis) {
             ImGui.SetTooltip(text);
             return;
         }
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale,
+        var s = scale ?? GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         var viewport = ImGui.GetWindowViewport();
-        var s = GratisTheme.ChromeScale;
         var size = ImGui.CalcTextSize(text, false, 340 * s) + new Vector2(24) * s;
         var p = ImGui.GetMousePos() + new Vector2(18, 24) * s;
         p = Vector2.Clamp(p, viewport.Pos, Vector2.Max(viewport.Pos, viewport.Pos + viewport.Size - size));
-        TooltipText(text, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s);
+        TooltipText(text, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s, s);
     }
 
-    public static void TooltipText(string text, Vector4 bounds, float wrap) {
+    public static void TooltipText(string text, Vector4 bounds, float wrap, float? scale = null) {
         Begin();
         tooltip = text;
         tooltipBounds = bounds;
         tooltipWrap = wrap;
+        tooltipScale = scale ?? GratisTheme.ChromeScale;
         tooltipSeen = ImGui.GetFrameCount();
         DrawTooltipTail();
     }
@@ -111,14 +112,15 @@ public static partial class UiMotion {
             return;
         }
         tooltipDrawn = current;
-        using var style = new ChromePopupStyle();
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * GratisTheme.ChromeScale,
+        var s = tooltipScale;
+        using var style = new ChromePopupStyle(scale: s);
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         ImGui.SetNextWindowPos(new(tooltipBounds.X, tooltipBounds.Y));
         ImGui.SetNextWindowSize(new(tooltipBounds.Z - tooltipBounds.X, tooltipBounds.W - tooltipBounds.Y));
         ImGui.BeginTooltip();
         using (var motion = new VisualScope(ImGui.GetWindowDrawList(), new(tooltipBounds.X, tooltipBounds.Y), alpha,
-            Full ? new Vector2(0, (1 - alpha) * 3 * GratisTheme.ChromeScale) : Vector2.Zero, start: 0)) {
+            Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0)) {
             ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + tooltipWrap);
             ImGui.TextUnformatted(tooltip);
             ImGui.PopTextWrapPos();

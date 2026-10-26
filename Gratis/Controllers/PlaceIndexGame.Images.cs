@@ -20,12 +20,12 @@ internal sealed class PaletteGameImages : IDisposable {
     private readonly SemaphoreSlim loaders = new(2);
     private bool disposed;
 
-    public PaletteImage Get(PlaceEntry place) {
-        if (disposed)
-            return default;
-        var key = place.ArtPath.Length > 0 ? place.ArtPath : place.ExpansionIcon != 0 ? "icon:" + place.ExpansionIcon
-            : "";
-        if (key.Length == 0)
+    public PaletteImage Get(PlaceEntry place) => Get(place.ArtPath, place.ArtPath, 0);
+    public PaletteImage GetCrest(PlaceEntry place) => place.ExpansionIcon == 0 ? default
+        : Get("crest:" + place.ExpansionIcon, "", place.ExpansionIcon);
+
+    private PaletteImage Get(string key, string artPath, uint iconId) {
+        if (disposed || key.Length == 0)
             return default;
         var now = Environment.TickCount64;
         if (!cache.TryGetValue(key, out var slot)) {
@@ -36,7 +36,7 @@ internal sealed class PaletteGameImages : IDisposable {
                 cache.Remove(oldest.Key);
                 Release(oldest.Value.Loading);
             }
-            slot = new Slot { Loading = Task.Run(() => Load(place, cancellation.Token)) };
+            slot = new Slot { Loading = Task.Run(() => Load(artPath, iconId, cancellation.Token)) };
             cache.Add(key, slot);
         }
         slot.Used = now;
@@ -45,27 +45,27 @@ internal sealed class PaletteGameImages : IDisposable {
         return new PaletteImage(wrap.Handle, wrap.Width, wrap.Height);
     }
 
-    private async Task<IDalamudTextureWrap?> Load(PlaceEntry place, CancellationToken token) {
+    private async Task<IDalamudTextureWrap?> Load(string artPath, uint iconId, CancellationToken token) {
         var acquired = false;
         try {
             await loaders.WaitAsync(token).ConfigureAwait(false);
             acquired = true;
-            if (place.ArtPath.Length > 0) {
+            if (iconId != 0)
+                return await Service.TextureProvider.GetFromGameIcon(iconId).RentAsync(token).ConfigureAwait(false);
+            if (artPath.Length > 0) {
                 try {
-                    return await Service.TextureProvider.GetFromGame(place.ArtPath).RentAsync(token).ConfigureAwait(
+                    return await Service.TextureProvider.GetFromGame(artPath).RentAsync(token).ConfigureAwait(
                         false);
                 }
                 catch (Exception) when (!token.IsCancellationRequested) {
                     try {
-                        return await Service.TextureProvider.GetFromGame(place.ArtPath.Replace("_hr1.tex", ".tex",
+                        return await Service.TextureProvider.GetFromGame(artPath.Replace("_hr1.tex", ".tex",
                             StringComparison.Ordinal)).RentAsync(token).ConfigureAwait(false);
                     }
                     catch (Exception) when (!token.IsCancellationRequested) { }
                 }
             }
-            return place.ExpansionIcon == 0 ? null
-                : await Service.TextureProvider.GetFromGameIcon(place.ExpansionIcon).RentAsync(token).ConfigureAwait(
-                    false);
+            return null;
         }
         catch (Exception) { return null; }
         finally { if (acquired) loaders.Release(); }
@@ -82,4 +82,8 @@ internal sealed class PaletteGameImages : IDisposable {
             Release(slot.Loading);
         cache.Clear();
     }
+}
+
+public sealed partial class PlaceIndexGame {
+    public PaletteImage Crest(PlaceEntry place) => images.GetCrest(place);
 }

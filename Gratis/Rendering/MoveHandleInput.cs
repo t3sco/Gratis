@@ -169,7 +169,7 @@ public sealed class MoveHandleInput {
         color.W = (Dragging ? .85f : config.LockWindow ? .2f : .4f) * visibility;
         var half = new Vector2(18, 2) * scale;
         ImGui.GetWindowDrawList().AddRectFilled(Geometry.Center - half, Geometry.Center + half,
-            ImGui.GetColorU32(color), 2 * scale);
+            ImGui.GetColorU32(color), config.IsGratis ? GratisTheme.Radius.Pill(2 * half) : 2 * scale);
     }
 
     public readonly struct InputScope : IDisposable {

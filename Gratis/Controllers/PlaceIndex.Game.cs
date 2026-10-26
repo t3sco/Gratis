@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -25,6 +25,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
     [PluginService] private IChatGui Chat { get; set; } = null!;
     private readonly PlaceIndex index = new();
     private readonly Dictionary<uint, PlaceAccess> access = new();
+    private readonly Dictionary<uint, QuestBucket> questBuckets = new();
     private PlaceEntry[] dynamic = [];
     private int revision;
     private double refreshed = double.NegativeInfinity;
@@ -70,8 +71,9 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         string Alias(uint id) => id == 0 ? ""
             : (english.GetRowOrDefault(id)?.Name.ExtractText() ?? "") + " "
                 + (japanese.GetRowOrDefault(id)?.Name.ExtractText() ?? "");
-        var maps = data.GetExcelSheet<SheetMap>().Where(m => m.PlaceName.RowId != 0 && m.SizeFactor != 0).ToArray();
-        var mapRows = maps.Select(m => {
+        var maps = data.GetExcelSheet<SheetMap>().Where(m => m.PlaceName.RowId != 0 && m.SizeFactor != 0
+            && !PlaceIndexBuilder.IsUnnamed(m.PlaceName.Value.Name.ExtractText())).ToArray();
+        var mapRows = PlaceIndexBuilder.WithFallbackArt(maps.Select(m => {
             var territory = m.TerritoryType.ValueNullable;
             return new PlaceMapRow(m.RowId, m.TerritoryType.RowId, m.PlaceName.Value.Name.ExtractText(),
                 m.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? "",
@@ -80,7 +82,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
                 territory?.LoadingImage.ValueNullable is { } loading && loading.FileName.ToString().Length > 0
                     ? $"ui/loadingimage/{loading.FileName}_hr1.tex" : "",
                 (uint)(territory?.ExVersion.ValueNullable?.Icon ?? 0));
-        }).ToArray();
+        }));
         var mapMetadata = mapRows.ToDictionary(m => m.Id);
         var markers = data.GetSubrowExcelSheet<MapMarker>().SelectMany(row => row).ToArray();
         var markerGroups = markers.GroupBy(m => m.RowId).ToDictionary(g => g.Key, g => g.ToArray());
@@ -233,13 +235,17 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
             foreach (var quest in GameMap.Instance()->QuestMarkers) {
                 if (quest.ObjectiveId == 0)
                     continue;
+                var rowId = quest.ObjectiveId + 65536u;
+                var bucket = QuestCategory(rowId);
                 var i = 0;
                 foreach (var marker in quest.MarkerData) {
                     if (marker.MapId == 0)
                         continue;
                     live.Add(new PlaceEntry($"q:{quest.ObjectiveId}:{i++}", PlaceKind.Quest, quest.Label.ToString(),
                         "Active / tracked quest", marker.MapId, marker.TerritoryTypeId,
-                        new Vector2(marker.Position.X, marker.Position.Z)) { Icon = marker.IconId });
+                        new Vector2(marker.Position.X, marker.Position.Z)) {
+                        Icon = marker.IconId, QuestRowId = rowId, QuestBucket = bucket
+                    });
                 }
             }
         }
@@ -272,6 +278,14 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
             };
         }).ToArray();
         revision++;
+    }
+
+    private QuestBucket QuestCategory(uint rowId) {
+        if (questBuckets.TryGetValue(rowId, out var bucket))
+            return bucket;
+        var quest = Service.DataManager.GetExcelSheet<Quest>().GetRowOrDefault(rowId);
+        var section = quest?.JournalGenre.ValueNullable?.JournalCategory.ValueNullable?.JournalSection.ValueNullable;
+        return questBuckets[rowId] = QuestBuckets.FromSection(section?.RowId);
     }
 
     public PlaceAccess Access(PlaceEntry place) => access.GetValueOrDefault(place.AetheryteId);
@@ -321,7 +335,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
     }
 
     public void CaptureGameKeys() {
-        if (!Overlay.CapturesInput)
+        if (!Overlay.CapturesInput && !LocationMenuDrawing.CapturesKeyboard)
             return;
         foreach (var key in Service.KeyState.GetValidVirtualKeys())
             Service.KeyState[key] = false;

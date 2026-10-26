@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Numerics;
 using Gratis.Classes;
 using Gratis.Data;
@@ -48,6 +48,7 @@ public abstract class MapDrawContext {
     public MapFrameTrace? Trace { get; set; }
     public bool ReportCapture { get; set; }
     public MapAssistance? Assistance { get; set; }
+    public virtual ILocationMenuSource? LocationMenu => null;
     public EdgePointers EdgePointers { get; } = new();
     public MapMarkerTargets MarkerTargets { get; } = new();
     public MeasureTool Measure { get; } = new();

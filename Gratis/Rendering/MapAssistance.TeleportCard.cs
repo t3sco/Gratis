@@ -89,8 +89,8 @@ public sealed partial class MapAssistance {
         var tint = card.Armed ? GratisTheme.WarmAccent : GratisTheme.Crystal;
         var hovered = ImGui.IsItemHovered();
         list.AddRectFilled(pos, pos + size, ImGui.GetColorU32(tint with { W = hovered ? .30f : .20f }),
-            GratisTheme.ButtonRadius * s);
-        list.AddRect(pos, pos + size, ImGui.GetColorU32(tint with { W = .45f }), GratisTheme.ButtonRadius * s,
+            GratisTheme.Radius.Control * s);
+        list.AddRect(pos, pos + size, ImGui.GetColorU32(tint with { W = .45f }), GratisTheme.Radius.Control * s,
             ImDrawFlags.None, s);
         ChromeControls.Feedback(list, pos, pos + size, fill: false);
         var label = card.Armed ? $"Pay {card.Cost ?? 0:N0} gil and teleport" : "Teleport";

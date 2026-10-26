@@ -56,7 +56,7 @@ public sealed partial class MapWindowFrame {
         var list = ImGui.GetWindowDrawList();
         using var motion = new UiMotion.VisualScope(list, pos, alpha,
             UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * scale) : Vector2.Zero);
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * scale);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * scale);
         list.AddText(pos + new Vector2(12, 8) * scale, ImGui.GetColorU32(GratisTheme.Primary), text);
     }
 }

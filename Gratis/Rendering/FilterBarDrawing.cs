@@ -183,7 +183,7 @@ public static class FilterBarDrawing {
             popupFrame = ImGui.GetFrameCount();
         context.Chrome.Reveal(ImGui.GetTime());
         MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowPos() + size,
-            GratisTheme.CardRadius * s);
+            GratisTheme.Radius.Popup * s);
         var origin = ImGui.GetCursorScreenPos();
         var index = 0;
         for (var i = 0; i < MarkerVisibility.GroupCount; i++) {

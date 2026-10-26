@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -14,11 +15,22 @@ public static class PlaceIndexBuilder {
         (texture - new Vector2(1024))
         / sizeFactor + offset;
 
+    public static bool IsUnnamed(string name) => string.IsNullOrWhiteSpace(name) || name.Trim().All(c => c == '?');
+
+    public static PlaceMapRow[] WithFallbackArt(IEnumerable<PlaceMapRow> maps) {
+        var rows = maps.ToArray();
+        var covers = rows.Where(m => m.Id != 0 && !IsUnnamed(m.Name) && m.ArtPath.Length > 0)
+            .GroupBy(m => m.Expansion).ToDictionary(g => g.Key,
+                g => g.OrderBy(m => $"z:{m.Id}", StringComparer.Ordinal).First().ArtPath);
+        return rows.Select(m => m.ArtPath.Length == 0 && covers.TryGetValue(m.Expansion, out var art)
+            ? m with { ArtPath = art } : m).ToArray();
+    }
+
     private static string Group(PlaceMapRow map) => (map.ExpansionName.Length > 0 ? map.ExpansionName + " > " : "")
         + map.Region + " > " + map.Name;
     public static IEnumerable<PlaceEntry> Build(IEnumerable<PlaceMapRow> maps,
         IEnumerable<PlaceAetheryteRow> aetherytes) {
-        var mapRows = maps.Where(m => m.Id != 0 && m.Name.Length > 0).ToDictionary(m => m.Id);
+        var mapRows = maps.Where(m => m.Id != 0 && !IsUnnamed(m.Name)).ToDictionary(m => m.Id);
         foreach (var map in mapRows.Values)
             yield return new PlaceEntry($"z:{map.Id}", PlaceKind.Zone,
                 map.Name + (map.Layer.Length > 0 ? " · " + map.Layer : ""), Group(map), map.Id, map.Territory,

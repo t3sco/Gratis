@@ -28,7 +28,8 @@ public sealed partial class MapAssistance {
                     var chip = ImGui.GetCursorScreenPos();
                     var measured = ImGui.CalcTextSize(detail);
                     list.AddRectFilled(chip - new Vector2(4, 2) * s, chip + measured + new Vector2(4, 2) * s,
-                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .10f }), GratisTheme.ButtonRadius * s);
+                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .10f }),
+                        GratisTheme.Radius.Pill(measured + new Vector2(8, 4) * s));
                     ImGui.TextColored(GratisTheme.Secondary, detail);
                 }
             }
@@ -61,7 +62,7 @@ public sealed partial class MapAssistance {
     }
 
     internal static bool ActionButton(string text, char icon) {
-        var s = MapDrawContext.Current.GlobalScale;
+        var s = GratisTheme.ChromeScale;
         var min = ImGui.GetCursorScreenPos();
         var textSize = ImGui.CalcTextSize(text);
         var size = new Vector2(textSize.X + 38 * s, GratisTheme.ControlHeight * s);
@@ -69,7 +70,7 @@ public sealed partial class MapAssistance {
         var list = ImGui.GetWindowDrawList();
         using var motion = UiMotion.Control(list, min, min + size);
         list.AddRectFilled(min, min + size,
-            ImGui.GetColorU32(new Vector4(.25f, .48f, .56f, ImGui.IsItemHovered() ? .5f : .27f)), 5 * s);
+            ImGui.GetColorU32(new Vector4(.25f, .48f, .56f, ImGui.IsItemHovered() ? .5f : .27f)), GratisTheme.Radius.Control * s);
         GratisIcons.Draw(list, min + new Vector2(13 * s, size.Y / 2), icon, GratisTheme.Transport, 14 * s);
         ChromeControls.Feedback(list, min, min + size, fill: false);
         list.AddText(min + new Vector2(27 * s, (size.Y - ImGui.GetFontSize()) / 2),
@@ -87,7 +88,7 @@ public sealed partial class MapAssistance {
         var ink = GratisTheme.Surface with { W = 1 };
         list.AddRectFilled(min, min + size,
             ImGui.GetColorU32(GratisTheme.Crystal with { W = ImGui.IsItemHovered() ? 1 : .94f }),
-            GratisTheme.ButtonRadius * s);
+            GratisTheme.Radius.Control * s);
         ChromeControls.Feedback(list, min, min + size, fill: false);
         GratisIcons.Draw(list, min + new Vector2(15 * s, size.Y / 2), icon, ink, GratisTheme.IconSize * s);
         list.AddText(min + new Vector2(30 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), text);

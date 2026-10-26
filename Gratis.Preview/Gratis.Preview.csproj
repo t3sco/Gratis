@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <EmbeddedResource Include="../Gratis/Rendering/*.cs" LogicalName="RadiusSource.%(Filename)%(Extension)" />
     <None Include="assets/**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../Gratis/Assets/Fonts/**/*" Link="assets/Fonts/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Gratis/Windows/Settings*.cs" Link="Shared/%(Filename)%(Extension)" />

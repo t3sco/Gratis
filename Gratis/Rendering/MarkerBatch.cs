@@ -215,8 +215,8 @@ public sealed class MarkerBatch {
         ImGui.Dummy(size);
         var list = ImGui.GetWindowDrawList();
         list.AddRectFilled(center - half, center + half, ImGui.GetColorU32(GratisTheme.Outline with { W = .94f }),
-            7 * scale);
-        list.AddRect(center - half, center + half, ImGui.GetColorU32(context.Config.AccentColor), 7 * scale);
+            GratisTheme.Radius.Control * scale);
+        list.AddRect(center - half, center + half, ImGui.GetColorU32(context.Config.AccentColor), GratisTheme.Radius.Control * scale);
         TextDrawing.Draw(list, center - half + new Vector2(6, 3) * scale, ImGui.GetColorU32(Vector4.One), label);
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             context.ZoomCluster(root.Center, root.Marker.Scale);

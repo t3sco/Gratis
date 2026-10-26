@@ -31,10 +31,11 @@ public static partial class ChromeControls {
     }
 
     public static void Feedback(ImDrawListPtr list, Vector2 min, Vector2 max, bool selected = false, bool fill = true,
-        float? scale = null) {
+        float? scale = null, float? radius = null) {
         if (!ImGui.IsItemVisible())
             return;
         var s = scale ?? GratisTheme.ChromeScale;
+        var r = radius ?? GratisTheme.Radius.Control * s;
         var hovered = UiMotion.Value(UiMotion.Item, 1, ImGui.IsItemHovered() ? 1 : 0, initial: 0);
         var pressed = UiMotion.Value(UiMotion.Item, 2, ImGui.IsItemActive() ? 1 : 0, initial: 0);
         var active = UiMotion.Value(UiMotion.Item, 6, selected ? 1 : 0);
@@ -44,21 +45,22 @@ public static partial class ChromeControls {
             list.AddRectFilled(min + new Vector2(s), max - new Vector2(s),
                 ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .06f * hovered + .06f * pressed),
                     GratisTheme.WarmAccent with { W = .12f }, active)),
-                GratisTheme.ButtonRadius * s);
+                UiMotion.IsGratis ? GratisTheme.Radius.Inner(r, s) : GratisTheme.ButtonRadius * s);
         if (focus > 0)
             list.AddRect(min + new Vector2(2 * s), max - new Vector2(2 * s),
-                ImGui.GetColorU32(GratisTheme.Crystal with { W = focus }), GratisTheme.ButtonRadius * s,
+                ImGui.GetColorU32(GratisTheme.Crystal with { W = focus }),
+                UiMotion.IsGratis ? GratisTheme.Radius.Inner(r, 2 * s) : GratisTheme.ButtonRadius * s,
                 ImDrawFlags.None, s);
     }
 
     public static bool IconButton(string id, char glyph, string label, Vector2 size, float? scale = null,
-        Vector4? windowBounds = null) {
+        Vector4? windowBounds = null, float? radius = null) {
         var pos = ImGui.GetCursorScreenPos();
         var clicked = Button(id, size);
         var list = ImGui.GetWindowDrawList();
         var s = scale ?? GratisTheme.ChromeScale;
         using var motion = UiMotion.Control(list, pos, pos + size);
-        Feedback(list, pos, pos + size, scale: s);
+        Feedback(list, pos, pos + size, scale: s, radius: radius);
         GratisIcons.Draw(list, pos + size / 2, glyph, GratisTheme.Secondary, GratisTheme.IconSize * s);
         Tooltip(label, scale: s, windowBounds: windowBounds);
         return clicked;
@@ -82,8 +84,8 @@ public static partial class ChromeControls {
         hoverFrame = frame;
         if (now - hoverBegan < .4)
             return;
-        using var style = new ChromePopupStyle();
         var s = scale ?? GratisTheme.ChromeScale;
+        using var style = new ChromePopupStyle(scale: s);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         var viewport = ImGui.GetWindowViewport();
@@ -99,7 +101,7 @@ public static partial class ChromeControls {
         LastTooltipBounds = ChromePopoverMath.Place(bounds, size, regionMin, regionMax, 4 * s);
         LastTooltipAnchor = bounds;
         LastTooltipTime = now;
-        UiMotion.TooltipText(text, LastTooltipBounds, wrap);
+        UiMotion.TooltipText(text, LastTooltipBounds, wrap, s);
     }
 
     public static string FitLabel(string text, float width) {

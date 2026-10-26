@@ -37,7 +37,7 @@ public sealed partial class SettingsLayout {
 #endif
         if (config.ShowWhatsNew) {
             var unseen = TweakNews.HasUnseen(config);
-            if (ChromeControls.TextButton(unseen ? "What's new  *" : "What's new"))
+            if (ChromeControls.TextButton(unseen ? "What's new  *" : "What's new", scale: SettingsTheme.Scale))
                 WhatsNewOpen = !WhatsNewOpen;
             if (WhatsNewOpen) {
                 foreach (var release in TweakNews.Releases) {
@@ -50,7 +50,7 @@ public sealed partial class SettingsLayout {
                     }
                 }
                 if (unseen) {
-                    if (ChromeControls.TextButton("Mark as seen")) {
+                    if (ChromeControls.TextButton("Mark as seen", scale: SettingsTheme.Scale)) {
                         TweakNews.Dismiss(config);
                         changed = true;
                     }
@@ -84,15 +84,15 @@ public sealed partial class SettingsLayout {
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 24 * s);
                     ImGui.TextUnformatted(TweakEllipsis(tweak.Name, width - 24 * s));
                     if (ImGui.IsItemHovered())
-                        UiMotion.TooltipText(tweak.Name);
+                        UiMotion.TooltipText(tweak.Name, scale: SettingsTheme.Scale);
                     using (SettingsTheme.Font(12)) {
                         ImGui.TextColored(GratisTheme.Secondary, TweakEllipsis(tweak.Description, width));
                         if (ImGui.IsItemHovered())
-                            UiMotion.TooltipText(tweak.Description);
+                            UiMotion.TooltipText(tweak.Description, scale: SettingsTheme.Scale);
                         if (tweak.IntegrationNote is { } note) {
                             ImGui.TextColored(GratisTheme.Secondary, TweakEllipsis(note, width));
                             if (ImGui.IsItemHovered())
-                                UiMotion.TooltipText(note);
+                                UiMotion.TooltipText(note, scale: SettingsTheme.Scale);
                         }
                     }
                     if (tweak.ConfigureSection is not null) {
@@ -119,7 +119,7 @@ public sealed partial class SettingsLayout {
                     RecordTweakAction(tweak.Id + "/toggle");
 #endif
                     if (ImGui.IsItemHovered())
-                        UiMotion.TooltipText($"{tweak.Name}. Default: {(tweak.Default ? "on" : "off")}.");
+                        UiMotion.TooltipText($"{tweak.Name}. Default: {(tweak.Default ? "on" : "off")}.", scale: SettingsTheme.Scale);
                     ImGui.TableNextColumn();
                     ImGui.BeginDisabled(!tweak.IsModified(config));
                     if (ChromeControls.IconButton("##reset", GratisIcons.Repeat, "Reset " + tweak.Name,

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Gratis.Preview;
 
@@ -11,8 +11,10 @@ internal static partial class Program {
         ("interface-motion-config", InterfaceMotionVerification.Config),
         ("frames-interface-motion", InterfaceMotionVerification.Frames),
         ("frames-unfade", InterfaceMotionVerification.Unfade),
+        ("corner-radii", RadiusVerification.Run),
         ("chrome-three", ChromeThreeVerification.State),
         ("frames-bottom-cards", ChromeThreeVerification.BottomRow),
+        ("frames-location-menu", LocationMenuVerification.Run),
         ("frames-travel-input", ChromeThreeVerification.TravelInput),
         ("window-presets", WindowPresetVerification.State),
         ("frames-window-presets", WindowPresetVerification.Frames),

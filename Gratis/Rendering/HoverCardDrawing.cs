@@ -123,7 +123,7 @@ public static class HoverCardDrawing {
         var list = ImGui.GetForegroundDrawList();
         using var titleFont = context.GetChromeFont(titleSize, ChromeFontRole.Title)?.Push();
         DrawBinding.PushFontTexture(list);
-        MapWindowDrawing.DrawSurface(list, position, position + size, GratisTheme.CardRadius * scale, fade,
+        MapWindowDrawing.DrawSurface(list, position, position + size, GratisTheme.Radius.Card * scale, fade,
             surfaceOpacity: 1);
         list.PushClipRect(position, position + size, true);
         var y = position.Y + padding.Y;

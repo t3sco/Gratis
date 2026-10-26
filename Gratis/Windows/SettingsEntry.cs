@@ -120,7 +120,7 @@ public sealed class SettingsEntry {
                 }
                 else
                     changed = choices is null ? ImGui.SliderInt("##value", ref number, (int)minimum, (int)maximum)
-                        : config.IsGratis ? ChromeControls.Combo("##value", ref number, choices)
+                        : config.IsGratis ? ChromeControls.Combo("##value", ref number, choices, SettingsTheme.Scale)
                         : ImGui.Combo("##value", ref number, choices, choices.Length);
                 value = number;
                 break;
@@ -149,7 +149,7 @@ public sealed class SettingsEntry {
             case Enum option:
                 var names = choices ?? (enumNames ??= Enum.GetNames(option.GetType()));
                 var index = Convert.ToInt32(option);
-                changed = config.IsGratis ? ChromeControls.Combo("##value", ref index, names)
+                changed = config.IsGratis ? ChromeControls.Combo("##value", ref index, names, SettingsTheme.Scale)
                     : ImGui.Combo("##value", ref index, names, names.Length);
                 value = Enum.ToObject(option.GetType(), index);
                 break;

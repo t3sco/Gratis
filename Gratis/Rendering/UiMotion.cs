@@ -199,8 +199,9 @@ public static partial class UiMotion {
     }
 
     public static PopupScope Popup(string id, bool desired, Vector2 min, Vector2 size,
-        ImGuiWindowFlags flags = ImGuiWindowFlags.None) {
+        ImGuiWindowFlags flags = ImGuiWindowFlags.None, float? scale = null) {
         Begin();
+        var s = scale ?? GratisTheme.ChromeScale;
         var key = ImGui.GetID(id);
         var backdrop = ImGui.GetStyle().Colors[(int)ImGuiCol.PopupBg].W > 0;
         ImGui.SetNextWindowPos(min);
@@ -225,11 +226,11 @@ public static partial class UiMotion {
                 ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground);
         }
         var visual = new VisualScope(ImGui.GetWindowDrawList(), min, alpha,
-            Full ? new Vector2(0, (1 - alpha) * InterfaceMotionTokens.Slide * GratisTheme.ChromeScale) : Vector2.Zero,
+            Full ? new Vector2(0, (1 - alpha) * InterfaceMotionTokens.Slide * s) : Vector2.Zero,
             Full ? .97f + .03f * alpha : 1, start: 0);
         if (backdrop)
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), min, min + size,
-                GratisTheme.CardRadius * GratisTheme.ChromeScale, surfaceOpacity: 1);
+                GratisTheme.Radius.Popup * s, surfaceOpacity: 1);
         return new(native, visual);
     }
 

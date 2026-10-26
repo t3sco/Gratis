@@ -27,7 +27,7 @@ public static class SubZoneBannerDrawing {
         var list = ImGui.GetWindowDrawList();
         using var motion = new UiMotion.VisualScope(list, pos, 1,
             UiMotion.Full ? new Vector2(0, (1 - banner.Opacity) * 6 * s) : Vector2.Zero);
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s);
         GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Compass, GratisTheme.WarmAccent,
             GratisTheme.IconSize * s);
         list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2),

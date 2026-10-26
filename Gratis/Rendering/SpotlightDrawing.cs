@@ -16,7 +16,7 @@ internal static class SpotlightDrawing {
         && MapShape.Contains(center + new Vector2(-half.X, half.Y));
 
     public static void DrawMapOverlay(Spotlight spotlight, Vector2 origin, float zoom) {
-        if (spotlight.Opacity <= 0 || !spotlight.OwnsViewport)
+        if (spotlight.Opacity <= 0 || !spotlight.Visible)
             return;
         var list = ImGui.GetWindowDrawList();
         var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
@@ -143,7 +143,7 @@ internal static class SpotlightDrawing {
             return;
         var list = ImGui.GetWindowDrawList();
         using var motion = UiMotion.Surface("##spotlight-distance", center, spotlight.Active);
-        MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.CardRadius * scale, opacity,
+        MapWindowDrawing.DrawSurface(list, center - half, center + half, GratisTheme.Radius.Card * scale, opacity,
             surfaceOpacity: 1);
         TextDrawing.Draw(list, center - half + new Vector2(12 * scale, (half.Y * 2 - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(Vector4.One with { W = opacity }), label);

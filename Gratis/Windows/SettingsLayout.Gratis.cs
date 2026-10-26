@@ -70,9 +70,9 @@ public sealed partial class SettingsLayout {
                 if (selected) {
                     var indicator = UiMotion.Selection("##settings-indicator", start);
                     nav.AddRectFilled(indicator, indicator + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)),
-                        4 * scale);
+                        GratisTheme.Radius.Control * scale);
                     nav.AddRectFilled(indicator + new Vector2(0, 8) * scale, indicator + new Vector2(2, 28) * scale,
-                        ImGui.GetColorU32(GratisTheme.WarmAccent), scale);
+                        ImGui.GetColorU32(GratisTheme.WarmAccent), GratisTheme.Radius.Pill(new Vector2(2, 20) * scale));
                 }
                 ChromeControls.Feedback(nav, start, start + size, fill: true, scale: scale);
                 GratisIcons.Draw(nav, start + new Vector2(18, 18) * scale, SectionIcons[index],
@@ -139,7 +139,7 @@ public sealed partial class SettingsLayout {
                             + "visible until their group is explicitly muted.");
                         ImGui.TreePop();
                     }
-                    if (ChromeControls.TextButton("Clear temporary filters", new Vector2(0, 36 * scale)))
+                    if (ChromeControls.TextButton("Clear temporary filters", new Vector2(0, 36 * scale), scale: scale))
                         MapDrawContext.Current.Visibility.ResetFilters();
                 }
                 ImGui.Spacing();
@@ -186,11 +186,11 @@ public sealed partial class SettingsLayout {
                     var bottom = ImGui.GetCursorScreenPos().Y - ImGui.GetStyle().ItemSpacing.Y;
                     ImGui.GetWindowDrawList().AddRect(cardStart,
                         new Vector2(cardStart.X + ImGui.GetContentRegionAvail().X, bottom),
-                        ImGui.GetColorU32(GratisTheme.Border), GratisTheme.CardRadius * scale);
+                        ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Card * scale);
                     ImGui.Spacing();
                 }
                 if (section == "Map" && string.IsNullOrWhiteSpace(Search)
-                    && ChromeControls.TextButton("Marker declutter settings"))
+                    && ChromeControls.TextButton("Marker declutter settings", scale: scale))
                     SelectedSection = 2;
                 if (extension && drawExtension is not null)
                     changed |= drawExtension(section, Search);

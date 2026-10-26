@@ -45,7 +45,7 @@ public static class UpdateNotice {
         LastBounds = bounds;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.CardRadius * s);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s);
         list.AddText(pos + new Vector2(12 * s, (size.Y - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(GratisTheme.Primary), label);
         var buttonPos = pos + new Vector2(12 * s + labelWidth + 12 * s, 4 * s);
@@ -53,9 +53,10 @@ public static class UpdateNotice {
         var pressed = ChromeControls.Button("##update-action", buttonSize);
         var hovered = ImGui.IsItemHovered();
         list.AddRectFilled(buttonPos, buttonPos + buttonSize,
-            ImGui.GetColorU32(GratisTheme.Crystal with { W = hovered ? .30f : .20f }), GratisTheme.ButtonRadius * s);
+            ImGui.GetColorU32(GratisTheme.Crystal with { W = hovered ? .30f : .20f }),
+            GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s));
         list.AddRect(buttonPos, buttonPos + buttonSize, ImGui.GetColorU32(GratisTheme.Crystal with { W = .45f }),
-            GratisTheme.ButtonRadius * s, ImDrawFlags.None, s);
+            GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s), ImDrawFlags.None, s);
         list.AddText(buttonPos + new Vector2(12 * s, (buttonSize.Y - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(GratisTheme.Primary), "Update");
         ChromeControls.Tooltip("Opens the plugin installer so you can update Gratis",

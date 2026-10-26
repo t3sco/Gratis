@@ -87,6 +87,36 @@ internal static class PaletteVerification {
         Require(places.Single(p => p.AetheryteId == 3).Expansion == 1, "Expansion grouping preserved");
         Require(places.Single(p => p.AetheryteId == 3).Subtitle.StartsWith("Heavensward > Dravania"),
             "Expansion/region group labels");
+        PlaceMapRow[] artwork = [
+            new(1, 1, "Missing", ""),
+            new(2, 1, "Second art", "", ArtPath: "second.tex"),
+            new(10, 1, "Cover art", "", ArtPath: "cover.tex"),
+            new(3, 2, "Other expansion", "", Expansion: 1, ArtPath: "other.tex"),
+            new(4, 2, "Other missing", "", Expansion: 1),
+            new(5, 3, "No art", "", Expansion: 2, ExpansionIcon: 61877)
+        ];
+        var filled = PlaceIndexBuilder.WithFallbackArt(artwork);
+        Require(filled.Single(m => m.Id == 1).ArtPath == "cover.tex"
+            && filled.Single(m => m.Id == 4).ArtPath == "other.tex"
+            && filled.Single(m => m.Id == 5).ArtPath.Length == 0,
+            "Missing map art borrows only within its expansion; artless expansions stay synthetic");
+        Require(filled.OrderBy(m => m.Id).SequenceEqual(
+            PlaceIndexBuilder.WithFallbackArt(artwork.Reverse()).OrderBy(m => m.Id))
+            && filled.SequenceEqual(PlaceIndexBuilder.WithFallbackArt(filled)),
+            "Artwork fallback is deterministic and idempotent");
+        var covers = PaletteBrowser.Expansions(PlaceIndexBuilder.Build(artwork, []));
+        Require(filled.Where(m => m.ArtPath.Length == 0).All(m => m.Expansion == 2)
+            && artwork.Where(m => m.ArtPath.Length > 0).All(m => filled.Single(f => f.Id == m.Id) == m)
+            && filled.Single(m => m.Id == 1).ArtPath == covers.Single(e => e.Id == 0).Cover.ArtPath,
+            "Fallback matches the browser's art-first ordinal cover choice and preserves existing art");
+        var inherited = PlaceIndexBuilder.Build(filled,
+            [new PlaceAetheryteRow(20, 1, 1, "Art hub", true, 0)]).Single(p => p.AetheryteId == 20);
+        Require(inherited.ArtPath == "cover.tex", "Aetherytes inherit their map's borrowed artwork");
+        var unnamed = PlaceIndexBuilder.Build(
+            [new PlaceMapRow(7, 7, "???", "???"), new PlaceMapRow(8, 8, " ??? ", "x"), new PlaceMapRow(9, 9, "Mor Dhona", "Mor Dhona")],
+            [new PlaceAetheryteRow(9, 7, 7, "Hidden", true, 0, new(1))]).ToArray();
+        Require(unnamed.Length == 1 && unnamed[0].Name == "Mor Dhona" && PlaceIndexBuilder.IsUnnamed("??"),
+            "Maps named '???' are not indexed");
         Require(PlaceIndexBuilder.MarkerWorld(new(1124, 1224), .5f, new(40, -20)) == new Vector2(240, 380),
             "Texture markers convert to world coordinates with factor and offsets");
         var all = PlaceSearch.Find(places, "a:", PlaceKind.All, new(1, 1, null), new Dictionary<string, long>(),
@@ -109,6 +139,7 @@ internal static class PaletteVerification {
     }
 
     public static void Frames() {
+        PaletteQuestVerification.Frames();
         ToolbarSearchVerification.Run();
         using (var driver = new ScriptedFrameDriver(Config(), new FrameScript { Palette = true })) {
             driver.Step(new(0));

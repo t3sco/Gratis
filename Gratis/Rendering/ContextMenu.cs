@@ -110,7 +110,10 @@ public sealed partial class ContextMenu {
         ImGui.SetNextWindowSize(size);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(6 * s));
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 0);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, GratisTheme.Radius.Popup * s);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new(ImGui.GetStyle().ScrollbarSize)));
+        ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * s, 2 * s));
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, Vector4.Zero);
         try {
@@ -124,7 +127,7 @@ public sealed partial class ContextMenu {
             if (popup.Interactive)
                 Capture();
             context.Chrome.Reveal(host.Now);
-            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, GratisTheme.CardRadius * s,
+            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), Min, Max, GratisTheme.Radius.Popup * s,
                 surfaceOpacity: 1);
             if (current.Count == 0) {
                 if (popup.Interactive)
@@ -162,7 +165,7 @@ public sealed partial class ContextMenu {
                 if (i == selected && enabled) {
                     var highlight = UiMotion.Selection("##context-highlight", pos);
                     list.AddRectFilled(highlight, highlight + new Vector2(width, rowHeight),
-                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .08f }), GratisTheme.ButtonRadius * s);
+                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .08f }), GratisTheme.Radius.Control * s);
                 }
                 ChromeControls.Feedback(list, pos, pos + new Vector2(width, rowHeight), i == selected && enabled);
                 GratisIcons.Draw(list, pos + new Vector2(18 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary,
@@ -187,7 +190,7 @@ public sealed partial class ContextMenu {
             }
             ImGui.EndChild();
         }
-        finally { ImGui.PopStyleColor(); ImGui.PopStyleVar(3); }
+        finally { ImGui.PopStyleColor(); ImGui.PopStyleVar(6); }
         if (details.Length > 0) {
             UiMotion.TooltipText(details);
         }
@@ -230,7 +233,7 @@ public sealed partial class ContextMenu {
             size);
         using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pos, alpha,
             UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero);
-        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, 8 * s, surfaceOpacity: 1);
+        MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.Radius.Card * s, surfaceOpacity: 1);
         ImGui.GetWindowDrawList().AddText(pos + new Vector2(12, 8) * s, ImGui.GetColorU32(GratisTheme.Primary), toast);
     }
 }

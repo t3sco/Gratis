@@ -23,6 +23,7 @@ internal static class ChromeLayoutVerification {
     public static void Layout() {
         ChromePolishVerification.Run();
         FeedbackVerification.Run();
+        SpotlightZoomVerification.Run();
         ToolbarMigration();
         ToolbarPlacement();
         var c = JsonSerializer.Deserialize<SystemConfig>("{}", new JsonSerializerOptions { IncludeFields = true })!;

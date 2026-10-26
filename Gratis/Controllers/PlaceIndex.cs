@@ -12,6 +12,19 @@ namespace Gratis.Controllers;
 public enum PlaceKind {
     All, Aetheryte, Zone, Quest, Marker, Flag, Pin, Action
 }
+public enum QuestBucket {
+    Other, Scenario, SideQuests, JobClass, Chronicles, AlliedSocieties
+}
+public static class QuestBuckets {
+    public static QuestBucket FromSection(uint? section) => section switch {
+        0 or 1 => QuestBucket.Scenario,
+        3 => QuestBucket.SideQuests,
+        6 => QuestBucket.JobClass,
+        2 => QuestBucket.Chronicles,
+        4 or 5 => QuestBucket.AlliedSocieties,
+        _ => QuestBucket.Other,
+    };
+}
 public readonly record struct PlaceAccess(bool Attuned, uint? Cost = null);
 
 public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string Subtitle, uint MapId, uint TerritoryId,
@@ -20,6 +33,8 @@ public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string S
     public string ArtPath { get; init; } = "";
     public uint ExpansionIcon { get; init; }
     public uint Icon { get; init; }
+    public uint QuestRowId { get; init; }
+    public QuestBucket QuestBucket { get; init; }
     public uint AethernetNameId { get; init; }
     public string SearchName { get; } = PlaceSearch.Normalize(Name);
     public string SearchAliases { get; } = PlaceSearch.Normalize(Aliases);
@@ -122,7 +137,7 @@ public static class PlaceSearch {
 
     public static PlaceResult[] Find(IEnumerable<PlaceEntry> entries, string query, PlaceKind scope,
         PlaceSearchContext context, IReadOnlyDictionary<string, long> recent, Func<PlaceEntry, PlaceAccess> access,
-        bool showUnattuned = true) {
+        bool showUnattuned = true, bool currentMapMarkersOnly = true) {
         if (NearestPlaces.Parse(query, out var nearest))
             return NearestPlaces.Find(entries, nearest, context, access, showUnattuned);
         var parsed = Parse(query, scope);
@@ -131,7 +146,7 @@ public static class PlaceSearch {
         foreach (var place in entries) {
             if (parsed.Scope != PlaceKind.All && place.Kind != parsed.Scope)
                 continue;
-            if (place.Kind == PlaceKind.Marker && place.MapId != context.MapId)
+            if (currentMapMarkersOnly && place.Kind == PlaceKind.Marker && place.MapId != context.MapId)
                 continue;
             var state = access(place);
             if (!showUnattuned && place.Kind == PlaceKind.Aetheryte && !state.Attuned)

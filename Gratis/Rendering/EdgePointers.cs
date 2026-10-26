@@ -106,7 +106,7 @@ public sealed class EdgePointers {
             var pulse = host.Config.ReduceMotion ? 1 : .87f + .13f * MathF.Sin((float)host.Now * MathF.Tau / 1.8f);
             var alpha = Math.Clamp(outside / (20 * s), 0, 1) * pulse;
             var list = ImGui.GetWindowDrawList();
-            MapWindowDrawing.DrawSurface(list, point - half, point + half, 7 * s, surfaceOpacity: alpha);
+            MapWindowDrawing.DrawSurface(list, point - half, point + half, GratisTheme.Radius.Control * s, surfaceOpacity: alpha);
             var tip = point - new Vector2(half.X - 12 * s, 0);
             var direction = Vector2.Normalize(screen - (min + max) / 2);
             var side = new Vector2(-direction.Y, direction.X);

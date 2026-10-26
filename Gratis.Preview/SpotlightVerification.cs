@@ -121,9 +121,8 @@ internal static class SpotlightVerification {
                 restored = driver.Step(new(.92 + i / 60.0));
             Require(!driver.Renderer.Spotlight.OwnsViewport && driver.Renderer.Spotlight.Opacity == 0,
                 "Fade and return release viewport ownership");
-            Require(MathF.Abs(restored.Scale - original.Scale) < .0001f
-                && Vector2.Distance(restored.Offset, original.Offset) < .01f,
-                "Pan and zoom restore after drag");
+            Require(MathF.Abs(restored.Scale - framed.Scale) < .05f,
+                "Dragging out of a spotlight keeps the view instead of gliding back");
             driver.Step(new(3, QuestLink: new(null, 1)));
             Require(!driver.Renderer.Spotlight.OwnsViewport, "Missing target uses normal behaviour");
             driver.Config.QuestSpotlight = false;

@@ -60,7 +60,7 @@ public static class LensDrawing {
         if (ImGui.InvisibleButton("##lens-switcher", size))
             context.OpenFilterSettings();
         InputActive |= ImGui.IsItemHovered();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, 8 * GratisTheme.ChromeScale);
+        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * GratisTheme.ChromeScale);
         GratisIcons.Draw(list, pos + new Vector2(15 * GratisTheme.ChromeScale, size.Y / 2), GratisIcons.Layers,
             context.Config.AccentColor, 14 * GratisTheme.ChromeScale);
         if (!compact)

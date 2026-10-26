@@ -60,7 +60,8 @@ public static class MapWindowDrawing {
         }
         var stroke = MapDrawContext.Current.GlobalScale;
         list.AddRect(min + new Vector2(.5f * stroke), max - new Vector2(.5f * stroke),
-            ImGui.GetColorU32(GratisTheme.Border with { W = GratisTheme.Border.W * alpha }), radius, ImDrawFlags.None,
+            ImGui.GetColorU32(GratisTheme.Border with { W = GratisTheme.Border.W * alpha }),
+            config.IsGratis ? GratisTheme.Radius.Inner(radius, .5f * stroke) : radius, ImDrawFlags.None,
             stroke);
     }
 

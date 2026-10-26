@@ -149,3 +149,11 @@ dotnet run --project Gratis.Preview -c Release -- --scene live --config "$env:AP
 dotnet run --project Gratis.Preview -c Release -- --diff _preview/ours.png _shots/reference.png --out _preview/diff.png
 ```
 
+
+Chrome uses `GratisTheme.Radius`: Control 6, Card 8 and Popup 8, scaled once by the
+caller. `Inner` subtracts a device-space inset; `Pill` takes actual device-space bounds.
+Settings keeps the global DPI scale independently of map control size. Saved map
+contours and noncompact title corners remain configurable; marker pictograms,
+toolbar glyphs and Classic geometry retain their own shapes. `--selftest corner-radii`
+checks the tokens and scans embedded Rendering sources for literal rectangle radii,
+with an explicit allow-list for those map/marker/glyph exceptions. It runs in `all`.

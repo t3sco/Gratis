@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Gratis.Classes;
 using Gratis.Data;
 using Gratis.Rendering;
@@ -13,6 +13,8 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public List<BackdropBlur> Blurs { get; } = [];
     public bool PvP { get; set; }
     public override bool IsPvP => PvP;
+    public ILocationMenuSource? LocationSource { get; set; }
+    public override ILocationMenuSource? LocationMenu => LocationSource;
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
     public string? RequestedSettingsSection { get; private set; }

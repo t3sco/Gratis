@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
@@ -16,6 +16,8 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     private bool loggedBlurFailure;
 
     public override bool IsPvP => Service.ClientState.IsPvP;
+
+    public override ILocationMenuSource? LocationMenu => System.MapWindow.PlacePalette;
 
     public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
 

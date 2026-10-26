@@ -13,6 +13,7 @@ using PaletteTexture = Dalamud.Bindings.ImGui.ImTextureID;
 namespace Gratis.Rendering;
 
 public sealed record PaletteExpansion(uint Id, string Name, PlaceEntry Cover, int Places, int Zones);
+public sealed record PaletteZone(uint MapId, string Name, PlaceResult[] Places);
 public readonly record struct PaletteImage(PaletteTexture Handle, int Width, int Height, uint Seed = 0) {
     public bool Ready => !Handle.Equals(default(PaletteTexture)) && Width > 0 && Height > 0;
 }
@@ -27,13 +28,36 @@ public static class PaletteBrowser {
     public static string Expansion(PlaceEntry place) => place.ExpansionName.Length > 0 ? place.ExpansionName
         : place.Expansion < names.Length ? names[place.Expansion] : $"Expansion {place.Expansion}";
 
-    public static PaletteExpansion[] Expansions(IEnumerable<PlaceEntry> entries) =>
-        entries.Where(p => p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte).GroupBy(p => p.Expansion).OrderBy(g =>
-            g.Key).Select(g =>
-            new PaletteExpansion(g.Key, Expansion(g.First()),
-                g.OrderByDescending(p => p.ArtPath.Length > 0).ThenBy(p => p.Kind != PlaceKind.Zone).ThenBy(p => p.Id,
-                    StringComparer.Ordinal).First(),
-                g.Count(), g.Select(p => p.MapId).Distinct().Count())).ToArray();
+    public static PaletteExpansion[] Expansions(IEnumerable<PlaceEntry> entries,
+        IEnumerable<PlaceEntry>? counted = null) {
+        var snapshot = entries.ToArray();
+        var covers = snapshot.Where(p => p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte)
+            .GroupBy(p => p.Expansion).ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.ArtPath.Length > 0)
+                .ThenBy(p => p.Kind != PlaceKind.Zone).ThenBy(p => p.Id, StringComparer.Ordinal).First());
+        return (counted ?? snapshot.Where(p => p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte))
+            .GroupBy(p => p.Expansion).OrderBy(g => g.Key).Select(g => {
+                var cover = covers.GetValueOrDefault(g.Key) ?? g.First();
+                return new PaletteExpansion(g.Key, Expansion(cover), cover, g.Count(),
+                    g.Select(p => p.MapId).Distinct().Count());
+            }).ToArray();
+    }
+
+    public static PaletteZone[] Zones(IEnumerable<PlaceResult> results, IEnumerable<PlaceEntry> entries) {
+        var names = entries.Where(p => p.Kind == PlaceKind.Zone).GroupBy(p => p.MapId)
+            .ToDictionary(g => g.Key, g => g.First().Name);
+        return results.GroupBy(r => r.Place.MapId).Select(g => new PaletteZone(g.Key,
+            names.GetValueOrDefault(g.Key) ?? g.First().Place.Subtitle.Split('>', StringSplitOptions.TrimEntries
+                | StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? $"Map {g.Key}",
+            g.ToArray())).OrderBy(g => g.Name, StringComparer.Ordinal).ThenBy(g => g.MapId).ToArray();
+    }
+
+    public static string Count(int count, PlaceKind kind) => $"{count} " + (kind switch {
+        PlaceKind.Aetheryte => count == 1 ? "aetheryte" : "aetherytes",
+        PlaceKind.Zone => count == 1 ? "zone" : "zones",
+        PlaceKind.Quest => count == 1 ? "quest" : "quests",
+        PlaceKind.Marker => count == 1 ? "marker" : "markers",
+        _ => count == 1 ? "place" : "places",
+    });
 
     public static int Columns(float width, float scale) => width >= 660 * scale ? 3 : width >= 400 * scale ? 2 : 1;
     public static int Navigate(int current, int count, int columns, int horizontal, int vertical) =>

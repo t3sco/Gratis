@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
@@ -15,6 +15,8 @@ namespace Gratis.Classes.MapWindowComponents;
 public unsafe class MapToolbar {
     public void Draw() => Rendering.MapToolbarDrawing.Draw(Activate, DrawLayersContextMenu,
         System.MapWindow.PlacePalette.Overlay);
+
+    internal static void OpenParent() => Activate(ToolbarAction.Parent);
 
     private static void Activate(Rendering.ToolbarAction action) {
         switch (action) {
@@ -103,7 +105,7 @@ public unsafe class MapToolbar {
 
                 var label = marker.MapMarker.Subtext.AsDalamudSeString();
 
-                if (ImGui.MenuItem(label.ToString())) {
+                if (Rendering.ChromeControls.MenuItem(label.ToString())) {
                     System.IntegrationsController.OpenMap(marker.DataKey);
                     System.SystemConfig.FollowPlayer = false;
                     System.MapRenderer.DrawOffset = Vector2.Zero;
@@ -121,7 +123,7 @@ public unsafe class MapToolbar {
             }
 
             foreach (var layer in layers) {
-                if (ImGui.MenuItem(layer.PlaceNameSub.Value.Name.ExtractText(), "",
+                if (Rendering.ChromeControls.MenuItem(layer.PlaceNameSub.Value.Name.ExtractText(), "",
                     AgentMap.Instance()->SelectedMapId == layer.RowId)) {
                     System.IntegrationsController.OpenMap(layer.RowId);
                     System.SystemConfig.FollowPlayer = false;

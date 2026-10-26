@@ -28,7 +28,11 @@ public sealed partial class PaletteOverlay {
         var (min, max) = ChromeLayout.SafeBounds();
         var area = max - min;
         var rows = Math.Clamp(results.Length, 2, Math.Clamp(config.PaletteMaxResults, 2, 12));
-        var size = Vector2.Min(new Vector2(940, Home ? 740 : 118 + rows * 80) * scale,
+        var questMaxHeight = area.Y / 3;
+        var questHeight = PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest
+            ? QuestChips(config, scale, MathF.Min(940 * scale, area.X - 2 * GratisTheme.Gap * scale)
+                - 2 * GratisTheme.Inset * scale, false, questMaxHeight) + GratisTheme.Gap * scale : 0;
+        var size = Vector2.Min(new Vector2(940 * scale, (Home ? 740 : 118 + rows * 80) * scale + questHeight),
             Vector2.Max(Vector2.One, area - new Vector2(GratisTheme.Gap * 2 * scale)));
         var anchor = FieldBounds.Z > FieldBounds.X ? FieldBounds : MapToolbarDrawing.LastBounds;
         var bounds = ChromePopoverMath.Place(anchor, size, min, max, GratisTheme.Gap * scale);
@@ -41,13 +45,15 @@ public sealed partial class PaletteOverlay {
             ChromeFontRole.Body)?.Push();
         var list = ImGui.GetWindowDrawList();
         list.AddRectFilled(PanelMin + new Vector2(0, 7 * scale), PanelMax + new Vector2(0, 7 * scale),
-            ImGui.GetColorU32(new Vector4(0, 0, 0, .25f)), GratisTheme.CardRadius * scale);
+            ImGui.GetColorU32(new Vector4(0, 0, 0, .25f)), GratisTheme.Radius.Popup * scale);
         ImGui.SetCursorScreenPos(PanelMin);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(GratisTheme.Inset) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(GratisTheme.Gap) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(12, 9) * scale);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.ButtonRadius * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, GratisTheme.Radius.Control * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 4 * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, GratisTheme.Radius.Pill(new Vector2(4 * scale)));
+        ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * scale, 2 * scale));
         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
         ImGui.PushStyleColor(ImGuiCol.TextDisabled, GratisTheme.Secondary);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
@@ -65,7 +71,7 @@ public sealed partial class PaletteOverlay {
                     UiMotion.Full ? .97f + .03f * alpha : 1);
                 ImGui.BeginDisabled(!IsOpen);
                 surface.PushClipRect(PanelMin, PanelMax, false);
-                MapWindowDrawing.DrawSurface(surface, PanelMin, PanelMax, GratisTheme.CardRadius * scale,
+                MapWindowDrawing.DrawSurface(surface, PanelMin, PanelMax, GratisTheme.Radius.Popup * scale,
                     surfaceOpacity: 1);
                 surface.PopClipRect();
                 if (IsOpen && ImGui.IsKeyPressed(ImGuiKey.Tab, false)) {
@@ -114,6 +120,11 @@ public sealed partial class PaletteOverlay {
                     }
                 }
                 Search(config);
+                Array.Clear(questChipBounds);
+                if (PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest)
+                    QuestChips(config, scale, ImGui.GetContentRegionAvail().X, true,
+                        MathF.Min(questMaxHeight, ImGui.GetContentRegionAvail().Y / 2));
+                Search(config);
                 var footer = size.Y < 240 * scale || confirming == null && message.Length == 0 ? 0
                     : (confirming != null ? 56 : 44) * scale;
                 var available = ImGui.GetContentRegionAvail();
@@ -130,12 +141,16 @@ public sealed partial class PaletteOverlay {
                         viewAlpha, UiMotion.Full ? new Vector2((1 - viewAlpha) * 6 * scale, 0) : Vector2.Zero);
                     var currentResults = results;
                     var currentExpansions = expansions;
+                    var currentBrowserZones = browserZones;
                     var currentExpansion = expansion;
+                    var currentScope = scope;
                     var currentOpen = IsOpen;
                     if (outgoing) {
                         results = previousResults;
                         expansions = previousExpansions;
+                        browserZones = previousBrowserZones;
                         expansion = previousExpansion;
+                        scope = previousScope;
                         IsOpen = false;
                     }
                     ImGui.PushID(shown);
@@ -156,7 +171,9 @@ public sealed partial class PaletteOverlay {
                     if (outgoing) {
                         results = currentResults;
                         expansions = currentExpansions;
+                        browserZones = currentBrowserZones;
                         expansion = currentExpansion;
+                        scope = currentScope;
                         IsOpen = currentOpen;
                     }
                     scrollSelection = false;
@@ -183,7 +200,68 @@ public sealed partial class PaletteOverlay {
             }
             ImGui.EndChild();
         }
-        finally { ImGui.PopStyleColor(5); ImGui.PopStyleVar(5); }
+        finally { ImGui.PopStyleColor(5); ImGui.PopStyleVar(7); }
+    }
+
+    private float QuestChips(MapDrawingConfig config, float scale, float width, bool draw,
+        float maxHeight = float.MaxValue) {
+        if (draw && QuestChips(config, scale, width, false) > maxHeight) {
+            var clipStart = ImGui.GetCursorScreenPos();
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            if (BeginChild("##quest-buckets", new(width, MathF.Max(1, maxHeight)), ImGuiWindowFlags.NoBackground))
+                QuestChips(config, scale, ImGui.GetContentRegionAvail().X, true);
+            ImGui.EndChild();
+            ImGui.PopStyleVar();
+            for (var i = 0; i < questChipBounds.Length; i++) {
+                var bounds = questChipBounds[i];
+                bounds = new(MathF.Max(bounds.X, clipStart.X), MathF.Max(bounds.Y, clipStart.Y),
+                    MathF.Min(bounds.Z, clipStart.X + width), MathF.Min(bounds.W, clipStart.Y + maxHeight));
+                questChipBounds[i] = bounds.Z > bounds.X && bounds.W > bounds.Y ? bounds : Vector4.Zero;
+            }
+            return maxHeight;
+        }
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale,
+            ChromeFontRole.Chip)?.Push();
+        var start = draw ? ImGui.GetCursorScreenPos() : Vector2.Zero;
+        var gap = GratisTheme.Grid * scale;
+        var height = (GratisTheme.ControlHeight - 6) * scale;
+        width = MathF.Max(1, width);
+        float x = 0, y = 0;
+        for (var i = 0; i < questFilters.Length; i++) {
+            if (i > 0 && questCounts[i] == 0)
+                continue;
+            var label = questLabels[i] + (questCounts[i] > 0 ? $" {questCounts[i]}" : "");
+            var chipWidth = MathF.Min(width, TextDrawing.Measure(label).X + 20 * scale);
+            if (x > 0 && x + chipWidth > width) {
+                x = 0;
+                y += height + gap;
+            }
+            if (draw) {
+                ImGui.SetCursorScreenPos(start + new Vector2(x, y));
+                var chosen = UiMotion.Value(ImGui.GetID("##quest-bucket-" + i), 6, questFilter == i ? 1 : 0);
+                ImGui.PushStyleColor(ImGuiCol.Button,
+                    Vector4.Lerp(new Vector4(1, 1, 1, .035f), config.AccentColor with { W = .25f }, chosen));
+                if (ChromeControls.TextButton("##quest-bucket-" + i, new Vector2(chipWidth, height))) {
+                    questFilter = i;
+                    focusSearch = true;
+                }
+                var chipMin = ImGui.GetItemRectMin();
+                var chipMax = ImGui.GetItemRectMax();
+                questChipBounds[i] = new(chipMin.X, chipMin.Y, chipMax.X, chipMax.Y);
+                var text = ChromeControls.FitLabel(label, MathF.Max(1, chipWidth - 12 * scale));
+                var textSize = TextDrawing.Measure(text);
+                TextDrawing.Draw(ImGui.GetWindowDrawList(), (chipMin + chipMax - textSize) / 2,
+                    ImGui.GetColorU32(GratisTheme.Primary), text);
+                ChromeControls.Tooltip(label, windowBounds: MapToolbarDrawing.WindowBounds);
+                ImGui.PopStyleColor();
+            }
+            x += chipWidth + gap;
+        }
+        if (draw) {
+            ImGui.SetCursorScreenPos(start + new Vector2(0, y + height));
+            ImGui.Dummy(Vector2.Zero);
+        }
+        return MathF.Min(maxHeight, y + height);
     }
 
     private void NavigateResults(MapDrawingConfig config, Vector2 size, float scale) {
@@ -215,7 +293,8 @@ public sealed partial class PaletteOverlay {
         }
     }
 
-    private void DrawRow(PlaceResult result, int index, MapDrawingConfig config, float scale, float width) {
+    private void DrawRow(PlaceResult result, int index, MapDrawingConfig config, float scale, float width,
+        bool browse = false) {
         ImGui.PushID(result.Place.Id);
         var start = ImGui.GetCursorScreenPos();
         var rowWidth = ImGui.GetContentRegionAvail().X;
@@ -230,9 +309,14 @@ public sealed partial class PaletteOverlay {
         if (ImGui.InvisibleButton("##show", new Vector2(MathF.Max(1, rowWidth - buttonWidth), rowHeight)))
             Activate(result.Place);
         var hovered = ImGui.IsItemHovered();
-        if (hovered && !scrollSelection && ImGui.GetIO().MouseDelta.LengthSquared() > 0)
-            selected = index;
-        if (scrollSelection && index == selected)
+        if (hovered && !scrollSelection && ImGui.GetIO().MouseDelta.LengthSquared() > 0) {
+            if (browse)
+                browserSelection = index;
+            else
+                selected = index;
+        }
+        var active = index == (browse ? browserSelection : selected);
+        if (scrollSelection && active)
             UiMotion.ScrollToItem();
         if (!ImGui.IsItemVisible()) {
             ImGui.SetCursorScreenPos(start + new Vector2(0, rowHeight + GratisTheme.Grid * scale));
@@ -244,19 +328,19 @@ public sealed partial class PaletteOverlay {
         UiMotion.ItemId("##show");
         using var rowMotion = UiMotion.Surface("##row-enter", start, IsOpen, index < 8 ? index * .02f : 0);
         using var control = UiMotion.Control(list, start, start + new Vector2(rowWidth, rowHeight));
-        if (index == selected) {
+        if (active) {
             var highlight = UiMotion.Selection(selectionMotionKey, start);
             list.AddRectFilled(highlight, highlight + new Vector2(rowWidth, rowHeight),
-                ImGui.GetColorU32(config.AccentColor with { W = .12f }), GratisTheme.ButtonRadius * scale);
+                ImGui.GetColorU32(config.AccentColor with { W = .12f }), GratisTheme.Radius.Control * scale);
         }
         list.AddRectFilled(start, start + new Vector2(rowWidth, rowHeight),
-            ImGui.GetColorU32(index == selected || hovered
-                ? config.AccentColor with { W = index == selected ? .17f : .08f } : new Vector4(1, 1, 1, .025f)),
-            GratisTheme.ButtonRadius * scale);
+            ImGui.GetColorU32(active || hovered
+                ? config.AccentColor with { W = active ? .17f : .08f } : new Vector4(1, 1, 1, .025f)),
+            GratisTheme.Radius.Control * scale);
         var imageWidth = config.PaletteImagery && width >= 460 * scale ? 90 * scale : 0;
         if (imageWidth > 0)
             DrawArt(result.Place, start + new Vector2(6, 6) * scale, new Vector2(imageWidth, rowHeight - 12 * scale),
-                config, scale);
+                config, scale, GratisTheme.Radius.Inner(GratisTheme.Radius.Control * scale, 6 * scale));
         else
             DrawKindIcon(result.Place, list, start + new Vector2(21, 26) * scale, GratisTheme.IconSize * scale);
         var textMin = start + new Vector2(imageWidth > 0 ? imageWidth + 18 * scale : 40 * scale, 9 * scale);
@@ -275,7 +359,7 @@ public sealed partial class PaletteOverlay {
             var pillMin = textMin + new Vector2(0, 42 * scale);
             var pillSize = TextDrawing.Measure(status) + new Vector2(12, 3) * scale;
             list.AddRectFilled(pillMin, pillMin + pillSize, ImGui.GetColorU32(GratisTheme.Primary with { W = .055f }),
-                pillSize.Y / 2);
+                GratisTheme.Radius.Pill(pillSize));
             TextDrawing.Draw(list, pillMin + new Vector2(6, 1) * scale,
                 ImGui.GetColorU32(result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
                     ? GratisTheme.Transport : GratisTheme.Secondary),
