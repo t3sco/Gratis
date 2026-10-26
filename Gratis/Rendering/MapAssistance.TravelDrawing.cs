@@ -53,8 +53,7 @@ public sealed partial class MapAssistance {
             if (anchorWorld is { } world)
                 anchor = host.Renderer.WorldToScreen(world, ImGui.GetWindowPos());
             var (min, max) = ChromeLayout.SafeBounds();
-            var requested = new Vector2(MathF.Min(332 * s, max.X - min.X),
-                (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal) ? 168 : 136) * s);
+            var requested = TeleportCardSize(place.Name, max.X - min.X);
             if (requested.X < 230 * s)
                 return;
             bounds = ChromeLayout.PlacePopover("hover-travel", requested, anchor);
@@ -79,21 +78,20 @@ public sealed partial class MapAssistance {
         using (var pointer = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), anchor, alpha, Vector2.Zero))
             DrawPointer(bounds, anchor);
         Panel("##travel-card", pos, size, () => {
-            CardHeading(place.IsShard ? "Aethernet" : "Aetheryte", place.Name,
-                place.IsShard ? "" : places.Access(place).Cost is { } cost ? $"{cost:N0} gil" : "Cost unavailable",
-                place.Subtitle);
-            ImGui.BeginDisabled(!open || host.Now <= cardCreated);
-            if (PrimaryTravelButton(pending?.Id == place.Id ? $"Confirm {pendingCost:N0} gil" : "Teleport",
-                GratisIcons.Compass))
-                Request(place, pending?.Id == place.Id);
-            ImGui.EndDisabled();
-            TravelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
-            ImGui.SameLine(0, GratisTheme.Gap * s);
-            if (QuietButton("Dismiss"))
+            var armed = pending?.Id == place.Id;
+            if (!armed)
+                armedAt = 0;
+            else if (armedAt == 0)
+                armedAt = host.Now;
+            var message = Message.StartsWith("Confirm ", StringComparison.Ordinal) ? "" : Message;
+            var card = new TeleportCardModel(place.Name,
+                TravelMeta(place.Subtitle, place.Name, place.IsShard ? "Aethernet" : ""), message,
+                armed ? pendingCost : places.Access(place).Cost, place.IsShard, armed,
+                open && host.Now > cardCreated && (!armed || host.Now - armedAt >= ConfirmDelay));
+            if (DrawTeleportCard(card, out var close) && open)
+                Request(place, armed);
+            if (close)
                 DismissTravel();
-            if (Message.Length > 0 && !Message.StartsWith("Confirm ", StringComparison.Ordinal))
-                ImGui.TextWrapped(Message);
-            DrawTimer(pos, size, (float)(cardUntil - host.Now), host.Config.ReduceMotion);
         }, interactive: open, pivot: anchor);
     }
 
@@ -101,16 +99,6 @@ public sealed partial class MapAssistance {
         || ImGui.GetTime() > created
             && (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             && !ImGui.IsMouseHoveringRect(new(bounds.X, bounds.Y), new(bounds.Z, bounds.W), false);
-
-    private static void DrawTimer(Vector2 position, Vector2 size, float seconds, bool reduceMotion) {
-        if (reduceMotion)
-            return;
-        var s = GratisTheme.ChromeScale;
-        var start = position + new Vector2(12 * s, size.Y - 4 * s);
-        ImGui.GetWindowDrawList().AddLine(start,
-            start + new Vector2((size.X - 24 * s) * Math.Clamp(seconds / 8, 0, 1), 0),
-            ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .5f }), s);
-    }
 
     private static void DrawPointer(Vector4 bounds, Vector2 target) {
         var s = GratisTheme.ChromeScale;

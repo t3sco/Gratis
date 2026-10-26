@@ -33,7 +33,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
 
     private Vector4 retainedTravelBounds;
 
-    private double cardCreated, cardUntil, cardDrawn;
+    private double cardCreated, cardUntil, cardDrawn, armedAt;
 
     private bool playerMoving;
 

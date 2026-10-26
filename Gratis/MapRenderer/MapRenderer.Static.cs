@@ -17,7 +17,10 @@ public partial class MapRenderer {
     }
 
     private unsafe void DrawStaticTextMarkers() {
-        foreach (var index in Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount)) {
+        var indices = Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount);
+        if (Rendering.MapDrawContext.Current.Config.IsGratis)
+            indices = indices.OrderByDescending(i => AgentMap.Instance()->MapMarkers[i].MapMarker.SubtextStyle is 1);
+        foreach (var index in indices) {
             ref var marker = ref AgentMap.Instance()->MapMarkers[index];
 
             if (marker.MapMarker.IconId is not 0)

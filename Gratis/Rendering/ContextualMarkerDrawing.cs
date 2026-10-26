@@ -101,6 +101,7 @@ public static class ContextualMarkerDrawing {
     }
 
     private static void Crystal(ImDrawListPtr list, Vector2 center, float r, bool shard, Vector4 color, float alpha) {
+        r *= shard ? .85f : 1.3f;
         Vector2 P(float x, float y) => center + new Vector2(x, y) * r;
         ReadOnlySpan<Vector2> points = stackalloc Vector2[] {
             P(0, -1),
@@ -115,6 +116,7 @@ public static class ContextualMarkerDrawing {
         list.AddLine(P(-.56f, -.12f), P(0, .05f), Ink(new Vector4(1, 1, 1, .5f), alpha),
             .7f * MapDrawContext.Current.GlobalScale);
         if (!shard) {
+            list.AddCircle(P(0, .05f), r * 1.2f, Ink(Gold, alpha * .85f), 24, 1.5f * MapDrawContext.Current.GlobalScale);
             list.AddLine(P(-.6f, .72f), P(.6f, .72f), Ink(Gold, alpha), 2 * MapDrawContext.Current.GlobalScale);
             list.AddLine(P(-.35f, 1), P(.35f, 1), Ink(Gold, alpha), 1.5f * MapDrawContext.Current.GlobalScale);
         }

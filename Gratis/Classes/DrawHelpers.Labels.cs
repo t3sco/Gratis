@@ -63,6 +63,8 @@ public static partial class DrawHelpers {
         var position = TextDrawing.Snap(marker.Position + marker.Offset + ImGui.GetWindowPos() - size / 2);
         if (!MapShape.ContainsSymbol(position + size / 2, size / 2 + Vector2.One))
             return;
+        if (MapDrawContext.Current.Config.HideOverlappingLabels && !LabelLayout.TryPlace(position, position + size))
+            return;
         var list = ImGui.GetWindowDrawList();
         for (var x = -1; x <= 1; x++)
             for (var y = -1; y <= 1; y++)

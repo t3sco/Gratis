@@ -20,7 +20,7 @@ public sealed partial class MapAssistance {
     private string? chipId;
     private bool chipConfirm, chipRequiresTravelActions;
     private SpotlightRequest? chipTarget;
-    private double chipCreated, chipUntil, chipDrawn;
+    private double chipCreated, chipUntil, chipDrawn, chipArmedAt;
     public float ChipTimeRemaining { get; private set; }
 
     private void DrawAetheryteChip(IMapWindowHost host) {
@@ -74,8 +74,7 @@ public sealed partial class MapAssistance {
         }
         var s = GratisTheme.ChromeScale;
         var (min, max) = ChromeLayout.SafeBounds();
-        var size = new Vector2(MathF.Min(332 * s, max.X - min.X),
-            (ChipMessage.Length > 0 && !chipConfirm ? 168 : 136) * s);
+        var size = TeleportCardSize(choice.Destination.Name, max.X - min.X);
         if (size.X < 230 * s) {
             DrawChipExit();
             return;
@@ -100,26 +99,26 @@ public sealed partial class MapAssistance {
         var position = ChromeLayout.Position(ChipBounds);
         DrawPointer(ChipBounds, host.Renderer.WorldToScreen(target.Target, ImGui.GetWindowPos()));
         Panel("##nearest-aetheryte", position, size, () => {
-            CardHeading(choice.Aethernet ? "Aethernet" : "Nearest aetheryte", choice.Destination.Name,
-                choice.Aethernet ? "" : places.Access(choice.Destination).Cost is { } gil ? $"{gil:N0} gil"
-                    : "Cost unavailable",
-                choice.Destination.Subtitle);
-            ImGui.BeginDisabled(host.Now <= chipCreated);
-            if (PrimaryTravelButton(chipConfirm ? "Confirm teleport" : "Teleport", GratisIcons.Compass))
+            if (!chipConfirm)
+                chipArmedAt = 0;
+            else if (chipArmedAt == 0)
+                chipArmedAt = host.Now;
+            var cost = places.Access(choice.Destination).Cost;
+            var card = new TeleportCardModel(choice.Destination.Name,
+                TravelMeta(choice.Destination.Subtitle, choice.Destination.Name,
+                    choice.Aethernet ? "Aethernet" : "Nearest aetheryte"),
+                chipConfirm ? "" : ChipMessage, cost, choice.Aethernet, chipConfirm,
+                host.Now > chipCreated && (!chipConfirm || host.Now - chipArmedAt >= ConfirmDelay));
+            if (DrawTeleportCard(card, out var close))
                 RequestChip(choice, chipConfirm);
-            ImGui.EndDisabled();
-            ChipButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
-            ImGui.SameLine(0, GratisTheme.Gap * s);
-            if (QuietButton("Dismiss")) {
+            ChipButtonCenter = TravelButtonCenter;
+            ChipDismissButtonCenter = TravelCloseCenter;
+            if (close) {
                 dismissedTarget = target;
                 Chip = null;
                 panelBounds.Clear();
                 InputActive = false;
             }
-            ChipDismissButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
-            if (ChipMessage.Length > 0 && !chipConfirm)
-                ImGui.TextWrapped(ChipMessage);
-            DrawTimer(position, size, ChipTimeRemaining, host.Config.ReduceMotion);
         }, pivot: host.Renderer.WorldToScreen(target.Target, ImGui.GetWindowPos()));
     }
 
@@ -130,12 +129,10 @@ public sealed partial class MapAssistance {
         var b = retainedChipBounds;
         var size = new Vector2(b.Z - b.X, b.W - b.Y);
         Panel("##nearest-aetheryte", new(b.X, b.Y), size, () => {
-            CardHeading(choice.Aethernet ? "Aethernet" : "Nearest aetheryte", choice.Destination.Name,
-                choice.Aethernet ? "" : places.Access(choice.Destination).Cost is { } cost ? $"{cost:N0} gil" : "",
-                choice.Destination.Subtitle);
-            PrimaryTravelButton("Teleport", GratisIcons.Compass);
-            ImGui.SameLine();
-            QuietButton("Dismiss");
+            DrawTeleportCard(new(choice.Destination.Name,
+                TravelMeta(choice.Destination.Subtitle, choice.Destination.Name,
+                    choice.Aethernet ? "Aethernet" : "Nearest aetheryte"),
+                "", places.Access(choice.Destination).Cost, choice.Aethernet, false, false), out _);
         }, interactive: false);
     }
 

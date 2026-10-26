@@ -204,7 +204,11 @@ internal static class ChromeThreeVerification {
         Step(left: false);
         Check(places.Teleports == 1 && ui.Message.StartsWith("Confirm "),
             "Native gil confirmation does not execute on first click");
-        Step();
+        Step(ui.TravelButtonCenter);
+        Step(left: true);
+        Step(left: false);
+        Check(places.Teleports == 1, "A double-click cannot skip the confirm step");
+        Step(dt: .5);
         Step(ui.TravelButtonCenter);
         Step(left: true);
         Step(left: false);

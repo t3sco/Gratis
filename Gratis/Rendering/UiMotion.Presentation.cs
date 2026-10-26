@@ -83,7 +83,7 @@ public static partial class UiMotion {
             ChromeFontRole.Body)?.Push();
         var viewport = ImGui.GetWindowViewport();
         var s = GratisTheme.ChromeScale;
-        var size = ImGui.CalcTextSize(text, false, 340 * s) + new Vector2(24, 16) * s;
+        var size = ImGui.CalcTextSize(text, false, 340 * s) + new Vector2(24) * s;
         var p = ImGui.GetMousePos() + new Vector2(18, 24) * s;
         p = Vector2.Clamp(p, viewport.Pos, Vector2.Max(viewport.Pos, viewport.Pos + viewport.Size - size));
         TooltipText(text, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s);

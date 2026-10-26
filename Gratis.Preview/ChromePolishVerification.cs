@@ -57,12 +57,14 @@ internal static class ChromePolishVerification {
         travel.OfferContextTarget(new(new(400, 0), 1, SpotlightSource.Quest), time);
         Step();
         Step();
-        Require(travel.Chip != null && travel.ChipBounds.W - travel.ChipBounds.Y == 136,
-            "Travel card uses a compact shared height");
+        var height = travel.ChipBounds.W - travel.ChipBounds.Y;
+        Require(travel.Chip != null && height is >= 112 and <= 136 && travel.ChipBounds.Z - travel.ChipBounds.X == 280,
+            $"Travel card is sized from its content: {travel.ChipBounds}");
         var action = travel.ChipButtonCenter;
         var dismiss = travel.ChipDismissButtonCenter;
-        Require(action.Y > travel.ChipBounds.Y && action.Y < travel.ChipBounds.W - 12 && dismiss.Y == action.Y,
-            "Teleport and visible Dismiss share a baseline inside card padding");
+        Require(action.Y > travel.ChipBounds.Y && action.Y < travel.ChipBounds.W - 12
+            && dismiss.Y < action.Y && dismiss.X > action.X,
+            "The close button sits in the top corner above a full-width Teleport button");
         Step(dt: 3);
         var remaining = travel.ChipTimeRemaining;
         Step(Center(travel.ChipBounds), dt: 2);

@@ -157,6 +157,9 @@ public partial class MapDrawingConfig : CharacterConfiguration {
 
     public bool ShowCoordinateBar = true;
     public bool ShowFeedbackButton = true;
+    public bool HideOverlappingLabels = true;
+    public bool ShowUpdateNotice = true;
+    public string DismissedUpdate = "";
     public float CoordinateBarFade = .44f;
     public Vector4 CoordinateTextColor = Vector4.One;
 

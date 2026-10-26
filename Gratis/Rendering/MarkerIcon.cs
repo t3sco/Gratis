@@ -75,10 +75,15 @@ public static class MarkerIcon {
             60460 or 60570 => MarkerIconFamily.Market,
             60581 => MarkerIconFamily.Stable,
             60414 or 60428 or 60449 or 60459 or 60971 => MarkerIconFamily.Duty,
-            60446 or 60447 or 60467 => MarkerIconFamily.Exit,
-            60441 => MarkerIconFamily.Chocobo,
+            60446 or 60447 or 60467 or 60441 => MarkerIconFamily.Exit,
+            60311 => MarkerIconFamily.Chocobo,
+            60551 => MarkerIconFamily.Mail,
+            63922 => MarkerIconFamily.Shop,
             60448 => MarkerIconFamily.Anchor,
             60450 or 60451 or 60473 => MarkerIconFamily.Landmark,
+            60314 or 60318 or 60319 or 60320 or 60321 or 60322 or 60326 or 60330 or 60331 or 60333 or 60334 or 60335
+                or 60337 or 60342 or 60344 or 60345 or 60346 or 60347 or 60348 or 60351 or 60362 or 60363 or 60364
+                or 60567 or 60568 or 60569 => MarkerIconFamily.Landmark,
             >= 71040 and <= 71059 or >= 71240 and <= 71259 => MarkerIconFamily.Leve,
             >= 71060 and <= 71079 or >= 71260 and <= 71279 => MarkerIconFamily.Lore,
             >= 71080 and <= 71099 or >= 71280 and <= 71299 => MarkerIconFamily.Guildhest,

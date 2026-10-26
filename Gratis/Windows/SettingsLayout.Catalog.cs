@@ -179,6 +179,8 @@ public sealed partial class SettingsLayout {
         Add("LargeAreaTextOpacity", "Large label opacity", .05f, 1, "%.2f", when: c => c.ShowTextLabels && c.IsGratis,
             tip: "Lower this if big area names cover markers.");
         Add("SmallAreaTextOpacity", "Small label opacity", .05f, 1, "%.2f", when: c => c.ShowTextLabels && c.IsGratis);
+        Add("HideOverlappingLabels", "Hide overlapping labels", when: c => c.ShowTextLabels && c.IsGratis,
+            tip: "When two labels would overlap, only the larger one is shown.");
         Add("ShowFogOfWar", "Fog of war");
 
         Group("Filters", "Categories in the list", Gratis);
@@ -325,6 +327,8 @@ public sealed partial class SettingsLayout {
         Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar,
             tip: "Use the coordinate chip to show ET beside map coordinates.");
         Add("GratisContextMenu", "Gratis context menu");
+        Add("ShowUpdateNotice", "Update notice",
+            tip: "Shows a small notice in the top-right corner of the map when a new version of Gratis is available.");
         Add("ShowFeedbackButton", "Feedback button",
             tip: "A small button in the bottom-left corner of the map that opens the bug report page.");
         Group("Chrome & motion", "Classic coordinates", Classic);

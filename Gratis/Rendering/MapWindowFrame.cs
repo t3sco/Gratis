@@ -178,6 +178,8 @@ public sealed partial class MapWindowFrame {
                         FilterBarDrawing.Draw();
                     if (host.Config.IsGratis)
                         FeedbackButtonDrawing.Draw();
+                    if (host.Config.IsGratis)
+                        UpdateNotice.Draw();
                     MapDrawContext.Current.Assistance?.Draw(host);
                     MoveHandle.Draw(host.Config);
                     MapDrawContext.Current.Measure.Draw(host, MoveHandle.Geometry);
