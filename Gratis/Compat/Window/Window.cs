@@ -44,6 +44,8 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
             Flags |= ImGuiWindowFlags.NoResize;
         }
 
+        DisableFadeInFadeOut = true;
+
         Collapsed = false;
         CollapsedCondition = ImGuiCond.Always;
     }

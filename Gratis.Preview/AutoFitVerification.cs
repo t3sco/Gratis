@@ -113,6 +113,19 @@ internal static class AutoFitVerification {
                 && d.Renderer.ViewportDiagnostics().Contains("lastFitAt="),
                 "Motion/report viewport diagnostic must expose fit ownership and time");
         }
+        using (var d = new ScriptedFrameDriver(Config(new(240)), new FrameScript {
+            Width = 1280, Height = 1120, AutoFit = true, InstanceMap = false, MapOffset = new() })) {
+            var content = new MapContentBounds(new(512), new(1536));
+            d.Step(new(0, MapId: 3000, Size: new(1160, 400), TextureReady: true, TextureSize: new(2048),
+                ContentReady: true, Content: content, Dpi: 1, Redraws: 2));
+            d.Step(new(.1));
+            var limits = d.Renderer.ZoomLimits;
+            Check(limits.Small && d.Renderer.Scale > limits.Fit * 1.05f && d.Renderer.Scale <= limits.Fit * 1.251f,
+                $"A wide window must scale a small map's artwork up, within the cap: {d.Renderer.ViewportDiagnostics()}");
+            d.Step(new(.2, Size: new(400, 400)));
+            Check(d.Renderer.Scale <= d.Renderer.ZoomLimits.Fit * 1.05f,
+                "A window that matches the map's shape must stay near the plain fit: " + d.Renderer.ViewportDiagnostics());
+        }
         var manualConfig = Config(new(346, 336));
         manualConfig.MapViews = [new RememberedMapView { MapId = 999, Manual = true, Scale = 1, FrameExtent = 336,
             TextureSize = new(512), MapKey = (1UL << 32) | 999, Session = 0 }];

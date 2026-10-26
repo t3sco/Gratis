@@ -87,6 +87,8 @@ public sealed partial class MapRendererFrame {
         var bounds = ZoomLimits.Small && host.Config.FitSmallRoomsToContent && roomBounds.HasValue ? roomBounds.Value
             : new MapContentBounds(Vector2.Zero, viewportTextureSize);
         var fit = ZoomLimits.Fit;
+        if (ZoomLimits.Small && !host.InstanceMap)
+            fit = ViewportMath.WidenedFit(host.Config, viewportSize, bounds.Size, fit, MapDrawContext.Current.GlobalScale);
         var target = Constrain(fit, new Vector2(1024) - bounds.Center);
         host.Config.MapScale = target.Scale;
         DrawOffset = target.Offset;

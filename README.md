@@ -28,6 +28,10 @@ Gratis keeps the maps from the game and replaces the interface around them. It h
 look in warm gold and crystal blue, a search built on Eorzea's own place names, and a long list of
 small tweaks that each save a click.
 
+<img src="docs/images/before-after-wipe.png" alt="The same Thanalan map in the game's own window and in Gratis, with a divider sweeping between them" width="420">
+
+*The game's own map window against the same map in Gratis.*
+
 ## Features
 
 ### Search

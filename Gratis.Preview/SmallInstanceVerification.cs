@@ -25,7 +25,7 @@ internal static class SmallInstanceVerification {
 
     internal static FrameScript Scene(bool wide = false) => new() {
         Width = wide ? 1280 : 760, Height = wide ? 760 : 1120,
-        SmallInstance = true, MapSizeFactor = 2, MapId = 999,
+        SmallInstance = true, InstanceMap = true, MapSizeFactor = 2, MapId = 999,
         Title = "The Backroom · small instance", Player = new(-20, 80),
         Markers = [new(60071, new(80, 20), Objective: true), new(60460, new(-90, -50))],
     };

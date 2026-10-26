@@ -10,6 +10,16 @@ public static class ViewportMath {
     public static Vector2 FitPadding(Vector2 frame, float dpi = 1) =>
         Vector2.Min(new Vector2(24, 48) * Math.Clamp(float.IsFinite(dpi) ? dpi : 1, .5f, 4),
             frame * new Vector2(.05f, .08f));
+    private const float MaxFitGrowth = 1.25f;
+
+    public static float WidenedFit(MapDrawingConfig config, Vector2 frame, Vector2 bounds, float fit, float dpi) {
+        if (config.MapCircle || !(fit > 0))
+            return fit;
+        var available = Vector2.Max(Vector2.One, frame - FitPadding(frame, dpi) * 2);
+        var filling = MathF.Max(available.X / MathF.Max(1, bounds.X), available.Y / MathF.Max(1, bounds.Y));
+        return fit * MathF.Min(MaxFitGrowth, MathF.Sqrt(MathF.Max(1, filling / fit)));
+    }
+
     public static ZoomLimits Limits(MapDrawingConfig config, Vector2 frame, Vector2 texture,
         MapContentBounds? content = null, float dpi = 1) {
         texture = Vector2.Max(Vector2.One, texture);
