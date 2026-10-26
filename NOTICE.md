@@ -16,6 +16,10 @@ bundled from the official v1.8.2 release under the SIL Open Font License 1.1:
 https://github.com/vercel/geist-font/releases/tag/v1.8.2
 The complete license and copyright notice are in Gratis/Assets/Fonts/OFL.txt.
 
+Noto Sans CJK glyph subset (Gratis.Preview/Assets/NotoSansCJK-Glyphs.otf), by Adobe and Google, SIL Open
+Font License 1.1, used only by the preview harness; the license is in
+Gratis.Preview/Assets/LICENSE-NotoSansCJK.txt. The plugin itself uses the copy Dalamud provides.
+
 Lucide icon font from the official lucide-static 1.61.0 npm package:
 https://www.npmjs.com/package/lucide-static/v/1.61.0
 Lucide Icons and Contributors, ISC license (with MIT notices for Feather-derived

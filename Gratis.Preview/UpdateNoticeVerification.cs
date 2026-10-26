@@ -29,7 +29,7 @@ internal static class UpdateNoticeVerification {
             Step();
             Step();
             Require(UpdateNotice.LastBounds == Vector4.Zero, "No notice appears when there is no update");
-            UpdateNotice.Available = "0.1.0.3";
+            UpdateNotice.Available = "0.1.0.4";
             Step();
             Step();
             var bounds = UpdateNotice.LastBounds;
@@ -38,7 +38,7 @@ internal static class UpdateNoticeVerification {
             Require(opened == 1, "The Update button opens the plugin installer");
             Click(UpdateNotice.DismissCenter);
             Step();
-            Require(config.DismissedUpdate == "0.1.0.3" && UpdateNotice.LastBounds == Vector4.Zero,
+            Require(config.DismissedUpdate == "0.1.0.4" && UpdateNotice.LastBounds == Vector4.Zero,
                 "Dismissing hides the notice for that version");
             UpdateNotice.Available = "0.1.0.4";
             Step();
