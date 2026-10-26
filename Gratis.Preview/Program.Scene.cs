@@ -89,6 +89,7 @@ internal static partial class Program {
                     or "glass-card" or "glass-tinted" or "glass-unavailable"
                     ? new Vector2(22.6f, 19.2f) : null);
         MapWindowDrawing.DrawTitleOnMap("Eorzea - La Noscea - Middle La Noscea###GratisMapWindow");
+        FeedbackButtonDrawing.Draw();
         ImGui.EndChild();
         ImGui.End();
     }

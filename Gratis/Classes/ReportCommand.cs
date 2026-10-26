@@ -26,6 +26,12 @@ internal sealed class ReportCommand : IDisposable {
         command = new CommandHandler { ActivationPath = "/report", Delegate = _ => pending = true };
         System.CommandManager.RegisterCommand(command);
         Service.PluginInterface.UiBuilder.Draw += OnDraw;
+        FeedbackLink.BuildReport = BuildText;
+    }
+
+    private string BuildText() {
+        TextDrawing.SampleDiagnostics();
+        return DiagnosticReport.Build(new Context(logs));
     }
 
     private void OnDraw() {
@@ -105,6 +111,7 @@ internal sealed class ReportCommand : IDisposable {
 
     public void Dispose() {
         disposed = true;
+        FeedbackLink.BuildReport = null;
         Service.PluginInterface.UiBuilder.Draw -= OnDraw;
         System.CommandManager.RemoveCommand(command);
     }

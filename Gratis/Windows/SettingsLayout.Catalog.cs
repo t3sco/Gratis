@@ -325,6 +325,8 @@ public sealed partial class SettingsLayout {
         Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar,
             tip: "Use the coordinate chip to show ET beside map coordinates.");
         Add("GratisContextMenu", "Gratis context menu");
+        Add("ShowFeedbackButton", "Feedback button",
+            tip: "A small button in the bottom-left corner of the map that opens the bug report page.");
         Group("Chrome & motion", "Classic coordinates", Classic);
         Add("CoordinateTextColor", "Coordinate text colour", when: c => c.ShowCoordinateBar);
         Add("CoordinateBarFade", "Coordinate bar opacity", when: c => c.ShowCoordinateBar);

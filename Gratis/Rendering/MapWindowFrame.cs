@@ -176,6 +176,8 @@ public sealed partial class MapWindowFrame {
                     SubZoneBannerDrawing.Draw(ZoneBanner);
                     if (host.Config.IsGratis)
                         FilterBarDrawing.Draw();
+                    if (host.Config.IsGratis)
+                        FeedbackButtonDrawing.Draw();
                     MapDrawContext.Current.Assistance?.Draw(host);
                     MoveHandle.Draw(host.Config);
                     MapDrawContext.Current.Measure.Draw(host, MoveHandle.Geometry);

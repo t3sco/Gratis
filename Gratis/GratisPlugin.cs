@@ -51,6 +51,8 @@ public sealed class GratisPlugin : IDalamudPlugin {
         reportCommand = new Gratis.Classes.ReportCommand(screenshotCapture, reportLogs);
         pvpDiagnosticCommand = new Gratis.Classes.PvpDiagnosticCommand();
 
+        Rendering.FeedbackLink.Open = Dalamud.Utility.Util.OpenLink;
+
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
         System.CommandManager.RegisterCommand(new ToggleCommandHandler {

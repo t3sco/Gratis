@@ -156,6 +156,7 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     [JsonIgnore] public bool UseCustomWindowChrome => HideWindowFrame || (IsGratis && NeutralFrame);
 
     public bool ShowCoordinateBar = true;
+    public bool ShowFeedbackButton = true;
     public float CoordinateBarFade = .44f;
     public Vector4 CoordinateTextColor = Vector4.One;
 

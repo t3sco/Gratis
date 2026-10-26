@@ -17,6 +17,7 @@ https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
 ![Status: early testing](https://img.shields.io/badge/status-early%20testing-C9A24B)
 ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-4C8BF5)
 ![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
+![Downloads](https://img.shields.io/github/downloads/t3sco/Gratis/total?color=4C8BF5)
 
 <img src="docs/images/search-browser.png" alt="Gratis place search, browsing by expansion" width="300"> &nbsp; <img src="docs/images/search-places.png" alt="Gratis place search results with aetheryte, flag and marker chips" width="300">
 
@@ -100,6 +101,12 @@ Open the map with `/gratis`.
 
 This is an early build and has rough edges. If something looks wrong, run `/gratis report`, then open an issue
 or message me with the saved file and a description of what you saw.
+
+You can also use the speech-bubble button in the bottom-left corner of the map. It opens a small form that sends
+your message to me. This is the only time Gratis contacts a server of its own: nothing is sent until you press Send,
+and only your message and the Gratis version go. Tick "Include a diagnostic report" to add the same report that
+`/gratis report` makes (settings and technical details, no character name or chat). The relay that receives it is in
+[`relay/`](relay). Turn the button off under Settings > Feedback button.
 
 ## Credits
 

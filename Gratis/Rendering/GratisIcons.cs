@@ -53,6 +53,7 @@ public static class GratisIcons {
     public const char Footprints = '\ue3b9';
     public const char Bird = '\ue3c5';
     public const char Fence = '\ue582';
+    public const char MessageSquare = '\ue117';
 
     private const char FirstFilled = '\uf100', LastFilled = '\uf11a';
 
@@ -133,6 +134,7 @@ public static class GratisIcons {
         Footprints, Footprints,
         Bird, Bird,
         Fence, Fence,
+        MessageSquare, MessageSquare,
         FirstFilled, LastFilled,
         0,
     ];
