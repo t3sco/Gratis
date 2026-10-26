@@ -31,12 +31,12 @@ public static class MapWindowDrawing {
             coordinateBounds = new(min.X, min.Y, max.X, max.Y);
     }
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1,
-        float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other) {
+        float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other, string? chromeId = null) {
         var context = MapDrawContext.Current;
         var config = context.Config;
         context.Blur.BeginFrame(ImGui.GetFrameCount());
         if (surface is GlassSurface.Toolbar or GlassSurface.Title or GlassSurface.Coordinates)
-            context.Trace?.Chrome(surface.ToString());
+            context.Trace?.Chrome(chromeId ?? surface.ToString());
         var glass = config.IsGratis && config.GlassEnabled;
         var effectiveAlpha = alpha * ImGui.GetStyle().Alpha * (config.IsGratis ? UiMotion.BackdropAlpha : 1);
         if (!float.IsFinite(effectiveAlpha) || effectiveAlpha < 1 / 255f) {

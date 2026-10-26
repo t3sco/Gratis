@@ -36,8 +36,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
     private static readonly string[] labels = ["All", "Aetherytes", "Zones", "Quests", "Markers"];
     private static readonly QuestBucket?[] questFilters = [null, QuestBucket.Scenario, QuestBucket.SideQuests,
         QuestBucket.JobClass, QuestBucket.Chronicles, QuestBucket.AlliedSocieties, QuestBucket.Other];
-    private static readonly string[] questLabels = ["All", "Scenario", "Side quests", "Job & class", "Chronicles",
-        "Allied societies", "Other"];
+    private static readonly string[] questLabels = questFilters.Select(b => b is { } bucket
+        ? QuestBuckets.Label(bucket) : "All").ToArray();
     private int questFilter, searchedQuestFilter = -1;
     private readonly int[] questCounts = new int[questFilters.Length];
     private readonly Vector4[] questChipBounds = new Vector4[questFilters.Length];

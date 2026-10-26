@@ -333,10 +333,7 @@ public sealed partial class PaletteOverlay {
             list.AddRectFilled(highlight, highlight + new Vector2(rowWidth, rowHeight),
                 ImGui.GetColorU32(config.AccentColor with { W = .12f }), GratisTheme.Radius.Control * scale);
         }
-        list.AddRectFilled(start, start + new Vector2(rowWidth, rowHeight),
-            ImGui.GetColorU32(active || hovered
-                ? config.AccentColor with { W = active ? .17f : .08f } : new Vector4(1, 1, 1, .025f)),
-            GratisTheme.Radius.Control * scale);
+        PaletteRowDrawing.Background(list, start, new(rowWidth, rowHeight), config.AccentColor, active, hovered, scale);
         var imageWidth = config.PaletteImagery && width >= 460 * scale ? 90 * scale : 0;
         if (imageWidth > 0)
             DrawArt(result.Place, start + new Vector2(6, 6) * scale, new Vector2(imageWidth, rowHeight - 12 * scale),
@@ -358,12 +355,9 @@ public sealed partial class PaletteOverlay {
                 ? $"World X {world.X:0}, Z {world.Y:0}" : "";
             var pillMin = textMin + new Vector2(0, 42 * scale);
             var pillSize = TextDrawing.Measure(status) + new Vector2(12, 3) * scale;
-            list.AddRectFilled(pillMin, pillMin + pillSize, ImGui.GetColorU32(GratisTheme.Primary with { W = .055f }),
-                GratisTheme.Radius.Pill(pillSize));
-            TextDrawing.Draw(list, pillMin + new Vector2(6, 1) * scale,
-                ImGui.GetColorU32(result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
-                    ? GratisTheme.Transport : GratisTheme.Secondary),
-                status);
+            PaletteRowDrawing.Pill(list, pillMin, status,
+                result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
+                    ? GratisTheme.Transport : GratisTheme.Secondary, scale);
             TextDrawing.Draw(list, pillMin + new Vector2(pillSize.X + 8 * scale, scale),
                 ImGui.GetColorU32(secondaryInk),
                 ChromeControls.FitLabel(metadata, MathF.Max(0, textMax.X - pillMin.X - pillSize.X - 8 * scale)));

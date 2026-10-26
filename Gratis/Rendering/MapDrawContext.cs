@@ -49,6 +49,8 @@ public abstract class MapDrawContext {
     public bool ReportCapture { get; set; }
     public MapAssistance? Assistance { get; set; }
     public virtual ILocationMenuSource? LocationMenu => null;
+    public virtual IQuestLogSource? QuestLogSource => null;
+    public QuestLogPanel QuestLog { get; } = new();
     public EdgePointers EdgePointers { get; } = new();
     public MapMarkerTargets MarkerTargets { get; } = new();
     public MeasureTool Measure { get; } = new();
@@ -81,6 +83,7 @@ public abstract class MapDrawContext {
     public abstract float GlobalScale { get; }
     public abstract float MapSizeFactor { get; }
     public abstract DrawTexture GetIcon(uint id);
+    public virtual DrawTexture GetExpansionCrest(uint id) => GetIcon(id);
     public abstract bool PrepareMarker(MarkerInfo marker);
     public abstract bool IsRadiusHovered(Vector2 center, float radius);
     public abstract IDisposable? PushLargeFont();

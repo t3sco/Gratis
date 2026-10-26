@@ -49,5 +49,8 @@ public class Service {
     public static IFramework Framework { get; set; }
 
     [PluginService]
+    public static IUnlockState UnlockState { get; set; }
+
+    [PluginService]
     public static IAddonLifecycle AddonLifecycle { get; set; }
 }

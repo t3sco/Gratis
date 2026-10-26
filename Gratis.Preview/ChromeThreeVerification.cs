@@ -83,14 +83,20 @@ internal static class ChromeThreeVerification {
             d.Step(new(.04));
             var area = MapWindowDrawing.TitleBounds;
             var coords = MapWindowDrawing.CoordinateBounds;
-            Check(Valid(area) && Valid(coords) && area.Y == coords.Y && area.W == coords.W
-                && area.Z + GratisTheme.Gap == coords.X,
-                "Bottom cards share height, baseline and gap");
-            Check(MathF.Abs((area.X + coords.Z) / 2 - (c.WindowPosition.X + width / 2f)) < .1f,
-                "Location and coordinates centre as a pair");
+            Check(Valid(area) && Valid(coords) && !ChromeLayout.Overlap(area, coords),
+                "Location and coordinate cards remain separate");
+            if (width >= 780) {
+                Check(area.Y + area.W == coords.Y + coords.W && area.Z + GratisTheme.Gap == coords.X,
+                    "Mixed-height bottom cards align by their centres with one gap");
+                Check(MathF.Abs((area.X + coords.Z) / 2 - (c.WindowPosition.X + width / 2f)) < .1f,
+                    "Location and coordinates centre as a group");
+            }
+            else
+                Check(MathF.Abs((coords.X + coords.Z) / 2 - (c.WindowPosition.X + width / 2f)) < .1f,
+                    "Narrow fallback keeps the coordinate pair centred");
             Check(Valid(CoordinateCopy.PlayerBounds) && Valid(CoordinateCopy.CursorBounds)
                 && !ChromeLayout.Overlap(CoordinateCopy.PlayerBounds, CoordinateCopy.CursorBounds),
-                "Both coordinate rows are distinct");
+                "Both coordinate containers are distinct");
             d.Step(new(.08, Mouse: c.WindowPosition + c.WindowSize / 2));
             d.Step(new(.12));
             Check(MapWindowDrawing.CoordinateBounds == coords && MapWindowDrawing.TitleBounds == area,
@@ -107,7 +113,7 @@ internal static class ChromeThreeVerification {
             Check(CoordinateCopy.PlayerBounds == Vector4.Zero && Valid(CoordinateCopy.CursorBounds),
                 "Cursor-only mode");
         }
-        Console.WriteLine("Bottom row: small/normal/large centred pair, equal height, stable cursor layout "
+        Console.WriteLine("Bottom row: small/normal/large centred group, compact height, stable cursor layout "
             + "and all coordinate modes.");
     }
 

@@ -21,9 +21,11 @@ internal sealed class FrameScript {
     public int Height { get; set; } = 640;
     public float Dpi { get; set; } = 1;
     public bool Palette { get; set; }
+    public bool QuestLog { get; set; }
     public SubZoneLocation? SubZone { get; set; }
     public Vector2 ScreenOrigin { get; set; }
     public Vector2? DrawOffset { get; set; }
+    public bool ShowPlayerCoordinates { get; set; } = true;
     public Vector2? PlayerCoordinates { get; set; }
     public Vector2? CursorCoordinates { get; set; }
     public string? Config { get; set; }
@@ -54,6 +56,11 @@ internal readonly record struct FrameSnapshot(double Time, int Frame, float Scal
     float? PendingZoom, int ClipRefusals, int CircularRefusals, int AlphaRefusals, int ConfigRefusals, int HostRefusals,
     Vector2 WindowPosition, Vector2 WindowSize, bool MovingWindow, float HandleVisibility, Vector2 HandleCenter,
     bool SpotlightActive, float SpotlightOpacity, float SpotlightFitZoom, string SpotlightDecision) {
+    public bool QuestLogOpen { get; init; }
+    public bool QuestLogPinned { get; init; }
+    public bool QuestSearchOpen { get; init; }
+    public uint QuestDetailId { get; init; }
+    public Vector4 QuestDetailBounds { get; init; }
     public float GhostOpacity { get; init; }
     public bool GhostClickThrough { get; init; }
     public string GhostFlags { get; init; } = "";

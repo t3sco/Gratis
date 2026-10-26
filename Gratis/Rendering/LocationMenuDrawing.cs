@@ -136,6 +136,7 @@ public static class LocationMenuDrawing {
         var height = 2 * padding + ImGui.GetFrameHeight() + searchHeight
             + (parentHeight > 0 ? spacing + parentHeight : 0) + (regionHeight > 0 ? spacing + regionHeight : 0);
         var (min, max) = ChromeLayout.PopoverBounds();
+        min.X = MathF.Min(min.X, CardBounds.X);
         var bounds = ChromePopoverMath.Place(CardBounds, new(288 * s, MathF.Ceiling(height)), min, max,
             GratisTheme.Gap * s, false);
         var size = new Vector2(bounds.Z - bounds.X, bounds.W - bounds.Y);

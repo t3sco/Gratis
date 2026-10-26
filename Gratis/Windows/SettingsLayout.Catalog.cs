@@ -137,6 +137,11 @@ public sealed partial class SettingsLayout {
         Add("AetheryteAttunementStyle", "Style unattuned map markers",
             tip: "Dim aetherytes you have not attuned to and show their status on hover.");
         Add("PaletteMaxResults", "Search results shown", 1, 12, "%.0f");
+        Group("Map", "Quest Log", Gratis);
+        Add("QuestLogOpenWithMap", "Quest log opens with the map",
+            tip: "Closed by default. Opening a quest closes the log and shows its map target.");
+        Add("QuestLogWidth", "Quest log panel width", 240, 440, "%.0f px",
+            tip: "320 by default. Narrow maps use a smaller overlay without resizing the map.");
         Group("Map", "Window");
         Add("WindowPresets", "Window presets",
             tip: "Save up to five named window sizes and positions. Pick one to apply it, "

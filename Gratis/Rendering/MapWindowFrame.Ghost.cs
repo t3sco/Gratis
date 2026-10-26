@@ -20,6 +20,7 @@ public sealed partial class MapWindowFrame {
         var hovered = ImGui.IsMouseHoveringRect(config.WindowPosition, config.WindowPosition + config.WindowSize,
             false);
         var blocked = host.SettingsOpen || isDragStarted || MoveHandle.Dragging || context.Measure.Dragging
+            || context.QuestLog.InputActive
             || host.Palette?.IsOpen == true || host.Palette?.CapturesInput == true
             || context.Assistance?.InputActive == true || context.Assistance?.OverlayOpen == true
             || context.ContextMenu.IsOpen || context.HoverCardFrame >= ImGui.GetFrameCount() - 1

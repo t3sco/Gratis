@@ -78,7 +78,7 @@ internal static partial class Program {
         || TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args)
         || TryPaletteScene(args) || TryTravelScene(args) || TryAetheryteScene(args) || TryPinsScene(args)
         || TryContextMenuScene(args) || TryFlagArrivalScene(args) || TryGhostScene(args) || TryPlaceChipScene(args)
-        || TryAttunementScene(args);
+        || TryAttunementScene(args) || TryQuestLogScene(args);
 
     private static unsafe void Run(Options options, bool chromeSelftest = false) {
         if (IsLensScene(options.Scene)) {

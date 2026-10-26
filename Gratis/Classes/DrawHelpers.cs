@@ -56,7 +56,7 @@ public static partial class DrawHelpers {
         if (context.Config.IsGratis) {
             var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
             var half = MarkerVisual.HalfSize(marker);
-            marker.IsHovered = ImGui.IsWindowHovered()
+            marker.IsHovered = !context.QuestLog.InputActive && ImGui.IsWindowHovered()
                 && ImGui.IsMouseHoveringRect(center - half, center + half, false);
         }
         context.Motion.Observe(marker);
@@ -88,6 +88,7 @@ public static partial class DrawHelpers {
         if (alpha <= .001f)
             return;
         SpotlightDrawing.DrawMarkerGlow(marker);
+        MapDrawContext.Current.QuestLog.DrawMarkerHover(marker);
         if (alpha < 1)
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * alpha);
         try {

@@ -354,7 +354,7 @@ public sealed partial class PaletteOverlay {
         }
     }
 
-    private static Vector4 ExpansionAccent(uint id) => id switch {
+    public static Vector4 ExpansionAccent(uint id) => id switch {
         0 => GratisTheme.WarmAccent,
         1 => GratisTheme.Crystal,
         2 => new(.85f, .24f, .30f, 1),

@@ -51,6 +51,7 @@ public sealed partial class MapWindowFrame {
     public void PreDraw(IMapWindowHost host) {
         MapDrawContext.Current.WindowPresets.PrepareWindow(host, MoveHandle.Dragging || isDragStarted);
         MoveHandle.PrepareWindow(host);
+        MapDrawContext.Current.QuestLog.Prepare(host, host.Config.WindowPosition, host.Config.WindowSize);
         PrepareGhost(host);
     }
 
@@ -59,6 +60,7 @@ public sealed partial class MapWindowFrame {
 
     public void Draw(IMapWindowHost host) {
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
+        MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
         host.UpdateWindow();
         if (host.Config.IsGratis)
             UiMotion.Begin();
@@ -69,18 +71,19 @@ public sealed partial class MapWindowFrame {
         MapDrawContext.Current.Assistance?.Prepare(host.Config, host.PlayerMoving);
         host.Palette?.Prepare(host.Config, ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
         var paletteInput = host.Palette?.CapturesInput == true;
+        var questInput = host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive;
         MapDrawContext.Current.ContextMenu.Prepare(host.Config);
         var assistanceInput = MapDrawContext.Current.Assistance?.InputActive == true
             || MapDrawContext.Current.ContextMenu.CapturesInput;
         var filterInput = host.Config.IsGratis && !MoveHandle.Dragging && FilterBarDrawing.PointerOver;
         var measureGesture = MapDrawContext.Current.Measure.WantsGesture(host.Config);
-        if (paletteInput || assistanceInput || measureGesture)
+        if (paletteInput || assistanceInput || measureGesture || questInput)
             MoveHandle.Cancel();
         else if (!filterInput)
             MoveHandle.Update(host, isDragStarted);
         var moveBlocked = !filterInput && MoveHandle.BlocksMapInput;
-        MapDrawContext.Current.WindowMoveInputBlocked = moveBlocked || paletteInput || assistanceInput;
-        if (moveBlocked || paletteInput || assistanceInput)
+        MapDrawContext.Current.WindowMoveInputBlocked = moveBlocked || paletteInput || assistanceInput || questInput;
+        if (moveBlocked || paletteInput || assistanceInput || questInput)
             isDragStarted = false;
         if (host.Config.FollowPlayer && host.PlayerPosition is { } player)
             host.Renderer.FollowPlayer(player);
@@ -121,12 +124,13 @@ public sealed partial class MapWindowFrame {
             if (!renderChild.Visible)
                 return;
             MapShape.Update(ImGui.GetWindowSize());
+            MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
             if (!host.Config.AcceptedSpoilerWarning) {
                 host.DrawSpoilerWarning();
                 return;
             }
 
-            var mouseOverFrame = !paletteInput && ChromeVisibility.IsMapFrameHovered();
+            var mouseOverFrame = !paletteInput && !questInput && ChromeVisibility.IsMapFrameHovered();
             var activity = ChromeActivity.None;
             if (moveBlocked)
                 activity |= ChromeActivity.WindowMove;
@@ -146,7 +150,7 @@ public sealed partial class MapWindowFrame {
                     host.Config.BlurBackground, host.Config.BlurStrength);
             }
             var mapFocused = ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows);
-            var mapInteracting = !paletteInput && !MapDrawContext.Current.EdgePointers.PointerOver
+            var mapInteracting = !paletteInput && !questInput && !MapDrawContext.Current.EdgePointers.PointerOver
                 && MapDrawContext.Current.Assistance?.InputActive != true
                 && (isDragStarted || (mouseOverFrame
                     && (ImGui.IsAnyMouseDown() || ImGui.IsAnyItemActive() || ImGui.GetIO().MouseWheel != 0)));
@@ -155,7 +159,7 @@ public sealed partial class MapWindowFrame {
             if (host.Config.IsGratis)
                 MapDrawContext.Current.Visibility.BeginFrame(MapDrawContext.Current);
             using (var moveInput = new MoveHandleInput.InputScope(moveBlocked)) {
-                using (var measureInput = new MoveHandleInput.InputScope(measureGesture || paletteInput))
+                using (var measureInput = new MoveHandleInput.InputScope(measureGesture || paletteInput || questInput))
                     DrawMapElements(host);
 
                 ImGui.SetCursorPos(Vector2.Zero);
@@ -186,7 +190,8 @@ public sealed partial class MapWindowFrame {
                     MapDrawContext.Current.EdgePointers.Draw(host);
                 }
             }
-            if (!MapDrawContext.Current.Measure.InputActive)
+            MapDrawContext.Current.QuestLog.Draw(host);
+            if (!MapDrawContext.Current.Measure.InputActive && !questInput)
                 MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.DrawHint(host.Config);
             host.Palette?.Draw(host.Config);
@@ -260,6 +265,11 @@ public sealed partial class MapWindowFrame {
     }
 
     private void ProcessInputs(IMapWindowHost host) {
+        if (host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive) {
+            isDragStarted = false;
+            host.Flags |= ImGuiWindowFlags.NoMove;
+            return;
+        }
         if (host.Config.IsGratis && MapDrawContext.Current.Measure.InputActive) {
             isDragStarted = false;
             host.Flags |= ImGuiWindowFlags.NoMove;

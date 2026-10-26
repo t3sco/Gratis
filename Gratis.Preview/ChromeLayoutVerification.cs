@@ -111,7 +111,7 @@ internal static class ChromeLayoutVerification {
         var location = MapWindowDrawing.TitleBounds;
         var coords = MapWindowDrawing.CoordinateBounds;
         var filters = FilterBarDrawing.LastBounds;
-        Require(Valid(location) && Valid(coords) && !Valid(filters) && location.Y == coords.Y && location.W == coords.W
+        Require(Valid(location) && Valid(coords) && !Valid(filters) && location.Y + location.W == coords.Y + coords.W
             && location.Z + GratisTheme.Gap == coords.X,
             "Default [location][coords] cluster has no standalone Filters neighbour");
         c.CompactTitle = c.StyledCoordinates = false;

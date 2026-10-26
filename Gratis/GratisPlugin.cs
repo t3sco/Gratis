@@ -108,6 +108,7 @@ public sealed class GratisPlugin : IDalamudPlugin {
         Release("map window", () => {
             System.MapWindow.OnClose();
             System.MapWindow.PlacePalette.Dispose();
+            System.MapWindow.QuestLog.Dispose();
         });
         Release("windows", System.WindowManager.Dispose);
         Release("integrations", System.IntegrationsController.Dispose);

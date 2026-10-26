@@ -192,7 +192,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
             followPlayerPosition = position;
             followTargetOffset = host.CoordinateOffset(position);
         }
-        if (Spotlight.Active && ImGui.IsKeyPressed(ImGuiKey.Escape))
+        if (Spotlight.Active && !MapDrawContext.Current.QuestLog.CapturesKeyboard
+            && ImGui.IsKeyPressed(ImGuiKey.Escape))
             Spotlight.End(host.Now, "escape: restoring viewport");
         followInteracting = interacting;
         followHovered = hovered;

@@ -16,7 +16,7 @@ public static partial class MapToolbarDrawing {
         var scale = GratisTheme.ChromeScale;
         var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
         var area = areaMax - areaMin;
-        var (safeMin, safeMax) = ChromeLayout.SafeBounds();
+        var (safeMin, safeMax) = ChromeLayout.ToolbarSafeBounds();
         var available = safeMax.X - safeMin.X;
         var fullCount = context.Config.UseCustomWindowChrome ? FullButtonCount : FullButtonCount - 1;
         var fullWidth = CollapsedWidth(fullCount) * scale;
@@ -43,9 +43,12 @@ public static partial class MapToolbarDrawing {
         searchWidth = MathF.Min(searchWidth, MathF.Max(0, available - CollapsedWidth(count) * scale));
         var contentWidth = MathF.Max(CollapsedWidth(collapsedCount) * scale,
             CollapsedWidth(count) * scale + searchWidth);
-        EffectiveAnchor = context.Config.ToolbarAnchor == ChromeAnchor.TopCenter
+        var anchor = context.Config.ToolbarAnchor;
+        if (context.QuestLog.ReservesSpace && context.QuestLog.Layout.Compact && anchor >= ChromeAnchor.BottomLeft)
+            anchor = (ChromeAnchor)((int)anchor % 3);
+        EffectiveAnchor = anchor == ChromeAnchor.TopCenter
             && available < MathF.Max(fullWidth, contentWidth) + centerAllowance
-            ? ChromeAnchor.TopLeft : context.Config.ToolbarAnchor;
+            ? ChromeAnchor.TopLeft : anchor;
         var width = context.Config.SegmentedToolbar ? contentWidth : available;
         if (!context.Config.SegmentedToolbar && EffectiveAnchor == ChromeAnchor.TopCenter)
             width -= centerAllowance;

@@ -16,6 +16,13 @@ public enum QuestBucket {
     Other, Scenario, SideQuests, JobClass, Chronicles, AlliedSocieties
 }
 public static class QuestBuckets {
+    public static readonly QuestBucket[] Order = [QuestBucket.Scenario, QuestBucket.SideQuests,
+        QuestBucket.JobClass, QuestBucket.Chronicles, QuestBucket.AlliedSocieties, QuestBucket.Other];
+    public static string Label(QuestBucket bucket) => bucket switch {
+        QuestBucket.Scenario => "Scenario", QuestBucket.SideQuests => "Side quests",
+        QuestBucket.JobClass => "Job & class", QuestBucket.Chronicles => "Chronicles",
+        QuestBucket.AlliedSocieties => "Allied societies", _ => "Other",
+    };
     public static QuestBucket FromSection(uint? section) => section switch {
         0 or 1 => QuestBucket.Scenario,
         3 => QuestBucket.SideQuests,

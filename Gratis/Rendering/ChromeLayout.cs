@@ -20,7 +20,28 @@ public static class ChromeLayout {
     private static MapDrawContext? context;
     private static Vector4 handleBounds;
     public static (Vector2 Min, Vector2 Max) SafeBounds() {
-        var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        var current = MapDrawContext.Current;
+        if (current.Config.IsGratis && current.QuestLogSource != null && current.QuestLog.ReservesSpace
+            && current.QuestLog.Bounds != Vector4.Zero)
+            max.X = MathF.Max(min.X, current.QuestLog.Bounds.X - GratisTheme.Gap * GratisTheme.ChromeScale);
+        return (min, max);
+    }
+
+    public static (Vector2 Min, Vector2 Max) ToolbarSafeBounds() {
+        var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        var current = MapDrawContext.Current;
+        if (current.Config.IsGratis && current.QuestLogSource != null && !current.IsPvP) {
+            max.X = MathF.Max(min.X, max.X - (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
+            if (current.QuestLog.ReservesSpace && !current.QuestLog.Layout.Compact
+                && current.Config.ToolbarAnchor >= ChromeAnchor.BottomLeft)
+                max.X = MathF.Max(min.X, current.QuestLog.Bounds.X - GratisTheme.Gap * GratisTheme.ChromeScale);
+        }
+        return (min, max);
+    }
+
+    public static (Vector2 Min, Vector2 Max) RawSafeBounds(Vector2 position, Vector2 size) {
+        var (min, max) = MapShape.Bounds(position, size);
         if (MapDrawContext.Current.Config.MapCircle) {
             var inset = (max - min) * .14644661f;
             min += inset;
@@ -85,7 +106,7 @@ public static class ChromeLayout {
     private static readonly List<Vector4> obstacles = [];
     public static Vector4 Place(string id, Vector2 size, ChromeAnchor anchor) {
         Begin();
-        var (min, max) = SafeBounds();
+        var (min, max) = id == "toolbar" ? ToolbarSafeBounds() : SafeBounds();
         var gap = GratisTheme.Gap * GratisTheme.ChromeScale;
         if (anchor <= ChromeAnchor.TopRight && handleBounds != Vector4.Zero)
             min.Y = MathF.Max(min.Y, MathF.Ceiling(handleBounds.W + gap));

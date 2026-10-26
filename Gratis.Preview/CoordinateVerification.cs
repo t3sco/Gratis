@@ -46,20 +46,19 @@ internal static class CoordinateVerification {
     }
 
     public static void Frames() {
+        Layout();
         var config = PaletteVerification.Config();
         config.WindowSize = new(780, 600);
         using var driver = new ScriptedFrameDriver(config,
-            new FrameScript { Width = 960, Height = 800, PlayerCoordinates = new(21.3f, 14.8f) });
+            new FrameScript { Width = 960, Height = 800, PlayerCoordinates = new(21.3f, 14.8f), CursorCoordinates = new(9.1f, 99.9f) });
         driver.Context.ContextMenu.Actions = new ContextMenuFixture();
         for (var i = 0; i < 5; i++)
             driver.Step(new(i * .02));
         var b = MapWindowDrawing.CoordinateBounds;
         var point = new Vector2(b.X + 40, (b.Y + b.W) / 2);
-        var playerBeforeHover = CoordinateCopy.PlayerBounds;
         driver.Step(new(.12, Mouse: point));
-        b = CoordinateCopy.PlayerBounds;
-        point = new((MathF.Max(playerBeforeHover.X, b.X) + MathF.Min(playerBeforeHover.Z, b.Z)) / 2, (b.Y + b.W) / 2);
-        driver.Step(new(.13, Mouse: point));
+        if (CoordinateCopy.PlayerBounds != new Vector4(b.X, b.Y, CoordinateCopy.PlayerBounds.Z, b.W))
+            throw new InvalidOperationException("Player container stays fixed on hover");
         driver.Step(new(.14, Left: true));
         driver.Step(new(.16, Left: false));
         if (driver.Context.ContextMenu.Toast != "Copied 21.3, 14.8" || driver.Window.Dragging)
@@ -68,12 +67,63 @@ internal static class CoordinateVerification {
         driver.Step(new(.20, Left: false));
         if (driver.Context.ContextMenu.Toast != "Copied Middle La Noscea · 21.3, 14.8")
             throw new InvalidOperationException("Shift-click includes map name");
+        b = CoordinateCopy.CursorBounds;
+        point = new((b.X + b.Z) / 2, (b.Y + b.W) / 2);
+        driver.Step(new(.22, Mouse: point, Shift: false));
+        driver.Step(new(.24, Left: true));
+        driver.Step(new(.26, Left: false));
+        if (driver.Context.ContextMenu.Toast != "Copied 9.1, 99.9" || driver.Window.Dragging)
+            throw new InvalidOperationException("Right container copies cursor coordinates without pan");
         config.ShowEorzeaTime = true;
-        driver.Step(new(.22));
-        var copied = CoordinateCopy.PlayerBounds;
-        var entire = MapWindowDrawing.CoordinateBounds;
-        if (copied.Z >= entire.Z)
+        driver.Step(new(.28));
+        if (CoordinateCopy.CursorBounds.Z >= MapWindowDrawing.CoordinateBounds.Z)
             throw new InvalidOperationException("ET suffix must be outside coordinate copy targets");
         Console.WriteLine("Coordinate bar: actual scripted click/Shift-click, toast, pan isolation and ET bounds.");
     }
+    private static void Layout() {
+        foreach (var questLog in new[] { false, true }) {
+            var c = ChromeLayoutVerification.Config(new(780, 600));
+            c.LocationAnchor = ChromeAnchor.TopLeft;
+            c.QuestLogOpenWithMap = questLog;
+            using var driver = new ScriptedFrameDriver(c, new FrameScript {
+                Width = 1440, Height = 960, QuestLog = questLog,
+                PlayerCoordinates = new(18.7f, 25.6f), CursorCoordinates = new(9.1f, 99.9f)
+            });
+            double time = 0;
+            foreach (var circle in new[] { false, true })
+                foreach (var width in new[] { 256, 320, 360, 780, 1280 })
+                    foreach (var mode in Enum.GetValues<CoordinateContent>()) {
+                        c.MapCircle = circle;
+                        c.CoordinatesShow = mode;
+                        driver.Step(new(time += .04, Size: new(width, 600)));
+                        driver.Step(new(time += .04));
+                        var union = MapWindowDrawing.CoordinateBounds;
+                        var player = CoordinateCopy.PlayerBounds;
+                        var cursor = CoordinateCopy.CursorBounds;
+                        if (union == Vector4.Zero) {
+                            if (player != Vector4.Zero || cursor != Vector4.Zero || !questLog && width >= 780)
+                                throw new InvalidOperationException("Impossible coordinate layout clears hit targets");
+                            continue;
+                        }
+                        if ((player != Vector4.Zero) != (mode != CoordinateContent.Cursor)
+                            || (cursor != Vector4.Zero) != (mode != CoordinateContent.Player))
+                            throw new InvalidOperationException("Content mode selects its containers");
+                        if (MathF.Abs(union.W - union.Y - BottomCardsDrawing.CoordinateHeight) > .01f)
+                            throw new InvalidOperationException("Coordinate containers use compact height");
+                        var first = player == Vector4.Zero ? cursor : player;
+                        var last = cursor == Vector4.Zero ? player : cursor;
+                        if (union != new Vector4(first.X, first.Y, last.Z, last.W)
+                            || ChromeLayout.Overlap(player, cursor)
+                            || mode == CoordinateContent.Both && MathF.Abs(cursor.X - player.Z - GratisTheme.Gap) > .01f)
+                            throw new InvalidOperationException("Coordinate union and one-gap side-by-side containers");
+                        if (!questLog && MathF.Abs((union.X + union.Z) / 2 - (c.WindowPosition.X + width / 2f)) > .1f)
+                            throw new InvalidOperationException("BottomCenter centres coordinates as a unit");
+                        foreach (var other in new[] { MapWindowDrawing.TitleBounds, MapToolbarDrawing.LastBounds,
+                            FilterBarDrawing.LastBounds, driver.Context.QuestLog.ReservesSpace ? driver.Context.QuestLog.Bounds : Vector4.Zero })
+                            if (ChromeLayout.Overlap(union, other))
+                                throw new InvalidOperationException($"Coordinate pair clears other map chrome: quest={questLog}, circle={circle}, width={width}, mode={mode}, coords={union}, other={other}");
+                    }
+        }
+    }
+
 }

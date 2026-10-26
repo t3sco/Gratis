@@ -2,6 +2,7 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
@@ -18,6 +19,7 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     public override bool IsPvP => Service.ClientState.IsPvP;
 
     public override ILocationMenuSource? LocationMenu => System.MapWindow.PlacePalette;
+    public override IQuestLogSource? QuestLogSource => System.MapWindow.QuestLog;
 
     public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
 
@@ -93,7 +95,9 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     public override unsafe float MapSizeFactor => AgentMap.Instance()->SelectedMapSizeFactorFloat;
 
     public override DrawTexture GetIcon(uint id) {
-        var texture = Service.TextureProvider.GetFromGameIcon(id).GetWrapOrEmpty();
+        if (!Service.TextureProvider.TryGetFromGameIcon(new GameIconLookup(id), out var shared))
+            return new DrawTexture(default, default);
+        var texture = shared.GetWrapOrEmpty();
         return new DrawTexture(texture.Handle, texture.Size);
     }
 

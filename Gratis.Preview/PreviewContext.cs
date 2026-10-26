@@ -15,6 +15,9 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public override bool IsPvP => PvP;
     public ILocationMenuSource? LocationSource { get; set; }
     public override ILocationMenuSource? LocationMenu => LocationSource;
+    public IQuestLogSource? QuestSource { get; set; }
+    public override IQuestLogSource? QuestLogSource => QuestSource;
+    public override DrawTexture GetExpansionCrest(uint id) => default;
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
     public string? RequestedSettingsSection { get; private set; }

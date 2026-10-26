@@ -37,6 +37,7 @@ public readonly record struct MapLocation(string Region, string Zone, string Are
 
 public static class BottomCardsDrawing {
     public const float Height = 56;
+    public const float CoordinateHeight = 36;
     private static readonly string[] Digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
     private static MapDrawContext? context;
     private static MapLocation location;
@@ -82,21 +83,22 @@ public static class BottomCardsDrawing {
         using (current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = MathF.Max(titleWidth, ImGui.CalcTextSize(LocationSecondary).X);
         titleWidth = Math.Clamp(titleWidth + 24 * s, 96 * s, 280 * s);
-        var coordWidth = MathF.Min(requestedCoordinates, available);
+        var coordWidth = requestedCoordinates;
         if (showLocation && requestedCoordinates > 0 && c.LocationAnchor == c.CoordinateAnchor) {
-            titleWidth = MathF.Min(titleWidth, available - coordWidth - GratisTheme.Gap * s);
-            if (titleWidth >= 64 * s) {
+            var pairedTitleWidth = MathF.Min(titleWidth, available - coordWidth - GratisTheme.Gap * s);
+            if (pairedTitleWidth >= 64 * s) {
                 var pair = ChromeLayout.Place("bottom-cards",
-                    new(titleWidth + coordWidth + GratisTheme.Gap * s, Height * s), c.LocationAnchor);
+                    new(pairedTitleWidth + coordWidth + GratisTheme.Gap * s, Height * s), c.LocationAnchor);
                 if (pair != Vector4.Zero) {
-                    locationBounds = new(pair.X, pair.Y, pair.X + titleWidth, pair.W);
-                    coordinatesBounds = new(locationBounds.Z + GratisTheme.Gap * s, pair.Y, pair.Z, pair.W);
+                    locationBounds = new(pair.X, pair.Y, pair.X + pairedTitleWidth, pair.W);
+                    var y = pair.Y + (Height - CoordinateHeight) * s / 2;
+                    coordinatesBounds = new(locationBounds.Z + GratisTheme.Gap * s, y, pair.Z, y + CoordinateHeight * s);
                     return;
                 }
             }
         }
         if (requestedCoordinates > 0)
-            coordinatesBounds = ChromeLayout.Place("coordinates", new(coordWidth, Height * s), c.CoordinateAnchor);
+            coordinatesBounds = ChromeLayout.Place("coordinates", new(coordWidth, CoordinateHeight * s), c.CoordinateAnchor);
         if (showLocation)
             locationBounds = ChromeLayout.Place("location", new(MathF.Min(titleWidth, available), Height * s),
                 c.LocationAnchor);
@@ -144,29 +146,36 @@ public static class BottomCardsDrawing {
         foreach (var digit in "0123456789-./")
             DigitAdvance = MathF.Max(DigitAdvance, ImGui.CalcTextSize(digit.ToString()).X);
         DigitAdvance = MathF.Ceiling(DigitAdvance);
-        var valueWidth = 15 * DigitAdvance;
-        var width = valueWidth + 46 * s;
+        var mode = Enum.IsDefined(c.Config.CoordinatesShow) ? c.Config.CoordinatesShow : CoordinateContent.Both;
+        var both = mode == CoordinateContent.Both;
+        var valueWidth = 11 * DigitAdvance;
+        var cardWidth = valueWidth + 46 * s;
+        var gap = GratisTheme.Gap * s;
+        var width = both ? cardWidth * 2 + gap : cardWidth;
         var (safeMin, safeMax) = ChromeLayout.SafeBounds();
         var time = c.Config.ShowEorzeaTime ? EorzeaTime.Format(c.UnixTimeSeconds) : "";
         var timeWidth = time.Length > 0 ? ImGui.CalcTextSize(time).X + 16 * s : 0;
         if (width + timeWidth + 104 * s < safeMax.X - safeMin.X)
             width += timeWidth;
-        else
+        else {
             time = "";
+            timeWidth = 0;
+        }
+        CoordinateCopy.RecordRows(Vector4.Zero, Vector4.Zero);
         Layout(width);
         if (coordinatesBounds == Vector4.Zero)
             return;
         var pos = ChromeLayout.Position(coordinatesBounds);
-        var size = new Vector2(coordinatesBounds.Z - pos.X, Height * s);
+        var size = new Vector2(coordinatesBounds.Z - pos.X, CoordinateHeight * s);
         MapWindowDrawing.RecordBounds(pos, pos + size, false);
         var list = ImGui.GetWindowDrawList();
-        MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s,
-            surface: GlassSurface.Coordinates);
-        var mode = Enum.IsDefined(c.Config.CoordinatesShow) ? c.Config.CoordinatesShow : CoordinateContent.Both;
-        var both = mode == CoordinateContent.Both;
         Vector4 playerBounds = Vector4.Zero, cursorBounds = Vector4.Zero;
-        void Row(Vector2? value, bool isPlayer, float y) {
-            var start = pos + new Vector2(12 * s, y);
+        void Card(Vector2? value, bool isPlayer, float x, bool trailing) {
+            var cardPos = new Vector2(x, pos.Y);
+            var cardSize = new Vector2(cardWidth + (trailing ? timeWidth : 0), size.Y);
+            MapWindowDrawing.DrawSurface(list, cardPos, cardPos + cardSize, GratisTheme.Radius.Card * s,
+                surface: GlassSurface.Coordinates, chromeId: isPlayer ? "Coordinates.Player" : "Coordinates.Cursor");
+            var start = cardPos + new Vector2(12 * s, (size.Y - ImGui.GetFontSize()) / 2);
             var ink = value.HasValue ? GratisTheme.Primary : GratisTheme.Secondary with { W = .45f };
             var icon = start + new Vector2(7 * s, ImGui.GetFontSize() / 2);
             if (isPlayer) {
@@ -178,18 +187,18 @@ public static class BottomCardsDrawing {
             else
                 GratisIcons.Draw(list, icon, GratisIcons.Crosshair, ink, GratisTheme.IconSize * s);
             var textPos = start + new Vector2(22 * s, 0);
-            var text = value is { } point ? Axis(point.X) + " / " + Axis(point.Y) : "  --.- /   --.-";
+            var text = value is { } point ? Axis(point.X) + " / " + Axis(point.Y) : "--.- / --.-";
             DrawFixed(list, textPos, text, ImGui.GetColorU32(ink));
-            var bounds = new Vector4(start.X, start.Y - 2 * s, textPos.X + valueWidth, start.Y + 18 * s);
+            var bounds = new Vector4(cardPos.X, cardPos.Y, cardPos.X + cardWidth, cardPos.Y + cardSize.Y);
             if (isPlayer)
                 playerBounds = bounds;
             else
                 cursorBounds = bounds;
         }
         if (mode != CoordinateContent.Cursor)
-            Row(player, true, both ? 8 * s : (size.Y - ImGui.GetFontSize()) / 2);
+            Card(player, true, pos.X, !both);
         if (mode != CoordinateContent.Player)
-            Row(cursor, false, both ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2);
+            Card(cursor, false, both ? pos.X + cardWidth + gap : pos.X, true);
         CoordinateCopy.RecordRows(playerBounds, cursorBounds);
         if (time.Length > 0)
             list.AddText(pos + new Vector2(size.X - timeWidth + 4 * s, (size.Y - ImGui.GetFontSize()) / 2),
@@ -198,7 +207,7 @@ public static class BottomCardsDrawing {
         ImGui.Dummy(size);
     }
 
-    private static string Axis(float n) => n.ToString("0.0", CultureInfo.InvariantCulture).PadLeft(6);
+    private static string Axis(float n) => n.ToString("0.0", CultureInfo.InvariantCulture).PadLeft(4);
     public static void DrawFixed(ImDrawListPtr list, Vector2 pos, string text, uint ink) {
         foreach (var ch in text) {
             var glyph = ch is >= '0' and <= '9' ? Digits[ch - '0'] : ch switch {

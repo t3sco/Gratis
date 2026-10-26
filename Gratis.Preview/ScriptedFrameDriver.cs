@@ -136,6 +136,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
         Renderer = new MapRendererFrame(this) { DrawOffset = script.DrawOffset ?? Vector2.Zero };
         if (script.Palette)
             PlaceSource = new PaletteFixture(this);
+        if (script.QuestLog)
+            Context.QuestSource = new QuestLogFixture(this);
         activate = Activate;
         layers = DrawLayers;
         foreach (var marker in script.Markers) {
@@ -273,6 +275,9 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             Config.WindowSize, Window.MoveHandle.Dragging, Window.MoveHandle.Visibility,
             Window.MoveHandle.Geometry.Center, Renderer.Spotlight.Active, Renderer.Spotlight.Opacity,
             Renderer.Spotlight.FitZoom, Renderer.Spotlight.Decision) {
+            QuestLogOpen = Context.QuestLog.IsOpen, QuestLogPinned = Config.QuestLogPinned,
+            QuestSearchOpen = Context.QuestLog.SearchOpen, QuestDetailId = Context.QuestLog.DetailQuestId,
+            QuestDetailBounds = Context.QuestLog.DetailBounds,
             GhostOpacity = Window.Ghost.Opacity,
             GhostClickThrough = Window.Ghost.ClickThrough,
             GhostFlags = Flags.ToString(),
@@ -350,7 +355,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     }
 
     public void DrawCoordinates(bool mapHovered, Vector2 offset) =>
-        MapCoordinateDrawing.Draw(script.PlayerCoordinates ?? player, true,
+        MapCoordinateDrawing.Draw(script.PlayerCoordinates ?? player, script.ShowPlayerCoordinates,
             mapHovered ? script.CursorCoordinates
                 ?? (ImGui.GetMousePos() - offset - Renderer.DrawPosition) / Config.MapScale
                 : null);
