@@ -197,3 +197,52 @@ and atlas copying: it is harness initialization, not measured live-plugin startu
 case is an empty host baseline, excluding Dalamud Update/Draw/addon callbacks. GPU, host blur,
 native addons, live sheets, object scans and game-thread contention need in-game profiling.
 Preserve the JSON/report before deleting `_artifacts\bench` after use.
+## Visual safety net and component gallery
+
+Keep every build isolated from the installed plugin. From the repository root:
+
+```powershell
+dotnet build Gratis.Preview -c Release --artifacts-path _artifacts\gallery
+$preview = '.\_artifacts\gallery\bin\Gratis.Preview\release\Gratis.Preview.exe'
+& $preview --selftest visual-baseline
+& $preview --scene ui-gallery
+& $preview --scene ui-gallery-classic
+& $preview --selftest all
+# Deliberate refresh: the entire fixed list is rendered twice first.
+& $preview --visual-baseline update
+Remove-Item -LiteralPath _artifacts\gallery -Recurse -Force
+```
+
+`--selftest all` includes visual-baseline. `baselines/visual-baseline.json` records
+scene, args, dimensions and SHA256; `baselines/images/*.png` retains the expected
+PNGs. Keep both in source control together. Nothing is staged or committed by these
+commands. Updating refuses to replace references unless two complete passes have
+identical PNG hashes. Review the reference images before accepting a refresh.
+
+The fixed list covers both styles wherever supported: maps, hover cards, markers,
+toolbar rest/hover, glass, bottom cards/coordinates, all settings sections and active
+settings search. Gratis-only entries cover location search, palette browse/results/
+quest filters/empty state, context menu, teleport confirmation, feedback, update,
+pins, quest list/detail/search/three tabs/rewards, and popup rest/40 ms exit states.
+Production style gates are preserved; Classic uses its real native dispatch/fonts.
+
+Rendering uses bundled fonts, procedural terrain, fixed script/Unix times, fixed pin
+IDs, pinned native/Skia dependencies, invariant culture and fresh ImGui contexts.
+No live config/game data is read. This Windows x64 CPU-renderer contract requires a
+reviewed refresh when fonts, native dependencies or rasterizer change. Glass remains
+the CPU approximation described above.
+
+A mismatch exits nonzero, prints the changed scene and both hashes, and saves
+`_artifacts/<case-name>/visual-diff/{expected,actual,diff}.png` plus diff metrics.
+Dimension changes preserve originals and compare magenta-padded copies. Missing or
+corrupt references and scene-list drift fail explicitly. Successful actuals are in
+`_artifacts/visual-baseline/actual`; tests never modify references.
+
+Galleries are `_preview/ui-gallery.png` and `_preview/ui-gallery-classic.png`.
+Adjacent `.coverage.json` files record every cell's source/state/PNG/exact crop.
+Primitive columns show rest/hover/pressed/native focus/selected/disabled where
+supported; presenter rows label their own states. Mouse input uses
+ScriptedFrameDriver. Focus uses native navigation and preview-only probes.
+Only gallery labels/composition are custom; component faces use linked production
+code. See [ui-gallery-notes.md](ui-gallery-notes.md) for extraction gaps, seams,
+unsupported states and game-host fidelity limits.

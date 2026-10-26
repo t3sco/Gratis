@@ -4,6 +4,8 @@ namespace Gratis.Preview;
 
 internal static partial class Program {
     private static (string Name, Action Run)[] Selftests() => [
+        ("visual-baseline", () => { if (VisualBaseline(update: false) != 0)
+            throw new InvalidOperationException("Visual baseline changed; inspect visual-diff artifacts."); }),
         ("frames-viewport-cover", ViewportCoverVerification.Run),
         ("frames-auto-fit", AutoFitVerification.Run),
         ("frames-pvp", PvpVerification.Frames),

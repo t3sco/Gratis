@@ -9,6 +9,9 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public static partial class ChromeControls {
+#if GRATIS_PREVIEW
+    internal static Action<string>? PreviewBeforeButton, PreviewAfterButton;
+#endif
     private static MapDrawContext? hoverContext;
     private static Vector4 hoverBounds;
     private static double hoverBegan;
@@ -18,12 +21,18 @@ public static partial class ChromeControls {
     public static double LastTooltipTime { get; private set; }
 
     public static bool Button(string id, Vector2 size) {
+#if GRATIS_PREVIEW
+        PreviewBeforeButton?.Invoke(id);
+#endif
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
         ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.ButtonActive, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.Text, Vector4.Zero);
         var clicked = ImGui.Button(id, size);
+#if GRATIS_PREVIEW
+        PreviewAfterButton?.Invoke(id);
+#endif
         UiMotion.ItemId(id);
         ImGui.PopStyleColor(4);
         ImGui.PopStyleVar();

@@ -35,6 +35,7 @@ internal static partial class Program {
             "Guild meeting"};
         for (var i = 0; i < 8; i++)
             layer.Store.Put(new() {
+                Id = new Guid(i + 1, 0, 0, new byte[8]),
                 MapId = 1, X = -210 + (i % 4) * 140, Y = i < 4 ? -120 : 100, Colour = i, Title = titles[i],
                 Note = i == 0 ? "Meet by the west gate after the hunt.\nBring a friend; we'll leave at sunset."
                     : "A little place worth remembering."

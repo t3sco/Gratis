@@ -132,7 +132,7 @@ internal static class LocationMenuVerification {
         Console.WriteLine("Location menu: card, zone search, map actions, parents, Escape, input, chrome, Classic and six anchors verified.");
     }
 
-    private sealed class Source(ScriptedFrameDriver driver) : ILocationMenuSource, IPaletteSource {
+    internal sealed class Source(ScriptedFrameDriver driver) : ILocationMenuSource, IPaletteSource {
         public int ParentCalls { get; private set; }
         public IPaletteSource Places => this;
         public IReadOnlyList<LocationMenuParent> Parents => [new("La Noscea", () => ParentCalls++)];

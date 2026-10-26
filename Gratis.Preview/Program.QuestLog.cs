@@ -23,6 +23,7 @@ internal static partial class Program {
         var output = Path.GetFullPath(outIndex >= 0 ? args[outIndex + 1] : "_preview/quest-log.png");
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         var config = QuestLogConfig(width, height);
+        if (args.Contains("--pinned")) config.QuestLogPinned = true;
         config.MapCircle = args[index + 1] == "quest-log-circle";
         using var driver = new ScriptedFrameDriver(config, new FrameScript {
             Width = width, Height = height, QuestLog = true, Palette = true,
@@ -46,6 +47,7 @@ internal static partial class Program {
         }
         var panel = driver.Context.QuestLog;
         if (variant is "available" or "available-empty") Click(panel.TabBounds[2]);
+        if (variant == "completed") Click(panel.TabBounds[1]);
         if (args[index + 1] == "quest-log-detail")
             Click(panel.Rows.First().Bounds);
         if (args[index + 1] == "quest-log-search" || args.Contains("--search"))
@@ -72,6 +74,32 @@ internal static partial class Program {
             var mouse = new Vector2((b.X + b.Z) / 2, (b.Y + b.W) / 2);
             driver.Step(new(time += .04, Mouse: mouse, Wheel: float.Parse(args[scrollIndex + 1])));
             for (var frame = 0; frame < 16; frame++) driver.Step(new(time += .04, Mouse: mouse));
+        }
+        var stateIndex = Array.IndexOf(args, "--state");
+        if (stateIndex >= 0) {
+            var targetIndex = Array.IndexOf(args, "--target");
+            var target = targetIndex < 0 ? "map" : args[targetIndex + 1];
+            var (bounds, id) = target switch {
+                "tab" => (panel.TabBounds[1], "##quest-tab-1"),
+                "pin" => (panel.Layout.Pin, "##quest-log-pin"),
+                "reward" => (panel.RewardBounds.First(), "##quest-reward"),
+                "row" => (panel.Rows.First().Bounds, "##quest"),
+                _ => (panel.DetailMapBounds, "##quest-detail-map"),
+            };
+            var state = args[stateIndex + 1];
+            if (state == "focused") FocusGalleryButton(driver, id, ref time);
+            else if (state is "hover" or "pressed") {
+                if (bounds.Z <= bounds.X) throw new InvalidOperationException("Quest gallery target is absent.");
+                var mouse = CenterBounds(bounds);
+                for (var i = 0; i < 6; i++) driver.Step(new(time += .04, Mouse: mouse));
+                if (state == "pressed") driver.Step(new(time += .04, Mouse: mouse, Left: true));
+            }
+            else if (state == "selected" && target == "row") {
+                var mouse = CenterBounds(bounds);
+                driver.Step(new(time += .04, Mouse: mouse, Left: true));
+                driver.Step(new(time += .04, Mouse: mouse, Left: false));
+                for (var i = 0; i < 8; i++) driver.Step(new(time += .04, Mouse: new(-1000)));
+            }
         }
         driver.Save(output);
         Console.WriteLine($"{output}: {width}x{height}, accepted={driver.Context.QuestLog.Results.Count}, "

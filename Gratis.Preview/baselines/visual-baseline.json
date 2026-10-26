@@ -1,0 +1,680 @@
+{
+  "Version": 1,
+  "Scenes": [
+    {
+      "Name": "map-default",
+      "Scene": "map-default",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "8BA3C02836E3509E9459362BEBBA8BC83A5E79BC45F095BC60BEC37246696602"
+    },
+    {
+      "Name": "map-default-classic",
+      "Scene": "map-default",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "097C992742D63518185664486CF1BE0846C969056CD4D84C74B090ECF73035A0"
+    },
+    {
+      "Name": "map-circular",
+      "Scene": "map-circular",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "711DDF5D5D74C416288E7DF1B74D15F7A792679FC3DD431F40EE53B4C88FA1D6"
+    },
+    {
+      "Name": "map-circular-classic",
+      "Scene": "map-circular",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "F9114DC1555C39940CFAF757C4D760C1C65AB59DC8CD0E077D9E5DEBA0EC3FB8"
+    },
+    {
+      "Name": "hover-tooltip",
+      "Scene": "hover-tooltip",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "2D73E0D6DE8ED2B19E39972CD00B3B98B10ECD18F6F30C203B4743F6877F569F"
+    },
+    {
+      "Name": "hover-tooltip-classic",
+      "Scene": "hover-tooltip",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "markers",
+      "Scene": "markers",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "C46D36EAB23616E8360FC76DEAD4188EE97CEE0766489033E454D830D951F2B2"
+    },
+    {
+      "Name": "markers-classic",
+      "Scene": "markers",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "AF37A75DCF1C4BCB947AEEFDB87C4E49A319E5A4639252480EAEC647F79B17B4"
+    },
+    {
+      "Name": "toolbar",
+      "Scene": "toolbar",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "682EF7D01847A7A15BF9B9820A772FC47E235002B4A7DABFD56A6D50280958DF"
+    },
+    {
+      "Name": "toolbar-classic",
+      "Scene": "toolbar",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "27518C1E96FDE9EC92DF8C9E70140D38766F1BA358558B50D45974DE3B529BFA"
+    },
+    {
+      "Name": "glass-on",
+      "Scene": "glass-on",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "2D73E0D6DE8ED2B19E39972CD00B3B98B10ECD18F6F30C203B4743F6877F569F"
+    },
+    {
+      "Name": "glass-on-classic",
+      "Scene": "glass-on",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "glass-off",
+      "Scene": "glass-off",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "D5C7367703453C1AB01D5D13400F090845C85882CDD740EB77410E322DE92AC5"
+    },
+    {
+      "Name": "glass-off-classic",
+      "Scene": "glass-off",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "glass-toolbar",
+      "Scene": "glass-toolbar",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "DD660D2855F52972B5DA937449579CA8AB9FF3F726A5046637B647A6B6427163"
+    },
+    {
+      "Name": "glass-toolbar-classic",
+      "Scene": "glass-toolbar",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "A1D6AC3BE56C86DAAB22F4B9A3521A0C3D736E08D80A08B0273388441C88EC73"
+    },
+    {
+      "Name": "glass-card",
+      "Scene": "glass-card",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "74B3F43B394DCF2FA60EB0EF05C5B8A1E1D9CCDA8EBD6235A371F0F708378B62"
+    },
+    {
+      "Name": "glass-card-classic",
+      "Scene": "glass-card",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "glass-tinted",
+      "Scene": "glass-tinted",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "AB359B18133469CF039B864EA1E835CBB75F3171178B50B40CF356815A06B793"
+    },
+    {
+      "Name": "glass-tinted-classic",
+      "Scene": "glass-tinted",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "glass-unavailable",
+      "Scene": "glass-unavailable",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "AB359B18133469CF039B864EA1E835CBB75F3171178B50B40CF356815A06B793"
+    },
+    {
+      "Name": "glass-unavailable-classic",
+      "Scene": "glass-unavailable",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "B2F4A303A318D2D449389085FAA168B3D0F8013456905A55D3BEE331CAC8206C"
+    },
+    {
+      "Name": "glass-circle",
+      "Scene": "glass-circle",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "4BA1246F2F34C30DDCCBBB433741EF54BECBDCA52D8D01B5589D2CD6C4AB742E"
+    },
+    {
+      "Name": "glass-circle-classic",
+      "Scene": "glass-circle",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "90F3ECEFDDFA5D01D7CA79487B8280F12E45536B88E72C4CB6FAF2E5CC98845D"
+    },
+    {
+      "Name": "library-toolbar",
+      "Scene": "library-toolbar",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "03DE8A9A5C0A68A44AB663896BDE25A9FDD7255BC5BD060254BE63EC8CB2A20B"
+    },
+    {
+      "Name": "library-toolbar-classic",
+      "Scene": "library-toolbar",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "2CDF3155F7815142A69FE12F3735CAE2DB6C81CDA61A5CB672F5DBD8F13DBFF7"
+    },
+    {
+      "Name": "library-toolbar-hover",
+      "Scene": "library-toolbar-hover",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "FA16FB32705EA9105C223AF1E76A90BFCBC6EEC45C13204B2A364977DABEB171"
+    },
+    {
+      "Name": "library-toolbar-hover-classic",
+      "Scene": "library-toolbar-hover",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "966515A497B0C6DD53AA22B6BEF164DE57158F10B40FB46D461EACA505A80035"
+    },
+    {
+      "Name": "library-bottom-cards",
+      "Scene": "library-bottom-cards",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "03DE8A9A5C0A68A44AB663896BDE25A9FDD7255BC5BD060254BE63EC8CB2A20B"
+    },
+    {
+      "Name": "library-bottom-cards-classic",
+      "Scene": "library-bottom-cards",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "2CDF3155F7815142A69FE12F3735CAE2DB6C81CDA61A5CB672F5DBD8F13DBFF7"
+    },
+    {
+      "Name": "library-move",
+      "Scene": "library-move",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "554E01DED7CED2EEA100817E697F42BD7722FE0F4500392B1B5984B1219246E1"
+    },
+    {
+      "Name": "library-move-classic",
+      "Scene": "library-move",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "960x740",
+      "Sha256": "75606B100EFA0F225ED2F5A984F022E26EBEC7C4B72D0704B2EA4FD166E6B285"
+    },
+    {
+      "Name": "library-location",
+      "Scene": "library-location",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "DAE7148E04D726219790B47B4254A6F3852C1A5810F5940512B51BC10FB1A39C"
+    },
+    {
+      "Name": "library-feedback",
+      "Scene": "library-feedback",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "E578B302EC35A498D25AA3DE1D29B72A274E1C9A7A8188D8CC4716629D055F9B"
+    },
+    {
+      "Name": "library-update",
+      "Scene": "library-update",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "BB2F8EAAB9C2505B9211B58640341F90AC19D46128C78379DF83766642BA824F"
+    },
+    {
+      "Name": "library-teleport",
+      "Scene": "library-teleport",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "47EC9E53C8C6E9967372592582138CE421B5A478E82CB29CDEC11771E840F721"
+    },
+    {
+      "Name": "library-teleport-disabled",
+      "Scene": "library-teleport-disabled",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "253034832991437ABDC48CB96A02A64BB895B7F3AC6C3DE85B6730B8DBD1A051"
+    },
+    {
+      "Name": "library-popup",
+      "Scene": "library-popup",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "020F8357E627F873569BF86AC26F7DD7CDBAB756F0AA393EEEB5F20504EAF692"
+    },
+    {
+      "Name": "library-popup-exit",
+      "Scene": "library-popup-exit",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "58BE6ED0301BFA7769872B5E3F3C038BD9E553F65068E6E6847FBD912ADC3DBB"
+    },
+    {
+      "Name": "library-location-exit",
+      "Scene": "library-location-exit",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "C843FC5B640A2A99852D1519ACC04EC3F2D180487A29C0224167502AB21DEA24"
+    },
+    {
+      "Name": "library-feedback-exit",
+      "Scene": "library-feedback-exit",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "31D0B75ACE35C0EB5FF5E00BCE70161F09B9D2A26F7ED5E7F36BB997C270DA04"
+    },
+    {
+      "Name": "library-filters",
+      "Scene": "library-filters",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "E2EDE54E8DDE1DC6F4197CCD9FC5B7B186F72332C00DAD4BF0A7B46249B35374"
+    },
+    {
+      "Name": "library-filters-quiet",
+      "Scene": "library-filters-quiet",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "A3408C7DCCD9E8B763C5F39B4F9C1C45D9F3ED97F2E4BE969AE51C8974747BF9"
+    },
+    {
+      "Name": "library-filters-hidden",
+      "Scene": "library-filters-hidden",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "38D975097495314F7432692DABFA58CC638DD16F8562E4614BE42492F62B8C8E"
+    },
+    {
+      "Name": "library-filters-solo",
+      "Scene": "library-filters-solo",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "4C48F4C36AB64939769CA519F7DF9BE0B007ADF00AEA56045F83FA6140011CDB"
+    },
+    {
+      "Name": "library-filters-loud",
+      "Scene": "library-filters-loud",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "3E77BEF7F225C75971554A9FE661E00705A69E6AB351D3E74AE2F06ADD64EB26"
+    },
+    {
+      "Name": "library-ghost",
+      "Scene": "library-ghost",
+      "Args": [],
+      "Size": "960x740",
+      "Sha256": "41E8DF6B89251D8436C4FDAA2F495EA283CC19A1F434287C9032459D5B6D26D9"
+    },
+    {
+      "Name": "palette-home",
+      "Scene": "palette-home",
+      "Args": [
+        "--settle"
+      ],
+      "Size": "960x800",
+      "Sha256": "B6574363100D7B9C54934FA81CF1C157269F816387BB9644C63E5EC97115BE5C"
+    },
+    {
+      "Name": "palette-query-limsa",
+      "Scene": "palette-query-limsa",
+      "Args": [
+        "--settle"
+      ],
+      "Size": "960x800",
+      "Sha256": "1604E165A6DE3E13A50E7FABBF1A1C955B5E8D4014A313F0DAD3448DD75BEE65"
+    },
+    {
+      "Name": "palette-quests",
+      "Scene": "palette-quests",
+      "Args": [
+        "--settle"
+      ],
+      "Size": "960x800",
+      "Sha256": "D769E3DDB1304142AF503C29780DDEDAE5CE03970C0A090AD8AECDE6A4FF7571"
+    },
+    {
+      "Name": "palette-empty",
+      "Scene": "palette-empty",
+      "Args": [
+        "--settle"
+      ],
+      "Size": "960x800",
+      "Sha256": "552B53C791AF7AA6B1A2ABDB0C746785BAAACAFF027246AFED6B0832B6465411"
+    },
+    {
+      "Name": "context-menu-map",
+      "Scene": "context-menu-map",
+      "Args": [],
+      "Size": "960x800",
+      "Sha256": "5B5B742D092D3FA89C21918C804921578D96358735C7FF5CC90A0B87CC8842DD"
+    },
+    {
+      "Name": "pin-editor",
+      "Scene": "pin-editor",
+      "Args": [],
+      "Size": "960x800",
+      "Sha256": "6D4B4A9038BF934912DB868E4C66CF87893C1015B7B40955C875AC275C7951D2"
+    },
+    {
+      "Name": "quest-log",
+      "Scene": "quest-log",
+      "Args": [],
+      "Size": "1100x700",
+      "Sha256": "F95F27E6E051DC361750B3F8E186C5534922BC4F866BF1F1374B42344A409FF2"
+    },
+    {
+      "Name": "quest-log-detail",
+      "Scene": "quest-log-detail",
+      "Args": [],
+      "Size": "1100x700",
+      "Sha256": "43FA59294538529003F087FD6C2E5031320F2A3D28F1E246F1E2F384A0384D17"
+    },
+    {
+      "Name": "quest-log-search",
+      "Scene": "quest-log-search",
+      "Args": [],
+      "Size": "1100x700",
+      "Sha256": "4F9209D779B98C7B8481B1BF546502D450C97FBA05A0F987746BEAF29AA76678"
+    },
+    {
+      "Name": "quest-log-completed",
+      "Scene": "quest-log",
+      "Args": [
+        "--variant",
+        "completed"
+      ],
+      "Size": "1100x700",
+      "Sha256": "2548992E893AF47C043AB8F4968F0213EA1BE5C5A806A2E69CE1B7ED4AAC6DAB"
+    },
+    {
+      "Name": "quest-log-available",
+      "Scene": "quest-log",
+      "Args": [
+        "--variant",
+        "available"
+      ],
+      "Size": "1100x700",
+      "Sha256": "72E7B6B36AE8FC6912CC19DFD42C461D0D675A4CA6776B16A99F2C7F61E9BD95"
+    },
+    {
+      "Name": "quest-log-available-empty",
+      "Scene": "quest-log",
+      "Args": [
+        "--variant",
+        "available-empty"
+      ],
+      "Size": "1100x700",
+      "Sha256": "334E1130E2A1A46D2AF9BA659EB0FE6888C2737DBB3336192EA6407E357DCA9E"
+    },
+    {
+      "Name": "quest-log-detail-tooltip",
+      "Scene": "quest-log-detail",
+      "Args": [
+        "--variant",
+        "tooltip"
+      ],
+      "Size": "1100x700",
+      "Sha256": "3BFE612F4A15E269B3797886F11E14260EFD8635A1621E4080565C8E6C4EB044"
+    },
+    {
+      "Name": "quest-log-detail-menu",
+      "Scene": "quest-log-detail",
+      "Args": [
+        "--variant",
+        "menu"
+      ],
+      "Size": "1100x700",
+      "Sha256": "1D7D072DFAD324B8EF543AFD7125E824E351AB9F1D8D766EDFCA400A7AF1CD92"
+    },
+    {
+      "Name": "quest-log-detail-completed",
+      "Scene": "quest-log-detail",
+      "Args": [
+        "--variant",
+        "completed"
+      ],
+      "Size": "1100x700",
+      "Sha256": "907A22AE7DB3B169097C4D3969B76CBC6154E471E3C547BFBB68B8E6AE931D73"
+    },
+    {
+      "Name": "settings-appearance",
+      "Scene": "settings-appearance",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "361339E42CEFFCC1CA509CA1F69C27827C4906472F278CF1E53E07A86E5A32B0"
+    },
+    {
+      "Name": "settings-appearance-classic",
+      "Scene": "settings-appearance",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "822B58EBA0D68EA3F94E2500AD502420DA7C1C345F16411C8C25876852EE49C1"
+    },
+    {
+      "Name": "settings-map",
+      "Scene": "settings-map",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "7024FD52AB81A8C1613A1AA2713000989B13580A767D8684F478C6E82A04638B"
+    },
+    {
+      "Name": "settings-map-classic",
+      "Scene": "settings-map",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "07D76532F751E02AC9E874A3A87713BA427E19F575C3AFCE8C5DB0A361966183"
+    },
+    {
+      "Name": "settings-markers",
+      "Scene": "settings-markers",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "78F76EB5072582BD40D2119CC4E51BF055F392BC90D92E32D201A2856C3CFB8F"
+    },
+    {
+      "Name": "settings-markers-classic",
+      "Scene": "settings-markers",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "5644A0FA5A44B35BA57712DC2F577516AB7D6CE5CF15E8751C82C532961E6148"
+    },
+    {
+      "Name": "settings-chrome",
+      "Scene": "settings-chrome",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "3EAAB60DFEBBE14A5327FC24F9058BB5DD4166225449387FEDC3143F2D4B1907"
+    },
+    {
+      "Name": "settings-chrome-classic",
+      "Scene": "settings-chrome",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "1A91DAD10EBBEF6F0E0A005A7F54DA2B3698358F0A8D2F53E37E5ED867AE34D8"
+    },
+    {
+      "Name": "settings-tools",
+      "Scene": "settings-tools",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "F199E820D38BA2BEDC304ADA493CDCE3D6198127BFB8ED48B5D12E7830B89EFA"
+    },
+    {
+      "Name": "settings-tools-classic",
+      "Scene": "settings-tools",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "50FDCC4404D19954FD1B84FDAB5AA771580E177DD9700743B268BD7E0F768902"
+    },
+    {
+      "Name": "settings-advanced",
+      "Scene": "settings-advanced",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "3C5A7250E3F610152F3B54452E0B55E9FFD2B859BB8C7BFC53D15B94B08C8DB7"
+    },
+    {
+      "Name": "settings-advanced-classic",
+      "Scene": "settings-advanced",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "769152B5B5EDA59571C6CD0C0F8A3C1C40950EBB79994824F7586AE4014549EA"
+    },
+    {
+      "Name": "settings-filters",
+      "Scene": "settings-filters",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "58C26A1C5E850F901B22C7A79CC32CF4D05756368ADAC2B69B4B69155F5392D3"
+    },
+    {
+      "Name": "settings-filters-classic",
+      "Scene": "settings-filters",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "D722526DFE2B88884B210C627D268133F7A660F29CDCD4376A2118B28A9CB58F"
+    },
+    {
+      "Name": "tweaks-page",
+      "Scene": "tweaks-page",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "94A2FA228374AAA41D532E2E77070F29AB7007422DD58203740E119BEE19C881"
+    },
+    {
+      "Name": "tweaks-page-classic",
+      "Scene": "tweaks-page",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "68664D94D991975E041D23B3CCBE070CDB84E522F5A013BEE728AFF7CCE184C3"
+    },
+    {
+      "Name": "settings-search",
+      "Scene": "settings-search",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "5887589CB11BC2FB2E4073F3F6DF631B2F9140E2CC4070DA706EA33E220692E2"
+    },
+    {
+      "Name": "settings-search-classic",
+      "Scene": "settings-search",
+      "Args": [
+        "--style",
+        "classic"
+      ],
+      "Size": "1000x800",
+      "Sha256": "9086B1E7D4FB5D3F88E436907EF0C8F4FA4AA9A88BE95344F1C97FCD61DC16F7"
+    },
+    {
+      "Name": "ui-gallery",
+      "Scene": "ui-gallery",
+      "Args": [],
+      "Size": "1800x10695",
+      "Sha256": "EF12E6DD82F8900562D6D577E38E84872493CAC45C4B98D0CCEF8CC3915988EA"
+    },
+    {
+      "Name": "ui-gallery-classic",
+      "Scene": "ui-gallery-classic",
+      "Args": [],
+      "Size": "1800x4525",
+      "Sha256": "FE38EF36ED68347EBD6D915AB2FCA564CE22C7958374E2121990E4E8AD57F9BB"
+    }
+  ]
+}

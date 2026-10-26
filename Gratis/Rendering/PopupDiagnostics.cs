@@ -1,7 +1,22 @@
 #if GRATIS_PREVIEW
+using System.Numerics;
+using ImGuiNET;
 namespace Gratis.Rendering;
 internal static class PopupDiagnostics {
-    internal static void Capture(string kind, float radius) { }
+    internal static MapDrawContext? Context;
+    internal static int LastFrame;
+    internal static string LastKind = "";
+    internal static Vector4 LastBounds;
+    internal static float LastAlpha;
+    internal static void Capture(string kind, float radius) {
+        Context = MapDrawContext.Current;
+        LastFrame = ImGui.GetFrameCount();
+        LastKind = kind;
+        var min = ImGui.GetWindowPos();
+        var max = min + ImGui.GetWindowSize();
+        LastBounds = new(min.X, min.Y, max.X, max.Y);
+        LastAlpha = UiMotion.BackdropAlpha;
+    }
 }
 #else
 using System;

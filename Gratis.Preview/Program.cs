@@ -54,6 +54,8 @@ internal static partial class Program {
     public static int Main(string[] args) {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
+            if (args is ["--visual-baseline", "update"])
+                return VisualBaseline(update: true);
             if (args.Length > 0 && args[0] == "--bench")
                 return RunBenchmarks(args);
             if (args is ["--selftest", var test])
@@ -75,7 +77,8 @@ internal static partial class Program {
         }
     }
 
-    private static bool TrySpecialScene(string[] args) => TryViewportCoverScene(args) || TryAutoFitScene(args)
+    private static bool TrySpecialScene(string[] args) => TryGalleryScene(args) || TryLibraryStateScene(args)
+        || TryViewportCoverScene(args) || TryAutoFitScene(args)
         || TryWindowPresetsScene(args)
         || TryArrowSmoothingScene(args) || TryCameraScene(args) || TrySmallInstanceScene(args)
         || TryChromeLayoutScene(args) || TryMeasureScene(args) || TryNearestScene(args) || TryEdgePointerScene(args)
@@ -146,7 +149,7 @@ internal static partial class Program {
             context.Config.FeatherEnabled = !options.Scene.StartsWith("map-edge-legacy", StringComparison.Ordinal);
             if (options.FeatherWidth is { } featherWidth)
                 context.Config.FeatherWidth = featherWidth;
-            context.Config.VisualStyle = options.Scene == "map-classic" ? 1 : 0;
+            context.Config.VisualStyle = options.Style ?? (options.Scene == "map-classic" ? 1 : 0);
             if (options.Scene == "motion-reduced")
                 context.Config.ReduceMotion = true;
             if (options.Frame is { } framePreset)

@@ -20,7 +20,13 @@ public static partial class ChromeControls {
         var fill = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, fill);
         ImGui.PushStyleColor(ImGuiCol.ButtonActive, fill);
+#if GRATIS_PREVIEW
+        PreviewBeforeButton?.Invoke(label);
+#endif
         var clicked = ImGui.Button(label, size);
+#if GRATIS_PREVIEW
+        PreviewAfterButton?.Invoke(label);
+#endif
         ImGui.PopStyleColor(2);
         ImGui.PopStyleVar();
         UiMotion.ItemId(label);

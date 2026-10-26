@@ -6,3 +6,6 @@ _shots/
 _preview/
 _artifacts/
 dist/
+
+# Visual baseline reference images are local only; the manifest hashes are committed.
+Gratis.Preview/baselines/images/

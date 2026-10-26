@@ -106,13 +106,14 @@ Gratis is in early testing and is not yet in the official Dalamud repository.
 3. Open `/xlplugins`, search for Gratis and install it.
 4. If you run another map replacement plugin, disable it while testing so the two do not fight over the map.
 
-Open the map with `/gratis`. The Quest Log button is at the top right of the map.
+Open the map with `/gratis map`, or use your usual map key. `/gratis` on its own opens settings. The Quest Log button is at the top right of the map.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `/gratis` | Open or close the map |
+| `/gratis` | Open settings |
+| `/gratis map` | Open or close the map |
 | `/gratis report` | Save a diagnostics report and screenshot (no character names) |
 | `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `popups`, `pvp` | Focused diagnostics |
 | `/gratis journal debug`, `/gratis journal log` | Trace the Journal replacement and print it |
@@ -133,7 +134,7 @@ and only your message and the Gratis version go. Tick "Include a diagnostic repo
 
 - [Mappy](https://github.com/harbingerftw/Mappy), by MidoriKami (original author) and harbingerftw (maintainer of the
   fork this is based on, version 3.2.0.0). The map window, marker handling and plugin structure come from their work.
-- KamiLib and MappyLib, by MidoriKami and contributors, which Gratis still uses.
+- KamiLib and MappyLib, by MidoriKami and contributors. The parts Gratis needs are copied into its own source with their licence kept.
 - [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License), Noto Sans CJK by Adobe and Google (SIL Open Font License, preview harness only), [Lucide](https://lucide.dev) icons
   by Lucide Contributors (ISC) and [Phosphor](https://phosphoricons.com) icons by Phosphor Icons (MIT).
 - Dalamud (goatcorp), FFXIVClientStructs and Lumina, which Gratis is built against.

@@ -228,6 +228,7 @@ internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRenderer
         if (BenchmarkMapVisible)
             DrawMapWindow();
         DrawBenchmarkWindows();
+        DrawPreviewOverlay?.Invoke();
         ImGui.Render();
         return snapshot ? Snapshot() : default;
     }
@@ -245,7 +246,7 @@ internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRenderer
             ImGui.SetNextWindowPos(Config.WindowPosition);
             ImGui.SetNextWindowSize(Config.WindowSize);
         }
-        else if (!BenchmarkSettingsVisible && !Context.ContextMenu.IsOpen && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId
+        else if (!PreserveWindowZOrder && !BenchmarkSettingsVisible && !Context.ContextMenu.IsOpen && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId
             | ImGuiPopupFlags.AnyPopupLevel))
             ImGui.SetNextWindowFocus();
         var neutral = Config.IsGratis && Config.NeutralFrame;
@@ -300,6 +301,7 @@ internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRenderer
     }
 
     public void Save(string path) {
+        SavedFrameObserver?.Invoke(this);
         var renderer = new SoftwareRenderer(Width, Height, Textures);
         var data = ImGui.GetDrawData();
         var previousOrigin = data.DisplayPos;
@@ -310,6 +312,10 @@ internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRenderer
         finally { data.DisplayPos = previousOrigin; }
         renderer.Save(path);
     }
+
+    internal Action? DrawPreviewOverlay { get; set; }
+    internal bool PreserveWindowZOrder { get; set; }
+    internal static Action<ScriptedFrameDriver>? SavedFrameObserver { get; set; }
 
     public void UpdateWindow() {
     }

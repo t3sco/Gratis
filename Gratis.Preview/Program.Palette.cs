@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Numerics;
 using Gratis.Rendering;
 
 namespace Gratis.Preview;
@@ -74,6 +75,36 @@ internal static partial class Program {
             driver.Palette.Open();
         }
         var frame = driver.Step(new(Math.Max(.06, time + .02)));
+        time = frame.Time;
+        if (args.Contains("--settle") || args.Contains("--state"))
+            for (var i = 0; i < 12; i++) frame = driver.Step(new(time += .04));
+        var stateAt = Array.IndexOf(args, "--state");
+        if (stateAt >= 0) {
+            var state = args[stateAt + 1];
+            var targetAt = Array.IndexOf(args, "--target");
+            var target = targetAt < 0 ? "row" : args[targetAt + 1];
+            var id = target == "quest-filter" ? "##quest-bucket-1" : "##scope-1";
+            var bounds = Vector4.Zero;
+            var previousProbe = ChromeControls.PreviewAfterButton;
+            try {
+                ChromeControls.PreviewAfterButton = candidate => {
+                    previousProbe?.Invoke(candidate);
+                    if (candidate == id) {
+                        var a = ImGuiNET.ImGui.GetItemRectMin(); var b = ImGuiNET.ImGui.GetItemRectMax();
+                        bounds = new(a.X, a.Y, b.X, b.Y);
+                    }
+                };
+                driver.Step(new(time += .04));
+                if (target != "row" && state == "focused") FocusGalleryButton(driver, id, ref time);
+                else if (state is "hover" or "pressed") {
+                    var mouse = target == "row" ? driver.Palette.FirstResultCenter : CenterBounds(bounds);
+                    if (mouse == Vector2.Zero) throw new InvalidOperationException("Palette target missing.");
+                    for (var i = 0; i < 6; i++) driver.Step(new(time += .04, Mouse: mouse));
+                    if (state == "pressed") driver.Step(new(time += .04, Mouse: mouse, Left: true));
+                }
+            }
+            finally { ChromeControls.PreviewAfterButton = previousProbe; }
+        }
         driver.Save(output);
         File.WriteAllText(Path.ChangeExtension(output, ".state.json"), JsonSerializer.Serialize(new {
             Frame = frame,

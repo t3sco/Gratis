@@ -30,7 +30,7 @@ internal static partial class Program {
             var atlas = new byte[checked(width * height * 4)];
             Marshal.Copy(pixels, atlas, 0, atlas.Length);
             io.Fonts.SetTexID(textures.Add(width, height, atlas));
-            var config = new SystemConfig { VisualStyle = options.Scene == "settings-classic" ? 1 : 0 };
+            var config = new SystemConfig { VisualStyle = options.Style ?? (options.Scene == "settings-classic" ? 1 : 0) };
             if (options.Scene == "window-presets")
                 config = WindowPresetVerification.SceneConfig();
             var layout = new SettingsLayout {

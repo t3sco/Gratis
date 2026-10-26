@@ -5,7 +5,7 @@ namespace Gratis.Preview;
 internal static partial class Program {
     private sealed record Options(string Scene, string Output, int Width, int Height, string? Map, float? FeatherWidth,
         bool Verify, bool ViewportOff, FramePreset? Frame = null, bool? Circle = null, float Dpi = 1,
-        MarkerIconStyle IconStyle = MarkerIconStyle.Icons, bool? Declutter = null) {
+        MarkerIconStyle IconStyle = MarkerIconStyle.Icons, bool? Declutter = null, int? Style = null) {
         public static Options? Parse(string[] args) {
             var scene = "map-default";
             string? output = null, map = null;
@@ -17,6 +17,7 @@ internal static partial class Program {
             var dpi = 1f;
             var iconStyle = MarkerIconStyle.Icons;
             bool? declutter = null;
+            int? style = null;
             for (var i = 0; i < args.Length; i++) {
                 if (args[i] == "--verify") {
                     verify = true;
@@ -46,6 +47,10 @@ internal static partial class Program {
                 var key = args[i++];
                 var value = args[i];
                 switch (key) {
+                    case "--style":
+                        style = value switch { "gratis" => 0, "classic" => 1,
+                            _ => throw new ArgumentException("Style must be gratis or classic.") };
+                        break;
                     case "--scene":
                         scene = value;
                         break;
@@ -99,7 +104,7 @@ internal static partial class Program {
                 throw new ArgumentException("--out must have a .png extension.");
             output ??= Path.Combine(ProjectRoot(), "_preview", scene + ".png");
             return new Options(scene, output, width, height, map, featherWidth, verify, viewportOff, Dpi: dpi,
-                IconStyle: iconStyle, Declutter: declutter);
+                IconStyle: iconStyle, Declutter: declutter, Style: style);
         }
 
         private static bool IsKnownScene(string scene) => IsLensScene(scene)
@@ -108,7 +113,7 @@ internal static partial class Program {
             || FollowScenes.Contains(scene) || Scenes.Contains(scene) || IsViewportScene(scene)
             || FrameScenes.Contains(scene) || IsMarkerScene(scene) || IsMotionScene(scene);
 
-        private static string ProjectRoot() {
+        internal static string ProjectRoot() {
             for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
                 if (File.Exists(Path.Combine(dir.FullName, "Gratis.sln")))
                     return dir.FullName;
