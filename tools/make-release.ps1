@@ -1,6 +1,6 @@
 # Builds a release zip from a clean checkout of HEAD and writes repo.json (custom Dalamud repository).
-# Usage: pwsh tools/make-release.ps1 [-Owner t3sco] [-Repo Gratis]
-param([string]$Owner = "t3sco", [string]$Repo = "Gratis")
+# Usage: pwsh tools/make-release.ps1 [-Owner t3sco] [-Repo Gratis] [-Changelog "What changed"]
+param([string]$Owner = "t3sco", [string]$Repo = "Gratis", [string]$Changelog = "Early testing build.")
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $work = Join-Path $env:TEMP "gratis-release-$([guid]::NewGuid().ToString('N'))"
@@ -26,7 +26,7 @@ try {
         DownloadLinkInstall = $download; DownloadLinkTesting = $download; DownloadLinkUpdate = $download
         IsHide = $false; IsTestingExclusive = $false
         LastUpdate = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-        Changelog = "Early testing build."
+        Changelog = $Changelog
     }
     ConvertTo-Json @($entry) -Depth 5 | Set-Content (Join-Path $root "repo.json") -Encoding utf8
     Write-Host "Built $zip (version $version, tag $tag). repo.json updated."
