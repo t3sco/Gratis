@@ -157,3 +157,43 @@ contours and noncompact title corners remain configurable; marker pictograms,
 toolbar glyphs and Classic geometry retain their own shapes. `--selftest corner-radii`
 checks the tokens and scans embedded Rendering sources for literal rectangle radii,
 with an explicit allow-list for those map/marker/glyph exceptions. It runs in `all`.
+
+## CPU and allocation baseline
+
+Keep build outputs isolated from the running game plugin. From the repository root:
+
+```powershell
+$env:DOTNET_TieredCompilation = '0' # Fixed optimized JIT, avoiding tier changes between cases.
+dotnet run --project Gratis.Preview -c Release --artifacts-path _artifacts\bench -- --bench
+dotnet run --project Gratis.Preview -c Release --artifacts-path _artifacts\bench -- --selftest all
+Remove-Item Env:DOTNET_TieredCompilation
+```
+
+`--bench` runs 22 deterministic 1280x900 scenarios at scripted 60 Hz: few/busy maps,
+pan/zoom with release inertia, marker cards and toolbar tooltips, search open/typing,
+240-quest lists/scrolling/summary/reward tooltip, settings idle/scrolling, glass chrome
+visible/faded/revealing, and an empty ImGui frame with the map closed. Busy cases submit
+600 markers and 300 labels; `busy-default` enables declutter and label overlap suppression,
+while `busy-labels`/`busy-drag` intentionally draw all labels. Search adds 1,000 synthetic
+places to the normal fixture. Settings draws the real shared Chrome & motion page.
+
+Options: `--frames N` (default 900, minimum 600), `--warmup N` (default 240, minimum 120),
+`--scenario name[,name]`, and `--out path.json` (default `_artifacts/bench/baseline.json`).
+After startup/first-frame measurement and 90 setup/settling frames, each scenario warms up,
+measures N frames, then profiles 600 more frames with nested stopwatch sections. CPU ms use
+Stopwatch; bytes use `GC.GetAllocatedBytesForCurrentThread`; gen0/1/2 are process collection
+counts. Inputs and samples are preallocated outside timings; result structs, draw counts
+and interaction checks are collected after each timed frame. GC is forced only before
+each measured run, outside its statistics. Nearest-rank p50/p95/p99 and maximum are reported
+for CPU and allocation bytes. JSON preserves every frame's CPU/bytes/GC, vertices, indices,
+nonempty draw commands, drawn markers/labels, interaction evidence, startup/font-registration/
+atlas-build timing, and inclusive/exclusive section profiles.
+
+`GRATIS_PREVIEW` probes are disabled during headline timings and absent from the game build.
+Profiling overhead is included in section timings; do not add them to headline timings or
+sum nested sections. Preview font push objects and fixtures differ from Dalamud and are
+attributed separately. No software rasterization or PNG work runs. Startup includes terrain
+and atlas copying: it is harness initialization, not measured live-plugin startup. The closed
+case is an empty host baseline, excluding Dalamud Update/Draw/addon callbacks. GPU, host blur,
+native addons, live sheets, object scans and game-thread contention need in-game profiling.
+Preserve the JSON/report before deleting `_artifacts\bench` after use.

@@ -46,10 +46,8 @@ public static partial class DrawHelpers {
 
         marker.IconId = RemapIcon(marker, includeClassic: true);
 
-        if (DebugMode) {
-            marker.SecondaryText = marker.PrimaryText;
-            marker.PrimaryText = () => $"[Debug] IconId: {marker.IconId}";
-        }
+        if (DebugMode)
+            PrepareDebugMarker(marker);
 
         if (!context.Config.IsGratis && !context.PrepareMarker(marker))
             return;
@@ -69,6 +67,11 @@ public static partial class DrawHelpers {
         DrawPreparedMarker(marker);
     }
 
+    private static void PrepareDebugMarker(MarkerInfo marker) {
+        marker.SecondaryText = marker.PrimaryText;
+        marker.PrimaryText = () => $"[Debug] IconId: {marker.IconId}";
+    }
+
     private static uint RemapIcon(MarkerInfo marker, bool includeClassic = false) => marker.IconId switch {
         >= 60483 and <= 60494 when includeClassic && !MapDrawContext.Current.Config.IsGratis || marker.IsObjective
             || marker.MarkerType is MarkerType.Fate or MarkerType.Stellar => QuestionMarkIcon,
@@ -77,6 +80,9 @@ public static partial class DrawHelpers {
     };
 
     internal static void DrawPreparedMarker(MarkerInfo marker) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerDraw);
+#endif
         if (!PvpMapPolicy.Allows(MapDrawContext.Current.IsPvP, marker))
             return;
         var alpha = MarkerVisual.Alpha(marker);

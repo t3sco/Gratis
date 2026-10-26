@@ -103,12 +103,12 @@ public sealed partial class SettingsLayout {
             if (tweaksPage)
                 changed |= DrawTweaks(config);
             var sections = tweaksPage ? Array.Empty<string>() : string.IsNullOrWhiteSpace(Search)
-                ? new[] { Sections[contentSection] } : Sections;
+                ? SingleSections[contentSection] : Sections;
             var found = false;
             foreach (var section in sections) {
-                var entries = Find(config, section, Search);
+                var entries = VisibleCatalogue(config, section);
                 var extension = ExtensionMatches(config, section, Search);
-                if (entries.Length == 0 && !extension)
+                if (entries.Count == 0 && !extension)
                     continue;
                 found = true;
                 ImGui.PushID(section);
@@ -145,28 +145,28 @@ public sealed partial class SettingsLayout {
                 ImGui.Spacing();
                 if (section == "Markers" && MarkerOptionsMatch(Search) && drawExtension is not null)
                     changed |= drawExtension("Marker options", Search);
-                foreach (var group in entries.GroupBy(entry => entry.Group)) {
+                foreach (var group in entries.Visible) {
                     if (group.Key == "Journal replacement") {
                         changed |= SettingsQuestLogJournal.Draw(config);
                         ImGui.Spacing();
                         continue;
                     }
-                    var rows = group.Where(entry => entry.Enabled(config)
-                        || !string.IsNullOrWhiteSpace(Search)).ToArray();
-                    if (rows.Length == 0)
+                    group.PrepareRows(config, !string.IsNullOrWhiteSpace(Search));
+                    var rows = group.Rows;
+                    if (rows.Count == 0)
                         continue;
                     if (!string.IsNullOrWhiteSpace(Search))
                         ImGui.SetNextItemOpen(true, ImGuiCond.Always);
-                    var primary = rows.Where(entry => !FineTune(entry)).ToArray();
-                    var advanced = rows.Where(FineTune).ToArray();
+                    var primary = group.Primary;
+                    var advanced = group.Advanced;
                     bool open;
                     using (SettingsTheme.Font(12)) {
                         ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
                         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
                         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 12) * scale);
                         var heading = ImGui.GetCursorScreenPos();
-                        open = ImGui.CollapsingHeader("##group-" + group.Key,
-                            primary.Length > 0 && ExpandedByDefault(group.Key) ? ImGuiTreeNodeFlags.DefaultOpen
+                        open = ImGui.CollapsingHeader(group.HeaderId,
+                            primary.Count > 0 && ExpandedByDefault(group.Key) ? ImGuiTreeNodeFlags.DefaultOpen
                                 : ImGuiTreeNodeFlags.None);
                         GratisIcons.Draw(ImGui.GetWindowDrawList(), heading + new Vector2(28, 18) * scale,
                             GroupIcon(group.Key), GratisTheme.Secondary, 14 * scale);
@@ -179,12 +179,12 @@ public sealed partial class SettingsLayout {
                     if (!open)
                         continue;
                     var cardStart = ImGui.GetCursorScreenPos();
-                    changed |= DrawEntryRows(config, primary, "primary-" + group.Key);
-                    if (advanced.Length > 0) {
+                    changed |= DrawEntryRows(config, primary, group.PrimaryId);
+                    if (advanced.Count > 0) {
                         if (!string.IsNullOrWhiteSpace(Search))
                             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
-                        if (ImGui.TreeNode("Advanced##" + group.Key)) {
-                            changed |= DrawEntryRows(config, advanced, "advanced-" + group.Key);
+                        if (ImGui.TreeNode(group.TreeId)) {
+                            changed |= DrawEntryRows(config, advanced, group.AdvancedId);
                             ImGui.TreePop();
                         }
                     }

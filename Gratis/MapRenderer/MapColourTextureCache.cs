@@ -21,6 +21,8 @@ internal sealed class MapColourTextureCache : IDisposable {
     private readonly record struct Key(string Source, ImTextureID TextureId, MapColourParameters Parameters);
     private readonly Dictionary<Key, Entry> entries = [];
     private readonly HashSet<Task<Prepared>> retired = [];
+    private readonly List<Task<Prepared>> completedRetired = [];
+    private readonly List<Entry> ordered = [];
     private MapColourParameters parameters = MapColourParameters.Identity;
     private long sequence;
     private bool disposed, failureLogged;
@@ -67,10 +69,19 @@ internal sealed class MapColourTextureCache : IDisposable {
         lock (gate) {
             if (disposed)
                 return;
-            foreach (var task in retired.Where(t => t.IsCompleted).ToArray()) {
+            var active = entries.Count > Capacity;
+            foreach (var entry in entries.Values)
+                active |= entry.Work is not null || !entry.Failed && entry.Progress < 1;
+            if (!active && retired.Count == 0 && TextureBytes() <= ByteLimit)
+                return;
+            foreach (var task in retired)
+                if (task.IsCompleted)
+                    completedRetired.Add(task);
+            foreach (var task in completedRetired) {
                 _ = task.Exception;
                 retired.Remove(task);
             }
+            completedRetired.Clear();
             foreach (var entry in entries.Values) {
                 if (entry.Work is not { IsCompleted: true } work)
                     continue;
@@ -111,11 +122,27 @@ internal sealed class MapColourTextureCache : IDisposable {
                     }
                 }
             }
-            while (entries.Count > Capacity || entries.Values.Sum(e => e.Texture is null ? 0 : e.Bytes) > ByteLimit)
-                Remove(entries.MinBy(pair => pair.Value.Used).Key);
+            while (entries.Count > Capacity || TextureBytes() > ByteLimit) {
+                var oldest = default(Key);
+                var used = long.MaxValue;
+                var found = false;
+                foreach (var pair in entries)
+                    if (!found || pair.Value.Used < used) {
+                        oldest = pair.Key;
+                        used = pair.Value.Used;
+                        found = true;
+                    }
+                Remove(oldest);
+            }
 
-            var running = retired.Count + entries.Values.Count(e => e.Work is not null);
-            foreach (var entry in entries.Values.OrderByDescending(e => e.Used)) {
+            var running = retired.Count;
+            foreach (var entry in entries.Values) {
+                if (entry.Work is not null) running++;
+                var index = ordered.Count;
+                while (index > 0 && ordered[index - 1].Used < entry.Used) index--;
+                ordered.Insert(index, entry);
+            }
+            foreach (var entry in ordered) {
                 if (running >= 2)
                     break;
                 if (entry.Work is not null || entry.Progress >= 1 || entry.Failed)
@@ -147,7 +174,15 @@ internal sealed class MapColourTextureCache : IDisposable {
                 }, token);
                 running++;
             }
+            ordered.Clear();
         }
+    }
+
+    private long TextureBytes() {
+        long bytes = 0;
+        foreach (var entry in entries.Values)
+            if (entry.Texture is not null) bytes += entry.Bytes;
+        return bytes;
     }
 
     private void Remove(Key key) {

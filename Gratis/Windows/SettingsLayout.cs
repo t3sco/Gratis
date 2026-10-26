@@ -23,6 +23,7 @@ public sealed partial class SettingsLayout {
         "Tweaks"];
     private static readonly char[] SectionIcons = [GratisIcons.Eye, GratisIcons.Compass, GratisIcons.MapPin,
         GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid, GratisIcons.Wrench];
+    private static readonly string[][] SingleSections = Sections.Select(s => new[] { s }).ToArray();
     public string Search = "";
     public int SelectedSection;
     public static SettingsEntry[] Entries { get; } = CreateEntries();
@@ -102,12 +103,12 @@ public sealed partial class SettingsLayout {
                 if (tweaksPage)
                     changed |= DrawTweaks(config);
                 var sectionNames = tweaksPage ? Array.Empty<string>() : string.IsNullOrWhiteSpace(Search)
-                    ? new[] { Sections[SelectedSection] } : Sections;
+                    ? SingleSections[SelectedSection] : Sections;
                 var found = false;
                 foreach (var section in sectionNames) {
-                    var entries = Find(config, section, Search);
+                    var entries = VisibleCatalogue(config, section);
                     var extension = ExtensionMatches(config, section, Search);
-                    if (entries.Length == 0 && !extension)
+                    if (entries.Count == 0 && !extension)
                         continue;
                     found = true;
                     ImGui.PushID(section);
@@ -130,16 +131,16 @@ public sealed partial class SettingsLayout {
                     if (section == "Markers" && config.IsGratis && MarkerOptionsMatch(Search)
                         && drawExtension is not null)
                         changed |= drawExtension("Marker options", Search);
-                    foreach (var group in entries.GroupBy(entry => entry.Group)) {
-                        var rows = group.Where(entry => entry.Enabled(config)
-                            || !string.IsNullOrWhiteSpace(Search)).ToArray();
-                        if (rows.Length == 0)
+                    foreach (var group in entries.Visible) {
+                        group.PrepareRows(config, !string.IsNullOrWhiteSpace(Search));
+                        var rows = group.Rows;
+                        if (rows.Count == 0)
                             continue;
                         if (!string.IsNullOrWhiteSpace(Search))
                             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
                         if (!ImGui.CollapsingHeader(GroupLabel(group.Key), ImGuiTreeNodeFlags.DefaultOpen))
                             continue;
-                        if (ImGui.BeginTable($"rows-{group.Key}", 2, ImGuiTableFlags.SizingStretchProp)) {
+                        if (ImGui.BeginTable(group.TableId, 2, ImGuiTableFlags.SizingStretchProp)) {
                             ImGui.TableSetupColumn("Setting", ImGuiTableColumnFlags.WidthStretch, 1.15f);
                             ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1);
                             foreach (var entry in rows) {

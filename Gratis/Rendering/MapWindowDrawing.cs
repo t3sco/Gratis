@@ -32,6 +32,9 @@ public static class MapWindowDrawing {
     }
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1,
         float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other, string? chromeId = null, bool blur = true) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Surface);
+#endif
         var context = MapDrawContext.Current;
         var config = context.Config;
         context.Blur.BeginFrame(ImGui.GetFrameCount());

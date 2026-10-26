@@ -18,8 +18,8 @@ public sealed partial class QuestLogPanel {
     private IQuestLogSource? source;
     private QuestLogSnapshot snapshot = QuestLogSnapshot.Loading;
     private QuestLogQuest[] filtered = [];
-    private string query = "", searched = "\0";
-    private int revision = -1;
+    private string query = "";
+    private readonly QuestLogPresentation presentation = new();
     private bool focusSearch, keyboard, gesture, swallowEscape, suspended, initialized;
     private ulong character;
     private uint selected;
@@ -29,7 +29,7 @@ public sealed partial class QuestLogPanel {
     public Vector4 SearchToggleBounds { get; private set; }
     private int motionEpoch;
     private int escapeFrame = -1;
-    private bool requestedOpen, repeatableOnly, lastShowLocked;
+    private bool requestedOpen, repeatableOnly;
     public QuestLogTab Tab { get; private set; }
     public Vector4[] TabBounds { get; } = new Vector4[3];
     public Vector4 CloseBounds { get; private set; }
@@ -68,8 +68,7 @@ public sealed partial class QuestLogPanel {
     public Vector4 ProgressBounds { get; private set; }
     public uint ScenarioRimQuestId { get; private set; }
     public float ScenarioRimOpacity { get; private set; }
-    public uint CurrentScenarioQuestId => snapshot.CurrentScenario.Length == 0 ? 0
-        : snapshot.Quests.FirstOrDefault(q => q.Bucket == QuestBucket.Scenario && q.Name == snapshot.CurrentScenario)?.RowId ?? 0;
+    public uint CurrentScenarioQuestId => presentation.ScenarioId;
 
     public void OnOpen(MapDrawingConfig config) {
         initialized = true;
@@ -111,6 +110,9 @@ public sealed partial class QuestLogPanel {
         && ImGui.IsMouseHoveringRect(new(b.X, b.Y), new(b.Z, b.W), false);
 
     public void Prepare(IMapWindowHost host, Vector2 position, Vector2 size) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestPrepare);
+#endif
         var context = MapDrawContext.Current;
         if (!initialized)
             OnOpen(host.Config);
@@ -120,7 +122,6 @@ public sealed partial class QuestLogPanel {
         }
         if (!ReferenceEquals(source, context.QuestLogSource)) {
             source = context.QuestLogSource;
-            revision = -1;
         }
         snapshot = source.Snapshot;
         if (character != snapshot.Character) {
@@ -130,8 +131,8 @@ public sealed partial class QuestLogPanel {
             query = "";
             collapsed.Clear();
             selected = 0;
-            revision = -1;
         }
+        presentation.Update(snapshot);
         if (host.Config.QuestLogPinned)
             IsOpen = true;
         if (detailQuest != null) {
@@ -141,8 +142,7 @@ public sealed partial class QuestLogPanel {
                 CloseDetail();
             }
             else {
-                detailQuest = snapshot.Quests.Concat(snapshot.Completed).Concat(snapshot.Unaccepted)
-                    .FirstOrDefault(q => q.RowId == detailQuest.RowId);
+                detailQuest = presentation.Find(detailQuest.RowId);
                 if (detailQuest == null) CloseDetail();
             }
         }
@@ -282,6 +282,9 @@ public sealed partial class QuestLogPanel {
     }
 
     private void DrawContent(float s) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestList);
+#endif
         var context = MapDrawContext.Current;
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
@@ -337,12 +340,8 @@ public sealed partial class QuestLogPanel {
             list.PopClipRect();
             ImGui.SetCursorScreenPos(searchStart + new Vector2(0, searchHeight * searchReveal));
         }
-        if (revision != snapshot.Revision || searched != query || lastShowLocked != context.Config.QuestLogShowLocked) {
-            filtered = QuestLogModel.Filter(snapshot, query, Tab, context.Config.QuestLogShowLocked, repeatableOnly);
-            lastShowLocked = context.Config.QuestLogShowLocked;
-            revision = snapshot.Revision;
-            searched = query;
-        }
+        presentation.Filter(query, Tab, context.Config.QuestLogShowLocked, repeatableOnly);
+        filtered = presentation.Filtered;
         if (!shortPanel) {
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
                 ImGui.TextColored(GratisTheme.Secondary, $"{QuestLogText.TabLabel(Tab)} quests · {filtered.Length}");
@@ -381,14 +380,8 @@ public sealed partial class QuestLogPanel {
                 return;
             }
             var top = ImGui.GetCursorScreenPos().Y + ImGui.GetScrollY();
-            foreach (var bucket in QuestBuckets.Order) {
-                var quests = filtered.Where(q => q.Bucket == bucket).ToArray();
-                if (quests.Length == 0)
-                    continue;
-                if (bucket == QuestBucket.Scenario)
-                    quests = quests.OrderByDescending(q => q.RowId == CurrentScenarioQuestId).ToArray();
-                DrawSection(bucket, quests, top, s);
-            }
+            foreach (var group in presentation.Groups)
+                DrawSection(group.Bucket, group.Quests, top, s);
         }
         finally { ImGui.EndChild(); ImGui.PopStyleVar(2); }
     }
@@ -401,7 +394,6 @@ public sealed partial class QuestLogPanel {
             var size = new Vector2((width - 8 * s) / 3, 28 * s);
             if (ChromeControls.Button("##quest-tab-" + i, size)) {
                 Tab = (QuestLogTab)i;
-                revision = -1;
                 selected = 0;
                 CloseDetail();
             }
@@ -416,7 +408,6 @@ public sealed partial class QuestLogPanel {
         var start = ImGui.GetCursorScreenPos();
         if (ChromeControls.Button("##repeatable-filter", new(TextDrawing.Measure("Repeatable").X + 16 * s, 24 * s))) {
             repeatableOnly = !repeatableOnly;
-            revision = -1;
         }
         PaletteRowDrawing.Pill(ImGui.GetWindowDrawList(), start + new Vector2(2 * s), "Repeatable",
             repeatableOnly ? GratisTheme.WarmAccent : GratisTheme.Secondary, s);
@@ -511,10 +502,13 @@ public sealed partial class QuestLogPanel {
     private static float RowHeight(float s) => 52 * s;
 
     private void DrawRow(QuestLogQuest quest, float width, float clipTop, float s) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestRow);
+#endif
         var start = ImGui.GetCursorScreenPos();
         var height = RowHeight(s);
         var size = new Vector2(width, height);
-        ImGui.PushID(quest.RowId.ToString());
+        ImGui.PushID(presentation.For(quest).Id);
         var clicked = ChromeControls.Button("##quest", size);
         var hovered = ImGui.IsItemHovered() && ImGui.GetMousePos().Y >= clipTop;
         var b = ItemBounds();
@@ -568,7 +562,7 @@ public sealed partial class QuestLogPanel {
             var muted = Vector4.Lerp(GratisTheme.Secondary, GratisTheme.Primary, .22f);
             float levelWidth;
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
-                var level = $"Lv. {quest.Level}";
+                var level = presentation.For(quest).Level;
                 levelWidth = TextDrawing.Measure(level).X + 12 * s;
                 PaletteRowDrawing.Pill(list, start + new Vector2(width - levelWidth - 8 * s, 8 * s),
                     level, muted, s);

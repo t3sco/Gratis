@@ -57,6 +57,9 @@ public static partial class DrawHelpers {
     }
 
     private static void DrawCrispText(MarkerInfo marker, string text) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Label);
+#endif
         var pixels = 96 * marker.Scale;
         using var font = MapDrawContext.Current.GetChromeFont(pixels, ChromeFontRole.Body)?.Push();
         var size = TextDrawing.Measure(text, pixels: pixels);

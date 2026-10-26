@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace Gratis.Rendering;
 
@@ -30,7 +32,45 @@ public interface IItemTooltipSource {
 public sealed record ItemTooltipSection(string Heading, string Text);
 
 public static class ItemTooltipModel {
-    public static IReadOnlyList<ItemTooltipSection> Sections(ItemTooltipRecord item) {
+    private static readonly ConditionalWeakTable<ItemTooltipRecord, Presentation> presentations = new();
+
+    internal sealed class Presentation {
+        private CultureInfo? culture;
+        private uint count;
+        private int? owned;
+        private string? stack;
+        public IReadOnlyList<ItemTooltipSection> Sections { get; private set; } = [];
+        public string Title { get; private set; } = "";
+
+        public void Update(ItemTooltipRecord item) {
+            var current = CultureInfo.CurrentCulture;
+            if (ReferenceEquals(culture, current) && current.IsReadOnly && current.NumberFormat.IsReadOnly)
+                return;
+            culture = current;
+            Sections = BuildSections(item);
+            Title = item.Name + (item.HighQuality ? "  HQ" : "");
+            stack = null;
+        }
+
+        public string Stack(ItemTooltipRecord item, uint nextCount, int? nextOwned) {
+            if (stack == null || count != nextCount || owned != nextOwned) {
+                count = nextCount;
+                owned = nextOwned;
+                stack = ItemTooltipModel.Stack(item, count, owned);
+            }
+            return stack;
+        }
+    }
+
+    internal static Presentation For(ItemTooltipRecord item) {
+        var result = presentations.GetValue(item, static _ => new());
+        result.Update(item);
+        return result;
+    }
+
+    public static IReadOnlyList<ItemTooltipSection> Sections(ItemTooltipRecord item) => For(item).Sections;
+
+    private static IReadOnlyList<ItemTooltipSection> BuildSections(ItemTooltipRecord item) {
         var sections = new List<ItemTooltipSection>(4);
         if (!string.IsNullOrWhiteSpace(item.Effects))
             sections.Add(new("Effects", item.Effects));

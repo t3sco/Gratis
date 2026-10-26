@@ -54,6 +54,8 @@ internal static partial class Program {
     public static int Main(string[] args) {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try {
+            if (args.Length > 0 && args[0] == "--bench")
+                return RunBenchmarks(args);
             if (args is ["--selftest", var test])
                 return RunSelftests(test);
             if (TrySpecialScene(args)) {

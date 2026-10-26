@@ -16,8 +16,12 @@ public sealed partial class QuestLogPanel {
     public Vector4 RewardMenuBounds => itemTooltip.MenuBounds;
 
     private void DrawDetailContent(QuestLogQuest quest, float s) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestSummary);
+#endif
         rewardBounds.Clear();
         if (DetailOpen) itemTooltip.Prepare(quest.RowId, quest.Rewards, source?.Items);
+        var text = presentation.For(quest);
         var context = MapDrawContext.Current;
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
@@ -37,7 +41,7 @@ public sealed partial class QuestLogPanel {
             return;
         }
         var footerY = start.Y + 42 * s + remaining.Y - footerHeight;
-        UiMotion.Child("##quest-detail-body-" + quest.RowId, new(remaining.X, remaining.Y - footerHeight - 8 * s),
+        UiMotion.Child(text.ChildId, new(remaining.X, remaining.Y - footerHeight - 8 * s),
             ImGuiWindowFlags.NoBackground);
         try {
             using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), detailOpacity,
@@ -49,8 +53,8 @@ public sealed partial class QuestLogPanel {
             DetailChips(quest, s);
             DetailDivider(s);
             if (quest.Start.Length > 0) {
-                DetailHeading("Where", s);
-                var parts = quest.Start.Split(" · ", 2, StringSplitOptions.TrimEntries);
+                DetailHeading("WHERE", s);
+                var parts = text.Start;
                 ImGui.TextWrapped(parts[0]);
                 if (parts.Length > 1) {
                     ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
@@ -58,10 +62,10 @@ public sealed partial class QuestLogPanel {
                     ImGui.PopStyleColor();
                 }
             }
-            DetailHeading("Requirements", s);
-            ImGui.TextWrapped(quest.Requirements.Length > 0 ? quest.Requirements : $"Level {quest.Level}");
+            DetailHeading("REQUIREMENTS", s);
+            ImGui.TextWrapped(text.Requirements);
             if (quest.Prerequisites.Length > 0 || quest.MoreConditions) {
-                DetailHeading("Requires", s);
+                DetailHeading("REQUIRES", s);
                 if (quest.Prerequisites.Length > 0) ImGui.TextWrapped(quest.Prerequisites);
                 if (quest.MoreConditions) {
                     ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
@@ -69,21 +73,21 @@ public sealed partial class QuestLogPanel {
                     ImGui.PopStyleColor();
                 }
             }
-            DrawRewards(quest.Rewards, s);
+            DrawRewards(quest.Rewards, text, s);
             if (DetailOpen) itemTooltip.Finish(source?.Items, s);
             if (quest.Description.Length > 0) {
-                DetailHeading("Description", s);
+                DetailHeading("DESCRIPTION", s);
                 ImGui.TextWrapped(quest.Description);
             }
             if (quest.Objective.Length > 0) {
-                DetailHeading("Objectives", s);
+                DetailHeading("OBJECTIVES", s);
                 using var objectiveFont = context.GetChromeFont(16 * s, ChromeFontRole.Chip)?.Push();
                 ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.WarmAccent);
                 ImGui.TextWrapped(quest.Objective);
                 ImGui.PopStyleColor();
             }
             if (quest.Duty.Length > 0) {
-                DetailHeading("Duty", s);
+                DetailHeading("DUTY", s);
                 ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Crystal);
                 ImGui.TextWrapped(quest.Duty);
                 ImGui.PopStyleColor();
@@ -117,7 +121,7 @@ public sealed partial class QuestLogPanel {
     private static void DetailHeading(string title, float s) {
         ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2(0, 8 * s));
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push();
-        ImGui.TextColored(GratisTheme.Secondary, title.ToUpperInvariant());
+        ImGui.TextColored(GratisTheme.Secondary, title);
     }
 
     private void DetailChips(QuestLogQuest quest, float s) {
@@ -132,29 +136,29 @@ public sealed partial class QuestLogPanel {
             ImGui.Dummy(new(width, 22 * s));
             first = false;
         }
-        Chip($"Lv. {quest.Level}", GratisTheme.WarmAccent);
+        Chip(presentation.For(quest).Level, GratisTheme.WarmAccent);
         Chip(quest.Completed ? "Completed" : Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : "Accepted",
             GratisTheme.Crystal);
         if (quest.Repeatable) Chip("Repeatable", GratisTheme.Secondary);
     }
 
-    private void DrawRewards(QuestLogRewards? rewards, float s) {
+    private void DrawRewards(QuestLogRewards? rewards, QuestLogPresentation.Text text, float s) {
         if (rewards == null || rewards.Gil == 0 && rewards.Exp is not > 0 && rewards.Items.Count == 0) return;
-        DetailHeading("Rewards", s);
+        DetailHeading("REWARDS", s);
         var metricRight = ImGui.GetCursorScreenPos().X + ImGui.GetContentRegionAvail().X;
-        if (rewards.Gil > 0) RewardMetric($"{rewards.Gil:N0} gil", GratisTheme.WarmAccent, s);
+        if (rewards.Gil > 0) RewardMetric(text.Gil, GratisTheme.WarmAccent, s);
         if (rewards.Exp is > 0) {
             if (rewards.Gil > 0) {
-                var nextWidth = TextDrawing.Measure($"{rewards.Exp:N0} EXP").X + 24 * s;
+                var nextWidth = TextDrawing.Measure(text.Exp).X + 24 * s;
                 if (ImGui.GetItemRectMax().X + nextWidth + 8 * s <= metricRight)
                     ImGui.SameLine(0, 8 * s);
             }
-            RewardMetric($"{rewards.Exp:N0} EXP", GratisTheme.Crystal, s);
+            RewardMetric(text.Exp, GratisTheme.Crystal, s);
         }
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             ImGui.TextColored(GratisTheme.Secondary, "Base rewards · before scaling and bonuses");
-        DrawRewardGroup(rewards.Items, false, s);
-        DrawRewardGroup(rewards.Items, true, s);
+        DrawRewardGroup(rewards.Items, text.Counts, false, s);
+        DrawRewardGroup(rewards.Items, text.Counts, true, s);
     }
 
     private static void RewardMetric(string text, Vector4 ink, float s) {
@@ -167,7 +171,7 @@ public sealed partial class QuestLogPanel {
         ImGui.Dummy(size);
     }
 
-    private void DrawRewardGroup(IReadOnlyList<QuestLogRewardItem> items, bool optional, float s) {
+    private void DrawRewardGroup(IReadOnlyList<QuestLogRewardItem> items, string[] counts, bool optional, float s) {
         var count = 0;
         foreach (var item in items) if (item.Optional == optional) count++;
         if (count == 0) return;
@@ -195,7 +199,7 @@ public sealed partial class QuestLogPanel {
             var icon = MapDrawContext.Current.GetIcon(item.Icon);
             if (icon.Handle != default) list.AddImage(icon.Handle, p + new Vector2(4 * s), p + new Vector2(slot - 4 * s));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
-                var label = item.Count.ToString();
+                var label = counts[i];
                 var textSize = TextDrawing.Measure(label);
                 var badgeSize = textSize + new Vector2(8, 4) * s;
                 var badge = p + new Vector2(slot) - badgeSize;

@@ -172,6 +172,9 @@ public sealed class MarkerBatch {
     }
 
     public void Flush() {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerFlush);
+#endif
         collecting = false;
         if (!Enabled)
             return;

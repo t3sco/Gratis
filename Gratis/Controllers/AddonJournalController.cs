@@ -198,6 +198,11 @@ public sealed unsafe class AddonJournalController : IDisposable {
 
     public void Refresh() {
         var eligible = Eligible;
+        if (!eligible && !wasEligible && !debug && shiftedAddon == 0 && !state.Mirroring && !state.Fading
+            && !state.ClosingNative && !state.OpenedMap) {
+            mapMissing = 0;
+            return;
+        }
         var addon = Native();
         Trace("Update", addon);
         if (!IsMain(addon)) {

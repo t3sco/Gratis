@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Gratis.Data;
 using Gratis.Rendering;
@@ -78,8 +79,8 @@ public sealed partial class SettingsLayout {
         Vector4 Control)> TestRows = [];
     public Vector4 TestNavigation, TestContent;
 #endif
-    private bool DrawEntryRows(SystemConfig config, SettingsEntry[] entries, string id) {
-        if (entries.Length == 0)
+    private bool DrawEntryRows(SystemConfig config, List<SettingsEntry> entries, string id) {
+        if (entries.Count == 0)
             return false;
         var s = SettingsTheme.Scale;
         var width = ImGui.GetContentRegionAvail().X;

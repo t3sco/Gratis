@@ -109,12 +109,16 @@ public sealed class ItemTooltipDrawing {
     }
 
     public static void DrawTooltip(ItemTooltipRecord item, uint count, int? owned, float s) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.ItemTooltip);
+#endif
         var context = MapDrawContext.Current;
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var width = MathF.Min(336 * s, ImGui.GetWindowViewport().Size.X - 40 * s);
-        var sections = ItemTooltipModel.Sections(item);
-        var stack = ItemTooltipModel.Stack(item, count, owned);
-        var title = item.Name + (item.HighQuality ? "  HQ" : "");
+        var presentation = ItemTooltipModel.For(item);
+        var sections = presentation.Sections;
+        var stack = presentation.Stack(item, count, owned);
+        var title = presentation.Title;
         var titleHeight = 0f;
         using (context.GetChromeFont(16 * s, ChromeFontRole.Title)?.Push())
             titleHeight = ImGui.CalcTextSize(title, false, width - 60 * s).Y;

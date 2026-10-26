@@ -27,6 +27,9 @@ public static class TextDrawing {
     public static float NativeSize => ImGui.GetFont().FontSize;
     public static string LastDraw { get; private set; } = "lastDraw=none";
     public static Vector2 Measure(string text, float wrap = 0, float pixels = 0, bool tabularDigits = false) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.TextMeasure);
+#endif
         using var fallback = ContainsGlyphs(text) ? null : MapDrawContext.Current.PushDefaultTextFont();
         return tabularDigits && MapDrawContext.Current.Config.IsGratis
             ? Tabular(default, Vector2.Zero, 0, text, DrawSize(pixels), false)
@@ -38,6 +41,9 @@ public static class TextDrawing {
 
     public static void Draw(ImDrawListPtr list, Vector2 position, uint colour, string text, float wrap = 0,
         float pixels = 0, bool tabularDigits = false) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.TextDraw);
+#endif
         using var fallback = ContainsGlyphs(text) ? null : MapDrawContext.Current.PushDefaultTextFont();
         lastNative = NativeSize;
         lastEffective = ImGui.GetFontSize();

@@ -221,6 +221,7 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     }
 
     public override IDrawFont? GetChromeFont(float size, ChromeFontRole role) {
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.FontLookup);
         if (!Config.IsGratis)
             return null;
         if (!TextFontsReady)
@@ -242,6 +243,7 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
 
     private sealed class Font(ImFontPtr font) : IDrawFont {
         public IDisposable Push() {
+            using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.FontPush);
             ImGui.PushFont(font);
             return new PopFont();
         }

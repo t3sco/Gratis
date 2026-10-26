@@ -40,6 +40,9 @@ public static partial class MapToolbarDrawing {
 
     public static void Draw(Action<ToolbarAction> activate, Action drawLayersContextMenu,
         PaletteOverlay? palette = null) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Toolbar);
+#endif
         LastBounds = Vector4.Zero;
         ClosingSearchBounds = Vector4.Zero;
         Array.Clear(ButtonBounds);

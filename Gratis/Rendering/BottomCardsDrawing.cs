@@ -1,5 +1,4 @@
-﻿using System;
-using System.Globalization;
+using System;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -39,6 +38,8 @@ public static class BottomCardsDrawing {
     public const float Height = 56;
     public const float CoordinateHeight = 36;
     private static readonly string[] Digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    private static readonly string[] CoordinateGlyphs = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", ".", "/"];
+    private static readonly CoordinateTextCache PlayerText = new(), CursorText = new();
     private static MapDrawContext? context;
     private static MapLocation location;
     private static Vector4 locationBounds, coordinatesBounds;
@@ -48,6 +49,9 @@ public static class BottomCardsDrawing {
     public static string LocationSecondary { get; private set; } = "";
     public static float DigitAdvance { get; private set; }
     public static void Prepare(string title, SubZoneLocation? sub = null, MapLocation? place = null) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.LocationPrepare);
+#endif
         if (!ReferenceEquals(context, MapDrawContext.Current)) {
             context = MapDrawContext.Current;
             frame = -1;
@@ -136,6 +140,9 @@ public static class BottomCardsDrawing {
     }
 
     public static void DrawCoordinates(Vector2? player, Vector2? cursor) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Coordinates);
+#endif
         var c = MapDrawContext.Current;
         var s = GratisTheme.ChromeScale;
         using var alpha = new ChromeVisibility.AlphaScope(true, c.Chrome.ControlsAlpha(c.Config));
@@ -143,8 +150,8 @@ public static class BottomCardsDrawing {
             return;
         using var font = c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         DigitAdvance = 0;
-        foreach (var digit in "0123456789-./")
-            DigitAdvance = MathF.Max(DigitAdvance, ImGui.CalcTextSize(digit.ToString()).X);
+        foreach (var digit in CoordinateGlyphs)
+            DigitAdvance = MathF.Max(DigitAdvance, ImGui.CalcTextSize(digit).X);
         DigitAdvance = MathF.Ceiling(DigitAdvance);
         var mode = Enum.IsDefined(c.Config.CoordinatesShow) ? c.Config.CoordinatesShow : CoordinateContent.Both;
         var both = mode == CoordinateContent.Both;
@@ -187,7 +194,7 @@ public static class BottomCardsDrawing {
             else
                 GratisIcons.Draw(list, icon, GratisIcons.Crosshair, ink, GratisTheme.IconSize * s);
             var textPos = start + new Vector2(22 * s, 0);
-            var text = value is { } point ? Axis(point.X).PadLeft(4) + " / " + Axis(point.Y).PadRight(4) : "--.- / --.-";
+            var text = (isPlayer ? PlayerText : CursorText).Format(value);
             DrawFixed(list, textPos, text, ImGui.GetColorU32(ink));
             var bounds = new Vector4(cardPos.X, cardPos.Y, cardPos.X + cardWidth, cardPos.Y + cardSize.Y);
             if (isPlayer)
@@ -207,7 +214,6 @@ public static class BottomCardsDrawing {
         ImGui.Dummy(size);
     }
 
-    private static string Axis(float n) => n.ToString("0.0", CultureInfo.InvariantCulture);
     public static void DrawFixed(ImDrawListPtr list, Vector2 pos, string text, uint ink) {
         foreach (var ch in text) {
             var glyph = ch is >= '0' and <= '9' ? Digits[ch - '0'] : ch switch {

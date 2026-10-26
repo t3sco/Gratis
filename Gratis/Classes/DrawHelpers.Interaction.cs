@@ -25,6 +25,9 @@ public static partial class DrawHelpers {
     }
 
     private static unsafe void DrawTooltip(MarkerInfo marker) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerTooltip);
+#endif
         if (MapDrawContext.Current.ReportCapture)
             return;
         using var textFont = MapDrawContext.Current.Config.IsGratis

@@ -18,6 +18,9 @@ public sealed partial class PaletteOverlay {
 
     private uint selectionMotionKey;
     public void Draw(MapDrawingConfig config) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Palette);
+#endif
         if (!config.IsGratis || !config.Palette)
             return;
         var alpha = UiMotion.Visibility(ImGui.GetID("##palette-motion"), IsOpen);
@@ -344,7 +347,7 @@ public sealed partial class PaletteOverlay {
         var textMax = start + new Vector2(rowWidth - buttonWidth - 8 * scale, rowHeight);
         list.PushClipRect(textMin, Vector2.Max(textMin + Vector2.One, textMax), true);
         TextDrawing.Draw(list, textMin, ImGui.GetColorU32(GratisTheme.Primary),
-            ChromeControls.FitLabel(PaletteBrowser.Name(result, results),
+            ChromeControls.FitLabel(rowNames.Get(result, results),
                 MathF.Max(0, textMax.X - textMin.X)));
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push()) {
             var secondaryInk = new Vector4(.72f, .72f, .72f, 1);
@@ -364,7 +367,7 @@ public sealed partial class PaletteOverlay {
         }
         list.PopClipRect();
         if (hovered)
-            ChromeControls.Tooltip(PaletteBrowser.Name(result, results)
+            ChromeControls.Tooltip(rowNames.Get(result, results)
                 + (result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? " · Not yet attuned" : ""));
         if (buttonWidth == 0 && rowWidth > 240 * scale) {
             var chevron = start + new Vector2(rowWidth - 13 * scale, rowHeight / 2);

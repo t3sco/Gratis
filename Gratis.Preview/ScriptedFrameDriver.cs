@@ -9,7 +9,7 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, IDisposable {
+internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, IDisposable {
     internal static readonly JsonSerializerOptions Json = new() {
         IncludeFields = true, PropertyNameCaseInsensitive = true, WriteIndented = true,
         Converters = { new JsonStringEnumConverter() },
@@ -75,7 +75,8 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     public ImGuiWindowFlags Flags { get; set; } = ImGuiWindowFlags.NoSavedSettings |
         ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar;
 
-    public unsafe ScriptedFrameDriver(SystemConfig? config = null, FrameScript? scene = null) {
+    public unsafe ScriptedFrameDriver(SystemConfig? config = null, FrameScript? scene = null, bool benchmark = false) {
+        var startup = benchmark ? global::System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         script = scene ?? new FrameScript();
         Width = script.Width;
         Height = script.Height;
@@ -119,8 +120,12 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             ColourPreset = Config.MapColour.Preset
         };
         MapDrawContext.Current = Context;
+        var fontStart = benchmark ? global::System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         Context.BuildFonts(Path.Combine(AppContext.BaseDirectory, "assets", "NotoSans-Regular.ttf"));
+        if (benchmark) FontRegistrationMs = global::System.Diagnostics.Stopwatch.GetElapsedTime(fontStart).TotalMilliseconds;
+        fontStart = benchmark ? global::System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         io.Fonts.GetTexDataAsRGBA32(out nint pixels, out var width, out var height, out _);
+        if (benchmark) FontAtlasMs = global::System.Diagnostics.Stopwatch.GetElapsedTime(fontStart).TotalMilliseconds;
         var atlas = new byte[checked(width * height * 4)];
         Marshal.Copy(pixels, atlas, 0, atlas.Length);
         io.Fonts.SetTexID(Textures.Add(width, height, atlas));
@@ -147,9 +152,10 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
                 IsRelevant = marker.Relevant, DataId = (uint)Markers.Count + 1
             });
         }
+        if (benchmark) StartupMs = global::System.Diagnostics.Stopwatch.GetElapsedTime(startup).TotalMilliseconds;
     }
 
-    public FrameSnapshot Step(ScriptFrame frame) {
+    public FrameSnapshot Step(ScriptFrame frame, bool snapshot = true) {
         if (!double.IsFinite(frame.Time) || started && frame.Time < Now)
             throw new ArgumentException("Script time must be finite and nondecreasing.");
         if (frame.Redraws is < 1 or > 2)
@@ -217,7 +223,16 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             io.AddInputCharactersUTF8(text);
         Context.Blurs.Clear();
         ImGui.NewFrame();
+        BenchmarkLabelsDrawn = 0;
         Context.Blur.BeginFrame(FrameId);
+        if (BenchmarkMapVisible)
+            DrawMapWindow();
+        DrawBenchmarkWindows();
+        ImGui.Render();
+        return snapshot ? Snapshot() : default;
+    }
+
+    private void DrawMapWindow() {
         Window.PreDraw(this);
         ImGui.SetNextWindowPos(Config.WindowPosition);
         ImGui.SetNextWindowSize(Config.WindowSize);
@@ -230,7 +245,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             ImGui.SetNextWindowPos(Config.WindowPosition);
             ImGui.SetNextWindowSize(Config.WindowSize);
         }
-        else if (!Context.ContextMenu.IsOpen && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId
+        else if (!BenchmarkSettingsVisible && !Context.ContextMenu.IsOpen && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId
             | ImGuiPopupFlags.AnyPopupLevel))
             ImGui.SetNextWindowFocus();
         var neutral = Config.IsGratis && Config.NeutralFrame;
@@ -250,8 +265,6 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
             ImGui.PopStyleVar(3);
         Window.Draw(this);
         ImGui.End();
-        ImGui.Render();
-        return Snapshot();
     }
 
     public FrameSnapshot Snapshot() {
@@ -318,6 +331,7 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     }
 
     public void CollectMarkers() {
+        using var probe = BenchmarkProbe.Measure(BenchmarkSection.CollectMarkers);
         for (var index = 0; index < Markers.Count; index++) {
             var marker = Markers[index];
             var world = script.Markers[index].World;
@@ -332,6 +346,15 @@ internal sealed class ScriptedFrameDriver : IMapWindowHost, IMapRendererHost, ID
     }
 
     public void DrawTextMarkers() {
+        using var probe = BenchmarkProbe.Measure(BenchmarkSection.MapLabels);
+        foreach (var (marker, text, world) in BenchmarkLabels) {
+            marker.Scale = Config.MapScale;
+            marker.Offset = Renderer.DrawPosition;
+            marker.Position = (new Vector2(1024) - CoordinateOffset(world)) * Config.MapScale;
+            var before = ImGui.GetWindowDrawList().IdxBuffer.Size;
+            DrawHelpers.DrawText(marker, text);
+            if (ImGui.GetWindowDrawList().IdxBuffer.Size > before) BenchmarkLabelsDrawn++;
+        }
     }
 
     public void DrawPlayer() {

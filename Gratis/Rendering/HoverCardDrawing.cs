@@ -54,6 +54,9 @@ public static class HoverCardDrawing {
     }
 
     public static void DrawTail() {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.HoverCard);
+#endif
         if (!ReferenceEquals(owner, MapDrawContext.Current))
             return;
         if (queuedFrame == ImGui.GetFrameCount() && queued.Count > 0) {

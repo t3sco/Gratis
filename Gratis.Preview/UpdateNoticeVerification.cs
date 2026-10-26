@@ -40,7 +40,7 @@ internal static class UpdateNoticeVerification {
             Step();
             Require(config.DismissedUpdate == "0.1.0.4" && UpdateNotice.LastBounds == Vector4.Zero,
                 "Dismissing hides the notice for that version");
-            UpdateNotice.Available = "0.1.0.4";
+            UpdateNotice.Available = "0.1.0.5";
             Step();
             Step();
             Require(UpdateNotice.LastBounds != Vector4.Zero, "A newer version shows the notice again");

@@ -55,6 +55,9 @@ internal static class FrameMaterialDrawing {
 
     internal static void DrawStroke(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float width,
         Vector4 color, MapDrawingConfig? conic = null, bool topHighlight = false) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Stroke);
+#endif
         var shortSide = MathF.Min(max.X - min.X, max.Y - min.Y);
         if (shortSide <= 2 || width <= 0)
             return;
@@ -135,6 +138,9 @@ internal static class FrameMaterialDrawing {
     }
 
     internal static void DrawGlass(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Glass);
+#endif
         var context = MapDrawContext.Current;
         var config = context.Config;
         var scale = context.GlobalScale;

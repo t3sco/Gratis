@@ -4,7 +4,7 @@
 
 **A flat, glassy map for Final Fantasy XIV.**
 
-Search for any place in Eorzea, keep your quests in sight, and get to an aetheryte faster.
+Search for any place in Eorzea, keep your quests in sight, browse your whole quest log beside the map, and get to an aetheryte faster.
 
 **Add to Dalamud:** copy this into `/xlsettings` > Experimental > Custom Plugin Repositories.
 
@@ -27,7 +27,7 @@ https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
 
 Gratis keeps the maps from the game and replaces the interface around them. It has a flat glass
 look in warm gold and crystal blue, a search built on Eorzea's own place names, and a long list of
-small tweaks that each save a click.
+small tweaks that each save a click. It also has an optional Quest Log that can stand in for the game's Journal.
 
 <img src="docs/images/before-after-wipe.png" alt="The same Thanalan map in the game's own window and in Gratis, with a divider sweeping between them" width="420">
 
@@ -51,7 +51,8 @@ small tweaks that each save a click.
   lets clicks pass to the game.
 - Motion can be interrupted at any point. Choose Full, Reduced or Off, and set the speed.
 - Dragging has inertia, follow mode eases back to you, and each zone remembers its view.
-- Small rooms and raid arenas fit the window, including right after you teleport.
+- Small rooms and raid arenas fit the window, including right after you teleport. Wide, short windows scale the map to cover the whole window.
+- Popups and menus share the same rounded glass look, and the coordinates sit in their own cards at the bottom.
 
 ### Markers
 
@@ -63,10 +64,28 @@ small tweaks that each save a click.
 - Six lenses (Explore, Quests, Gather, Hunt, Travel, Minimal) and a filter drawer thin out a busy zone.
 - Pets are not drawn.
 
+### Quest Log
+
+![The Gratis Quest Log docked beside the map](docs/images/quest-log.png)
+
+- A panel beside the map lists your Accepted, Completed and Available quests, grouped by type, with a search
+  button next to close. Your current main scenario quest has a slow gold glow, and each scenario row shows
+  its expansion crest.
+- Click a quest for a summary panel: where to go, requirements, objectives and rewards. Right-click a quest to
+  show it on the map. Pin keeps the log open.
+- Hover a reward for the game's item tooltip, or right-click it to link it in chat or search for it.
+- Available lists quests you could pick up. Names you have not unlocked yet are hidden by default; there is a
+  spoiler setting if you would rather see them.
+- Optional: replace the game's Journal. With the setting on, opening the Journal opens the map with the log
+  instead. Unbind or leave the key as it is; the native window is kept offscreen while this is on.
+- Not done yet: abandoning and tracking quests from the log.
+
+![A quest summary beside the Quest Log](docs/images/quest-summary.png)
+
 ### Travel
 
 - Aetheryte chips show whether you are attuned and what the teleport costs. They do not take over map clicks.
-- Lifestream integration is optional. Gratis can show and start a trip, but it never moves your character.
+- Travel offers are optional and degrade quietly. Gratis can show and start a trip, but it never moves your character.
 
 ### Settings
 
@@ -85,9 +104,9 @@ Gratis is in early testing and is not yet in the official Dalamud repository.
 2. Add this URL, tick Enabled and save:
    `https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json`
 3. Open `/xlplugins`, search for Gratis and install it.
-4. Disable the Mappy plugin while testing so the two do not fight over the map.
+4. If you run another map replacement plugin, disable it while testing so the two do not fight over the map.
 
-Open the map with `/gratis`.
+Open the map with `/gratis`. The Quest Log button is at the top right of the map.
 
 ## Commands
 
@@ -95,7 +114,8 @@ Open the map with `/gratis`.
 | --- | --- |
 | `/gratis` | Open or close the map |
 | `/gratis report` | Save a diagnostics report and screenshot (no character names) |
-| `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `pvp` | Focused diagnostics |
+| `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `popups`, `pvp` | Focused diagnostics |
+| `/gratis journal debug`, `/gratis journal log` | Trace the Journal replacement and print it |
 
 ## Feedback
 
@@ -114,7 +134,7 @@ and only your message and the Gratis version go. Tick "Include a diagnostic repo
 - [Mappy](https://github.com/harbingerftw/Mappy), by MidoriKami (original author) and harbingerftw (maintainer of the
   fork this is based on, version 3.2.0.0). The map window, marker handling and plugin structure come from their work.
 - KamiLib and MappyLib, by MidoriKami and contributors, which Gratis still uses.
-- [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License), [Lucide](https://lucide.dev) icons
+- [Geist](https://github.com/vercel/geist-font) by Vercel (SIL Open Font License), Noto Sans CJK by Adobe and Google (SIL Open Font License, preview harness only), [Lucide](https://lucide.dev) icons
   by Lucide Contributors (ISC) and [Phosphor](https://phosphoricons.com) icons by Phosphor Icons (MIT).
 - Dalamud (goatcorp), FFXIVClientStructs and Lumina, which Gratis is built against.
 

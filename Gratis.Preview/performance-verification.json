@@ -1,0 +1,2275 @@
+{
+  "BaselineHead": "ed96eeda3af4dc905aaa518445c5169cfa420d61",
+  "Environment": {
+    "Runtime": ".NET 10.0.12",
+    "OS": "Microsoft Windows 10.0.26300",
+    "Architecture": "X64",
+    "CPUs": 16,
+    "StopwatchFrequency": 10000000,
+    "ServerGC": false,
+    "TieredCompilation": "0"
+  },
+  "BeforeUtc": "2026-10-26T21:33:53.7966828Z",
+  "AfterUtc": "2026-10-26T21:41:06.7960223Z",
+  "BenchmarkCommand": "$env:DOTNET_TieredCompilation='0'; dotnet run --project Gratis.Preview -c Release --artifacts-path _artifacts\\perf -- --bench --frames 900 --out _artifacts\\perf\\<before|after>.json",
+  "Notes": [
+    "Headless CPU ImGui submission, not live game or GPU timings.",
+    "240 warmup frames, 900 measured frames and a separate 600-frame profile per scenario; same report flags.",
+    "Timing differences are single-run observations without affinity or external load controls; small differences are not statistically established. Hover means increased despite reduced allocation.",
+    "All 19,800 measured frames matched in geometry and interaction state; all scenario evidence also matched.",
+    "The closed-baseline excludes Dalamud callbacks and does not measure the recolor or Journal changes.",
+    "Raw benchmark samples, build outputs, PNGs and logs under _artifacts/perf are removed after verification."
+  ],
+  "PNGs": [
+    {
+      "Scene": "glass-card",
+      "BeforeSha256": "ED14F8B2414A02F3722700D9DC4A5D73D7452D466FB97A77F2DC0E6EBE354DBE",
+      "AfterSha256": "ED14F8B2414A02F3722700D9DC4A5D73D7452D466FB97A77F2DC0E6EBE354DBE",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-circle",
+      "BeforeSha256": "385BD9559B86531AF28AE486BF238CFD4F4A3BFA7C076B5174B73FB81B3D3372",
+      "AfterSha256": "385BD9559B86531AF28AE486BF238CFD4F4A3BFA7C076B5174B73FB81B3D3372",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-off",
+      "BeforeSha256": "F8104C8168391A2EE23734326102B92E97673112EA69B85F24590EEF5D9A8908",
+      "AfterSha256": "F8104C8168391A2EE23734326102B92E97673112EA69B85F24590EEF5D9A8908",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-on",
+      "BeforeSha256": "2C43258651CAB1B092569CB9F0A048055257B66E077992D6E86988D0E6269637",
+      "AfterSha256": "2C43258651CAB1B092569CB9F0A048055257B66E077992D6E86988D0E6269637",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-tinted",
+      "BeforeSha256": "242D05412F9D6844ED1C906C8DB0FF05B3F8984F9A503D341BAA1401EA563E41",
+      "AfterSha256": "242D05412F9D6844ED1C906C8DB0FF05B3F8984F9A503D341BAA1401EA563E41",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-toolbar",
+      "BeforeSha256": "379D7CB2C6016AB109C8915C165218F62BE239C743B9D490E16A9BF5CC52EAED",
+      "AfterSha256": "379D7CB2C6016AB109C8915C165218F62BE239C743B9D490E16A9BF5CC52EAED",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "glass-unavailable",
+      "BeforeSha256": "242D05412F9D6844ED1C906C8DB0FF05B3F8984F9A503D341BAA1401EA563E41",
+      "AfterSha256": "242D05412F9D6844ED1C906C8DB0FF05B3F8984F9A503D341BAA1401EA563E41",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "map-default",
+      "BeforeSha256": "6A691CA76982DFCFD7285CDB418F3767FBFDF3E1BE1149A410FDA33A4326EF95",
+      "AfterSha256": "6A691CA76982DFCFD7285CDB418F3767FBFDF3E1BE1149A410FDA33A4326EF95",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "palette-aetherytes-browse",
+      "BeforeSha256": "EE9BFB636C9CC9B94B0B58861932A9B5DAF14A2A208F0615CC77F6F3F1138256",
+      "AfterSha256": "EE9BFB636C9CC9B94B0B58861932A9B5DAF14A2A208F0615CC77F6F3F1138256",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "palette-query-limsa",
+      "BeforeSha256": "1604E165A6DE3E13A50E7FABBF1A1C955B5E8D4014A313F0DAD3448DD75BEE65",
+      "AfterSha256": "1604E165A6DE3E13A50E7FABBF1A1C955B5E8D4014A313F0DAD3448DD75BEE65",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "quest-log-detail",
+      "BeforeSha256": "43FA59294538529003F087FD6C2E5031320F2A3D28F1E246F1E2F384A0384D17",
+      "AfterSha256": "43FA59294538529003F087FD6C2E5031320F2A3D28F1E246F1E2F384A0384D17",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "quest-log-search",
+      "BeforeSha256": "4F9209D779B98C7B8481B1BF546502D450C97FBA05A0F987746BEAF29AA76678",
+      "AfterSha256": "4F9209D779B98C7B8481B1BF546502D450C97FBA05A0F987746BEAF29AA76678",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "quest-log",
+      "BeforeSha256": "F95F27E6E051DC361750B3F8E186C5534922BC4F866BF1F1374B42344A409FF2",
+      "AfterSha256": "F95F27E6E051DC361750B3F8E186C5534922BC4F866BF1F1374B42344A409FF2",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "settings-chrome",
+      "BeforeSha256": "CF8F74B8FF3E7DC461F6AF06F386628A27C2B4975A264B553B3D45044FBDAB2F",
+      "AfterSha256": "CF8F74B8FF3E7DC461F6AF06F386628A27C2B4975A264B553B3D45044FBDAB2F",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "settings-classic",
+      "BeforeSha256": "E4148846B41B8E37BA08C598AE40E28BA04B5BF6B78FAA517EB9BDD6C2963BBA",
+      "AfterSha256": "E4148846B41B8E37BA08C598AE40E28BA04B5BF6B78FAA517EB9BDD6C2963BBA",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "settings-search",
+      "BeforeSha256": "1ACFDEF368C73178B4B64414938D59BA36DBCD44003FC8382B576754215F365E",
+      "AfterSha256": "1ACFDEF368C73178B4B64414938D59BA36DBCD44003FC8382B576754215F365E",
+      "ByteIdentical": true
+    },
+    {
+      "Scene": "settings-window",
+      "BeforeSha256": "BD6CB57B945B343F3237113B7AF055C50933674BA803651C07B1362BD5601E54",
+      "AfterSha256": "BD6CB57B945B343F3237113B7AF055C50933674BA803651C07B1362BD5601E54",
+      "ByteIdentical": true
+    }
+  ],
+  "Benchmarks": [
+    {
+      "Scenario": "few-idle",
+      "Before": {
+        "Scenario": "few-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 298.4713,
+        "FontRegistrationMs": 27.1623,
+        "FontAtlasMs": 14.6151,
+        "CpuMs": {
+          "Mean": 0.1502917777777783,
+          "P50": 0.1452,
+          "P95": 0.1831,
+          "P99": 0.228,
+          "Max": 0.3701
+        },
+        "AllocatedBytes": {
+          "Mean": 3809.4044444444444,
+          "P50": 3808,
+          "P95": 3808,
+          "P99": 3808,
+          "Max": 5072
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Coordinates",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.004178166666666667,
+            "SelfMsPerFrame": 0.0031261666666666664,
+            "BytesPerFrame": 1192,
+            "SelfBytesPerFrame": 880
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "few-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 264.6421,
+        "FontRegistrationMs": 13.0006,
+        "FontAtlasMs": 13.7692,
+        "CpuMs": {
+          "Mean": 0.15165599999999974,
+          "P50": 0.145,
+          "P95": 0.1881,
+          "P99": 0.2554,
+          "Max": 0.3453
+        },
+        "AllocatedBytes": {
+          "Mean": 3177.4044444444444,
+          "P50": 3176,
+          "P95": 3176,
+          "P99": 3176,
+          "Max": 4440
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Coordinates",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.0038176666666666667,
+            "SelfMsPerFrame": 0.0028596666666666666,
+            "BytesPerFrame": 704,
+            "SelfBytesPerFrame": 392
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": 0.9077158061424839,
+      "MeanBytesDelta": -632.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "few-interaction",
+      "Before": {
+        "Scenario": "few-interaction",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 225.0299,
+        "FontRegistrationMs": 2.5189,
+        "FontAtlasMs": 14.9019,
+        "CpuMs": {
+          "Mean": 0.15319711111111098,
+          "P50": 0.146,
+          "P95": 0.2073,
+          "P99": 0.2576,
+          "Max": 0.2908
+        },
+        "AllocatedBytes": {
+          "Mean": 4004.5155555555557,
+          "P50": 4000,
+          "P95": 4008,
+          "P99": 4008,
+          "Max": 5272
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11086.555555555555,
+        "Indices": 36788.333333333336,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "few-interaction",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 232.6468,
+        "FontRegistrationMs": 2.3125,
+        "FontAtlasMs": 13.9153,
+        "CpuMs": {
+          "Mean": 0.1518073333333334,
+          "P50": 0.1456,
+          "P95": 0.1797,
+          "P99": 0.267,
+          "Max": 0.3501
+        },
+        "AllocatedBytes": {
+          "Mean": 3359.0577777777776,
+          "P50": 3368,
+          "P95": 3376,
+          "P99": 3376,
+          "Max": 4640
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11086.555555555555,
+        "Indices": 36788.333333333336,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -0.9071827580153236,
+      "MeanBytesDelta": -645.4577777777781,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "busy-default",
+      "Before": {
+        "Scenario": "busy-default",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 224.4764,
+        "FontRegistrationMs": 2.5009,
+        "FontAtlasMs": 14.6748,
+        "CpuMs": {
+          "Mean": 0.6764984444444444,
+          "P50": 0.6511,
+          "P95": 0.8141,
+          "P99": 1.0177,
+          "Max": 1.4381
+        },
+        "AllocatedBytes": {
+          "Mean": 103892.21333333333,
+          "P50": 103888,
+          "P95": 103888,
+          "P99": 103888,
+          "Max": 105152
+        },
+        "Collections": [
+          2,
+          0,
+          0
+        ],
+        "Vertices": 26841,
+        "Indices": 60420,
+        "DrawCalls": 4,
+        "Markers": 600,
+        "Labels": 27,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.133324,
+            "SelfMsPerFrame": 0.133324,
+            "BytesPerFrame": 14400,
+            "SelfBytesPerFrame": 14400
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "busy-default",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 233.1381,
+        "FontRegistrationMs": 2.4804,
+        "FontAtlasMs": 14.0493,
+        "CpuMs": {
+          "Mean": 0.6752334444444446,
+          "P50": 0.657,
+          "P95": 0.7763,
+          "P99": 0.9714,
+          "Max": 1.2121
+        },
+        "AllocatedBytes": {
+          "Mean": 89002.80888888889,
+          "P50": 89000,
+          "P95": 89000,
+          "P99": 89000,
+          "Max": 90264
+        },
+        "Collections": [
+          1,
+          0,
+          0
+        ],
+        "Vertices": 26841,
+        "Indices": 60420,
+        "DrawCalls": 4,
+        "Markers": 600,
+        "Labels": 27,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.13130816666666664,
+            "SelfMsPerFrame": 0.13130816666666664,
+            "BytesPerFrame": 0,
+            "SelfBytesPerFrame": 0
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -0.18699229989194155,
+      "MeanBytesDelta": -14889.404444444444,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "busy-labels",
+      "Before": {
+        "Scenario": "busy-labels",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 231.4426,
+        "FontRegistrationMs": 2.5071,
+        "FontAtlasMs": 14.2442,
+        "CpuMs": {
+          "Mean": 0.890575888888888,
+          "P50": 0.8646,
+          "P95": 1.1468,
+          "P99": 1.2639,
+          "Max": 1.389
+        },
+        "AllocatedBytes": {
+          "Mean": 103892.21333333333,
+          "P50": 103888,
+          "P95": 103888,
+          "P99": 103888,
+          "Max": 105152
+        },
+        "Collections": [
+          2,
+          0,
+          0
+        ],
+        "Vertices": 66153,
+        "Indices": 119388,
+        "DrawCalls": 5,
+        "Markers": 600,
+        "Labels": 300,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.48592816666666666,
+            "SelfMsPerFrame": 0.1407675,
+            "BytesPerFrame": 72000,
+            "SelfBytesPerFrame": 14400
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "busy-labels",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 235.4182,
+        "FontRegistrationMs": 2.2189,
+        "FontAtlasMs": 15.1073,
+        "CpuMs": {
+          "Mean": 0.8682168888888891,
+          "P50": 0.8526,
+          "P95": 1.0565,
+          "P99": 1.2505,
+          "Max": 1.5248
+        },
+        "AllocatedBytes": {
+          "Mean": 89002.80888888889,
+          "P50": 89000,
+          "P95": 89000,
+          "P99": 89000,
+          "Max": 90264
+        },
+        "Collections": [
+          1,
+          0,
+          0
+        ],
+        "Vertices": 66153,
+        "Indices": 119388,
+        "DrawCalls": 5,
+        "Markers": 600,
+        "Labels": 300,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.48012966666666673,
+            "SelfMsPerFrame": 0.13507416666666666,
+            "BytesPerFrame": 57600,
+            "SelfBytesPerFrame": 0
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -2.5106226520341335,
+      "MeanBytesDelta": -14889.404444444444,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "busy-drag",
+      "Before": {
+        "Scenario": "busy-drag",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 231.5926,
+        "FontRegistrationMs": 2.3841,
+        "FontAtlasMs": 14.6624,
+        "CpuMs": {
+          "Mean": 0.9142636666666675,
+          "P50": 0.8904,
+          "P95": 1.1897,
+          "P99": 1.4069,
+          "Max": 1.5005
+        },
+        "AllocatedBytes": {
+          "Mean": 107389.16444444444,
+          "P50": 107312,
+          "P95": 107984,
+          "P99": 107992,
+          "Max": 109536
+        },
+        "Collections": [
+          2,
+          0,
+          0
+        ],
+        "Vertices": 67190.65333333334,
+        "Indices": 121082.48,
+        "DrawCalls": 14,
+        "Markers": 600,
+        "Labels": 300,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=True; item=False; dragFrames=145; zoomRange=0.609-0.661; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.4984426666666667,
+            "SelfMsPerFrame": 0.1482973333333333,
+            "BytesPerFrame": 73244.32,
+            "SelfBytesPerFrame": 14400
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "busy-drag",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 238.5204,
+        "FontRegistrationMs": 2.319,
+        "FontAtlasMs": 14.3438,
+        "CpuMs": {
+          "Mean": 0.8910035555555569,
+          "P50": 0.8792,
+          "P95": 1.0557,
+          "P99": 1.2403,
+          "Max": 1.4156
+        },
+        "AllocatedBytes": {
+          "Mean": 92411.92,
+          "P50": 92424,
+          "P95": 93056,
+          "P99": 93104,
+          "Max": 93976
+        },
+        "Collections": [
+          1,
+          0,
+          0
+        ],
+        "Vertices": 67190.65333333334,
+        "Indices": 121082.48,
+        "DrawCalls": 14,
+        "Markers": 600,
+        "Labels": 300,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=True; item=False; dragFrames=145; zoomRange=0.609-0.661; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "CollectMarkers",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.48463666666666666,
+            "SelfMsPerFrame": 0.14100266666666667,
+            "BytesPerFrame": 58844.32,
+            "SelfBytesPerFrame": 0
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -2.5441360035573846,
+      "MeanBytesDelta": -14977.24444444444,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "panzoom-idle",
+      "Before": {
+        "Scenario": "panzoom-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 230.4788,
+        "FontRegistrationMs": 2.4941,
+        "FontAtlasMs": 14.2783,
+        "CpuMs": {
+          "Mean": 0.1671435555555555,
+          "P50": 0.1474,
+          "P95": 0.2502,
+          "P99": 0.2812,
+          "Max": 0.4081
+        },
+        "AllocatedBytes": {
+          "Mean": 3809.4044444444444,
+          "P50": 3808,
+          "P95": 3808,
+          "P99": 3808,
+          "Max": 5072
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "panzoom-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 240.5035,
+        "FontRegistrationMs": 3.4079,
+        "FontAtlasMs": 14.2287,
+        "CpuMs": {
+          "Mean": 0.16366255555555556,
+          "P50": 0.1462,
+          "P95": 0.2377,
+          "P99": 0.2602,
+          "Max": 0.3179
+        },
+        "AllocatedBytes": {
+          "Mean": 3177.4044444444444,
+          "P50": 3176,
+          "P95": 3176,
+          "P99": 3176,
+          "Max": 4440
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -2.0826408702565358,
+      "MeanBytesDelta": -632.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "panzoom-inertia",
+      "Before": {
+        "Scenario": "panzoom-inertia",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 232.248,
+        "FontRegistrationMs": 2.3679,
+        "FontAtlasMs": 15.0795,
+        "CpuMs": {
+          "Mean": 0.16226288888888896,
+          "P50": 0.1482,
+          "P95": 0.222,
+          "P99": 0.2578,
+          "Max": 0.3195
+        },
+        "AllocatedBytes": {
+          "Mean": 4070.382222222222,
+          "P50": 4000,
+          "P95": 4256,
+          "P99": 4264,
+          "Max": 5272
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11085.675555555556,
+        "Indices": 36787.013333333336,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=145; zoomRange=0.609-0.661; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "panzoom-inertia",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 239.4113,
+        "FontRegistrationMs": 2.5363,
+        "FontAtlasMs": 15.1656,
+        "CpuMs": {
+          "Mean": 0.1606693333333334,
+          "P50": 0.1467,
+          "P95": 0.2191,
+          "P99": 0.2612,
+          "Max": 0.297
+        },
+        "AllocatedBytes": {
+          "Mean": 3351.137777777778,
+          "P50": 3240,
+          "P95": 3624,
+          "P99": 3632,
+          "Max": 4504
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11085.675555555556,
+        "Indices": 36787.013333333336,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=145; zoomRange=0.609-0.661; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -0.9820825738205419,
+      "MeanBytesDelta": -719.2444444444441,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "hover-idle",
+      "Before": {
+        "Scenario": "hover-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 230.4331,
+        "FontRegistrationMs": 2.5744,
+        "FontAtlasMs": 15.2586,
+        "CpuMs": {
+          "Mean": 0.1614609999999998,
+          "P50": 0.1468,
+          "P95": 0.2225,
+          "P99": 0.2637,
+          "Max": 0.3843
+        },
+        "AllocatedBytes": {
+          "Mean": 3809.4044444444444,
+          "P50": 3808,
+          "P95": 3808,
+          "P99": 3808,
+          "Max": 5072
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "hover-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 248.0446,
+        "FontRegistrationMs": 3.0904,
+        "FontAtlasMs": 17.1357,
+        "CpuMs": {
+          "Mean": 0.17288211111111093,
+          "P50": 0.1477,
+          "P95": 0.2687,
+          "P99": 0.2992,
+          "Max": 0.4405
+        },
+        "AllocatedBytes": {
+          "Mean": 3177.4044444444444,
+          "P50": 3176,
+          "P95": 3176,
+          "P99": 3176,
+          "Max": 4440
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11073,
+        "Indices": 36768,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": 7.073603601557732,
+      "MeanBytesDelta": -632.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "hover-card",
+      "Before": {
+        "Scenario": "hover-card",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 229.0081,
+        "FontRegistrationMs": 2.5211,
+        "FontAtlasMs": 14.2538,
+        "CpuMs": {
+          "Mean": 0.16657544444444417,
+          "P50": 0.1501,
+          "P95": 0.234,
+          "P99": 0.2749,
+          "Max": 0.5033
+        },
+        "AllocatedBytes": {
+          "Mean": 4754,
+          "P50": 4752,
+          "P95": 4752,
+          "P99": 4752,
+          "Max": 6552
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11381,
+        "Indices": 37368,
+        "DrawCalls": 7,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=True; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "hover-card",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 247.8224,
+        "FontRegistrationMs": 3.2421,
+        "FontAtlasMs": 19.1046,
+        "CpuMs": {
+          "Mean": 0.18519544444444475,
+          "P50": 0.1543,
+          "P95": 0.2905,
+          "P99": 0.3272,
+          "Max": 0.4201
+        },
+        "AllocatedBytes": {
+          "Mean": 3989.786666666667,
+          "P50": 3984,
+          "P95": 3984,
+          "P99": 4120,
+          "Max": 5248
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11381,
+        "Indices": 37368,
+        "DrawCalls": 7,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=True; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": 11.178118156671445,
+      "MeanBytesDelta": -764.2133333333331,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "hover-tooltip",
+      "Before": {
+        "Scenario": "hover-tooltip",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 240.5469,
+        "FontRegistrationMs": 2.8649,
+        "FontAtlasMs": 15.4985,
+        "CpuMs": {
+          "Mean": 0.17905833333333296,
+          "P50": 0.1604,
+          "P95": 0.2552,
+          "P99": 0.2857,
+          "Max": 0.4829
+        },
+        "AllocatedBytes": {
+          "Mean": 4129.404444444444,
+          "P50": 4128,
+          "P95": 4128,
+          "P99": 4128,
+          "Max": 5392
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11997,
+        "Indices": 40782,
+        "DrawCalls": 6,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=900; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "hover-tooltip",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 244.2297,
+        "FontRegistrationMs": 2.493,
+        "FontAtlasMs": 14.4731,
+        "CpuMs": {
+          "Mean": 0.18588322222222226,
+          "P50": 0.1601,
+          "P95": 0.2862,
+          "P99": 0.3583,
+          "Max": 0.8642
+        },
+        "AllocatedBytes": {
+          "Mean": 3369.4044444444444,
+          "P50": 3368,
+          "P95": 3368,
+          "P99": 3368,
+          "Max": 4632
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 11997,
+        "Indices": 40782,
+        "DrawCalls": 6,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=900; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": 3.811544965172975,
+      "MeanBytesDelta": -760.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "search-open",
+      "Before": {
+        "Scenario": "search-open",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 231.5125,
+        "FontRegistrationMs": 2.396,
+        "FontAtlasMs": 14.7255,
+        "CpuMs": {
+          "Mean": 0.3480680000000006,
+          "P50": 0.3304,
+          "P95": 0.4363,
+          "P99": 0.524,
+          "Max": 0.6323
+        },
+        "AllocatedBytes": {
+          "Mean": 8474.702222222222,
+          "P50": 8472,
+          "P95": 8472,
+          "P99": 8472,
+          "Max": 10904
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15223.693333333333,
+        "Indices": 47674.04,
+        "DrawCalls": 38,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=li; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Palette",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.17544916666666666,
+            "SelfMsPerFrame": 0.164025,
+            "BytesPerFrame": 5072,
+            "SelfBytesPerFrame": 3704
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "search-open",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 243.9541,
+        "FontRegistrationMs": 2.5864,
+        "FontAtlasMs": 16.8581,
+        "CpuMs": {
+          "Mean": 0.30636222222222237,
+          "P50": 0.2852,
+          "P95": 0.4215,
+          "P99": 0.506,
+          "Max": 0.6784
+        },
+        "AllocatedBytes": {
+          "Mean": 6818.106666666667,
+          "P50": 6816,
+          "P95": 6816,
+          "P99": 6816,
+          "Max": 8712
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15223.693333333333,
+        "Indices": 47674.04,
+        "DrawCalls": 38,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=li; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Palette",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.13614116666666667,
+            "SelfMsPerFrame": 0.12471966666666667,
+            "BytesPerFrame": 4048,
+            "SelfBytesPerFrame": 2680
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -11.982077576157002,
+      "MeanBytesDelta": -1656.5955555555556,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "search-typing",
+      "Before": {
+        "Scenario": "search-typing",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 236.7461,
+        "FontRegistrationMs": 2.6651,
+        "FontAtlasMs": 14.4567,
+        "CpuMs": {
+          "Mean": 0.42264577777777773,
+          "P50": 0.3804,
+          "P95": 0.6372,
+          "P99": 0.8957,
+          "Max": 1.409
+        },
+        "AllocatedBytes": {
+          "Mean": 21546.31111111111,
+          "P50": 8472,
+          "P95": 8472,
+          "P99": 399096,
+          "Max": 455240
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15223.133333333333,
+        "Indices": 47673.2,
+        "DrawCalls": 38,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=li; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Palette",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.18455216666666668,
+            "SelfMsPerFrame": 0.17251283333333334,
+            "BytesPerFrame": 5072,
+            "SelfBytesPerFrame": 3704
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "search-typing",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 241.2804,
+        "FontRegistrationMs": 3.2876,
+        "FontAtlasMs": 14.1943,
+        "CpuMs": {
+          "Mean": 0.32256299999999977,
+          "P50": 0.2956,
+          "P95": 0.4877,
+          "P99": 0.6333,
+          "Max": 0.8282
+        },
+        "AllocatedBytes": {
+          "Mean": 19924.87111111111,
+          "P50": 6816,
+          "P95": 9728,
+          "P99": 397440,
+          "Max": 397440
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15223.133333333333,
+        "Indices": 47673.2,
+        "DrawCalls": 38,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=li; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Palette",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.15196,
+            "SelfMsPerFrame": 0.13953383333333333,
+            "BytesPerFrame": 4147.373333333333,
+            "SelfBytesPerFrame": 2779.3733333333334
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -23.680060949384508,
+      "MeanBytesDelta": -1621.4399999999987,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "quest-list",
+      "Before": {
+        "Scenario": "quest-list",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 238.5628,
+        "FontRegistrationMs": 2.2727,
+        "FontAtlasMs": 14.5023,
+        "CpuMs": {
+          "Mean": 0.3290818888888887,
+          "P50": 0.297,
+          "P95": 0.4903,
+          "P99": 0.5579,
+          "Max": 0.6564
+        },
+        "AllocatedBytes": {
+          "Mean": 25739.546666666665,
+          "P50": 25736,
+          "P95": 25736,
+          "P99": 25736,
+          "Max": 28928
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 18397,
+        "Indices": 58944,
+        "DrawCalls": 26,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.11311716666666667,
+            "SelfMsPerFrame": 0.08742216666666666,
+            "BytesPerFrame": 11968,
+            "SelfBytesPerFrame": 10432
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.14325983333333334,
+            "SelfMsPerFrame": 0.026157166666666665,
+            "BytesPerFrame": 21256,
+            "SelfBytesPerFrame": 8736
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0017555,
+            "SelfMsPerFrame": 0.0017555,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "quest-list",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 238.4493,
+        "FontRegistrationMs": 2.1095,
+        "FontAtlasMs": 14.606,
+        "CpuMs": {
+          "Mean": 0.304400666666667,
+          "P50": 0.285,
+          "P95": 0.4085,
+          "P99": 0.5066,
+          "Max": 0.7567
+        },
+        "AllocatedBytes": {
+          "Mean": 6321.875555555555,
+          "P50": 6320,
+          "P95": 6320,
+          "P99": 6320,
+          "Max": 8008
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 18397,
+        "Indices": 58944,
+        "DrawCalls": 26,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.11839799999999999,
+            "SelfMsPerFrame": 0.09184,
+            "BytesPerFrame": 1536,
+            "SelfBytesPerFrame": 0
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.14058066666666666,
+            "SelfMsPerFrame": 0.018149000000000002,
+            "BytesPerFrame": 2472,
+            "SelfBytesPerFrame": 384
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0020833333333333333,
+            "SelfMsPerFrame": 0.0020833333333333333,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -7.500024478878286,
+      "MeanBytesDelta": -19417.67111111111,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "quest-scroll",
+      "Before": {
+        "Scenario": "quest-scroll",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 227.8468,
+        "FontRegistrationMs": 2.4121,
+        "FontAtlasMs": 14.0893,
+        "CpuMs": {
+          "Mean": 0.2479973333333339,
+          "P50": 0.226,
+          "P95": 0.3295,
+          "P99": 0.4014,
+          "Max": 0.5346
+        },
+        "AllocatedBytes": {
+          "Mean": 25990.8,
+          "P50": 26136,
+          "P95": 26144,
+          "P99": 26144,
+          "Max": 29328
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14381.351111111111,
+        "Indices": 44662.12666666666,
+        "DrawCalls": 27.506666666666668,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=27",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.061731833333333326,
+            "SelfMsPerFrame": 0.0527115,
+            "BytesPerFrame": 12532.586666666666,
+            "SelfBytesPerFrame": 10851.626666666667
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.09170350000000001,
+            "SelfMsPerFrame": 0.02596266666666667,
+            "BytesPerFrame": 21820.586666666666,
+            "SelfBytesPerFrame": 8736
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0013903333333333335,
+            "SelfMsPerFrame": 0.0013903333333333335,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "quest-scroll",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 242.7877,
+        "FontRegistrationMs": 3.4623,
+        "FontAtlasMs": 15.37,
+        "CpuMs": {
+          "Mean": 0.24462022222222227,
+          "P50": 0.2226,
+          "P95": 0.3283,
+          "P99": 0.3973,
+          "Max": 0.5303
+        },
+        "AllocatedBytes": {
+          "Mean": 6359.377777777778,
+          "P50": 6480,
+          "P95": 6488,
+          "P99": 6488,
+          "Max": 8704
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14381.351111111111,
+        "Indices": 44662.12666666666,
+        "DrawCalls": 27.506666666666668,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=27",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.06471166666666667,
+            "SelfMsPerFrame": 0.0557435,
+            "BytesPerFrame": 2022.0666666666666,
+            "SelfBytesPerFrame": 341.1066666666667
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.08610783333333334,
+            "SelfMsPerFrame": 0.01737733333333333,
+            "BytesPerFrame": 2958.0666666666666,
+            "SelfBytesPerFrame": 384
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0014596666666666666,
+            "SelfMsPerFrame": 0.0014596666666666666,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -1.3617529937600015,
+      "MeanBytesDelta": -19631.422222222223,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "quest-summary",
+      "Before": {
+        "Scenario": "quest-summary",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 232.0479,
+        "FontRegistrationMs": 2.3084,
+        "FontAtlasMs": 14.0021,
+        "CpuMs": {
+          "Mean": 0.32468677777777766,
+          "P50": 0.3,
+          "P95": 0.4208,
+          "P99": 0.5285,
+          "Max": 0.655
+        },
+        "AllocatedBytes": {
+          "Mean": 28259.546666666665,
+          "P50": 28256,
+          "P95": 28256,
+          "P99": 28256,
+          "Max": 31448
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 20053,
+        "Indices": 62430,
+        "DrawCalls": 32,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=True; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.1129635,
+            "SelfMsPerFrame": 0.08743966666666667,
+            "BytesPerFrame": 11968,
+            "SelfBytesPerFrame": 10432
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.14220933333333333,
+            "SelfMsPerFrame": 0.025496333333333333,
+            "BytesPerFrame": 21256.706666666665,
+            "SelfBytesPerFrame": 8736.706666666667
+          },
+          {
+            "Name": "QuestSummary",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.01792116666666667,
+            "SelfMsPerFrame": 0.014051666666666665,
+            "BytesPerFrame": 2144,
+            "SelfBytesPerFrame": 776
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0026506666666666666,
+            "SelfMsPerFrame": 0.0026506666666666666,
+            "BytesPerFrame": 1056,
+            "SelfBytesPerFrame": 1056
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "quest-summary",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 238.6426,
+        "FontRegistrationMs": 2.612,
+        "FontAtlasMs": 14.2905,
+        "CpuMs": {
+          "Mean": 0.3139015555555553,
+          "P50": 0.293,
+          "P95": 0.3993,
+          "P99": 0.5237,
+          "Max": 0.7044
+        },
+        "AllocatedBytes": {
+          "Mean": 7505.875555555555,
+          "P50": 7504,
+          "P95": 7504,
+          "P99": 7504,
+          "Max": 9192
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 20053,
+        "Indices": 62430,
+        "DrawCalls": 32,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=True; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.12176066666666666,
+            "SelfMsPerFrame": 0.09450883333333333,
+            "BytesPerFrame": 1536,
+            "SelfBytesPerFrame": 0
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.143143,
+            "SelfMsPerFrame": 0.017526333333333335,
+            "BytesPerFrame": 2472,
+            "SelfBytesPerFrame": 384
+          },
+          {
+            "Name": "QuestSummary",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.017343666666666667,
+            "SelfMsPerFrame": 0.013360833333333334,
+            "BytesPerFrame": 1456,
+            "SelfBytesPerFrame": 88
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.001928,
+            "SelfMsPerFrame": 0.001928,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -3.3217312685285716,
+      "MeanBytesDelta": -20753.67111111111,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "quest-item-tooltip",
+      "Before": {
+        "Scenario": "quest-item-tooltip",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 234.9139,
+        "FontRegistrationMs": 2.4249,
+        "FontAtlasMs": 13.9889,
+        "CpuMs": {
+          "Mean": 0.3603866666666671,
+          "P50": 0.3387,
+          "P95": 0.4667,
+          "P99": 0.5583,
+          "Max": 0.7006
+        },
+        "AllocatedBytes": {
+          "Mean": 30123.546666666665,
+          "P50": 30120,
+          "P95": 30120,
+          "P99": 30120,
+          "Max": 33312
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 22973,
+        "Indices": 73740,
+        "DrawCalls": 36,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=True; card=False; item=True; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.11506833333333333,
+            "SelfMsPerFrame": 0.08903516666666667,
+            "BytesPerFrame": 11968,
+            "SelfBytesPerFrame": 10432
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.14616566666666667,
+            "SelfMsPerFrame": 0.02718833333333333,
+            "BytesPerFrame": 21256.706666666665,
+            "SelfBytesPerFrame": 8736.706666666667
+          },
+          {
+            "Name": "QuestSummary",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.05424583333333333,
+            "SelfMsPerFrame": 0.014986833333333335,
+            "BytesPerFrame": 3712,
+            "SelfBytesPerFrame": 848
+          },
+          {
+            "Name": "ItemTooltip",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.0352595,
+            "SelfMsPerFrame": 0.008772499999999999,
+            "BytesPerFrame": 1496,
+            "SelfBytesPerFrame": 920
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.002856,
+            "SelfMsPerFrame": 0.002856,
+            "BytesPerFrame": 1056,
+            "SelfBytesPerFrame": 1056
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "quest-item-tooltip",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 242.7198,
+        "FontRegistrationMs": 2.8181,
+        "FontAtlasMs": 18.348,
+        "CpuMs": {
+          "Mean": 0.3488005555555553,
+          "P50": 0.3285,
+          "P95": 0.4341,
+          "P99": 0.5638,
+          "Max": 0.6413
+        },
+        "AllocatedBytes": {
+          "Mean": 8593.875555555556,
+          "P50": 8592,
+          "P95": 8592,
+          "P99": 8592,
+          "Max": 10280
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 22973,
+        "Indices": 73740,
+        "DrawCalls": 36,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=240; detail=True; card=False; item=True; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "QuestRow",
+            "Calls": 144000,
+            "InclusiveMsPerFrame": 0.1160715,
+            "SelfMsPerFrame": 0.08993316666666666,
+            "BytesPerFrame": 1536,
+            "SelfBytesPerFrame": 0
+          },
+          {
+            "Name": "QuestList",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.1371385,
+            "SelfMsPerFrame": 0.017354166666666667,
+            "BytesPerFrame": 2472,
+            "SelfBytesPerFrame": 384
+          },
+          {
+            "Name": "QuestSummary",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.049595,
+            "SelfMsPerFrame": 0.0133245,
+            "BytesPerFrame": 2376,
+            "SelfBytesPerFrame": 160
+          },
+          {
+            "Name": "ItemTooltip",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.03244816666666667,
+            "SelfMsPerFrame": 0.006050666666666666,
+            "BytesPerFrame": 848,
+            "SelfBytesPerFrame": 272
+          },
+          {
+            "Name": "QuestPrepare",
+            "Calls": 1800,
+            "InclusiveMsPerFrame": 0.0017566666666666668,
+            "SelfMsPerFrame": 0.0017566666666666668,
+            "BytesPerFrame": 408,
+            "SelfBytesPerFrame": 408
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -3.214911144819943,
+      "MeanBytesDelta": -21529.671111111107,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "settings-idle",
+      "Before": {
+        "Scenario": "settings-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 233.1541,
+        "FontRegistrationMs": 2.3258,
+        "FontAtlasMs": 14.1834,
+        "CpuMs": {
+          "Mean": 0.24571511111111108,
+          "P50": 0.2203,
+          "P95": 0.344,
+          "P99": 0.3875,
+          "Max": 0.5464
+        },
+        "AllocatedBytes": {
+          "Mean": 21367.19111111111,
+          "P50": 21360,
+          "P95": 21360,
+          "P99": 21360,
+          "Max": 27832
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14443,
+        "Indices": 46017,
+        "DrawCalls": 8,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Settings",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.080085,
+            "SelfMsPerFrame": 0.07783383333333332,
+            "BytesPerFrame": 17552,
+            "SelfBytesPerFrame": 15440
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "settings-idle",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 236.6506,
+        "FontRegistrationMs": 2.1758,
+        "FontAtlasMs": 14.3818,
+        "CpuMs": {
+          "Mean": 0.23498333333333277,
+          "P50": 0.2102,
+          "P95": 0.3294,
+          "P99": 0.3922,
+          "Max": 0.7242
+        },
+        "AllocatedBytes": {
+          "Mean": 12626.133333333333,
+          "P50": 12624,
+          "P95": 12624,
+          "P99": 12624,
+          "Max": 14544
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14443,
+        "Indices": 46017,
+        "DrawCalls": 8,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Settings",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.06791316666666666,
+            "SelfMsPerFrame": 0.06574183333333333,
+            "BytesPerFrame": 9448,
+            "SelfBytesPerFrame": 7336
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -4.367569307906938,
+      "MeanBytesDelta": -8741.057777777778,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "settings-interaction",
+      "Before": {
+        "Scenario": "settings-interaction",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 229.0924,
+        "FontRegistrationMs": 2.1225,
+        "FontAtlasMs": 14.1674,
+        "CpuMs": {
+          "Mean": 0.2779052222222226,
+          "P50": 0.2409,
+          "P95": 0.3993,
+          "P99": 0.4667,
+          "Max": 0.5505
+        },
+        "AllocatedBytes": {
+          "Mean": 21367.19111111111,
+          "P50": 21360,
+          "P95": 21360,
+          "P99": 21360,
+          "Max": 27832
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14440.077777777778,
+        "Indices": 46374.136666666665,
+        "DrawCalls": 8,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Settings",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.09393499999999999,
+            "SelfMsPerFrame": 0.09136633333333334,
+            "BytesPerFrame": 17552,
+            "SelfBytesPerFrame": 15440
+          }
+        ]
+      },
+      "After": {
+        "Scenario": "settings-interaction",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 239.5092,
+        "FontRegistrationMs": 2.8512,
+        "FontAtlasMs": 15.0714,
+        "CpuMs": {
+          "Mean": 0.23620155555555547,
+          "P50": 0.2115,
+          "P95": 0.335,
+          "P99": 0.391,
+          "Max": 0.5175
+        },
+        "AllocatedBytes": {
+          "Mean": 12626.133333333333,
+          "P50": 12624,
+          "P95": 12624,
+          "P99": 12624,
+          "Max": 14544
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 14440.077777777778,
+        "Indices": 46374.136666666665,
+        "DrawCalls": 8,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": [
+          {
+            "Name": "Settings",
+            "Calls": 600,
+            "InclusiveMsPerFrame": 0.07276966666666666,
+            "SelfMsPerFrame": 0.07053966666666667,
+            "BytesPerFrame": 9448,
+            "SelfBytesPerFrame": 7336
+          }
+        ]
+      },
+      "MeanCpuDeltaPercent": -15.006435047600297,
+      "MeanBytesDelta": -8741.057777777778,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "glass-visible",
+      "Before": {
+        "Scenario": "glass-visible",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 231.6083,
+        "FontRegistrationMs": 2.4815,
+        "FontAtlasMs": 14.1656,
+        "CpuMs": {
+          "Mean": 0.30088566666666666,
+          "P50": 0.2798,
+          "P95": 0.4182,
+          "P99": 0.4666,
+          "Max": 0.653
+        },
+        "AllocatedBytes": {
+          "Mean": 3809.4044444444444,
+          "P50": 3808,
+          "P95": 3808,
+          "P99": 3808,
+          "Max": 5072
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 19633,
+        "Indices": 75480,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "glass-visible",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 239.3235,
+        "FontRegistrationMs": 2.3404,
+        "FontAtlasMs": 14.0073,
+        "CpuMs": {
+          "Mean": 0.29522122222222213,
+          "P50": 0.278,
+          "P95": 0.3805,
+          "P99": 0.4685,
+          "Max": 0.6184
+        },
+        "AllocatedBytes": {
+          "Mean": 3177.4044444444444,
+          "P50": 3176,
+          "P95": 3176,
+          "P99": 3176,
+          "Max": 4440
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 19633,
+        "Indices": 75480,
+        "DrawCalls": 4,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -1.8825903231608043,
+      "MeanBytesDelta": -632.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "glass-faded",
+      "Before": {
+        "Scenario": "glass-faded",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 235.0961,
+        "FontRegistrationMs": 2.2804,
+        "FontAtlasMs": 13.8814,
+        "CpuMs": {
+          "Mean": 0.17904366666666696,
+          "P50": 0.1659,
+          "P95": 0.227,
+          "P99": 0.2778,
+          "Max": 0.3364
+        },
+        "AllocatedBytes": {
+          "Mean": 2377.128888888889,
+          "P50": 2376,
+          "P95": 2376,
+          "P99": 2376,
+          "Max": 3392
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 12697,
+        "Indices": 44706,
+        "DrawCalls": 3,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=0.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "glass-faded",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 236.2012,
+        "FontRegistrationMs": 2.1967,
+        "FontAtlasMs": 14.1626,
+        "CpuMs": {
+          "Mean": 0.1807947777777781,
+          "P50": 0.1647,
+          "P95": 0.2382,
+          "P99": 0.2859,
+          "Max": 0.4342
+        },
+        "AllocatedBytes": {
+          "Mean": 2233.128888888889,
+          "P50": 2232,
+          "P95": 2232,
+          "P99": 2232,
+          "Max": 3248
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 12697,
+        "Indices": 44706,
+        "DrawCalls": 3,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=0.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": 0.9780357740166723,
+      "MeanBytesDelta": -144.0,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "glass-reveal",
+      "Before": {
+        "Scenario": "glass-reveal",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 235.8477,
+        "FontRegistrationMs": 2.575,
+        "FontAtlasMs": 15.3906,
+        "CpuMs": {
+          "Mean": 0.23875788888888883,
+          "P50": 0.227,
+          "P95": 0.394,
+          "P99": 0.4754,
+          "Max": 0.5503
+        },
+        "AllocatedBytes": {
+          "Mean": 3059.4133333333334,
+          "P50": 2376,
+          "P95": 4008,
+          "P99": 4008,
+          "Max": 4256
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15901.266666666666,
+        "Indices": 58917.85333333333,
+        "DrawCalls": 3.457777777777778,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "glass-reveal",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 240.1512,
+        "FontRegistrationMs": 2.8826,
+        "FontAtlasMs": 16.9526,
+        "CpuMs": {
+          "Mean": 0.23192222222222222,
+          "P50": 0.2255,
+          "P95": 0.3361,
+          "P99": 0.4109,
+          "Max": 0.5491
+        },
+        "AllocatedBytes": {
+          "Mean": 2674.5333333333333,
+          "P50": 2232,
+          "P95": 3240,
+          "P99": 3240,
+          "Max": 3624
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 15901.266666666666,
+        "Indices": 58917.85333333333,
+        "DrawCalls": 3.457777777777778,
+        "Markers": 6,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.609-0.609; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -2.86301185626906,
+      "MeanBytesDelta": -384.8800000000001,
+      "IdenticalMeasuredFrames": 900
+    },
+    {
+      "Scenario": "closed-baseline",
+      "Before": {
+        "Scenario": "closed-baseline",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 231.9689,
+        "FontRegistrationMs": 2.5744,
+        "FontAtlasMs": 14.5137,
+        "CpuMs": {
+          "Mean": 0.0011637777777777725,
+          "P50": 0.0011,
+          "P95": 0.0018,
+          "P99": 0.0019,
+          "Max": 0.0207
+        },
+        "AllocatedBytes": {
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0,
+          "Max": 0
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 0,
+        "Indices": 0,
+        "DrawCalls": 0,
+        "Markers": 0,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.550-0.550; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "After": {
+        "Scenario": "closed-baseline",
+        "Warmup": 240,
+        "Frames": 900,
+        "StartupMs": 238.2129,
+        "FontRegistrationMs": 2.1167,
+        "FontAtlasMs": 14.0059,
+        "CpuMs": {
+          "Mean": 0.0011422222222222213,
+          "P50": 0.001,
+          "P95": 0.0016,
+          "P99": 0.0018,
+          "Max": 0.0282
+        },
+        "AllocatedBytes": {
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0,
+          "Max": 0
+        },
+        "Collections": [
+          0,
+          0,
+          0
+        ],
+        "Vertices": 0,
+        "Indices": 0,
+        "DrawCalls": 0,
+        "Markers": 0,
+        "Labels": 0,
+        "Evidence": "chrome=1.00; query=-; quests=0; detail=False; card=False; item=False; dragFrames=0; zoomRange=0.550-0.550; tooltipFrames=0; listRows=1",
+        "Profile": []
+      },
+      "MeanCpuDeltaPercent": -1.8522054611415095,
+      "MeanBytesDelta": 0,
+      "IdenticalMeasuredFrames": 900
+    }
+  ],
+  "Validation": {
+    "Selftests": {
+      "Result": "100/100 passed; 0 failed.",
+      "Command": "dotnet run --project Gratis.Preview -c Release --artifacts-path _artifacts\\perf -- --selftest all",
+      "LogSha256": "FBB8DA77ECE71E812C1036ECD0CA457F34A01F96EA01B4B29734E082DDE7EC34"
+    },
+    "PluginReleaseBuild": "PASS, zero warnings/errors, output _artifacts/perf/bin/Gratis/release/Gratis.dll",
+    "DebugOffMarkerSubmission": "Three busy-case guards passed: CollectMarkers self allocation 0 B/frame (previously 14400).",
+    "CacheRegression": "performance-caches PASS: snapshot/query/tab/spoiler/repeatable, summary precedence, item replacement/inventory/culture, coordinates/time, palette snapshots, settings style/search/config; steady cache hits allocate zero bytes.",
+    "DiffWhitespace": "PASS"
+  },
+  "Fixes": [
+    {
+      "Hotspot": "3",
+      "Status": "Applied",
+      "Detail": "Debug delegate creation isolated in a helper reached only when DebugMode is enabled; live deferred IconId text semantics retained."
+    },
+    {
+      "Hotspot": "6/8",
+      "Status": "Applied",
+      "Detail": "Revision/snapshot/culture/query/tab/spoiler/repeatable-aware quest groups, current MSQ, lazy accepted-first summary index, stable row IDs, level/start/requirements/reward text. Row submission, ImGui IDs, scrolling and focus paths retained."
+    },
+    {
+      "Hotspot": "6 optional clipping",
+      "Status": "Skipped",
+      "Reason": "No row virtualization: ImGui submissions are retained to preserve keyboard navigation/focus and scroll extent."
+    },
+    {
+      "Hotspot": "7",
+      "Status": "Applied",
+      "Detail": "Per-layout section/group catalogue, search matches, reusable visible/primary/advanced lists and IDs. Visibility is evaluated per section and enabled state per group at their original points, preserving same-frame config/style/reset effects."
+    },
+    {
+      "Hotspot": "9",
+      "Status": "Applied",
+      "Detail": "Item sections/title/stack cached by immutable item identity, culture and count inputs; summary strings cached with quest presentation. Inventory reads and action-time checks remain live."
+    },
+    {
+      "Hotspot": "10",
+      "Status": "Applied",
+      "Detail": "Coordinate strings cached by exact float bits (including signed zero); clock text by displayed minute; digit string objects reused. Glyph measurements, hit rectangles and input remain per frame."
+    },
+    {
+      "Hotspot": "9/10 font metrics",
+      "Status": "Skipped",
+      "Reason": "No proven live font/atlas generation invalidation contract for cached wrapped metrics or digit widths; continue measuring current fonts."
+    },
+    {
+      "Hotspot": "Closed-map recolor",
+      "Status": "Applied",
+      "Detail": "Early return only without retired workers, pending work/transitions or eviction. Reusable retired/sorted buffers and direct bounded scans preserve upload/failure handling, stable most-recent-first ordering, eviction, worker limit and transition cadence."
+    },
+    {
+      "Hotspot": "Closed-map QuestLogGame",
+      "Status": "Skipped",
+      "Reason": "Closed-map refresh maintains history, current objectives and first-open data. Pausing it could change first-open content; no behaviour-preserving inactive gate proven. Existing throttles remain."
+    },
+    {
+      "Hotspot": "Closed-map Journal",
+      "Status": "Applied conservatively",
+      "Detail": "Refresh returns only when ineligible, previously ineligible, debug disabled, no shifted addon, mirroring, fade, close ownership or opened map. Missing-map counter still resets. Eligibility transitions, restoration and fades retain their original paths."
+    },
+    {
+      "Hotspot": "4",
+      "Status": "Applied partially",
+      "Detail": "Duplicate/distance-aware names cached by result-array identity and culture, including outgoing animation snapshots. Existing naming function is reused unchanged."
+    },
+    {
+      "Hotspot": "4 fitted text and broader search caches",
+      "Status": "Skipped",
+      "Reason": "Fitted geometry needs safe live font invalidation; broader live-source/query caching exceeds the simple name fix and adds invalidation risk."
+    },
+    {
+      "Hotspot": "1 and 5",
+      "Status": "Skipped as requested",
+      "Reason": "Label geometry and stroke-outline caches intentionally excluded for visual risk."
+    }
+  ],
+  "ChangedFiles": [
+    "Gratis.Preview/PerformanceCacheVerification.cs",
+    "Gratis.Preview/Program.Benchmark.cs",
+    "Gratis.Preview/Program.Selftests.cs",
+    "Gratis/Classes/DrawHelpers.cs",
+    "Gratis/Controllers/AddonJournalController.cs",
+    "Gratis/MapRenderer/MapColourTextureCache.cs",
+    "Gratis/Rendering/BottomCardsDrawing.cs",
+    "Gratis/Rendering/CoordinateTextCache.cs",
+    "Gratis/Rendering/EorzeaTime.cs",
+    "Gratis/Rendering/ItemTooltipDrawing.cs",
+    "Gratis/Rendering/ItemTooltipModel.cs",
+    "Gratis/Rendering/PaletteOverlay.Drawing.cs",
+    "Gratis/Rendering/PaletteOverlay.cs",
+    "Gratis/Rendering/PaletteRowNames.cs",
+    "Gratis/Rendering/QuestLogPanel.Summary.cs",
+    "Gratis/Rendering/QuestLogPanel.cs",
+    "Gratis/Rendering/QuestLogPresentation.cs",
+    "Gratis/Windows/SettingsLayout.Cache.cs",
+    "Gratis/Windows/SettingsLayout.Chrome.cs",
+    "Gratis/Windows/SettingsLayout.Gratis.cs",
+    "Gratis/Windows/SettingsLayout.cs",
+    "Gratis.Preview/performance-verification.json"
+  ],
+  "SourceSha256": {
+    "Gratis.Preview/PerformanceCacheVerification.cs": "98926AA2B0309262B140DA588F7A0534F3E2A7F63126DCEE0D360F58E5C3A098",
+    "Gratis.Preview/Program.Benchmark.cs": "7F72CCD43FC2C73492C0F382C54340F91EBA58D6345776145F9570A5332AB6F5",
+    "Gratis.Preview/Program.Selftests.cs": "E05CAB99D037959C1499B25E6F9F2816E4C1CB411B466C4D36D579904531BB4C",
+    "Gratis/Classes/DrawHelpers.cs": "6F9E92A962A699CD59A5AEDAFAEE1E95BFBC51DD32A42F06C0A660530680CF53",
+    "Gratis/Controllers/AddonJournalController.cs": "C51A9FB921CD442B02E3EA8148CA619ED772B469EFD5893E91FFAFCD1B7B3C60",
+    "Gratis/MapRenderer/MapColourTextureCache.cs": "88F533F11826A21B44758943B2A633BB91DA40FF022EE2A65D0F3AC6AD43C0AD",
+    "Gratis/Rendering/BottomCardsDrawing.cs": "DDD6590A96D05D1D30D1294C779BFAD985E954624BB702AF99B8A5AFD1C69E0D",
+    "Gratis/Rendering/CoordinateTextCache.cs": "D9E56B873935528EFA7CC9D743DF9A18AEFF1C8B8F7C24C47F4B36D5A5FE1EE5",
+    "Gratis/Rendering/EorzeaTime.cs": "9F5128571223D689269F0E25F8EDD92FECF4A82A6B2AAF84F31DD4B7330A1307",
+    "Gratis/Rendering/ItemTooltipDrawing.cs": "EF61FE079C58982AF93794145F15ECB6ABC7779144DA8590A2DE2BA2C59A9D55",
+    "Gratis/Rendering/ItemTooltipModel.cs": "9F7A79928A50E80E27C60635A9C12B56B3881867A80D6CE0330391A13BFFD241",
+    "Gratis/Rendering/PaletteOverlay.Drawing.cs": "D3F6288EB73B0DF9ABC89B61CE2137423829EF9E13F8AA14D8412028D21386D0",
+    "Gratis/Rendering/PaletteOverlay.cs": "A2288C03550BBA09436AF1005B3553CCE2F97CE0918C5E27AFD4B4E210D5639D",
+    "Gratis/Rendering/PaletteRowNames.cs": "2BADEE1EEAB1A3D9592AD8F6C08C21C99E3098D24F8F06A17609B202E4DCB756",
+    "Gratis/Rendering/QuestLogPanel.Summary.cs": "9CC9E39B05B26EFB4C3E2E0820CFF70CF5473BF6D60593568937D6B03FC27417",
+    "Gratis/Rendering/QuestLogPanel.cs": "95E625A2AB4504193F9813289282C555230B6A1EA16D237970E2E5A12F0B020E",
+    "Gratis/Rendering/QuestLogPresentation.cs": "99442512180B6ADD390D6198445573298E8BCF0546F57A09B065255C48D75DDD",
+    "Gratis/Windows/SettingsLayout.Cache.cs": "02D9B8D299D66322DEA5E270B8640297B0A743AE8CCC80318E5C25933DA54DA4",
+    "Gratis/Windows/SettingsLayout.Chrome.cs": "8D210ED89078C089B6BA4A8495900184CC77D8953FA255AA2FED3A82D4649E33",
+    "Gratis/Windows/SettingsLayout.Gratis.cs": "832C7EC3028CEF6E56D7924753AAB51B0CF34CC8327544DF2907E8DEE5A410A6",
+    "Gratis/Windows/SettingsLayout.cs": "97DAB965C9D70A14939AD527368A3E3779B8523F1BFD6D3D5956BCB821F6E243"
+  },
+  "Scope": "Gratis/ and Gratis.Preview/; no commit or push. Every build uses --artifacts-path _artifacts/perf. Artifacts removed on completion."
+}

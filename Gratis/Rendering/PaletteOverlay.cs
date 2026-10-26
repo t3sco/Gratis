@@ -108,6 +108,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         ImGui.EndDisabled();
     }
     private PlaceResult[] results = [];
+    private readonly PaletteRowNames rowNames = new();
     private PlaceResult[] previousResults = [];
     private PaletteExpansion[] previousExpansions = [];
     private PaletteZone[] previousBrowserZones = [];
@@ -236,6 +237,9 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         && p.X <= rect.Z && p.Y >= rect.Y && p.Y <= rect.W;
 
     private void Search(MapDrawingConfig config) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Search);
+#endif
         var windows = MapDrawContext.Current.WindowPresets;
         if (windowPresetRevision != windows.Revision || windowPresetSettings != config.WindowPresetOptions) {
             windowPresetRevision = windows.Revision;

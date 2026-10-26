@@ -59,6 +59,9 @@ public sealed partial class MapWindowFrame {
         && cursor.X <= max.X && cursor.Y <= max.Y;
 
     public void Draw(IMapWindowHost host) {
+#if GRATIS_PREVIEW
+        using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Window);
+#endif
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
         MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
         host.UpdateWindow();
