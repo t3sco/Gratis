@@ -230,7 +230,7 @@ public static partial class UiMotion {
             Full ? .97f + .03f * alpha : 1, start: 0);
         if (backdrop)
             MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), min, min + size,
-                GratisTheme.Radius.Popup * s, surfaceOpacity: 1);
+                GratisTheme.Radius.Popup * s, surfaceOpacity: 1, blur: false);
         return new(native, visual);
     }
 

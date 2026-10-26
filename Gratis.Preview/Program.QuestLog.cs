@@ -13,7 +13,7 @@ internal static partial class Program {
 
     private static bool TryQuestLogScene(string[] args) {
         var index = Array.IndexOf(args, "--scene");
-        if (index < 0 || index + 1 >= args.Length || args[index + 1] is not ("quest-log" or "quest-log-circle"))
+        if (index < 0 || index + 1 >= args.Length || args[index + 1] is not ("quest-log" or "quest-log-circle" or "quest-log-detail" or "quest-log-search"))
             return false;
         var sizeIndex = Array.IndexOf(args, "--size");
         var size = sizeIndex >= 0 ? args[sizeIndex + 1].Split('x') : ["1100", "700"];
@@ -30,6 +30,22 @@ internal static partial class Program {
         });
         for (var frame = 0; frame < 16; frame++)
             driver.Step(new(frame * .04));
+        var time = .64;
+        void Click(Vector4 bounds) {
+            var mouse = new Vector2((bounds.X + bounds.Z) / 2, (bounds.Y + bounds.W) / 2);
+            driver.Step(new(time += .04, Mouse: mouse, Left: true));
+            driver.Step(new(time += .04, Mouse: mouse, Left: false));
+        }
+        var panel = driver.Context.QuestLog;
+        if (args[index + 1] == "quest-log-detail")
+            Click(panel.Rows.First().Bounds);
+        if (args[index + 1] == "quest-log-search" || args.Contains("--search"))
+            Click(panel.SearchToggleBounds);
+        for (var frame = 0; frame < 16; frame++)
+            driver.Step(new(time += .04, Mouse: new(-1000)));
+        var timeIndex = Array.IndexOf(args, "--time");
+        if (timeIndex >= 0)
+            driver.Step(new(Math.Max(time + .04, double.Parse(args[timeIndex + 1], global::System.Globalization.CultureInfo.InvariantCulture))));
         driver.Save(output);
         Console.WriteLine($"{output}: {width}x{height}, accepted={driver.Context.QuestLog.Results.Count}, "
             + $"progress={driver.Context.QuestSource!.Snapshot.Progress!.Percentage}%, "

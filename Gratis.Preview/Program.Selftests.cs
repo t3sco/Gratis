@@ -17,6 +17,7 @@ internal static partial class Program {
         ("frames-location-menu", LocationMenuVerification.Run),
         ("quest-log-model", QuestLogVerification.Model),
         ("frames-quest-log", QuestLogVerification.Frames),
+        ("frames-quest-log-phase1", QuestLogPhaseOneVerification.Run),
         ("frames-travel-input", ChromeThreeVerification.TravelInput),
         ("window-presets", WindowPresetVerification.State),
         ("frames-window-presets", WindowPresetVerification.Frames),

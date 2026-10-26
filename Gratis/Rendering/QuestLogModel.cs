@@ -6,9 +6,25 @@ using Gratis.Controllers;
 namespace Gratis.Rendering;
 
 public enum QuestLogStatus { Loading, Ready, Unavailable }
+public enum QuestLogTab { Accepted, Completed, Unaccepted }
 
 public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestBucket Bucket,
-    uint Icon, string Objective, string Duty, IReadOnlyList<PlaceEntry> Targets);
+    uint Icon, string Objective, string Duty, IReadOnlyList<PlaceEntry> Targets) {
+    public uint Expansion { get; init; }
+    public uint ExpansionIcon { get; init; }
+    public string Description { get; init; } = "";
+    public QuestLogRewards? Rewards { get; init; }
+    public bool Completed { get; init; }
+    public bool ClientKnown { get; init; }
+    public bool Repeatable { get; init; }
+    public string Start { get; init; } = "";
+    public string Requirements { get; init; } = "";
+    public string Prerequisites { get; init; } = "";
+}
+
+public sealed record QuestLogRewards(uint Gil, uint? Exp, IReadOnlyList<QuestLogRewardItem> Items);
+
+public sealed record QuestLogRewardItem(uint Id, string Name, uint Icon, uint Count, bool Optional = false);
 
 public sealed record QuestLogProgress(uint Expansion, string Name, uint Icon, int Completed, int Total) {
     public int Percentage => Total > 0 ? (int)Math.Round(100d * Completed / Total) : 0;
@@ -17,17 +33,29 @@ public sealed record QuestLogProgress(uint Expansion, string Name, uint Icon, in
 public sealed record QuestLogSnapshot(int Revision, QuestLogStatus Status, IReadOnlyList<QuestLogQuest> Quests,
     string CurrentScenario = "", QuestLogProgress? Progress = null, ulong Character = 0) {
     public static readonly QuestLogSnapshot Loading = new(0, QuestLogStatus.Loading, []);
+    public IReadOnlyList<QuestLogQuest> Completed { get; init; } = [];
+    public IReadOnlyList<QuestLogQuest> Unaccepted { get; init; } = [];
+    public bool HistoryLoading { get; init; }
+    public bool HistoryCapped { get; init; }
+    public bool UnacceptedCapped { get; init; }
 }
 
 public interface IQuestLogSource {
     QuestLogSnapshot Snapshot { get; }
     bool Show(QuestLogQuest quest);
+    void RequestDetail(uint id) { }
 }
 
 public static class QuestLogModel {
-    public static QuestLogQuest[] Filter(QuestLogSnapshot snapshot, string query) {
+    public static QuestLogQuest[] Filter(QuestLogSnapshot snapshot, string query,
+        QuestLogTab tab = QuestLogTab.Accepted, bool showLocked = false, bool repeatableOnly = false) {
         var words = PlaceSearch.Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return snapshot.Quests.Where(q => {
+        var quests = tab switch {
+            QuestLogTab.Completed => snapshot.Completed,
+            QuestLogTab.Unaccepted => snapshot.Unaccepted.Where(q => showLocked || q.ClientKnown),
+            _ => snapshot.Quests,
+        };
+        return quests.Where(q => !repeatableOnly || q.Repeatable).Where(q => {
             var text = PlaceSearch.Normalize(q.Name + " " + q.Objective + " " + q.Duty + " "
                 + QuestBuckets.Label(q.Bucket));
             return words.All(w => text.Contains(w, StringComparison.Ordinal));

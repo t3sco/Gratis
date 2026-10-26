@@ -18,6 +18,7 @@
     <Compile Include="../Gratis/Windows/Settings*.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Compat/Configuration/CharacterConfiguration.cs;../Gratis/Compat/Configuration/Configuration.Serialization.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Controllers/ZoneSwitchPolicy.cs" Link="Shared/ZoneSwitchPolicy.cs" />
+    <Compile Include="../Gratis/Controllers/AddonJournalController.cs" Link="Shared/AddonJournalController.cs" />
     <Compile Include="../Gratis/Controllers/FlagArrivalState.cs" Link="Shared/FlagArrivalState.cs" />
     <Compile Include="../Gratis/Controllers/PlaceIndex.cs;../Gratis/Controllers/PlaceIndexBuilder.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../Gratis/Controllers/NearestPlaces.cs" Link="Shared/NearestPlaces.cs" />

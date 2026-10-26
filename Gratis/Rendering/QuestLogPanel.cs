@@ -11,7 +11,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace Gratis.Rendering;
 
-public sealed class QuestLogPanel {
+public sealed partial class QuestLogPanel {
     private readonly HashSet<QuestBucket> collapsed = [];
     private readonly List<(uint Id, Vector4 Bounds)> rows = [];
     private readonly Dictionary<QuestBucket, Vector4> sections = [];
@@ -23,7 +23,32 @@ public sealed class QuestLogPanel {
     private bool focusSearch, keyboard, gesture, swallowEscape, suspended, initialized;
     private ulong character;
     private uint selected;
+    private bool searchOpen, rowKeyboard;
+    private float searchReveal;
+    public bool SearchOpen => searchOpen;
+    public Vector4 SearchToggleBounds { get; private set; }
     private int motionEpoch;
+    private int escapeFrame = -1;
+    private bool requestedOpen, repeatableOnly, lastShowLocked;
+    public QuestLogTab Tab { get; private set; }
+    public Vector4[] TabBounds { get; } = new Vector4[3];
+    public Vector4 CloseBounds { get; private set; }
+    public event Action? Closed;
+    public void OpenFromJournal() {
+        requestedOpen = true;
+        IsOpen = true;
+    }
+    public void CloseFromJournal() {
+        if (!MapDrawContext.Current.Config.QuestLogPinned) CloseLog(false);
+    }
+    private void CloseLog(bool notify = true) {
+        var wasOpen = IsOpen;
+        IsOpen = keyboard = rowKeyboard = focusSearch = false;
+        requestedOpen = false;
+        HideSearch();
+        CloseDetail();
+        if (wasOpen && notify) Closed?.Invoke();
+    }
     public bool IsOpen { get; private set; }
     public bool PointerOver { get; private set; }
     public bool InputActive { get; private set; }
@@ -40,27 +65,46 @@ public sealed class QuestLogPanel {
     public IReadOnlyList<QuestLogQuest> Results => filtered;
     public float Opacity { get; private set; }
     public uint HoveredQuestId { get; private set; }
+    public Vector4 ProgressBounds { get; private set; }
+    public uint ScenarioRimQuestId { get; private set; }
+    public float ScenarioRimOpacity { get; private set; }
+    public uint CurrentScenarioQuestId => snapshot.CurrentScenario.Length == 0 ? 0
+        : snapshot.Quests.FirstOrDefault(q => q.Bucket == QuestBucket.Scenario && q.Name == snapshot.CurrentScenario)?.RowId ?? 0;
 
     public void OnOpen(MapDrawingConfig config) {
         initialized = true;
-        IsOpen = config.IsGratis && config.QuestLogOpenWithMap;
+        IsOpen = config.IsGratis && (requestedOpen || config.QuestLogPinned || config.QuestLogOpenWithMap);
+        requestedOpen = false;
         keyboard = gesture = swallowEscape = focusSearch = false;
+        searchOpen = false;
+        query = "";
+        CloseDetail();
     }
 
     public void OnClose() {
+        var wasOpen = IsOpen;
+        requestedOpen = false;
         if (IsOpen || Opacity > .001f)
             motionEpoch++;
-        IsOpen = keyboard = gesture = swallowEscape = focusSearch = InputActive = PointerOver = false;
+        IsOpen = keyboard = rowKeyboard = gesture = swallowEscape = focusSearch = InputActive = PointerOver = false;
         Opacity = 0;
+        detailOpacity = 0;
+        detailQuest = null;
+        CloseDetail();
+        searchOpen = false;
+        query = "";
         HoveredQuestId = 0;
         Layout = default;
         rows.Clear();
         sections.Clear();
+        if (wasOpen) Closed?.Invoke();
     }
 
     public void Toggle() {
-        IsOpen = !IsOpen;
-        focusSearch = IsOpen;
+        if (MapDrawContext.Current.Config.QuestLogPinned)
+            return;
+        if (IsOpen) CloseLog();
+        else IsOpen = true;
     }
 
     private static bool Over(Vector4 b) => b.Z > b.X && b.W > b.Y
@@ -88,6 +132,20 @@ public sealed class QuestLogPanel {
             selected = 0;
             revision = -1;
         }
+        if (host.Config.QuestLogPinned)
+            IsOpen = true;
+        if (detailQuest != null) {
+            if (Tab == QuestLogTab.Unaccepted && !detailQuest.ClientKnown && !host.Config.QuestLogShowLocked) {
+                detailQuest = null;
+                detailOpacity = 0;
+                CloseDetail();
+            }
+            else {
+                detailQuest = snapshot.Quests.Concat(snapshot.Completed).Concat(snapshot.Unaccepted)
+                    .FirstOrDefault(q => q.RowId == detailQuest.RowId);
+                if (detailQuest == null) CloseDetail();
+            }
+        }
         suspended = host.Palette?.IsOpen == true;
         var (min, max) = ChromeLayout.RawSafeBounds(position, size);
         var s = GratisTheme.ChromeScale;
@@ -101,17 +159,32 @@ public sealed class QuestLogPanel {
         swallowEscape &= ImGui.IsKeyDown(ImGuiKey.Escape);
         var popup = ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId | ImGuiPopupFlags.AnyPopupLevel);
         if (!suspended && !popup && IsOpen && (host.MapFocused || keyboard || PointerOver)
-            && ImGui.IsKeyPressed(ImGuiKey.Escape, false)) {
-            IsOpen = focusSearch = false;
+            && escapeFrame != ImGui.GetFrameCount() && ImGui.IsKeyPressed(ImGuiKey.Escape, false)) {
+            escapeFrame = ImGui.GetFrameCount();
+            if (searchOpen)
+                HideSearch();
+            else if (DetailOpen)
+                CloseDetail();
+            else if (!host.Config.QuestLogPinned)
+                CloseLog();
             swallowEscape = true;
-            keyboard = false;
+            keyboard = IsOpen;
         }
-        PointerOver = !suspended && !popup && (Over(Layout.Toggle) || IsOpen && Over(Layout.Panel));
+        if (!suspended && !popup && IsOpen && (host.MapFocused || keyboard) && ImGui.GetIO().KeyCtrl
+            && ImGui.IsKeyPressed(ImGuiKey.F, false))
+            ShowSearch();
+        PointerOver = !suspended && !popup && (Over(Layout.Toggle) || Over(Layout.Pin)
+            || IsOpen && (Over(Layout.Panel) || DetailOpen && Over(Layout.Detail)));
         gesture = ImGui.IsAnyMouseDown() && (gesture || PointerOver);
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)
+            && (!PointerOver || !rows.Any(r => Over(r.Bounds))))
+            rowKeyboard = false;
+        if (!host.MapFocused)
+            rowKeyboard = false;
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !PointerOver)
             keyboard = false;
         if (suspended || popup)
-            keyboard = false;
+            keyboard = rowKeyboard = false;
         InputActive = PointerOver || gesture || CapturesKeyboard;
         HoveredQuestId = IsOpen && !suspended && !popup
             ? rows.FirstOrDefault(r => Over(r.Bounds)).Id : 0;
@@ -125,10 +198,14 @@ public sealed class QuestLogPanel {
         var context = MapDrawContext.Current;
         rows.Clear();
         sections.Clear();
-        SearchBounds = ListBounds = Vector4.Zero;
+        SearchBounds = ListBounds = ProgressBounds = Vector4.Zero;
+        ScenarioRimQuestId = 0;
+        ScenarioRimOpacity = 0;
         if (!host.Config.IsGratis || context.IsPvP || source == null || suspended)
             return;
         var s = GratisTheme.ChromeScale;
+        Layout = Layout.AvoidChrome(MapToolbarDrawing.LastBounds, MapWindowDrawing.TitleBounds,
+            MapWindowDrawing.CoordinateBounds, s);
         var toggle = Layout.Toggle;
         var parent = ImGui.GetWindowDrawList();
         var alpha = context.Chrome.ControlsAlpha(host.Config);
@@ -143,9 +220,25 @@ public sealed class QuestLogPanel {
             ChromeControls.Feedback(parent, min, min + size, IsOpen, radius: GratisTheme.Radius.Card * s);
             GratisIcons.Draw(parent, min + size / 2, GratisIcons.BookOpen,
                 IsOpen ? GratisTheme.WarmAccent : GratisTheme.Secondary, GratisTheme.IconSize * s);
-            ChromeControls.Tooltip("Quest Log");
+            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Quest Log · pinned open" : "Quest Log");
+            min = new(Layout.Pin.X, Layout.Pin.Y);
+            MapWindowDrawing.DrawSurface(parent, min, min + size, GratisTheme.Radius.Card * s);
+            ImGui.SetCursorScreenPos(min);
+            if (ChromeControls.Button("##quest-log-pin", size)) {
+                host.Config.QuestLogPinned = !host.Config.QuestLogPinned;
+                if (host.Config.QuestLogPinned)
+                    IsOpen = true;
+            }
+            ChromeControls.Feedback(parent, min, min + size, host.Config.QuestLogPinned,
+                radius: GratisTheme.Radius.Card * s);
+            GratisIcons.Draw(parent, min + size / 2, GratisIcons.Pin,
+                host.Config.QuestLogPinned ? GratisTheme.WarmAccent : GratisTheme.Secondary, GratisTheme.IconSize * s);
+            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Unpin Quest Log" : "Pin Quest Log open");
         }
         Opacity = UiMotion.Visibility(ImGui.GetID("##quest-log-visibility-" + motionEpoch), IsOpen);
+        DrawDetail(host, s, parent);
+        if (Layout.DetailOverlay && (DetailOpen || detailOpacity > .001f))
+            return;
         var bounds = Layout.Panel;
         if (Opacity <= .001f || bounds.W - bounds.Y < 40 * s)
             return;
@@ -177,7 +270,7 @@ public sealed class QuestLogPanel {
             ImGui.BeginDisabled(!IsOpen);
             try {
                 DrawContent(s);
-                keyboard = IsOpen && ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows);
+                keyboard = IsOpen && (rowKeyboard || detailKeyboard || ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
                 if (keyboard || PointerOver) {
                     context.Chrome.Reveal(host.Now);
                     ImGui.SetNextFrameWantCaptureKeyboard(true);
@@ -197,32 +290,73 @@ public sealed class QuestLogPanel {
             GratisTheme.WarmAccent, 18 * s);
         using (context.GetChromeFont(16 * s, ChromeFontRole.Title)?.Push())
             TextDrawing.Draw(list, start + new Vector2(28, 4) * s, ImGui.GetColorU32(GratisTheme.Primary), "Quest Log");
+        ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 64 * s), 0));
+        var searchButtonStart = ImGui.GetCursorScreenPos();
+        if (ChromeControls.IconButton("##quest-log-search-toggle", GratisIcons.Search,
+            searchOpen ? "Hide search · Esc" : "Search quests · Ctrl+F", new(30 * s))) {
+            if (searchOpen) HideSearch(); else ShowSearch();
+        }
+        SearchToggleBounds = ItemBounds();
+        ChromeControls.Feedback(list, searchButtonStart, searchButtonStart + new Vector2(30 * s), searchOpen);
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 30 * s), 0));
-        if (ChromeControls.IconButton("##quest-log-close", GratisIcons.X, "Close Quest Log", new(30 * s))) {
-            IsOpen = keyboard = focusSearch = false;
+        var close = ChromeControls.IconButton("##quest-log-close", GratisIcons.X,
+            context.Config.QuestLogPinned ? "Unpin to close Quest Log" : "Close Quest Log", new(30 * s));
+        CloseBounds = ItemBounds();
+        if (close && !context.Config.QuestLogPinned) {
+            CloseLog();
             gesture = ImGui.IsAnyMouseDown();
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, 38 * s));
-        if (ImGui.GetContentRegionAvail().Y < 96 * s) {
+        if (ImGui.GetContentRegionAvail().Y < 56 * s) {
             ImGui.TextWrapped("Enlarge the map to read quests.");
             return;
         }
-        DrawScenario(s, width);
-        if (focusSearch && IsOpen) {
-            ImGui.SetKeyboardFocusHere();
-            focusSearch = false;
+        DrawTabs(s, width);
+        var shortPanel = ImGui.GetContentRegionAvail().Y < 180 * s;
+        if (!shortPanel && Tab == QuestLogTab.Accepted)
+            DrawScenario(s, width);
+        searchReveal = UiMotion.Visibility(ImGui.GetID("##quest-log-search-reveal"), searchOpen);
+        if (searchOpen || searchReveal > .001f) {
+            var searchStart = ImGui.GetCursorScreenPos();
+            var searchHeight = ImGui.GetFrameHeight() + 6 * s;
+            list.PushClipRect(searchStart, searchStart + new Vector2(width, searchHeight * searchReveal), true);
+            using (var reveal = new UiMotion.VisualScope(list, searchStart, searchReveal, Vector2.Zero)) {
+                if (focusSearch && searchOpen) {
+                    ImGui.SetKeyboardFocusHere();
+                    focusSearch = false;
+                }
+                ImGui.SetNextItemWidth(-1);
+                ImGui.BeginDisabled(!searchOpen);
+                var fieldQuery = query;
+                ImGui.InputTextWithHint("##quest-log-search", "Search quests...", ref fieldQuery, 256);
+                if (searchOpen)
+                    query = fieldQuery;
+                ImGui.EndDisabled();
+                SearchBounds = ItemBounds();
+            }
+            list.PopClipRect();
+            ImGui.SetCursorScreenPos(searchStart + new Vector2(0, searchHeight * searchReveal));
         }
-        ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##quest-log-search", "Search accepted quests...", ref query, 256);
-        SearchBounds = ItemBounds();
-        if (revision != snapshot.Revision || searched != query) {
-            filtered = QuestLogModel.Filter(snapshot, query);
+        if (revision != snapshot.Revision || searched != query || lastShowLocked != context.Config.QuestLogShowLocked) {
+            filtered = QuestLogModel.Filter(snapshot, query, Tab, context.Config.QuestLogShowLocked, repeatableOnly);
+            lastShowLocked = context.Config.QuestLogShowLocked;
             revision = snapshot.Revision;
             searched = query;
         }
-        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-            ImGui.TextColored(GratisTheme.Secondary, $"Accepted quests · {filtered.Length}"
-                + (query.Length > 0 ? $" of {snapshot.Quests.Count}" : ""));
+        if (!shortPanel) {
+            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
+                ImGui.TextColored(GratisTheme.Secondary, $"{Tab} quests · {filtered.Length}");
+        }
+        if (Tab == QuestLogTab.Unaccepted)
+            ImGui.TextWrapped("Availability unknown · client-known map offers"
+                + (context.Config.QuestLogShowLocked ? " and locked quests" : ""));
+        if (Tab == QuestLogTab.Completed && snapshot.HistoryLoading)
+            ImGui.TextWrapped("Checking completion history...");
+        if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
+            ImGui.TextWrapped("Showing the first 500 quests by name.");
+        if (ImGui.GetContentRegionAvail().Y > 100 * s)
+            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
+                ImGui.TextColored(GratisTheme.Secondary, "Click: summary · Right-click: map");
         var remaining = ImGui.GetContentRegionAvail();
         if (remaining.Y < 8 * s)
             return;
@@ -244,7 +378,7 @@ public sealed class QuestLogPanel {
                 return;
             }
             if (filtered.Length == 0) {
-                ImGui.TextWrapped(query.Length > 0 ? "No quests match your search." : "No accepted quests.");
+                ImGui.TextWrapped(query.Length > 0 ? "No quests match your search." : $"No {Tab.ToString().ToLowerInvariant()} quests.");
                 return;
             }
             var top = ImGui.GetCursorScreenPos().Y + ImGui.GetScrollY();
@@ -252,62 +386,77 @@ public sealed class QuestLogPanel {
                 var quests = filtered.Where(q => q.Bucket == bucket).ToArray();
                 if (quests.Length == 0)
                     continue;
+                if (bucket == QuestBucket.Scenario)
+                    quests = quests.OrderByDescending(q => q.RowId == CurrentScenarioQuestId).ToArray();
                 DrawSection(bucket, quests, top, s);
             }
         }
         finally { ImGui.EndChild(); ImGui.PopStyleVar(2); }
     }
 
+    private void DrawTabs(float s, float width) {
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push();
+        for (var i = 0; i < 3; i++) {
+            if (i > 0) ImGui.SameLine(0, 4 * s);
+            var min = ImGui.GetCursorScreenPos();
+            var size = new Vector2((width - 8 * s) / 3, 28 * s);
+            if (ChromeControls.Button("##quest-tab-" + i, size)) {
+                Tab = (QuestLogTab)i;
+                revision = -1;
+                selected = 0;
+                CloseDetail();
+            }
+            TabBounds[i] = ItemBounds();
+            ChromeControls.Feedback(ImGui.GetWindowDrawList(), min, min + size, Tab == (QuestLogTab)i);
+            var label = ((QuestLogTab)i).ToString();
+            var text = TextDrawing.Measure(label);
+            TextDrawing.Draw(ImGui.GetWindowDrawList(), min + (size - text) / 2,
+                ImGui.GetColorU32(Tab == (QuestLogTab)i ? GratisTheme.WarmAccent : GratisTheme.Secondary), label);
+        }
+        if (ImGui.GetContentRegionAvail().Y < 140 * s) return;
+        var start = ImGui.GetCursorScreenPos();
+        if (ChromeControls.Button("##repeatable-filter", new(TextDrawing.Measure("Repeatable").X + 16 * s, 24 * s))) {
+            repeatableOnly = !repeatableOnly;
+            revision = -1;
+        }
+        PaletteRowDrawing.Pill(ImGui.GetWindowDrawList(), start + new Vector2(2 * s), "Repeatable",
+            repeatableOnly ? GratisTheme.WarmAccent : GratisTheme.Secondary, s);
+    }
+
     private void DrawScenario(float s, float width) {
+        if (snapshot.Progress is not { Total: > 0 } progress)
+            return;
         var context = MapDrawContext.Current;
         var list = ImGui.GetWindowDrawList();
         var start = ImGui.GetCursorScreenPos();
-        var progress = snapshot.Progress;
-        var accent = PaletteOverlay.ExpansionAccent(progress?.Expansion ?? 0);
-        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-            TextDrawing.Draw(list, start, ImGui.GetColorU32(GratisTheme.Secondary), "Current Main Scenario Quest");
-        var title = snapshot.CurrentScenario.Length > 0 ? snapshot.CurrentScenario
-            : snapshot.Status == QuestLogStatus.Loading ? "Loading..." : "No main scenario quest accepted";
-        TextDrawing.Draw(list, start + new Vector2(0, 22 * s), ImGui.GetColorU32(GratisTheme.Primary),
-            ChromeControls.FitLabel(title, width));
-        var line = start + new Vector2(0, 47 * s);
-        if (progress is { Total: > 0 }) {
-            var crest = context.GetExpansionCrest(progress.Icon);
-            if (crest.Handle != default) {
-                var size = crest.Size * (24 * s / MathF.Max(1, MathF.Max(crest.Size.X, crest.Size.Y)));
-                list.AddImage(crest.Handle, line, line + size);
-            }
-            else {
-                var center = line + new Vector2(12 * s);
-                list.AddCircleFilled(center, 11 * s, ImGui.GetColorU32(accent with { W = .18f }));
-                GratisIcons.Draw(list, center, GratisIcons.BookOpen, accent, 14 * s);
-            }
-            using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
-                var percent = $"({progress.Percentage}%)";
-                var textWidth = TextDrawing.Measure(percent).X;
-                TextDrawing.Draw(list, line + new Vector2(30 * s, 4 * s), ImGui.GetColorU32(accent),
-                    ChromeControls.FitLabel(progress.Name, width - textWidth - 38 * s));
-                TextDrawing.Draw(list, line + new Vector2(width - textWidth, 4 * s),
-                    ImGui.GetColorU32(GratisTheme.Primary), percent);
-            }
-            var bar = line + new Vector2(0, 30 * s);
-            var barSize = new Vector2(width, 4 * s);
-            list.AddRectFilled(bar, bar + barSize, ImGui.GetColorU32(accent with { W = .12f }),
-                GratisTheme.Radius.Pill(barSize));
-            var fill = barSize with { X = width * Math.Clamp((float)progress.Completed / progress.Total, 0, 1) };
-            list.AddRectFilled(bar, bar + fill, ImGui.GetColorU32(accent), GratisTheme.Radius.Pill(fill));
-            ImGui.SetCursorScreenPos(start + new Vector2(0, 42 * s));
-            ImGui.Dummy(new(width, 40 * s));
-            if (ImGui.IsItemHovered())
-                UiMotion.TooltipText($"{progress.Name}: {progress.Completed}/{progress.Total} catalogued MSQ quests completed."
-                    + "\nIncludes base story and patches; alternate starting paths count separately.");
+        var accent = PaletteOverlay.ExpansionAccent(progress.Expansion);
+        var crest = context.GetExpansionCrest(progress.Icon);
+        if (crest.Handle != default) {
+            var size = crest.Size * (24 * s / MathF.Max(1, MathF.Max(crest.Size.X, crest.Size.Y)));
+            var iconStart = start + new Vector2(12 * s) - size / 2;
+            list.AddImage(crest.Handle, iconStart, iconStart + size);
         }
-        else {
-            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-                TextDrawing.Draw(list, line, ImGui.GetColorU32(GratisTheme.Secondary), "Progress unavailable");
-            ImGui.SetCursorScreenPos(start + new Vector2(0, 70 * s));
-            ImGui.Dummy(Vector2.Zero);
+        else
+            GratisIcons.Draw(list, start + new Vector2(12 * s), GratisIcons.BookOpen, accent, 18 * s);
+        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
+            var percent = $"{progress.Percentage}%";
+            var textWidth = TextDrawing.Measure(percent).X;
+            TextDrawing.Draw(list, start + new Vector2(32 * s, 4 * s), ImGui.GetColorU32(accent),
+                ChromeControls.FitLabel(progress.Name, width - textWidth - 40 * s));
+            TextDrawing.Draw(list, start + new Vector2(width - textWidth, 4 * s),
+                ImGui.GetColorU32(GratisTheme.Primary), percent);
         }
+        var bar = start + new Vector2(0, 30 * s);
+        var barSize = new Vector2(width, 4 * s);
+        list.AddRectFilled(bar, bar + barSize, ImGui.GetColorU32(accent with { W = .12f }),
+            GratisTheme.Radius.Pill(barSize));
+        var fill = barSize with { X = width * Math.Clamp((float)progress.Completed / progress.Total, 0, 1) };
+        list.AddRectFilled(bar, bar + fill, ImGui.GetColorU32(accent), GratisTheme.Radius.Pill(fill));
+        ImGui.Dummy(new(width, 42 * s));
+        ProgressBounds = ItemBounds();
+        if (ImGui.IsItemHovered())
+            UiMotion.TooltipText($"{progress.Name}: {progress.Completed}/{progress.Total} catalogued MSQ quests completed."
+                + "\nIncludes base story and patches; alternate starting paths count separately.");
     }
 
     private void DrawSection(QuestBucket bucket, QuestLogQuest[] quests, float top, float s) {
@@ -357,6 +506,9 @@ public sealed class QuestLogPanel {
         ImGui.PopID();
     }
 
+    public static float ScenarioRimAlpha(double time, bool fullMotion) => fullMotion
+        ? .16f + .06f * MathF.Sin((float)(time % 5) * MathF.Tau / 5) : .12f;
+
     private static float RowHeight(float s) => 52 * s;
 
     private void DrawRow(QuestLogQuest quest, float width, float clipTop, float s) {
@@ -371,10 +523,25 @@ public sealed class QuestLogPanel {
         b.W = MathF.Min(b.W, ImGui.GetWindowPos().Y + ImGui.GetWindowHeight());
         if (b.W > b.Y)
             rows.Add((quest.RowId, b));
-        if (clicked && (ImGui.GetIO().NavVisible || ImGui.GetMousePos().Y >= clipTop)) {
+        var focused = ImGui.IsItemFocused() || !ImGui.GetIO().NavVisible && rowKeyboard && selected == quest.RowId;
+        var mapKey = focused && !searchOpen && (ImGui.IsKeyPressed(ImGuiKey.M, false)
+            || ImGui.GetIO().KeyShift && ImGui.IsKeyPressed(ImGuiKey.Enter, false));
+        if (hovered && ImGui.IsMouseClicked(ImGuiMouseButton.Right) || mapKey) {
+            rowKeyboard = true;
             selected = quest.RowId;
-            if (source?.Show(quest) == true)
-                IsOpen = keyboard = false;
+            ShowOnMap(quest);
+        }
+        else if (focused && !searchOpen && ImGui.IsKeyPressed(ImGuiKey.Enter, false)
+            || clicked && (ImGui.GetIO().NavVisible || ImGui.GetMousePos().Y >= clipTop)) {
+            rowKeyboard = true;
+            selected = quest.RowId;
+            if (DetailOpen && detailQuest?.RowId == quest.RowId)
+                CloseDetail();
+            else {
+                source?.RequestDetail(quest.RowId);
+                detailQuest = quest;
+                DetailOpen = true;
+            }
         }
         if (ImGui.IsItemVisible()) {
             var context = MapDrawContext.Current;
@@ -382,9 +549,21 @@ public sealed class QuestLogPanel {
             PaletteRowDrawing.Background(list, start, size, context.Config.AccentColor, selected == quest.RowId,
                 hovered, s);
             ChromeControls.Feedback(list, start, start + size, selected == quest.RowId, fill: false);
-            var icon = context.GetIcon(quest.Icon);
-            if (icon.Handle != default)
-                list.AddImage(icon.Handle, start + new Vector2(8, 10) * s, start + new Vector2(28, 30) * s);
+            if (quest.RowId == CurrentScenarioQuestId) {
+                ScenarioRimQuestId = quest.RowId;
+                ScenarioRimOpacity = ScenarioRimAlpha(ImGui.GetTime(), UiMotion.Full);
+                var color = GratisTheme.WarmAccent with { W = ScenarioRimOpacity };
+                var radius = GratisTheme.Radius.Control * s;
+                MapWindowDrawing.DrawGradientRing(list, start, start + size, radius, 4 * s, color with { W = color.W / 2 }, 2);
+                FrameMaterialDrawing.DrawStroke(list, start, start + size, radius, s, color);
+            }
+
+            var icon = RowIcon(quest);
+            if (icon.Handle != default) {
+                var iconSize = icon.Size * (24 * s / MathF.Max(1, MathF.Max(icon.Size.X, icon.Size.Y)));
+                var iconMin = start + new Vector2(18, 25) * s - iconSize / 2;
+                list.AddImage(icon.Handle, iconMin, iconMin + iconSize);
+            }
             var text = start + new Vector2(38, 8) * s;
             var textWidth = MathF.Max(1, width - 46 * s);
             var muted = Vector4.Lerp(GratisTheme.Secondary, GratisTheme.Primary, .22f);
@@ -410,7 +589,7 @@ public sealed class QuestLogPanel {
             if (hovered)
                 ChromeControls.Tooltip(quest.Name + (quest.Objective.Length > 0 ? "\n" + quest.Objective : "")
                     + (quest.Duty.Length > 0 ? "\n" + quest.Duty : "")
-                    + (quest.Targets.Count == 0 ? "\nNo map destination is currently available." : "\nShow on map"));
+                    + (quest.Targets.Count == 0 ? "\nNo map destination is currently available." : "\nLeft-click: summary · Right-click: show on map\nEnter: summary · Shift+Enter / M: map"));
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, height));
         ImGui.Dummy(new(0, GratisTheme.Gap * s));

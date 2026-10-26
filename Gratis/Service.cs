@@ -16,6 +16,9 @@ public class Service {
     public static IDataManager DataManager { get; set; }
 
     [PluginService]
+    public static ISeStringEvaluator SeStringEvaluator { get; set; }
+
+    [PluginService]
     public static ITextureProvider TextureProvider { get; set; }
 
     [PluginService]

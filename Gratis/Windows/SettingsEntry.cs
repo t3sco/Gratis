@@ -68,6 +68,8 @@ public sealed class SettingsEntry {
     public object Value(SystemConfig config) => fields[^1].GetValue(Owner(config))!;
     public void Set(SystemConfig config, object value) {
         fields[^1].SetValue(Owner(config), value);
+        if (Path == "QuestLogReplaceJournal")
+            MapDrawContext.Current?.JournalReplacementChanged();
         if (Path == "ToolbarAnchor")
             config.ToolbarAnchorExplicit = true;
         if (Path == "LocationAnchor")

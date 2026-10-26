@@ -9,29 +9,31 @@ using ImGuiNET;
 
 namespace Gratis.Preview;
 
-internal static class QuestLogVerification {
+internal static partial class QuestLogVerification {
     private static void Require(bool value, string message) => MarkerVisibilityVerification.Require(value, message);
     private static Vector2 Center(Vector4 b) => new((b.X + b.Z) / 2, (b.Y + b.W) / 2);
     private static bool Valid(Vector4 b) => b.Z > b.X && b.W > b.Y;
 
     public static void Model() {
+        ObjectiveText();
         var json = Configuration.SerializerOptions;
         var legacy = JsonSerializer.Deserialize<SystemConfig>("{\"CenterOnQuest\":false}", json)!;
-        Require(!legacy.QuestLogOpenWithMap && legacy.QuestLogWidth == 320 && !legacy.CenterOnQuest,
+        Require(!legacy.QuestLogPinned && !legacy.QuestLogOpenWithMap && legacy.QuestLogWidth == 320 && !legacy.CenterOnQuest,
             "Old configs retain quest-centering and default to a closed log at 320 units");
         legacy.QuestLogWidth = float.NaN;
         Require(legacy.EffectiveQuestLogWidth == 320, "Invalid width resolves safely");
         legacy.QuestLogWidth = 400;
         legacy.QuestLogOpenWithMap = true;
+        legacy.QuestLogPinned = true;
         var restored = JsonSerializer.Deserialize<SystemConfig>(JsonSerializer.Serialize(legacy, json), json)!;
-        Require(restored.QuestLogOpenWithMap && restored.QuestLogWidth == 400, "Quest settings round trip");
+        Require(restored.QuestLogPinned && restored.QuestLogOpenWithMap && restored.QuestLogWidth == 400, "Quest settings round trip");
         var position = restored.WindowPosition;
         var lens = restored.ActiveLens;
         restored.ResetQuestLog();
-        Require(!restored.QuestLogOpenWithMap && restored.QuestLogWidth == 320
+        Require(!restored.QuestLogPinned && !restored.QuestLogOpenWithMap && restored.QuestLogWidth == 320
             && restored.WindowPosition == position && restored.ActiveLens == lens && !restored.CenterOnQuest,
             "Quest reset preserves position, lens and legacy centering");
-        foreach (var path in new[] { "QuestLogOpenWithMap", "QuestLogWidth" }) {
+        foreach (var path in new[] { "QuestLogOpenWithMap", "QuestLogPinned", "QuestLogWidth" }) {
             var entry = SettingsLayout.Entries.Single(e => e.Path == path);
             Require(entry.Visible(restored), "Quest setting is visible in Gratis");
             restored.VisualStyle = 1;
@@ -44,7 +46,52 @@ internal static class QuestLogVerification {
             && QuestLogModel.ScenarioCategories(5).SequenceEqual([13u, 14u, 15u]),
             "MSQ sets include expansion base story and patches");
         SettingsLayout.Reset(legacy, "Map");
-        Require(!legacy.QuestLogOpenWithMap && legacy.QuestLogWidth == 320, "Map settings reset includes quest log");
+        Require(!legacy.QuestLogPinned && !legacy.QuestLogOpenWithMap && legacy.QuestLogWidth == 320, "Map settings reset includes quest log");
+    }
+
+    private static void ObjectiveText() {
+        Require(QuestLogIcon.Accepted(71000, 6, 1) == 71003
+            && QuestLogIcon.Accepted(71020, 6, 3) == 71023
+            && QuestLogIcon.Accepted(71140, 6, 3) == 71143
+            && QuestLogIcon.Accepted(71140, 6, 6) == 71143
+            && QuestLogIcon.Accepted(71140, 6, 2) == 71143
+            && QuestLogIcon.Accepted(71020, 6, 7) == 71023
+            && QuestLogIcon.Accepted(71060, 6, null) == 71063,
+            "EventIconType families preserve MSQ, side, feature, job, chronicles, repeatable and leve icons");
+        Require(QuestLogIcon.Accepted(71140, 6, 1) == 71143
+            && QuestLogIcon.Accepted(0, 0, 1) == 71003
+            && QuestLogIcon.Accepted(0, 0, 6) == 71143
+            && QuestLogIcon.Accepted(0, 0, 3) == 71023
+            && QuestLogIcon.Accepted(0, 0, null) == 71023
+            && QuestLogIcon.Accepted(61731, 1, 3) == 61731,
+            "Quest icon metadata wins over category, and missing or single-icon families stay usable");
+        Require(QuestLogText.SheetName("HeaVny002_02112") == "quest/021/HeaVny002_02112"
+            && QuestLogText.SheetName("ClsArc000_00021") == "quest/000/ClsArc000_00021"
+            && QuestLogText.SheetName("missing") == "" && QuestLogText.SheetName("bad_abc") == "",
+            "Quest text paths use the numeric suffix, including leading zeroes");
+        byte[] reap = [1, 2, 255, 0, 0];
+        string[] text = ["Speak with Tonu Vanu.", "Enter Neverreap.", "Deliver the waukkeon scale."];
+        Require(QuestLogText.ActiveTodos(reap, 1).Select(i => text[i]).Single() == "Speak with Tonu Vanu."
+            && QuestLogText.ActiveTodos(reap, 2).SequenceEqual([1])
+            && QuestLogText.ActiveTodos(reap, 255).SequenceEqual([2]),
+            "Untracked Reap What You Sow resolves the current Journal objective through the final stage");
+        Require(QuestLogText.ActiveTodos([1, 3, 3, 255, 0], 2).SequenceEqual([1, 2])
+            && QuestLogText.ActiveTodos([1, 3, 3, 255, 0], 3).SequenceEqual([1, 2])
+            && QuestLogText.ActiveTodos([1, 3, 3, 255, 0], 4).SequenceEqual([3])
+            && QuestLogText.ActiveTodos([0, 0], 0).Length == 0
+            && QuestLogText.ActiveTodos([1, 2, 0], 3).Length == 0,
+            "Skipped sequences, parallel objectives and missing TODOs preserve stage boundaries");
+        Require(QuestLogText.DescriptionIndex(reap, 1) == 1
+            && QuestLogText.DescriptionIndex(reap, 255) == 3
+            && QuestLogText.DescriptionIndex([1, 3, 3, 255], 3) == 2,
+            "Journal paragraphs follow distinct stages, including the final sequence");
+        Require(QuestLogText.PreferTracked("Slay enemies. · 2/3", "Slay enemies.") == "Slay enemies. · 2/3"
+            && QuestLogText.PreferTracked(" ", "Speak with Tonu Vanu.") == "Speak with Tonu Vanu."
+            && QuestLogText.PreferTracked(null, null) == "",
+            "Tracked progress wins and missing text falls back safely");
+        Require(QuestLogText.BaseExperience(1000, 65000, 100) == 65000000
+            && QuestLogText.BaseExperience(0, 65000, 100) == 0,
+            "Base EXP uses a wide intermediate and preserves quests without EXP");
     }
 
     public static void Frames() {
@@ -64,6 +111,10 @@ internal static class QuestLogVerification {
                 Step(mouse); Step(mouse, true); Step(mouse); Step(mouse);
             }
             void Search(string text) {
+                if (!panel.SearchOpen) {
+                    Click(panel.SearchToggleBounds);
+                    Settle();
+                }
                 Click(panel.SearchBounds);
                 Step(Center(panel.SearchBounds), control: true, keys: [ImGuiKey.A]);
                 Step(Center(panel.SearchBounds), text: text.Length > 0 ? text : null,
@@ -71,7 +122,7 @@ internal static class QuestLogVerification {
                 Step();
             }
             Settle();
-            Require(panel.IsOpen && panel.Results.Count == 7 && source.Snapshot.Progress?.Percentage == 89,
+            Require(panel.IsOpen && panel.Results.Count == 8 && source.Snapshot.Progress?.Percentage == 89,
                 "Open policy shows fixture accepted quests and 89% progress");
             Require(panel.Results.Select(q => q.Bucket).Distinct().Count() == 6,
                 "All six palette quest buckets are represented");
@@ -98,6 +149,10 @@ internal static class QuestLogVerification {
                 "Search includes current objective text");
             Search("Beyond");
             Click(panel.Rows.Single(r => r.Id == 70964).Bounds);
+            Settle();
+            Require(panel.DetailOpen && panel.DetailQuestId == 70964 && source.Shown == null,
+                "Left click opens a quest summary without starting Spotlight");
+            Click(panel.DetailMapBounds);
             Require(source.Shown == 70964 && !panel.IsOpen && driver.Renderer.Spotlight.Active
                 && driver.Renderer.Spotlight.Request?.Source == SpotlightSource.Quest,
                 "Quest selection closes the panel and begins Quest Spotlight");
@@ -161,13 +216,14 @@ internal static class QuestLogVerification {
                 Require(!panel.IsOpen && !panel.InputActive && !panel.CapturesKeyboard && panel.Rows.Count == 0,
                     "Classic has no quest widgets or capture even when open-with-map is enabled");
             }
+        DetailFrames();
         ClassicPixels();
         Console.WriteLine("Quest Log: accepted fixtures, progress, collapse/search, input, Spotlight, lifecycle, "
             + "six anchors, circle/narrow, Full/Reduced/Off and Classic pixels passed.");
     }
 
     private static void ClassicPixels() {
-        var directory = Path.Combine(Path.GetTempPath(), "claude", "questlog");
+        var directory = Path.GetFullPath("_artifacts/work/questlog-detail/classic");
         Directory.CreateDirectory(directory);
         string Render(bool source) {
             var config = Program.QuestLogConfig(800, 600);

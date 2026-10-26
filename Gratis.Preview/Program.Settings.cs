@@ -39,7 +39,7 @@ internal static partial class Program {
                     "tweaks-page" or "tweaks-page-search" or "tweaks-whatsnew" =>
                         Array.IndexOf(SettingsLayout.Sections, "Tweaks"),
                     "settings-filters" => Array.IndexOf(SettingsLayout.Sections, "Filters"),
-                    "settings-map" => 1,
+                    "settings-map" or "settings-quest-journal" => 1,
                     "settings-markers" => 2,
                     "settings-chrome" => 3,
                     "settings-tools" => 4,
@@ -50,6 +50,7 @@ internal static partial class Program {
                     "window-presets" => "window presets",
                     "tweaks-page-search" => "map",
                     "settings-search" => "zoom",
+                    "settings-quest-journal" => "Journal replacement",
                     _ => "",
                 },
                 WhatsNewOpen = options.Scene == "tweaks-whatsnew",
@@ -126,6 +127,28 @@ internal static partial class Program {
             }
         Console.WriteLine("Settings layout: nine real-frame small/normal/large pages; icon rail, stacked "
             + "fields, labels and controls stay within their columns.");
+    }
+
+    internal static void QuestJournalCards(string directory) {
+        foreach (var enabled in new[] { false, true })
+            RenderSettings(Options.Parse(["--scene", "settings-quest-journal", "--size", "1000x900", "--out",
+                Path.Combine(directory, enabled ? "settings-journal-on.png" : "settings-journal-off.png")])!,
+                (_, config, _) => config.QuestLogReplaceJournal = enabled);
+        RenderSettings(Options.Parse(["--scene", "settings-quest-journal", "--size", "640x900", "--out",
+            Path.Combine(directory, "settings-journal-narrow.png")])!);
+        RenderSettings(Options.Parse(["--scene", "settings-quest-journal", "--size", "1000x900", "--out",
+            Path.Combine(directory, "settings-journal-toggle-tested.png")])!, (_, config, frame) => {
+            var b = SettingsQuestLogJournal.ToggleBounds;
+            var io = ImGui.GetIO();
+            if (frame is 2 or 3 or 5 or 6) {
+                io.AddMousePosEvent((b.X + b.Z) / 2, (b.Y + b.W) / 2);
+                io.AddMouseButtonEvent(0, frame is 2 or 5);
+            }
+            if (frame == 4 && !config.QuestLogReplaceJournal)
+                throw new InvalidOperationException("Journal replacement toggle did not opt in.");
+            if (frame == 7 && config.QuestLogReplaceJournal)
+                throw new InvalidOperationException("Journal replacement toggle did not opt out.");
+        }, frames: 24);
     }
 
     internal static void VerifyTweakPages() {

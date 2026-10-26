@@ -138,10 +138,17 @@ public sealed partial class SettingsLayout {
             tip: "Dim aetherytes you have not attuned to and show their status on hover.");
         Add("PaletteMaxResults", "Search results shown", 1, 12, "%.0f");
         Group("Map", "Quest Log", Gratis);
-        Add("QuestLogOpenWithMap", "Quest log opens with the map",
-            tip: "Closed by default. Opening a quest closes the log and shows its map target.");
+        Add("QuestLogShowLocked", "Show quests you have not unlocked",
+            tip: "Off by default. Unaccepted names come only from client-known map markers. Turn on to browse other quests; availability remains unknown.");
+        Add("QuestLogOpenWithMap", "Open quest log with the map",
+            tip: "Initial visibility when the map opens. You can close it unless Keep quest log pinned is enabled.");
+        Add("QuestLogPinned", "Keep quest log pinned",
+            tip: "Keep the log visible across Escape, map actions and zone changes. Overrides the initial visibility setting. Unpin to close it.");
         Add("QuestLogWidth", "Quest log panel width", 240, 440, "%.0f px",
             tip: "320 by default. Narrow maps use a smaller overlay without resizing the map.");
+        Group("Map", "Journal replacement", Gratis);
+        Add("QuestLogReplaceJournal", "Use the Gratis Quest Log instead of the game's Journal",
+            tip: "Your Journal key, Duty menu, /journal and quest links open the Gratis Quest Log. /gratis journal also works with this setting off.");
         Group("Map", "Window");
         Add("WindowPresets", "Window presets",
             tip: "Save up to five named window sizes and positions. Pick one to apply it, "

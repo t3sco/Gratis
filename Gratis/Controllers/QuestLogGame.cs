@@ -14,7 +14,7 @@ using GameMap = FFXIVClientStructs.FFXIV.Client.Game.UI.Map;
 
 namespace Gratis.Controllers;
 
-public sealed class QuestLogGame : IQuestLogSource, IDisposable {
+public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
     private sealed record Metadata(Quest Row, string Name, ushort Level, QuestBucket Bucket, uint Category,
         uint Expansion, string ExpansionName, uint Crest, uint Icon, string Duty);
     private Dictionary<uint, Metadata>? metadata;
@@ -31,7 +31,12 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
     public QuestLogGame() => Service.Framework.Update += Update;
 
     private void Publish(QuestLogStatus status, QuestLogQuest[]? quests = null, string scenario = "") =>
-        Volatile.Write(ref snapshot, new(++revision, status, quests ?? [], scenario, progress, character));
+        Volatile.Write(ref snapshot, new(++revision, status, quests ?? [], scenario, progress, character) {
+            Completed = status == QuestLogStatus.Ready ? completed : [],
+            Unaccepted = status == QuestLogStatus.Ready ? unaccepted : [],
+            HistoryLoading = historyIndex < historyRows.Length,
+            HistoryCapped = completedIds.Count > 500, UnacceptedCapped = offersCapped,
+        });
 
     private void Clear() {
         if (character == 0 && Snapshot.Status == QuestLogStatus.Loading)
@@ -41,6 +46,7 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
         progress = null;
         progressExpansion = null;
         nextProgress = 0;
+        ClearHistory();
         Publish(QuestLogStatus.Loading);
     }
 
@@ -67,6 +73,7 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
                 character = currentCharacter;
             }
             metadata ??= BuildMetadata();
+            ReadHistory(now);
             var accepted = new Dictionary<uint, byte>();
             foreach (var work in manager->NormalQuests)
                 if (work.QuestId != 0)
@@ -81,11 +88,21 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
             var quests = accepted.Keys.Select(id => {
                 var data = metadata.GetValueOrDefault(id);
                 var destinations = targets.GetValueOrDefault(id) ?? [];
-                return new QuestLogQuest(id, data?.Name ?? $"Quest {id}", data?.Level ?? 0,
+                var details = data == null ? default : ReadJournal(data.Row, accepted[id],
+                    string.IsNullOrWhiteSpace(objectives.GetValueOrDefault(id)));
+                var quest = new QuestLogQuest(id, data?.Name ?? $"Quest {id}", data?.Level ?? 0,
                     data?.Bucket ?? QuestBucket.Other,
-                    destinations.FirstOrDefault()?.Icon ?? data?.Icon ?? 71021,
-                    objectives.GetValueOrDefault(id) ?? "", data?.Duty ?? "", destinations);
+                    data?.Icon ?? 71023,
+                    QuestLogText.PreferTracked(objectives.GetValueOrDefault(id), details.Objective),
+                    data?.Duty ?? "", destinations) {
+                    Expansion = data?.Expansion ?? 0, ExpansionIcon = data?.Crest ?? 0,
+                    Description = details.Description ?? "", Rewards = details.Rewards,
+                    Completed = data != null && Service.UnlockState.IsQuestCompleted(data.Row),
+                    Repeatable = data?.Row.IsRepeatable ?? false, ClientKnown = true,
+                };
+                return data == null ? quest : WithRequirements(quest, data.Row);
             }).ToArray();
+            ReadLists(accepted);
             var guide = ReadGuide();
             var scenario = quests.FirstOrDefault(q => q.RowId == guide && q.Bucket == QuestBucket.Scenario)
                 ?? quests.FirstOrDefault(q => q.Bucket == QuestBucket.Scenario);
@@ -128,23 +145,25 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
             var category = q.JournalGenre.ValueNullable?.JournalCategory.ValueNullable;
             var section = category?.JournalSection.ValueNullable;
             var expansion = q.Expansion.ValueNullable;
-            var icon = q.EventIconType.ValueNullable?.MapIconAvailable ?? 71020;
+            var iconType = q.EventIconType.ValueNullable;
+            var icon = QuestLogIcon.Accepted(iconType?.MapIconAvailable ?? 0,
+                iconType?.IconRange ?? 0, section?.RowId);
             var duty = q.InstanceContentUnlock.RowId != 0
                 ? q.InstanceContentUnlock.ValueNullable?.ContentFinderCondition.ValueNullable?.Name.ExtractText() ?? "Duty unlock"
                 : "";
             return new Metadata(q, q.Name.ExtractText(), q.ClassJobLevel[0], QuestBuckets.FromSection(section?.RowId),
                 category?.RowId ?? 0, q.Expansion.RowId, expansion?.Name.ExtractText() ?? "", expansion?.Icon ?? 0,
-                icon > 0 ? icon + 1 : 71021, duty);
+                icon, duty);
         });
 
-    private static unsafe Dictionary<uint, PlaceEntry[]> ReadTargets() {
+    private static unsafe Dictionary<uint, PlaceEntry[]> ReadTargets(bool unaccepted = false) {
         var result = new Dictionary<uint, PlaceEntry[]>();
         var map = GameMap.Instance();
         if (map == null)
             return result;
-        foreach (var quest in map->QuestMarkers) {
+        void Add(FFXIVClientStructs.FFXIV.Client.Game.UI.MarkerInfo quest) {
             if (quest.ObjectiveId == 0)
-                continue;
+                return;
             var id = quest.ObjectiveId + 65536u;
             var targets = new List<PlaceEntry>();
             foreach (var marker in quest.MarkerData) {
@@ -156,6 +175,12 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
                 });
             }
             result[id] = targets.ToArray();
+        }
+        if (unaccepted) {
+            foreach (var quest in map->UnacceptedQuestMarkers) Add(quest);
+        }
+        else {
+            foreach (var quest in map->QuestMarkers) Add(quest);
         }
         return result;
     }
@@ -176,7 +201,8 @@ public sealed class QuestLogGame : IQuestLogSource, IDisposable {
             ref var objective = ref quest.Objectives[index];
             var text = objective.Objective.ToString();
             var count = objective.ProgressText.ToString();
-            result[65536u + quest.QuestId] = text + (count.Length > 0 ? " · " + count : "");
+            if (!string.IsNullOrWhiteSpace(text))
+                result[65536u + quest.QuestId] = text + (count.Length > 0 ? " · " + count : "");
         }
         return result;
     }

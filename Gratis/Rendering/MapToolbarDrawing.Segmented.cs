@@ -44,8 +44,6 @@ public static partial class MapToolbarDrawing {
         var contentWidth = MathF.Max(CollapsedWidth(collapsedCount) * scale,
             CollapsedWidth(count) * scale + searchWidth);
         var anchor = context.Config.ToolbarAnchor;
-        if (context.QuestLog.ReservesSpace && context.QuestLog.Layout.Compact && anchor >= ChromeAnchor.BottomLeft)
-            anchor = (ChromeAnchor)((int)anchor % 3);
         EffectiveAnchor = anchor == ChromeAnchor.TopCenter
             && available < MathF.Max(fullWidth, contentWidth) + centerAllowance
             ? ChromeAnchor.TopLeft : anchor;

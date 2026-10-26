@@ -71,6 +71,8 @@ public abstract class MapDrawContext {
     public virtual void OpenFilterSettings() {
     }
 
+    public virtual void JournalReplacementChanged() { }
+
     public virtual long UnixTimeSeconds => global::System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     public FlagArrivalOverlay FlagArrival { get; } = new();
     public ContextMenu ContextMenu { get; } = new();

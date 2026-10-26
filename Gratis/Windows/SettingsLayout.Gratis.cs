@@ -146,6 +146,11 @@ public sealed partial class SettingsLayout {
                 if (section == "Markers" && MarkerOptionsMatch(Search) && drawExtension is not null)
                     changed |= drawExtension("Marker options", Search);
                 foreach (var group in entries.GroupBy(entry => entry.Group)) {
+                    if (group.Key == "Journal replacement") {
+                        changed |= SettingsQuestLogJournal.Draw(config);
+                        ImGui.Spacing();
+                        continue;
+                    }
                     var rows = group.Where(entry => entry.Enabled(config)
                         || !string.IsNullOrWhiteSpace(Search)).ToArray();
                     if (rows.Length == 0)

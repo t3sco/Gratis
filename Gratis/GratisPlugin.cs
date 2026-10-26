@@ -18,6 +18,7 @@ public sealed class GratisPlugin : IDalamudPlugin {
     private readonly Gratis.Classes.ReportCommand reportCommand;
     private readonly Gratis.Classes.PvpDiagnosticCommand pvpDiagnosticCommand;
     private readonly Gratis.Classes.UpdateWatcher updateWatcher;
+    private readonly AddonJournalController journalController;
 
     public GratisPlugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<Service>();
@@ -55,6 +56,10 @@ public sealed class GratisPlugin : IDalamudPlugin {
         Rendering.FeedbackLink.Open = Dalamud.Utility.Util.OpenLink;
 
         updateWatcher = new Gratis.Classes.UpdateWatcher();
+        System.JournalController = journalController = new AddonJournalController();
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/journal", Delegate = _ => journalController.Toggle(),
+        });
 
         Service.PluginInterface.UiBuilder.OpenMainUi += OpenMapWindow;
 
@@ -95,6 +100,10 @@ public sealed class GratisPlugin : IDalamudPlugin {
     }
 
     public void Dispose() {
+        Release("journal controller", () => {
+            journalController.Dispose();
+            System.JournalController = null;
+        });
         Release("update watcher", updateWatcher.Dispose);
         Release("pvp command", pvpDiagnosticCommand.Dispose);
         Release("report command", reportCommand.Dispose);

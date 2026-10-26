@@ -18,6 +18,7 @@ internal static partial class Program {
         "settings-map",
         "settings-markers",
         "settings-chrome",
+        "settings-quest-journal",
         "settings-tools",
         "settings-advanced",
         "map-default",

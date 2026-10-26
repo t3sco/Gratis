@@ -19,24 +19,14 @@ public static class ChromeLayout {
     private static int frame = -1;
     private static MapDrawContext? context;
     private static Vector4 handleBounds;
-    public static (Vector2 Min, Vector2 Max) SafeBounds() {
-        var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-        var current = MapDrawContext.Current;
-        if (current.Config.IsGratis && current.QuestLogSource != null && current.QuestLog.ReservesSpace
-            && current.QuestLog.Bounds != Vector4.Zero)
-            max.X = MathF.Max(min.X, current.QuestLog.Bounds.X - GratisTheme.Gap * GratisTheme.ChromeScale);
-        return (min, max);
-    }
+    public static (Vector2 Min, Vector2 Max) SafeBounds() =>
+        RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
 
     public static (Vector2 Min, Vector2 Max) ToolbarSafeBounds() {
         var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         var current = MapDrawContext.Current;
-        if (current.Config.IsGratis && current.QuestLogSource != null && !current.IsPvP) {
-            max.X = MathF.Max(min.X, max.X - (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
-            if (current.QuestLog.ReservesSpace && !current.QuestLog.Layout.Compact
-                && current.Config.ToolbarAnchor >= ChromeAnchor.BottomLeft)
-                max.X = MathF.Max(min.X, current.QuestLog.Bounds.X - GratisTheme.Gap * GratisTheme.ChromeScale);
-        }
+        if (current.Config.IsGratis && current.QuestLogSource != null && !current.IsPvP)
+            max.X = MathF.Max(min.X, max.X - 2 * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
         return (min, max);
     }
 

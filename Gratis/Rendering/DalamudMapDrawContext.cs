@@ -20,6 +20,7 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
 
     public override ILocationMenuSource? LocationMenu => System.MapWindow.PlacePalette;
     public override IQuestLogSource? QuestLogSource => System.MapWindow.QuestLog;
+    public override void JournalReplacementChanged() => System.JournalController?.Refresh();
 
     public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
 

@@ -20,6 +20,7 @@ public static class GratisIcons {
     public const char Plus = '\ue13d';
     public const char Minus = '\ue11c';
     public const char MapPin = '\ue111';
+    public const char Pin = '\ue259';
     public const char Flag = '\ue0d1';
     public const char Eye = '\ue0ba';
     public const char EyeOff = '\ue0bb';
@@ -107,6 +108,7 @@ public static class GratisIcons {
         Unlock, Unlock,
         Mail, Mail,
         MapPin, MapPin,
+        Pin, Pin,
         Minus, Minus,
         Plus, Plus,
         Package, Package,

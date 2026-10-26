@@ -31,7 +31,7 @@ public static class MapWindowDrawing {
             coordinateBounds = new(min.X, min.Y, max.X, max.Y);
     }
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1,
-        float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other, string? chromeId = null) {
+        float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other, string? chromeId = null, bool blur = true) {
         var context = MapDrawContext.Current;
         var config = context.Config;
         context.Blur.BeginFrame(ImGui.GetFrameCount());
@@ -46,7 +46,7 @@ public static class MapWindowDrawing {
         var blurred = TrySurfaceBlur(list, min, max, radius,
             Math.Clamp(float.IsFinite(config.GlassBlurRadius) ? config.GlassBlurRadius : 12, 0, 48)
                 * context.GlobalScale,
-            effectiveAlpha, glass && config.GlassBlur, surface: surface);
+            effectiveAlpha, glass && config.GlassBlur && blur, surface: surface);
         var opacity = surfaceOpacity ?? GratisTheme.Surface.W;
         if (glass) {
             var minimum = surfaceOpacity >= 1 ? FrameMaterialDrawing.GlassBackingOpacity(config)

@@ -17,7 +17,19 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public override ILocationMenuSource? LocationMenu => LocationSource;
     public IQuestLogSource? QuestSource { get; set; }
     public override IQuestLogSource? QuestLogSource => QuestSource;
-    public override DrawTexture GetExpansionCrest(uint id) => default;
+    private readonly Dictionary<uint, DrawTexture> crests = [];
+    public override DrawTexture GetExpansionCrest(uint id) {
+        if (crests.TryGetValue(id, out var crest))
+            return crest;
+        var path = Path.Combine(AppContext.BaseDirectory, "assets", "crests", id + ".png");
+        if (File.Exists(path)) {
+            var handle = textures.Load(path);
+            var texture = textures.Get(handle);
+            crest = new(handle, new(texture.Width, texture.Height));
+        }
+        crests[id] = crest;
+        return crest;
+    }
     public bool BlurAvailable { get; set; } = true;
     public MapColourPreset ColourPreset { get; set; }
     public string? RequestedSettingsSection { get; private set; }
