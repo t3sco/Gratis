@@ -206,7 +206,7 @@ The offline preview and verification companion for Gratis, with scripted map sce
 _Avoid_: mock map, screenshot generator
 
 **Feedback relay**:
-The Gratis service between an explicitly submitted feedback message and the developer's private Discord forum.
+The Gratis service between an explicitly submitted feedback message and the developer.
 _Avoid_: feedback webhook, telemetry service
 
 **Diagnostic report**:

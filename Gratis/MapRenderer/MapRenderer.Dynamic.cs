@@ -8,6 +8,7 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer {
     private unsafe void DrawDynamicMarkers() {
+        // The game splits the radius and foreground icon into records with the same data ID.
         var iconGroups = AgentMap.Instance()->EventMarkers.GroupBy(markers => (markers.DataId, markers.Position));
 
         foreach (var group in iconGroups) {

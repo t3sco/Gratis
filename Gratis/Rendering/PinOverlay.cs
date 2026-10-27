@@ -162,14 +162,11 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
                 && (host.Config.PinLabels == PinLabelMode.Always
                     || host.Config.PinLabels == PinLabelMode.OnHover && isHovered)) {
                 using var font = context.GetChromeFont(11 * s, ChromeFontRole.Chip)?.Push();
-                var size = TextDrawing.Measure(pin.Title) + new Vector2(12, 6) * s;
+                var size = Pill.Measure(pin.Title, PillFaces.PinLabel, s);
                 var position = center + new Vector2(19 * s, -size.Y / 2);
                 if (Classes.MapShape.ContainsSymbol(position + size / 2, size / 2)) {
-                    list.AddRectFilled(position, position + size,
-                        ImGui.GetColorU32(GratisTheme.Outline with { W = .95f }), GratisTheme.Radius.Control * s);
-                    TextDrawing.Draw(list, position + new Vector2(6, 3) * s,
-                        ImGui.GetColorU32(GratisTheme.Primary with { W = GratisTheme.Primary.W * presentation.X }),
-                        pin.Title);
+                    Pill.Draw(list, position, pin.Title, PillFaces.PinLabel, s,
+                        GratisTheme.Primary with { W = GratisTheme.Primary.W * presentation.X });
                 }
             }
         }
@@ -217,11 +214,11 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
         }
         if (Draft != null) {
             retainedDraft = Draft;
-            DrawEditor(host, assistance);
+            DrawEditor(assistance);
         }
         else {
             if (retainedDraft != null && UiMotion.Visibility(ImGui.GetID("##pin-editor"), false) > .001f)
-                DrawEditor(host, assistance, false);
+                DrawEditor(assistance, false);
             else
                 retainedDraft = null;
             DrawCard(host, assistance);
@@ -296,7 +293,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
         }, scroll: true, interactive: open);
     }
 
-    private void DrawEditor(IMapWindowHost host, MapAssistance assistance, bool interactive = true) {
+    private void DrawEditor(MapAssistance assistance, bool interactive = true) {
         var draft = Draft ?? retainedDraft;
         if (draft == null)
             return;

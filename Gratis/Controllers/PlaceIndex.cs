@@ -34,6 +34,7 @@ public static class QuestBuckets {
 }
 public readonly record struct PlaceAccess(bool Attuned, uint? Cost = null);
 
+// Immutable snapshots cross the sheet worker / UI thread boundary. Native pointers never do.
 public sealed record PlaceEntry(string Id, PlaceKind Kind, string Name, string Subtitle, uint MapId, uint TerritoryId,
     Vector2? World = null, uint AetheryteId = 0, uint HubId = 0, string Aliases = "", uint Expansion = 0) {
     public string ExpansionName { get; init; } = "";

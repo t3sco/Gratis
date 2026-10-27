@@ -7,6 +7,8 @@ namespace Gratis.MapRenderer;
 public unsafe partial class MapRenderer {
     public bool BeginSpotlight(SpotlightRequest request) => frame.BeginSpotlight(request);
 
+    // Read the quest's temporary marker before native selection resets the array.
+    // A radius record (60493) shares its position with the actual quest icon.
     public static (Vector2? Target, uint? Icon) QuestSpotlightTarget(AgentMap* agent, uint mapId) {
         if (agent->TempMapMarkerCount <= 0 || agent->SelectedMapSub != mapId)
             return (null, null);

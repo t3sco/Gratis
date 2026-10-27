@@ -106,6 +106,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
                 break;
             }
             if (world == null) {
+                // Excel markers are in texture pixels; native AgentMap markers use /16.
                 var candidates = maps.Where(m => mapId == 0 ? m.TerritoryType.RowId == a.Territory.RowId
                     : m.RowId == mapId);
                 foreach (var map in candidates) {
@@ -174,6 +175,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
     }
 
     public unsafe void Refresh() {
+        // Clear live results before the refresh throttle: EnterPvP must not reuse a prior snapshot.
         if (Service.ClientState.IsPvP) {
             ResetPvpState();
             return;
@@ -307,6 +309,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         }
         System.ZoneSwitchController?.NotifyUserAction();
         var sameMap = place.MapId == AgentMap.Instance()->CurrentMapId;
+        // OpenMapByMapId avoids the external OpenMap hook's quest/teleport recursion.
         if (AgentMap.Instance()->SelectedMapId != place.MapId)
             System.IntegrationsController.OpenMap(place.MapId);
         System.MapWindow.ProcessingCommand = true;

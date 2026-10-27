@@ -101,7 +101,7 @@ public sealed class SettingsEntry {
         var changed = false;
         switch (value) {
             case bool flag:
-                changed = config.IsGratis ? SettingsTheme.Toggle("##value", ref flag, config.AccentColor)
+                changed = config.IsGratis ? SettingsTheme.Toggle("##value", ref flag)
                     : ImGui.Checkbox("##value", ref flag);
                 value = flag;
                 break;
@@ -137,7 +137,7 @@ public sealed class SettingsEntry {
                         (16, "When unfocused") }) {
                         var on = (selected & bit) != 0;
                         var toggled = config.IsGratis
-                            ? SettingsTheme.Toggle("##" + name, ref on, config.AccentColor, name)
+                            ? SettingsTheme.Toggle("##" + name, ref on, name)
                             : ImGui.Checkbox(name, ref on);
                         if (toggled) {
                             selected = on ? selected | bit : selected & ~bit;

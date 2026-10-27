@@ -37,7 +37,7 @@ public sealed partial class QuestLogPanel {
         var remaining = ImGui.GetContentRegionAvail();
         var footerHeight = 56 * s;
         if (remaining.Y < footerHeight + 24 * s) {
-            ImGui.TextWrapped("Enlarge the map to read this quest.");
+            EmptyState.Draw("Enlarge the map to read this quest.", EmptyFaces.QuestHelper);
             return;
         }
         var footerY = start.Y + 42 * s + remaining.Y - footerHeight;
@@ -111,11 +111,8 @@ public sealed partial class QuestLogPanel {
         ImGui.Dummy(new(0, 2 * s));
     }
 
-    private static void DetailHeading(string title, float s) {
-        ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2(0, 8 * s));
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push();
-        ImGui.TextColored(GratisTheme.Secondary, title);
-    }
+    private static void DetailHeading(string title, float s) =>
+        SectionHeader.Draw(title, SectionFaces.Detail, s);
 
     private void DetailChips(QuestLogQuest quest, float s) {
         var x = ImGui.GetCursorScreenPos().X;
@@ -156,12 +153,7 @@ public sealed partial class QuestLogPanel {
 
     private static void RewardMetric(string text, Vector4 ink, float s) {
         var p = ImGui.GetCursorScreenPos();
-        var size = new Vector2(TextDrawing.Measure(text).X + 20 * s, 30 * s);
-        ImGui.GetWindowDrawList().AddRectFilled(p, p + size, ImGui.GetColorU32(ink with { W = .08f }),
-            GratisTheme.Radius.Control * s);
-        TextDrawing.Draw(ImGui.GetWindowDrawList(), p + (size - TextDrawing.Measure(text)) / 2,
-            ImGui.GetColorU32(ink), text);
-        ImGui.Dummy(size);
+        Pill.Draw(ImGui.GetWindowDrawList(), p, text, PillFaces.RewardMetric, s, ink);
     }
 
     private void DrawRewardGroup(IReadOnlyList<QuestLogRewardItem> items, string[] counts, bool optional, float s) {
@@ -193,12 +185,7 @@ public sealed partial class QuestLogPanel {
             if (icon.Handle != default) list.AddImage(icon.Handle, p + new Vector2(4 * s), p + new Vector2(slot - 4 * s));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
                 var label = counts[i];
-                var textSize = TextDrawing.Measure(label);
-                var badgeSize = textSize + new Vector2(8, 4) * s;
-                var badge = p + new Vector2(slot) - badgeSize;
-                list.AddRectFilled(badge, p + new Vector2(slot), ImGui.GetColorU32(GratisTheme.Surface with { W = 1 }),
-                    GratisTheme.Radius.Inner(GratisTheme.Radius.Control * s, 2 * s));
-                TextDrawing.Draw(list, badge + new Vector2(4, 2) * s, ImGui.GetColorU32(GratisTheme.Primary), label);
+                Pill.Draw(list, p + new Vector2(slot), label, PillFaces.RewardCount, s);
             }
             ChromeControls.Feedback(list, p, p + new Vector2(slot), fill: false);
             itemTooltip.Draw(item, source?.Items, s);

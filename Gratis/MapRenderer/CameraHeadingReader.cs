@@ -23,6 +23,7 @@ internal enum CameraReadState {
 internal readonly record struct CameraHeadingSample(float? Yaw, CameraReadState State, float? NativeConeDegrees = null,
     CameraReadState ConeState = CameraReadState.Pending);
 
+// Native pointers are used only during the main-thread callback, never cached.
 internal sealed class CameraHeadingReader : IDisposable {
     private readonly object gate = new();
     private CameraHeadingSample sample = new(null, CameraReadState.Pending);

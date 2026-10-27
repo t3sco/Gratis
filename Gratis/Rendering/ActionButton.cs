@@ -125,6 +125,8 @@ public sealed class ActionLabelCache {
 public static class ActionButton {
     public static bool Draw(string id, string label, in ActionOptions options) {
         var face = options.Profile;
+        // IdSuffix is the caller's cached complete ID, including its suffix. Never concatenate here
+        // or push another ID scope: native focus and motion must keep their original keys.
         id = options.IdSuffix ?? id;
         var dim = !options.Enabled && face.Disabled == ActionDisabled.Dim;
         var disabled = face.DisabledScope || !options.Enabled && !dim;

@@ -126,7 +126,7 @@ internal static partial class Program {
             case "action": ActionButton.Draw("Show on map", "Show on map", new(ActionFaces.Action, Icon: GratisIcons.MapPin)); break;
             case "primary": ActionButton.Draw("Send", "Send", new(ActionFaces.PrimaryTravel, Icon: GratisIcons.Check)); break;
             case "toggle":
-                if (config.IsGratis) SettingsTheme.Toggle("##toggle", ref selected, config.AccentColor);
+                if (config.IsGratis) SettingsTheme.Toggle("##toggle", ref selected);
                 else ImGui.Checkbox("Enabled", ref selected);
                 break;
             case "slider":

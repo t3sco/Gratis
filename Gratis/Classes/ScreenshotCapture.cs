@@ -121,6 +121,8 @@ public sealed class ScreenshotCapture : IDisposable {
                     }
                 }
 
+                // Draw only builds ImGui commands. Wait until the following draw boundary
+                // so the requested frame has gone through rendering/Present first.
                 Volatile.Write(ref pendingDraw, 2);
                 return;
             }

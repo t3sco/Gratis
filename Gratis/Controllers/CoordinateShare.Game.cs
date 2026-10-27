@@ -84,6 +84,8 @@ internal sealed unsafe class CoordinateShareGame {
             Chat.Print("[Gratis] No map position is available.");
             return;
         }
+        // Dalamud's integer constructor accepts world position * 1000; floats mean display coordinates.
+        // https://github.com/goatcorp/Dalamud/blob/master/Dalamud/Game/Text/SeStringHandling/Payloads/MapLinkPayload.cs
         var payload = new MapLinkPayload(territory, map, (int)MathF.Round(world.X * 1000),
             (int)MathF.Round(world.Y * 1000));
         var message = new SeStringBuilder().AddText("[Gratis] ").Add(payload).AddText(text).Add(

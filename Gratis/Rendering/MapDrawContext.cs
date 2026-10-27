@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Numerics;
 using Gratis.Classes;
-using Gratis.Data;
 #if GRATIS_PREVIEW
 using ImGuiNET;
 #else

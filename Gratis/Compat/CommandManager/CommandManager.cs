@@ -99,7 +99,7 @@ public class CommandManager : IDisposable {
             var currentArgumentParts = commandParts[(commandLength - index)..].ToArray();
 
             foreach (var handler in commandHandlers) {
-                if (handler.CommandMatches(Log, currentCommandParts)) {
+                if (handler.CommandMatches(currentCommandParts)) {
 
                     try {
                         Log.Debug($"Invoking Command for {handler.ActivationPath}");

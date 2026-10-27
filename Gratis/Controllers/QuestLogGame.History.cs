@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Dalamud.Utility;
 using Gratis.Rendering;
 using Lumina.Excel.Sheets;
 

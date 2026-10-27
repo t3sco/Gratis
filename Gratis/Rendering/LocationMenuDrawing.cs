@@ -187,7 +187,7 @@ public static class LocationMenuDrawing {
                     Close();
                 }
             if (!string.IsNullOrWhiteSpace(query) && results.Length == 0)
-                ImGui.TextDisabled("No zones found");
+                EmptyState.Draw("No zones found", EmptyFaces.Location);
             if (parents.Count > 0) {
                 ImGui.TextDisabled("Up a level");
                 for (var i = 0; i < parents.Count; i++) {

@@ -20,6 +20,7 @@ public unsafe class AddonAreaMapController : IDisposable {
         Service.AddonLifecycle.RegisterListener(AddonEvent.PreShow, "AreaMap", OnAreaMapPreShow);
         Service.AddonLifecycle.RegisterListener(AddonEvent.PreHide, "AreaMap", OnAreaMapPreHide);
 
+        // Add a special error handler for the case that somehow the addon is stuck offscreen
         System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/areamap/reset",
             Delegate = _ => {
@@ -96,6 +97,8 @@ public unsafe class AddonAreaMapController : IDisposable {
             return;
         }
 
+        // Have to check for color, because it likes to animate a fadeout,
+        // and we want the map to stay completely hidden until it's done.
         if (addon->IsVisible || addon->RootNode->Color.A is not 0x00) {
             addon->ForceOffscreen();
 

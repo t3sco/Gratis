@@ -6,7 +6,6 @@ using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
-using Gratis.Data;
 using Math = global::System.Math;
 
 namespace Gratis.Rendering;

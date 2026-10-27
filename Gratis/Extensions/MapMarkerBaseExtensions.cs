@@ -12,6 +12,8 @@ public static class MapMarkerBaseExtensions {
         var tooltipText = marker.Subtext.AsDalamudSeString();
 
         DrawHelpers.DrawMapMarker(new MarkerInfo {
+            // Native marker coordinates use 1/16-pixel units around the map centre.
+            // Add offset for drawing relative to map when its moved around
             Position = new Vector2(marker.X, marker.Y) / 16.0f * scale + DrawHelpers.GetMapCenterOffsetVector() * scale,
             Offset = offset,
             Scale = scale,

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -35,6 +34,12 @@ public static class ItemTooltipModel {
     private static readonly ConditionalWeakTable<ItemTooltipRecord, Presentation> presentations = new();
 
     internal sealed class Presentation {
+        private readonly Dictionary<string, SectionHeaderCache> headings = [];
+        public string Heading(string label) {
+            if (!headings.TryGetValue(label, out var header)) headings.Add(label, header = new());
+            return header.Upper(label);
+        }
+
         private CultureInfo? culture;
         private uint count;
         private int? owned;

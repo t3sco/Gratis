@@ -20,7 +20,7 @@ public static class SettingsQuestLogJournal {
         ImGui.BeginGroup();
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width - pad * 2);
         ImGui.TextWrapped("Open the Gratis Quest Log from your Journal key, Duty menu, /journal or quest links.");
-        var changed = SettingsTheme.Toggle("##journal-replacement", ref config.QuestLogReplaceJournal, GratisTheme.WarmAccent);
+        var changed = SettingsTheme.Toggle("##journal-replacement", ref config.QuestLogReplaceJournal);
 #if GRATIS_PREVIEW
         var min = ImGui.GetItemRectMin();
         var max = ImGui.GetItemRectMax();

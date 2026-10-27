@@ -19,7 +19,7 @@ public static class HoverCardDrawing {
     private static readonly (Entry Entry, float Swatch, Vector2 Primary, Vector2 Secondary)[] layout =
         new (Entry, float, Vector2, Vector2)[MaxRows];
     private static MapDrawContext? owner;
-    private static int queuedFrame = -1, seen = -2;
+    private static int queuedFrame = -1;
     private static Vector2 mouse;
     public static int Rows { get; private set; }
 
@@ -63,7 +63,6 @@ public static class HoverCardDrawing {
             shown.Clear();
             shown.AddRange(queued);
             shown.Sort((a, b) => Rank(a.Category).CompareTo(Rank(b.Category)));
-            seen = ImGui.GetFrameCount();
             mouse = ImGui.GetMousePos();
             Render(false);
             return;

@@ -311,7 +311,7 @@ public sealed partial class QuestLogPanel {
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, 38 * s));
         if (ImGui.GetContentRegionAvail().Y < 56 * s) {
-            ImGui.TextWrapped("Enlarge the map to read quests.");
+            EmptyState.Draw("Enlarge the map to read quests.", EmptyFaces.QuestHelper);
             return;
         }
         DrawTabs(s, width);
@@ -346,11 +346,11 @@ public sealed partial class QuestLogPanel {
                 ImGui.TextColored(GratisTheme.Secondary, $"{QuestLogText.TabLabel(Tab)} quests · {filtered.Length}");
         }
         if (Tab == QuestLogTab.Unaccepted)
-            ImGui.TextWrapped(QuestLogText.NearbySubtitle);
+            EmptyState.Draw(QuestLogText.NearbySubtitle, EmptyFaces.QuestHelper);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryLoading)
-            ImGui.TextWrapped("Checking completion history...");
+            EmptyState.Draw("Checking completion history...", EmptyFaces.QuestHelper);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
-            ImGui.TextWrapped("Showing the first 500 quests by name.");
+            EmptyState.Draw("Showing the first 500 quests by name.", EmptyFaces.QuestHelper);
         if (ImGui.GetContentRegionAvail().Y > 100 * s)
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
                 ImGui.TextColored(GratisTheme.Secondary, "Click: summary · Right-click: map");
@@ -370,12 +370,12 @@ public sealed partial class QuestLogPanel {
             ListBounds = new(min.X, min.Y, max.X, max.Y);
             UiMotion.Scroll();
             if (snapshot.Status != QuestLogStatus.Ready) {
-                ImGui.TextWrapped(snapshot.Status == QuestLogStatus.Loading ? "Loading accepted quests..."
-                    : "Quest data is unavailable. Try again when the character has loaded.");
+                EmptyState.Draw(snapshot.Status == QuestLogStatus.Loading ? "Loading accepted quests..."
+                    : "Quest data is unavailable. Try again when the character has loaded.", EmptyFaces.Quest);
                 return;
             }
             if (filtered.Length == 0) {
-                ImGui.TextWrapped(query.Length > 0 ? "No quests match your search." : QuestLogText.EmptyTab(Tab));
+                EmptyState.Draw(query.Length > 0 ? "No quests match your search." : QuestLogText.EmptyTab(Tab), EmptyFaces.Quest);
                 return;
             }
             var top = ImGui.GetCursorScreenPos().Y + ImGui.GetScrollY();
@@ -385,23 +385,20 @@ public sealed partial class QuestLogPanel {
         finally { ImGui.EndChild(); ImGui.PopStyleVar(2); }
     }
 
+    private readonly string[] tabIds = ["##quest-tab-0", "##quest-tab-1", "##quest-tab-2"];
+
     private void DrawTabs(float s, float width) {
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push();
         for (var i = 0; i < 3; i++) {
-            if (i > 0) ImGui.SameLine(0, 4 * s);
-            var min = ImGui.GetCursorScreenPos();
-            var size = new Vector2((width - 8 * s) / 3, 28 * s);
-            if (ChromeControls.Button("##quest-tab-" + i, size)) {
+            if (i > 0) ImGui.SameLine(0, TabFaces.QuestLog.Gap * s);
+            var tab = new TabStrip(tabIds[i], TabFaces.QuestLog, width, s);
+            if (tab.Clicked) {
                 Tab = (QuestLogTab)i;
                 selected = 0;
                 CloseDetail();
             }
             TabBounds[i] = ItemBounds();
-            ChromeControls.Feedback(ImGui.GetWindowDrawList(), min, min + size, Tab == (QuestLogTab)i);
-            var label = QuestLogText.TabLabel((QuestLogTab)i);
-            var text = TextDrawing.Measure(label);
-            TextDrawing.Draw(ImGui.GetWindowDrawList(), min + (size - text) / 2,
-                ImGui.GetColorU32(Tab == (QuestLogTab)i ? GratisTheme.WarmAccent : GratisTheme.Secondary), label);
+            tab.Draw(QuestLogText.TabLabel((QuestLogTab)i), Tab == (QuestLogTab)i);
         }
         if (ImGui.GetContentRegionAvail().Y < 140 * s) return;
         var start = ImGui.GetCursorScreenPos();
@@ -448,6 +445,8 @@ public sealed partial class QuestLogPanel {
                 + "\nIncludes base story and patches; alternate starting paths count separately.");
     }
 
+    private readonly Dictionary<QuestBucket, SectionHeaderCache> sectionHeaders = [];
+
     private void DrawSection(QuestBucket bucket, QuestLogQuest[] quests, float top, float s) {
         var start = ImGui.GetCursorScreenPos();
         var width = MathF.Max(1, ImGui.GetContentRegionAvail().X - 6 * s);
@@ -458,8 +457,10 @@ public sealed partial class QuestLogPanel {
         var headerY = MathF.Max(start.Y, MathF.Min(top, start.Y + height - headerHeight - gap));
         var header = new Vector2(start.X, headerY);
         ImGui.PushID((int)bucket);
-        ImGui.SetCursorScreenPos(header);
-        if (ChromeControls.Button("##section", new(width, headerHeight)) && query.Length == 0) {
+        if (!sectionHeaders.TryGetValue(bucket, out var headingCache))
+            sectionHeaders.Add(bucket, headingCache = new());
+        if (SectionHeader.Sticky("##section", QuestBuckets.Label(bucket), headingCache.Count(quests.Length),
+            header, width, s, expanded) && query.Length == 0) {
             if (!collapsed.Add(bucket))
                 collapsed.Remove(bucket);
         }
@@ -467,22 +468,6 @@ public sealed partial class QuestLogPanel {
         if (b.W > top && b.Y < ImGui.GetWindowPos().Y + ImGui.GetWindowHeight())
             sections[bucket] = b;
         var list = ImGui.GetWindowDrawList();
-        list.AddRectFilled(header, header + new Vector2(width, headerHeight),
-            ImGui.GetColorU32(GratisTheme.Surface with { W = 1 }), GratisTheme.Radius.Control * s);
-        ChromeControls.Feedback(list, header, header + new Vector2(width, headerHeight), fill: true);
-        var arrow = header + new Vector2(10, 15) * s;
-        var ink = ImGui.GetColorU32(GratisTheme.WarmAccent);
-        if (expanded)
-            list.AddTriangleFilled(arrow + new Vector2(-4, -2) * s, arrow + new Vector2(4, -2) * s,
-                arrow + new Vector2(0, 3) * s, ink);
-        else
-            list.AddTriangleFilled(arrow + new Vector2(-2, -4) * s, arrow + new Vector2(-2, 4) * s,
-                arrow + new Vector2(3, 0) * s, ink);
-        TextDrawing.Draw(list, header + new Vector2(24, 6) * s, ImGui.GetColorU32(GratisTheme.Primary),
-            QuestBuckets.Label(bucket));
-        var count = quests.Length.ToString();
-        TextDrawing.Draw(list, header + new Vector2(width - TextDrawing.Measure(count).X - 8 * s, 6 * s),
-            ImGui.GetColorU32(GratisTheme.Secondary), count);
         ImGui.SetCursorScreenPos(start + new Vector2(0, headerHeight));
         ImGui.Dummy(new(0, gap));
         if (expanded) {

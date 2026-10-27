@@ -16,6 +16,7 @@ public sealed partial class PlaceIndexGame : ILocationMenuSource {
                 return [];
             var region = current.PlaceNameRegion.ValueNullable?.Name.ExtractText() ?? "";
             var name = current.PlaceName.ValueNullable?.Name.ExtractText() ?? "";
+            // AgentMap exposes a parent action, without a queryable map-ID chain.
             return region.Length > 0 && region != name
                 ? [new(region, MapToolbar.OpenParent)] : [];
         }

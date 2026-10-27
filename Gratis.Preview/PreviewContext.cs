@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Gratis.Classes;
 using Gratis.Data;
 using Gratis.Rendering;
@@ -48,7 +48,11 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     private readonly Dictionary<uint, DrawTexture> icons = [];
     private readonly Dictionary<int, ImFontPtr> fonts = [];
     private readonly Dictionary<(ChromeFontRole Role, int Size), ImFontPtr> chromeFonts = [];
-    private readonly Dictionary<ImFontPtr, Font> textFontScopes = [];
+    private sealed class FontPointerComparer : IEqualityComparer<ImFontPtr> {
+        public unsafe bool Equals(ImFontPtr x, ImFontPtr y) => x.NativePtr == y.NativePtr;
+        public unsafe int GetHashCode(ImFontPtr font) => ((nint)font.NativePtr).GetHashCode();
+    }
+    private readonly Dictionary<ImFontPtr, Font> textFontScopes = new(new FontPointerComparer());
     private ImFontPtr defaultTextFont;
     public FontAtlasBudget TextBudget { get; } = new(FontAtlasBudget.MaximumTextHandles,
         FontAtlasBudget.MaximumArea / 2);

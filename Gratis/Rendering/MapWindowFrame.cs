@@ -196,7 +196,6 @@ public sealed partial class MapWindowFrame {
             MapDrawContext.Current.QuestLog.Draw(host);
             if (!MapDrawContext.Current.Measure.InputActive && !questInput)
                 MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
-            host.Palette?.DrawHint(host.Config);
             host.Palette?.Draw(host.Config);
             DrawGhostHint(host);
             HoverCardDrawing.DrawTail();
@@ -320,7 +319,7 @@ public sealed partial class MapWindowFrame {
             }
 
             ProcessMapDragDragging(host);
-            ProcessMapDragEnd(host);
+            ProcessMapDragEnd();
         }
 
         if (!host.Config.IsGratis || !host.Config.GratisContextMenu)
@@ -349,7 +348,7 @@ public sealed partial class MapWindowFrame {
         }
     }
 
-    private void ProcessMapDragEnd(IMapWindowHost host) {
+    private void ProcessMapDragEnd() {
         if (ImGui.IsMouseReleased(ImGuiMouseButton.Left)) {
             isDragStarted = false;
         }

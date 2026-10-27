@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Dalamud.Game.Text.Evaluator;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;

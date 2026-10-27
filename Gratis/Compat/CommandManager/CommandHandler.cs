@@ -27,7 +27,7 @@ public class CommandHandler {
     public bool Hidden { get; init; }
     public int CommandLength => ActivationPath.Split("/").Prepend("/").Count(part => !part.IsNullOrEmpty());
 
-    public bool CommandMatches(IPluginLog log, params string[] commandParts) {
+    public bool CommandMatches(params string[] commandParts) {
         var thisCommandParts = ActivationPath.Split("/").Prepend("/").Where(part => !part.IsNullOrEmpty()).ToArray();
 
         return commandParts.Length == CommandLength

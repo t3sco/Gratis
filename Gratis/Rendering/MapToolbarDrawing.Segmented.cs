@@ -116,11 +116,9 @@ public static partial class MapToolbarDrawing {
                     id == "Settings" && TweakNews.HasUnseen(context.Config) ? 1 : 0, InterfaceMotionTokens.Standard,
                     initial: 0);
                 if (news > 0)
-                    list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale,
-                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = news }));
+                    Pill.Draw(list, min, "", PillFaces.SettingsDot, scale, alpha: news);
                 if (id == "Filters" && FilterBarDrawing.ActiveCount > 0)
-                    list.AddCircleFilled(min + new Vector2(28, 8) * scale, 2.5f * scale,
-                        ImGui.GetColorU32(GratisTheme.WarmAccent));
+                    Pill.Draw(list, min, "", PillFaces.FilterDot, scale);
                 ChromeControls.Tooltip(tooltip, windowBounds: WindowBounds);
                 if (clicked) {
                     if (id == "Lens")

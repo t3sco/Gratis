@@ -7,6 +7,7 @@ using Serilog.Events;
 
 namespace Gratis.Classes;
 
+// Wrap only this plugin's logger. Never subscribe to Dalamud/global log output.
 internal sealed class ReportPluginLog : IPluginLog, IDisposable {
     private sealed class Sink(ReportLogBuffer buffer) : ILogEventSink {
         public void Emit(LogEvent entry) =>

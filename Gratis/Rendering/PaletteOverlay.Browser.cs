@@ -122,8 +122,8 @@ public sealed partial class PaletteOverlay {
         }
 
         if (count == 0) {
-            ImGui.TextWrapped(source.Building ? "Charting the realm..." : scope == 3
-                ? "No tracked quests to browse." : "No charted places to browse.");
+            EmptyState.Draw(source.Building ? "Charting the realm..." : scope == 3
+                ? "No tracked quests to browse." : "No charted places to browse.", EmptyFaces.PaletteBrowser);
             return;
         }
         if (expansion != null) {
@@ -254,9 +254,7 @@ public sealed partial class PaletteOverlay {
         var visited = source.Entries.Where(p => recent.ContainsKey(p.Id)).OrderByDescending(p =>
             recent[p.Id]).Take(2).ToArray();
         if (visited.Length == 0) {
-            using var small = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale,
-                ChromeFontRole.Body)?.Push();
-            ImGui.TextDisabled("Your next destination starts a new journey.");
+            EmptyState.Draw("Your next destination starts a new journey.", EmptyFaces.PaletteRecent, scale);
         }
         foreach (var place in visited)
             DrawQuickPlace(new(place, 0, source.Access(place),
@@ -271,16 +269,8 @@ public sealed partial class PaletteOverlay {
         }
     }
 
-    private static void Section(string label, float scale, char icon) {
-        ImGui.Spacing();
-        var position = ImGui.GetCursorScreenPos();
-        GratisIcons.Draw(ImGui.GetWindowDrawList(), position + new Vector2(8, 9) * scale, icon,
-            GratisTheme.WarmAccent with { W = .75f }, 14 * scale);
-        ImGui.SetCursorScreenPos(position + new Vector2(24 * scale, 0));
-        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale,
-            ChromeFontRole.Body)?.Push();
-        ImGui.TextUnformatted(label);
-    }
+    private static void Section(string label, float scale, char icon) =>
+        SectionHeader.Draw(label, SectionFaces.Palette, scale, icon);
 
     private void DrawQuickPlace(PlaceResult result, string title, MapDrawingConfig config, float scale) {
         var position = ImGui.GetCursorScreenPos();

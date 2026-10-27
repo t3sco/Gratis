@@ -14,6 +14,7 @@ public partial class MapRenderer {
         if (AgentMap.Instance()->SelectedMapSub != AgentMap.Instance()->SelectedMapId)
             return;
 
+        // The game splits the radius and foreground icon into records with the same data ID.
         var validMarkers = new Span<TempMapMarker>(Unsafe.AsPointer(ref AgentMap.Instance()->TempMapMarkers[0]),
             AgentMap.Instance()->TempMapMarkerCount);
         var iconGroups = validMarkers.ToArray().GroupBy(markers =>

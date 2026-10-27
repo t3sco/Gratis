@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -140,7 +139,7 @@ public sealed class ItemTooltipDrawing {
             ImGui.PopTextWrapPos();
             ImGui.SetCursorScreenPos(p + new Vector2(0, headerHeight));
             if (stack.Length > 0) ImGui.TextColored(GratisTheme.Secondary, stack);
-            foreach (var section in sections) DrawSection(section, width, s);
+            foreach (var section in sections) DrawSection(section, presentation.Heading(section.Heading), width, s);
             var pos = ImGui.GetWindowPos();
             var size = ImGui.GetWindowSize();
             LastTooltipBounds = new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
@@ -149,12 +148,8 @@ public sealed class ItemTooltipDrawing {
         }, new(width + 24 * s, height), s);
     }
 
-    private static void DrawSection(ItemTooltipSection section, float width, float s) {
-        var p = ImGui.GetCursorScreenPos() + new Vector2(0, 6 * s);
-        ImGui.GetWindowDrawList().AddLine(p, p + new Vector2(width, 0), ImGui.GetColorU32(GratisTheme.Border), s);
-        ImGui.SetCursorScreenPos(p + new Vector2(0, 10 * s));
-        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-            ImGui.TextColored(GratisTheme.Secondary, section.Heading.ToUpperInvariant());
+    private static void DrawSection(ItemTooltipSection section, string heading, float width, float s) {
+        SectionHeader.Draw(heading, SectionFaces.ItemTooltip, s, width: width);
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
         ImGui.TextUnformatted(section.Text);
         ImGui.PopTextWrapPos();

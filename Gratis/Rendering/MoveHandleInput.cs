@@ -130,6 +130,7 @@ public sealed class MoveHandleInput {
             if (changed)
                 host.SaveWindowPosition();
         }
+        // Keep ownership through release (also after releasing Alt), never handing a press to pan.
         BlocksMapInput |= held;
         if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
             held = false;

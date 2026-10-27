@@ -40,6 +40,7 @@ public unsafe partial class MapRenderer {
     private static int CurrentDiscoveryFlags =>
         AtkStage.Instance()->GetNumberArrayData(NumberArrayType.AreaMap2)->IntArray[2];
 
+    // Fog of war is off by default, so the render hook is only installed the first time it is needed.
     private bool fogHooked;
 
     private void EnsureFogHooks() {
@@ -59,6 +60,7 @@ public unsafe partial class MapRenderer {
     }
 
     private void UnloadFogHooks() {
+        // Say so first, so a call already inside the hook stops queueing work before the hook goes away.
         lock (fogGate) {
             fogDisposed = true;
             Interlocked.Increment(ref fogGeneration);
@@ -75,6 +77,7 @@ public unsafe partial class MapRenderer {
             string? path = null;
             var generation = 0;
             lock (fogGate) {
+                // The game's mask lags map selection; snapshot request identity before reading it.
                 if (!fogDisposed && requestUpdatedMaskingTexture
                     && textureLoadStopwatch is { IsRunning: true, ElapsedMilliseconds: > 200 }) {
                     path = requestedFogPath;

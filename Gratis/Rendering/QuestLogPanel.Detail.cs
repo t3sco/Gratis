@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;

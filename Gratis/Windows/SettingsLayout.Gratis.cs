@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Numerics;
 using Gratis.Data;
 using Gratis.Rendering;
@@ -41,35 +40,13 @@ public sealed partial class SettingsLayout {
                 }
             ImGui.Spacing();
             foreach (var index in NavigationOrder) {
-                start = ImGui.GetCursorScreenPos();
-                var size = new Vector2(navWidth - 4 * scale, 36 * scale);
-                ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);
-                ImGui.PushStyleColor(ImGuiCol.HeaderHovered, Vector4.Zero);
-                ImGui.PushStyleColor(ImGuiCol.HeaderActive, Vector4.Zero);
-                if (ImGui.Selectable(NavigationIds[index], SelectedSection == index, ImGuiSelectableFlags.None, size)) {
+                var tab = new TabStrip(NavigationIds[index],
+                    compactNav ? TabFaces.SettingsCompact : TabFaces.Settings, navWidth, scale, SelectedSection == index);
+                if (tab.Clicked) {
                     SelectedSection = index;
                     Search = "";
                 }
-                ImGui.PopStyleColor(3);
-                UiMotion.ItemId(NavigationIds[index]);
-                var selected = SelectedSection == index;
-                var nav = ImGui.GetWindowDrawList();
-                if (selected) {
-                    var indicator = UiMotion.Selection("##settings-indicator", start);
-                    nav.AddRectFilled(indicator, indicator + size, ImGui.GetColorU32(new Vector4(1, 1, 1, .04f)),
-                        GratisTheme.Radius.Control * scale);
-                    nav.AddRectFilled(indicator + new Vector2(0, 8) * scale, indicator + new Vector2(2, 28) * scale,
-                        ImGui.GetColorU32(GratisTheme.WarmAccent), GratisTheme.Radius.Pill(new Vector2(2, 20) * scale));
-                }
-                ChromeControls.Feedback(nav, start, start + size, fill: true, scale: scale);
-                GratisIcons.Draw(nav, start + new Vector2(18, 18) * scale, SectionIcons[index],
-                    selected ? GratisTheme.WarmAccent : GratisTheme.Secondary, 16 * scale);
-                if (compactNav)
-                    ChromeControls.Tooltip(SectionLabel(Sections[index]), scale: scale);
-                else
-                    nav.AddText(start + new Vector2(34 * scale, (size.Y - ImGui.GetFontSize()) / 2),
-                        ImGui.GetColorU32(selected ? GratisTheme.Primary : GratisTheme.Secondary),
-                        SectionLabel(Sections[index]));
+                tab.Draw(SectionLabel(Sections[index]), SelectedSection == index, SectionIcons[index]);
             }
         }
         ImGui.EndChild();
@@ -146,23 +123,8 @@ public sealed partial class SettingsLayout {
                         ImGui.SetNextItemOpen(true, ImGuiCond.Always);
                     var primary = group.Primary;
                     var advanced = group.Advanced;
-                    bool open;
-                    using (SettingsTheme.Font(12)) {
-                        ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-                        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
-                        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 12) * scale);
-                        var heading = ImGui.GetCursorScreenPos();
-                        open = ImGui.CollapsingHeader(group.HeaderId,
-                            primary.Count > 0 && ExpandedByDefault(group.Key) ? ImGuiTreeNodeFlags.DefaultOpen
-                                : ImGuiTreeNodeFlags.None);
-                        GratisIcons.Draw(ImGui.GetWindowDrawList(), heading + new Vector2(28, 18) * scale,
-                            GroupIcon(group.Key), GratisTheme.Secondary, 14 * scale);
-                        ImGui.GetWindowDrawList().AddText(heading
-                            + new Vector2(44 * scale, (36 * scale - ImGui.GetFontSize()) / 2),
-                            ImGui.GetColorU32(GratisTheme.Secondary), GroupLabel(group.Key));
-                        ImGui.PopStyleVar(2);
-                        ImGui.PopStyleColor();
-                    }
+                    var open = SectionHeader.Settings(group.HeaderId, GroupLabel(group.Key), GroupIcon(group.Key),
+                        primary.Count > 0 && ExpandedByDefault(group.Key), scale);
                     if (!open)
                         continue;
                     var cardStart = ImGui.GetCursorScreenPos();

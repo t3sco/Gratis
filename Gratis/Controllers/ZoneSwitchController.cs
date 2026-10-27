@@ -25,6 +25,7 @@ public sealed unsafe class ZoneSwitchController : IDisposable {
     private static double Now => (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency;
 
     public ZoneSwitchController() {
+        // Plugin construction runs off-thread; defer ObjectTable.LocalPlayer reads to OnUpdate.
         loggedIn = Service.ClientState.IsLoggedIn;
         lastEventTerritory = Service.ClientState.TerritoryType;
         initialPending = true;

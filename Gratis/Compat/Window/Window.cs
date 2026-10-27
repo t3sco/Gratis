@@ -44,6 +44,7 @@ public abstract class Window : Dalamud.Interface.Windowing.Window {
             Flags |= ImGuiWindowFlags.NoResize;
         }
 
+        // Dalamud's close fade copies the window by name after it closes, and throws if ImGui no longer has it.
         DisableFadeInFadeOut = true;
 
         Collapsed = false;

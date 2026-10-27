@@ -15,9 +15,6 @@ public static class PaletteRowDrawing {
             GratisTheme.Radius.Control * scale);
 
     public static void Pill(ImDrawListPtr list, Vector2 min, string label, Vector4 ink, float scale) {
-        var size = TextDrawing.Measure(label) + new Vector2(12, 3) * scale;
-        list.AddRectFilled(min, min + size, ImGui.GetColorU32(GratisTheme.Primary with { W = .055f }),
-            GratisTheme.Radius.Pill(size));
-        TextDrawing.Draw(list, min + new Vector2(6, 1) * scale, ImGui.GetColorU32(ink), label);
+        global::Gratis.Rendering.Pill.Draw(list, min, label, PillFaces.PaletteRow, scale, ink);
     }
 }

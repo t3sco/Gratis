@@ -173,7 +173,7 @@ public sealed partial class SettingsLayout {
                     ImGui.PopID();
                 }
                 if (!found && !tweaksPage)
-                    ImGui.TextDisabled("No settings match. Try another name or change the visual style.");
+                    EmptyState.Draw("No settings match. Try another name or change the visual style.", EmptyFaces.ClassicSettings);
             }
             ImGui.EndChild();
         }

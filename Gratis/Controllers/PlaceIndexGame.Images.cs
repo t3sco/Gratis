@@ -30,6 +30,7 @@ internal sealed class PaletteGameImages : IDisposable {
         var now = Environment.TickCount64;
         if (!cache.TryGetValue(key, out var slot)) {
             if (cache.Count >= Capacity) {
+                // Do not release a texture referenced by this frame's draw data.
                 var oldest = cache.Where(p => now - p.Value.Used > 2000).OrderBy(p => p.Value.Used).FirstOrDefault();
                 if (oldest.Key == null)
                     return default;

@@ -1,9 +1,7 @@
-using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Gratis.Compat.CommandManager;
 using Gratis.Compat.Window;
-using Gratis.Classes;
 using Gratis.Data;
 
 namespace Gratis.Windows;

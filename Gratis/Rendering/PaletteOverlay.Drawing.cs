@@ -147,9 +147,8 @@ public sealed partial class PaletteOverlay {
                         if (IsOpen)
                             NavigateResults(config, size, scale);
                         if (results.Length == 0) {
-                            ImGui.Spacing();
-                            ImGui.TextUnformatted(source.Building ? "Indexing places..." : "No places found");
-                            ImGui.TextWrapped("Try a zone name or choose another filter.");
+                            EmptyState.Draw(source.Building ? "Indexing places..." : "No places found",
+                                EmptyFaces.PaletteSearch);
                         }
                         for (var i = 0; i < results.Length; i++)
                             DrawRow(results[i], i, config, scale, size.X);

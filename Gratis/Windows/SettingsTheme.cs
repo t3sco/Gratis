@@ -87,14 +87,10 @@ public sealed class SettingsTheme {
             MapDrawContext.Current.GetChromeFont(size * Scale, role)?.Push();
 
     public static void Helper(string text) {
-        using var font = Font(12);
-        ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-        ImGui.TextWrapped(text);
-        ImGui.PopStyleColor();
+        EmptyState.Draw(text, EmptyFaces.SettingsHelper, Scale);
     }
 
-    public static bool Toggle(string id, ref bool value, Vector4 accent, string? label = null) {
-        accent = GratisTheme.WarmAccent;
+    public static bool Toggle(string id, ref bool value, string? label = null) {
         var scale = Scale;
         var start = ImGui.GetCursorScreenPos();
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
@@ -115,7 +111,7 @@ public sealed class SettingsTheme {
             radius: GratisTheme.Radius.Control * scale);
         var track = start + new Vector2(0, (height - 20 * scale) / 2);
         var end = track + new Vector2(36, 20) * scale;
-        list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), accent, selected)),
+        list.AddRectFilled(track, end, ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .12f), GratisTheme.WarmAccent, selected)),
             GratisTheme.Radius.Pill(end - track));
         list.AddRect(track, end, ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Pill(end - track));
         list.AddCircleFilled(track + new Vector2(10 + 16 * selected, 10) * scale, 6 * scale,

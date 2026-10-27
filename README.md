@@ -74,7 +74,7 @@ https://github.com/user-attachments/assets/7c1cd5d7-6b8c-4117-a95a-717118950f92
 This is an early build and has rough edges.
 
 - **Found a bug?** Run `/gratis report`, then open an issue or message me with the saved file and what you saw.
-- **Quick message:** use the speech-bubble button in the bottom-left of the map. Nothing is sent until you press Send, and only your message and the Gratis version go. Tick "Include a diagnostic report" to add the same report as `/gratis report` (no character name or chat). It goes through a small relay, the code for which is in [`relay/`](relay). You can turn the button off under Settings > Feedback button.
+- **Quick message:** use the speech-bubble button in the bottom-left of the map. Nothing is sent until you press Send, and only your message and the Gratis version go. Tick "Include a diagnostic report" to add the same report as `/gratis report` (no character name or chat). You can turn the button off under Settings > Feedback button.
 
 ## Credits
 

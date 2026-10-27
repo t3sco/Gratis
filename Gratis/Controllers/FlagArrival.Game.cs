@@ -64,4 +64,7 @@ internal sealed unsafe class FlagArrivalGame : IFlagArrivalSource, IDisposable {
         if (ReferenceEquals(MapDrawContext.Current.FlagArrival.Source, this))
             MapDrawContext.Current.FlagArrival.Source = null;
     }
+    // https://github.com/aers/FFXIVClientStructs/blob/main/FFXIVClientStructs/FFXIV/Client/UI/Agent/AgentMap.cs
+    // FlagMarkerCount writes exist in legacy Gratis, but no native clear entry point is exposed.
+    // They are deliberately not used to auto-clear; the retained marker is dimmed instead.
 }

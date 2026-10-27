@@ -354,7 +354,4 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         if (message.Length == 0 || message == "Teleport requested.")
             Close();
     }
-
-    public void DrawHint(MapDrawingConfig config) {
-    }
 }

@@ -30,7 +30,7 @@ public sealed partial class SettingsLayout {
 #endif
         ImGui.TextUnformatted($"{TweakCatalog.All.Count} small quality-of-life tweaks");
         var modified = ModifiedTweaksOnly;
-        if (SettingsTheme.Toggle("##modified-tweaks", ref modified, GratisTheme.WarmAccent, "Modified only"))
+        if (SettingsTheme.Toggle("##modified-tweaks", ref modified, "Modified only"))
             ModifiedTweaksOnly = modified;
 #if GRATIS_PREVIEW
         RecordTweakAction("modified");
@@ -110,7 +110,7 @@ public sealed partial class SettingsLayout {
                         new(control.X, control.Y, control.X + 36 * s, control.Y + 36 * s)));
 #endif
                     ImGui.BeginDisabled(tweak.Locked);
-                    if (SettingsTheme.Toggle("##toggle", ref value, GratisTheme.WarmAccent)) {
+                    if (SettingsTheme.Toggle("##toggle", ref value)) {
                         tweak.Set(config, value);
                         changed = true;
                     }
