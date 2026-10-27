@@ -120,6 +120,15 @@ public static class ChromeLayout {
             }
         }
         var result = Resolve(min, max, size, anchor, obstacles, gap);
+        if (id == "toolbar" && anchor == ChromeAnchor.TopCenter && result != Vector4.Zero) {
+            var (fullMin, fullMax) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            var x = (fullMin.X + fullMax.X - size.X) / 2;
+            if (x >= fullMin.X && x + size.X <= max.X) {
+                var centred = new Vector4(x, result.Y, x + size.X, result.W);
+                if (!obstacles.Exists(o => Overlap(centred, o + new Vector4(-gap, -gap, gap, gap))))
+                    result = centred;
+            }
+        }
         if (result != Vector4.Zero)
             occupied.Add((id, result, anchor));
         return result;
