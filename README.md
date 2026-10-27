@@ -115,7 +115,7 @@ Open the map with `/gratis map`, or use your usual map key. `/gratis` on its own
 | `/gratis` | Open settings |
 | `/gratis map` | Open or close the map |
 | `/gratis report` | Save a diagnostics report and screenshot (no character names) |
-| `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `popups`, `pvp` | Focused diagnostics |
+| `/gratis text`, `markers`, `motion`, `camera`, `chrome`, `glass`, `popups` | Focused diagnostics |
 | `/gratis journal debug`, `/gratis journal log` | Trace the Journal replacement and print it |
 
 ## Feedback

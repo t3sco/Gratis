@@ -30,6 +30,7 @@ internal static partial class Program {
         config.InterfaceAnimations = InterfaceAnimationMode.Full;
         config.LocationAnchor = ChromeAnchor.TopLeft;
         config.PaletteHintSeen = true;
+        config.TravelConfirmGil = 0;
         config.AlwaysShowToolbar = true;
         if (scene == "library-move") config.ClassicMoveHandle = config.MoveHandle = true;
         if (scene == "library-ghost") config.GhostMode = true;

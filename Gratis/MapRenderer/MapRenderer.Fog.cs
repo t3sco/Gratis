@@ -40,8 +40,20 @@ public unsafe partial class MapRenderer {
     private static int CurrentDiscoveryFlags =>
         AtkStage.Instance()->GetNumberArrayData(NumberArrayType.AreaMap2)->IntArray[2];
 
-    private void LoadFogHooks() {
-        Service.Hooker.InitializeFromAttributes(this);
+    private bool fogHooked;
+
+    private void EnsureFogHooks() {
+        if (fogHooked)
+            return;
+        fogHooked = true;
+        try {
+            Service.Hooker.InitializeFromAttributes(this);
+        }
+        catch (Exception exception) {
+            Service.Log.Warning(exception, "[Fog of War] Could not install the render hook.");
+        }
+        if (immediateContextProcessCommandsHook is null)
+            Service.Log.Warning("[Fog of War] Render hook not found; fog of war is unavailable this session.");
         immediateContextProcessCommandsHook?.Enable();
         Service.Framework.Update += UploadFogTexture;
     }
@@ -82,6 +94,9 @@ public unsafe partial class MapRenderer {
 
     private void DrawFogOfWar() {
         if (!System.SystemConfig.ShowFogOfWar)
+            return;
+        EnsureFogHooks();
+        if (immediateContextProcessCommandsHook is null)
             return;
         if (CurrentDiscoveryFlags == AgentMap.Instance()->SelectedMapDiscoveryFlag)
             return;

@@ -46,8 +46,8 @@ between partial files can change construction order even when methods are unchan
 
 ## Saved configuration
 
-Keep SystemConfig, IconConfig, FlagConfig, Flag and their saved names, types,
-defaults and filenames stable: `System.config.json`, `Icons.config.json`,
+Keep SystemConfig, FlagConfig, Flag and their saved names, types,
+defaults and filenames stable: `System.config.json`,
 `Flags.data.json`. SystemConfig inherits MapDrawingConfig and legacy metadata:
 Version (int, default 2), CharacterName ("Unknown Name"), CharacterWorld ("Unknown
 World"), ContentId (ulong), LodestoneId (nullable string). Metadata is passive;

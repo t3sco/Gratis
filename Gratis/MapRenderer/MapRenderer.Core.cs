@@ -49,7 +49,6 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     public MapRenderer() {
         cameraHeading = new CameraHeadingReader();
         frame = new Rendering.MapRendererFrame(this);
-        LoadFogHooks();
         Service.ClientState.TerritoryChanged += OnViewTerritoryChanged;
     }
 
