@@ -203,7 +203,7 @@ public static partial class UiMotion {
         Begin();
         var s = scale ?? GratisTheme.ChromeScale;
         var key = ImGui.GetID(id);
-        using var style = new NativePopupStyle(s);
+        using var style = PopupSurface.Push(PopupFaces.Native, s);
         var viewport = ImGui.GetWindowViewport();
         flags &= ~ImGuiWindowFlags.NoBackground;
         ImGui.SetNextWindowViewport(viewport.ID);

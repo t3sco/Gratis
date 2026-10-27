@@ -328,10 +328,9 @@ public sealed partial class QuestLogPanel {
                     ImGui.SetKeyboardFocusHere();
                     focusSearch = false;
                 }
-                ImGui.SetNextItemWidth(-1);
                 ImGui.BeginDisabled(!searchOpen);
                 var fieldQuery = query;
-                ImGui.InputTextWithHint("##quest-log-search", "Search quests...", ref fieldQuery, 256);
+                TextField.Draw("##quest-log-search", ref fieldQuery, new(FieldFaces.Quest));
                 if (searchOpen)
                     query = fieldQuery;
                 ImGui.EndDisabled();

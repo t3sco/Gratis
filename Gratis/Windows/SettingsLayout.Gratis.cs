@@ -22,21 +22,8 @@ public sealed partial class SettingsLayout {
         var list = ImGui.GetWindowDrawList();
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(32, 11) * scale);
-        ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##settings-search", "Search settings...", ref Search, 128);
-        ImGui.PopStyleVar();
-        GratisIcons.Draw(list, start + new Vector2(16, 18) * scale, GratisIcons.Search, GratisTheme.Secondary,
-            14 * scale);
-        if (Search.Length > 0) {
-            var next = ImGui.GetCursorPos();
-            ImGui.SetCursorScreenPos(start + new Vector2(width - 36 * scale, 0));
-            if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new Vector2(36) * scale,
-                scale))
-                Search = "";
-            ImGui.SetCursorPos(next);
-            ImGui.Dummy(Vector2.Zero);
-        }
+        if (TextField.Draw("##settings-search", ref Search, new(FieldFaces.Settings, Scale: scale)).Cleared)
+            Search = "";
         ImGui.Spacing();
         var available = ImGui.GetContentRegionAvail();
         var compactNav = width < 640 * scale;

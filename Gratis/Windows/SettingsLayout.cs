@@ -72,8 +72,7 @@ public sealed partial class SettingsLayout {
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10, 9) * scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(8, 5) * scale);
         try {
-            ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##settings-search", "Search settings", ref Search, 128);
+            TextField.Draw("##settings-search", ref Search, new(FieldFaces.ClassicSettings));
             ImGui.Spacing();
             var available = ImGui.GetContentRegionAvail();
             var navWidth = 180 * scale;

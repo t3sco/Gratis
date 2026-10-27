@@ -115,7 +115,7 @@ public static partial class UiMotion {
         }
         tooltipDrawn = current;
         var s = tooltipScale;
-        using var style = new ChromePopupStyle(scale: s);
+        using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         ImGui.SetNextWindowPos(new(tooltipBounds.X, tooltipBounds.Y));
@@ -148,7 +148,7 @@ public static partial class UiMotion {
         contentTooltipSeen = tooltipDrawn = frame;
         var alpha = !Full ? 1 : InterfaceMotionTokens.Ease((float)Math.Clamp(
             (ImGui.GetTime() - contentTooltipBegan) / Duration(InterfaceMotionTokens.Micro), 0, 1), InterfaceCurve.Enter);
-        using var style = new ChromePopupStyle(scale: s);
+        using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         ImGui.SetNextWindowPos(p);
         ImGui.SetNextWindowSize(size);
         ImGui.SetNextWindowViewport(viewport.ID);

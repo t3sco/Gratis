@@ -18,6 +18,7 @@ public sealed class ItemTooltipDrawing {
     private QuestLogRewardItem? shownReward;
     private uint summary;
     private bool hoveredThisFrame;
+    private readonly MenuRowCache linkRow = new("Link"), copyRow = new("Copy name"), searchRow = new("Search for Item");
     public Vector4 MenuBounds { get; private set; }
     public static Vector4 LastTooltipBounds { get; private set; }
     public static uint LastTooltipItem { get; private set; }
@@ -72,7 +73,7 @@ public sealed class ItemTooltipDrawing {
     }
 
     private void DrawMenu(string id, QuestLogRewardItem reward, IItemTooltipSource? source, float s) {
-        using var style = new ChromePopupStyle(scale: s);
+        using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var entries = ItemTooltipModel.MenuEntries(source?.CanLink == true, source?.CanSearch == true);
         var size = new Vector2(208, 24 + entries.Count * 36 + (entries.Count - 1) * 4) * s;
@@ -87,13 +88,10 @@ public sealed class ItemTooltipDrawing {
         ImGui.BeginDisabled(!popup.Interactive);
         try {
             foreach (var entry in entries) {
-                var p = ImGui.GetCursorScreenPos();
-                var rowSize = new Vector2(size.X - 24 * s, 36 * s);
-                var clicked = ChromeControls.Button(entry, rowSize);
-                ChromeControls.Feedback(ImGui.GetWindowDrawList(), p, p + rowSize);
-                TextDrawing.Draw(ImGui.GetWindowDrawList(), p + new Vector2(8 * s, (rowSize.Y - ImGui.GetTextLineHeight()) / 2),
-                    ImGui.GetColorU32(GratisTheme.Primary), entry);
-                if (!clicked) continue;
+                var cached = entry == "Link" ? linkRow : entry == "Search for Item" ? searchRow : copyRow;
+                var row = new MenuRow(cached, new(RowFaces.Reward, s, Width: size.X - 24 * s));
+                row.Draw(entry);
+                if (!row.Clicked) continue;
                 if (entry == "Link") source?.Link(reward.Id);
                 else if (entry == "Search for Item") source?.Search(reward.Id);
                 else ImGui.SetClipboardText(reward.Name);

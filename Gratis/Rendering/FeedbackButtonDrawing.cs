@@ -60,7 +60,7 @@ public static class FeedbackButtonDrawing {
     private static void DrawPopup(Vector4 anchor) {
         var context = MapDrawContext.Current;
         var s = GratisTheme.ChromeScale;
-        using var style = new ChromePopupStyle();
+        using var style = PopupSurface.Push(PopupFaces.Chrome);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var (min, max) = ChromeLayout.PopoverBounds();
         var spacing = ImGui.GetStyle().ItemSpacing.Y;

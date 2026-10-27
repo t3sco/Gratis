@@ -88,38 +88,22 @@ public sealed partial class PaletteOverlay {
                     for (var i = 0; i < scopes.Length; i++) {
                         if (i > 0)
                             ImGui.SameLine();
-                        var chosen = UiMotion.Value(ImGui.GetID("##scope-" + i), 6, effective == scopes[i] ? 1 : 0);
-                        ImGui.PushStyleColor(ImGuiCol.Button,
-                            Vector4.Lerp(new Vector4(1, 1, 1, .035f), config.AccentColor with { W = .25f }, chosen));
                         var label = compact ? i == 0 ? "All" : "" : labels[i];
                         var chipWidth = compact ? (size.X - 2 * GratisTheme.Inset * scale - 4 * GratisTheme.Gap * scale)
                             / 5
-                            : ImGui.CalcTextSize(label).X + 44 * scale;
-                        if (ChromeControls.TextButton("##scope-" + i,
-                            new Vector2(MathF.Max(1, chipWidth), GratisTheme.ControlHeight * scale)))
+                            : ImGui.CalcTextSize(label).X + ChipFaces.Regular.WidthPadding * scale;
+                        var glyph = compact && i == 0 ? '\0' : i switch {
+                            0 => GratisIcons.LayoutGrid,
+                            1 => GratisIcons.Sparkles,
+                            2 => GratisIcons.Compass,
+                            3 => GratisIcons.BookOpen,
+                            _ => GratisIcons.MapPin
+                        };
+                        if (SegmentedChip.Draw(scopeIds[i], label, effective == scopes[i],
+                            new(ChipFaces.Regular, config.AccentColor,
+                                new(MathF.Max(1, chipWidth), ChipFaces.Regular.Height * scale), scale,
+                                Icon: glyph, Centered: compact, Tooltip: labels[i])))
                             ChangeScope(i);
-                        var chipMin = ImGui.GetItemRectMin();
-                        var chipMax = ImGui.GetItemRectMax();
-                        if (!compact || i > 0) {
-                            var glyph = i switch {
-                                0 => GratisIcons.LayoutGrid,
-                                1 => GratisIcons.Sparkles,
-                                2 => GratisIcons.Compass,
-                                3 => GratisIcons.BookOpen,
-                                _ => GratisIcons.MapPin
-                            };
-                            GratisIcons.Draw(surface,
-                                new Vector2(compact ? (chipMin.X + chipMax.X) / 2 : chipMin.X + 14 * scale,
-                                    (chipMin.Y + chipMax.Y) / 2),
-                                glyph, GratisTheme.Primary, 13 * scale);
-                        }
-                        var textSize = TextDrawing.Measure(label);
-                        TextDrawing.Draw(surface,
-                            new Vector2(compact ? (chipMin.X + chipMax.X - textSize.X) / 2 : chipMin.X + 28 * scale,
-                                (chipMin.Y + chipMax.Y - textSize.Y) / 2),
-                            ImGui.GetColorU32(GratisTheme.Primary), label);
-                        ChromeControls.Tooltip(labels[i], windowBounds: MapToolbarDrawing.WindowBounds);
-                        ImGui.PopStyleColor();
                     }
                 }
                 Search(config);
@@ -228,36 +212,29 @@ public sealed partial class PaletteOverlay {
             ChromeFontRole.Chip)?.Push();
         var start = draw ? ImGui.GetCursorScreenPos() : Vector2.Zero;
         var gap = GratisTheme.Grid * scale;
-        var height = (GratisTheme.ControlHeight - 6) * scale;
+        var height = ChipFaces.Compact.Height * scale;
         width = MathF.Max(1, width);
         float x = 0, y = 0;
         for (var i = 0; i < questFilters.Length; i++) {
             if (i > 0 && questCounts[i] == 0)
                 continue;
-            var label = questLabels[i] + (questCounts[i] > 0 ? $" {questCounts[i]}" : "");
-            var chipWidth = MathF.Min(width, TextDrawing.Measure(label).X + 20 * scale);
+            var label = questChipLabels[i].Label(questLabels[i], questCounts[i]);
+            var chipWidth = MathF.Min(width, TextDrawing.Measure(label).X + ChipFaces.Compact.WidthPadding * scale);
             if (x > 0 && x + chipWidth > width) {
                 x = 0;
                 y += height + gap;
             }
             if (draw) {
                 ImGui.SetCursorScreenPos(start + new Vector2(x, y));
-                var chosen = UiMotion.Value(ImGui.GetID("##quest-bucket-" + i), 6, questFilter == i ? 1 : 0);
-                ImGui.PushStyleColor(ImGuiCol.Button,
-                    Vector4.Lerp(new Vector4(1, 1, 1, .035f), config.AccentColor with { W = .25f }, chosen));
-                if (ChromeControls.TextButton("##quest-bucket-" + i, new Vector2(chipWidth, height))) {
+                if (SegmentedChip.Draw(questChipIds[i], label, questFilter == i,
+                    new(ChipFaces.Compact, config.AccentColor, new(chipWidth, height), scale,
+                        LabelCache: questChipLabels[i]))) {
                     questFilter = i;
                     focusSearch = true;
                 }
                 var chipMin = ImGui.GetItemRectMin();
                 var chipMax = ImGui.GetItemRectMax();
                 questChipBounds[i] = new(chipMin.X, chipMin.Y, chipMax.X, chipMax.Y);
-                var text = ChromeControls.FitLabel(label, MathF.Max(1, chipWidth - 12 * scale));
-                var textSize = TextDrawing.Measure(text);
-                TextDrawing.Draw(ImGui.GetWindowDrawList(), (chipMin + chipMax - textSize) / 2,
-                    ImGui.GetColorU32(GratisTheme.Primary), text);
-                ChromeControls.Tooltip(label, windowBounds: MapToolbarDrawing.WindowBounds);
-                ImGui.PopStyleColor();
             }
             x += chipWidth + gap;
         }

@@ -59,7 +59,7 @@ public static partial class DrawHelpers {
                         category, marker);
                     return;
                 }
-                using var popupStyle = MapDrawContext.Current.Config.IsGratis ? new ChromePopupStyle() : (ChromePopupStyle?)null;
+                using var popupStyle = MapDrawContext.Current.Config.IsGratis ? PopupSurface.Push(PopupFaces.Chrome) : (PopupSurface.Scope?)null;
                 ImGui.SetNextWindowViewport(ImGui.GetWindowViewport().ID);
                 ImGui.BeginTooltip();
                 if (MapDrawContext.Current.Config.IsGratis) {

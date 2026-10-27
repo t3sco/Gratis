@@ -39,7 +39,7 @@ public static partial class ChromeControls {
             MathF.Min(MathF.Min(items.Length, 8) * GratisTheme.ControlHeight * s + 16 * s, viewport.Size.Y - 28 * s));
         var bounds = ChromePopoverMath.Place(new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y), menuSize,
             viewport.Pos + new Vector2(14 * s), viewport.Pos + viewport.Size - new Vector2(14 * s), 4 * s);
-        using var style = new ChromePopupStyle(scale: s);
+        using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         using var popup = UiMotion.Popup(id, !ImGui.IsKeyPressed(ImGuiKey.Escape, false), new(bounds.X, bounds.Y),
             menuSize, ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings,
             scale: s);

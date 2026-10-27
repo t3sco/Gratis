@@ -17,6 +17,7 @@ public sealed partial class ContextMenu {
     private int candidateFrame = -1, selected;
     private uint map;
     private bool swallowEscape;
+    private readonly List<MenuRowCache> rowCache = [];
     public bool IsOpen { get; private set; }
     public bool CapturesInput { get; private set; }
     public Vector2 Min { get; private set; }
@@ -146,42 +147,17 @@ public sealed partial class ContextMenu {
             using var rowsMotion = UiMotion.Surface("##context-rows-motion", Min, popup.Interactive);
             for (var i = 0; i < current.Count; i++) {
                 var item = current[i];
-                var pos = ImGui.GetCursorScreenPos();
-                var width = MathF.Max(1, ImGui.GetContentRegionAvail().X);
                 var enabled = item.Invoke != null || item.Children != null;
-                ImGui.BeginDisabled(!enabled);
-                var clicked = ChromeControls.Button("##context-row-" + i, new Vector2(width, rowHeight));
-                ImGui.EndDisabled();
-                Rows[item.Label] = pos + new Vector2(width / 2, rowHeight / 2);
-                var hovered = ImGui.IsItemHovered();
-                if (hovered && ImGui.GetIO().MouseDelta != Vector2.Zero)
+                if (i == rowCache.Count) rowCache.Add(new("##context-row-" + i));
+                var row = new MenuRow(rowCache[i], new(RowFaces.Context, s,
+                    Icon: item.Icon, Enabled: enabled, Children: item.Children != null));
+                Rows[item.Label] = row.Min + row.Size / 2;
+                if (row.Hovered && ImGui.GetIO().MouseDelta != Vector2.Zero)
                     selected = i;
                 if (navigating && i == selected)
                     UiMotion.ScrollToItem();
-                var list = ImGui.GetWindowDrawList();
-                using var control = UiMotion.Control(list, pos, pos + new Vector2(width, rowHeight));
-                if (i == selected && enabled) {
-                    var highlight = UiMotion.Selection("##context-highlight", pos);
-                    list.AddRectFilled(highlight, highlight + new Vector2(width, rowHeight),
-                        ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .08f }), GratisTheme.Radius.Control * s);
-                }
-                ChromeControls.Feedback(list, pos, pos + new Vector2(width, rowHeight), i == selected && enabled);
-                GratisIcons.Draw(list, pos + new Vector2(18 * s, rowHeight / 2), item.Icon, GratisTheme.Secondary,
-                    GratisTheme.IconSize * s);
-                var reserve = item.Children != null ? 24 * s : 8 * s;
-                var displayed = ChromeControls.FitLabel(item.Label, MathF.Max(0, width - 40 * s - reserve));
-                list.AddText(pos + new Vector2(40 * s, (rowHeight - ImGui.GetFontSize()) / 2),
-                    ImGui.GetColorU32(enabled ? GratisTheme.Primary : GratisTheme.Secondary), displayed);
-                if (item.Children != null) {
-                    var center = pos + new Vector2(width - 16 * s, rowHeight / 2);
-                    list.AddLine(center + new Vector2(-2, -4) * s, center + new Vector2(2, 0) * s,
-                        ImGui.GetColorU32(GratisTheme.Secondary), s);
-                    list.AddLine(center + new Vector2(2, 0) * s, center + new Vector2(-2, 4) * s,
-                        ImGui.GetColorU32(GratisTheme.Secondary), s);
-                }
-                if (displayed != item.Label)
-                    ChromeControls.Tooltip(item.Label);
-                if (enter && selected == i || clicked) {
+                row.Draw(item.Label, i == selected);
+                if (enter && selected == i || row.Clicked) {
                     Activate(item);
                     break;
                 }

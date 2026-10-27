@@ -145,7 +145,7 @@ public static partial class MapToolbarDrawing {
                     DrawMapMenu(activate);
                     if (ImGui.IsPopupOpen("Gratis_Show_Layers"))
                         context.Chrome.Reveal(ImGui.GetTime());
-                    using var menuStyle = new ChromePopupStyle();
+                    using var menuStyle = PopupSurface.Push(PopupFaces.Chrome);
                     using var menuFont = context.GetChromeFont(GratisTheme.TextSize * scale,
                         ChromeFontRole.Body)?.Push();
                     drawLayersContextMenu();

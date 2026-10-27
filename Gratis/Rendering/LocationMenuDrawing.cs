@@ -26,9 +26,12 @@ public static class LocationMenuDrawing {
     private static uint map;
     private static bool open, focus, swallowEscape, closing;
     private static string query = "", searched = "", region = "";
+    private static string queryInputId = "##location-query-0";
     private static PlaceEntry[] zones = [], siblings = [];
     private static PlaceResult[] results = [];
     private static IReadOnlyList<LocationMenuParent> parents = [];
+    private static readonly List<string> parentIds = [];
+    private static readonly Dictionary<string, MenuRowCache> rowCache = [];
     private static readonly List<(string Id, Vector4 Bounds)> rows = [];
     public static IReadOnlyList<(string Id, Vector4 Bounds)> Rows => rows;
     public static IReadOnlyList<PlaceResult> Results => results;
@@ -59,6 +62,7 @@ public static class LocationMenuDrawing {
             context = current;
             open = focus = closing = swallowEscape = false;
             revision = -1;
+            rowCache.Clear();
         }
         frame = ImGui.GetFrameCount();
         closing = false;
@@ -81,9 +85,11 @@ public static class LocationMenuDrawing {
             query = searched = "";
             revision = -1;
             serial++;
+            queryInputId = "##location-query-" + serial;
             focus = open = true;
             source.Places.Refresh();
             parents = source.Parents;
+            parentIds.Clear();
             ImGui.OpenPopup(Popup);
         }
         DrawPopover(source, clicked && !focus);
@@ -107,6 +113,7 @@ public static class LocationMenuDrawing {
         if (searched == query)
             return;
         searched = query;
+        rowCache.Clear();
         results = string.IsNullOrWhiteSpace(query) ? []
             : PlaceSearch.Find(zones, query, PlaceKind.Zone, source.Context, Recent, source.Access).Take(6).ToArray();
     }
@@ -120,7 +127,7 @@ public static class LocationMenuDrawing {
     private static void DrawPopover(ILocationMenuSource source, bool close) {
         var current = MapDrawContext.Current;
         var s = GratisTheme.ChromeScale;
-        using var style = new ChromePopupStyle();
+        using var style = PopupSurface.Push(PopupFaces.Chrome);
         using var font = current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         if (open)
             Search(source.Places);
@@ -160,9 +167,7 @@ public static class LocationMenuDrawing {
             ImGui.SetKeyboardFocusHere();
             focus = false;
         }
-        ImGui.SetNextItemWidth(-1);
-        var enter = ImGui.InputTextWithHint("##location-query-" + serial, "Find a zone", ref query, 256,
-            ImGuiInputTextFlags.EnterReturnsTrue);
+        var enter = TextField.Draw(queryInputId, ref query, new(FieldFaces.Location)).Changed;
         SearchBounds = Bounds();
         Search(source.Places);
         if (enter && results.Length > 0 && popup.Interactive) {
@@ -185,11 +190,13 @@ public static class LocationMenuDrawing {
                 ImGui.TextDisabled("No zones found");
             if (parents.Count > 0) {
                 ImGui.TextDisabled("Up a level");
-                for (var i = 0; i < parents.Count; i++)
-                    if (Row(parents[i].Name, "parent:" + i)) {
+                for (var i = 0; i < parents.Count; i++) {
+                    if (i == parentIds.Count) parentIds.Add("parent:" + i);
+                    if (Row(parents[i].Name, parentIds[i])) {
                         parents[i].Open();
                         Close();
                     }
+                }
             }
             if (siblings.Length > 0) {
                 ImGui.TextDisabled(ChromeControls.FitLabel("In " + region, ImGui.GetContentRegionAvail().X));
@@ -227,18 +234,15 @@ public static class LocationMenuDrawing {
     }
 
     private static bool Row(string label, string id) {
-        var pos = ImGui.GetCursorScreenPos();
-        var size = new Vector2(MathF.Max(1, ImGui.GetContentRegionAvail().X),
-            GratisTheme.ControlHeight * GratisTheme.ChromeScale);
-        var clicked = ChromeControls.Button("##location-" + id, size);
+        if (!rowCache.TryGetValue(id, out var cached)) {
+            cached = new("##location-" + id);
+            rowCache.Add(id, cached);
+        }
+        var row = new MenuRow(cached, new(RowFaces.Location, GratisTheme.ChromeScale));
         if (ImGui.IsItemVisible())
             rows.Add((id, Bounds()));
-        var list = ImGui.GetWindowDrawList();
-        ChromeControls.Feedback(list, pos, pos + size);
-        list.AddText(pos + new Vector2(8 * GratisTheme.ChromeScale, (size.Y - ImGui.GetFontSize()) / 2),
-            ImGui.GetColorU32(GratisTheme.Primary),
-            ChromeControls.FitLabel(label, size.X - 16 * GratisTheme.ChromeScale));
-        return clicked;
+        row.Draw(label);
+        return row.Clicked;
     }
 
     private static void Close() {

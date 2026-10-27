@@ -168,7 +168,7 @@ public static class FilterBarDrawing {
         size = new(bounds.Z - bounds.X, bounds.W - bounds.Y);
         ImGui.SetNextWindowPos(new(bounds.X, bounds.Y));
         ImGui.SetNextWindowSize(size);
-        using var style = new ChromePopupStyle();
+        using var style = PopupSurface.Push(PopupFaces.Chrome);
         using var popup = UiMotion.Popup(Popup, !close && !ImGui.IsKeyPressed(ImGuiKey.Escape, false),
             new(bounds.X, bounds.Y), size, ImGuiWindowFlags.NoMove
                 | ImGuiWindowFlags.NoSavedSettings

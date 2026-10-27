@@ -34,10 +34,14 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         PlaceKind.Quest,
         PlaceKind.Marker];
     private static readonly string[] labels = ["All", "Aetherytes", "Zones", "Quests", "Markers"];
+    private static readonly string[] scopeIds = ["##scope-0", "##scope-1", "##scope-2", "##scope-3", "##scope-4"];
     private static readonly QuestBucket?[] questFilters = [null, QuestBucket.Scenario, QuestBucket.SideQuests,
         QuestBucket.JobClass, QuestBucket.Chronicles, QuestBucket.AlliedSocieties, QuestBucket.Other];
     private static readonly string[] questLabels = questFilters.Select(b => b is { } bucket
         ? QuestBuckets.Label(bucket) : "All").ToArray();
+    private static readonly string[] questChipIds = ["##quest-bucket-0", "##quest-bucket-1", "##quest-bucket-2",
+        "##quest-bucket-3", "##quest-bucket-4", "##quest-bucket-5", "##quest-bucket-6"];
+    private readonly ChipLabelCache[] questChipLabels = questFilters.Select(_ => new ChipLabelCache()).ToArray();
     private int questFilter, searchedQuestFilter = -1;
     private readonly int[] questCounts = new int[questFilters.Length];
     private readonly Vector4[] questChipBounds = new Vector4[questFilters.Length];
@@ -83,26 +87,13 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         using var fieldMotion = UiMotion.Surface("##inline-field-enter", position, IsOpen);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         ImGui.SetCursorScreenPos(position);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding,
-            new Vector2(8 * s, MathF.Max(0, (size.Y - ImGui.GetFontSize()) / 2)));
-        var radius = GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, radius);
-        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
-        ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Primary);
-        var clearSize = MathF.Min(size.Y, size.X / 3);
-        ImGui.SetNextItemWidth(MathF.Max(1, size.X - clearSize));
         if (focusSearch) {
             ImGui.SetKeyboardFocusHere();
             focusSearch = false;
         }
-        ImGui.InputTextWithHint(queryInputId, "Search places...", ref query, 256);
-        ImGui.PopStyleColor(2);
-        ImGui.PopStyleVar(2);
-        var clearPos = position + new Vector2(size.X - clearSize, 0);
-        ImGui.SetCursorScreenPos(clearPos);
-        ClearBounds = new(clearPos.X, clearPos.Y, clearPos.X + clearSize, clearPos.Y + size.Y);
-        if (ChromeControls.IconButton("##clear-search", GratisIcons.X, "Clear search", new(clearSize, size.Y),
-            windowBounds: MapToolbarDrawing.WindowBounds, radius: radius))
+        var field = TextField.Draw(queryInputId, ref query, new(FieldFaces.Palette, size, s));
+        ClearBounds = field.ClearBounds;
+        if (field.Cleared)
             SetQuery("");
         Search(MapDrawContext.Current.Config);
         ImGui.EndDisabled();

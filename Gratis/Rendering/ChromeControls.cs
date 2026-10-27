@@ -94,7 +94,7 @@ public static partial class ChromeControls {
         if (now - hoverBegan < .4)
             return;
         var s = scale ?? GratisTheme.ChromeScale;
-        using var style = new ChromePopupStyle(scale: s);
+        using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         var viewport = ImGui.GetWindowViewport();
