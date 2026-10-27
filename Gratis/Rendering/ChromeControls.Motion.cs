@@ -9,32 +9,8 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public static partial class ChromeControls {
-    public static bool TextButton(string label, Vector2 size = default, float? scale = null, float? radius = null) {
-        if (!UiMotion.IsGratis)
-            return ImGui.Button(label, size);
-        var s = scale ?? GratisTheme.ChromeScale;
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, radius ?? GratisTheme.Radius.Control * s);
-        var list = ImGui.GetWindowDrawList();
-        var first = list.VtxBuffer.Size;
-        var min = ImGui.GetCursorScreenPos();
-        var fill = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, fill);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, fill);
-#if GRATIS_PREVIEW
-        PreviewBeforeButton?.Invoke(label);
-#endif
-        var clicked = ImGui.Button(label, size);
-#if GRATIS_PREVIEW
-        PreviewAfterButton?.Invoke(label);
-#endif
-        ImGui.PopStyleColor(2);
-        ImGui.PopStyleVar();
-        UiMotion.ItemId(label);
-        var max = ImGui.GetItemRectMax();
-        using var press = UiMotion.Control(list, min, max, first);
-        Feedback(list, min, max, scale: s, radius: radius);
-        return clicked;
-    }
+    public static bool TextButton(string label, Vector2 size = default, float? scale = null, float? radius = null) =>
+        ActionButton.Draw(label, label, new(ActionFaces.NativeText, Size: size, Scale: scale, Radius: radius));
 
     public static bool Combo(string id, ref int selected, string[] items, float? scale = null) {
         if (!UiMotion.IsGratis)

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -72,37 +73,30 @@ public sealed partial class MapAssistance {
             ImGui.TextColored(note ? GratisTheme.Primary : GratisTheme.Secondary, text);
             ImGui.SetCursorScreenPos(new(start.X, ImGui.GetCursorScreenPos().Y + 12 * s));
         }
-        ImGui.BeginDisabled(!card.Enabled);
         var pressed = TeleportAction(card, width);
-        ImGui.EndDisabled();
         TravelButtonCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
         return pressed && card.Enabled;
     }
 
-    private static bool TeleportAction(TeleportCardModel card, float width) {
-        var s = GratisTheme.ChromeScale;
-        var pos = ImGui.GetCursorScreenPos();
-        var size = new Vector2(width, GratisTheme.ControlHeight * s);
-        var clicked = ChromeControls.Button("##travel-action", size);
-        var list = ImGui.GetWindowDrawList();
-        using var motion = UiMotion.Control(list, pos, pos + size);
-        var tint = card.Armed ? GratisTheme.WarmAccent : GratisTheme.Crystal;
-        var hovered = ImGui.IsItemHovered();
-        list.AddRectFilled(pos, pos + size, ImGui.GetColorU32(tint with { W = hovered ? .30f : .20f }),
-            GratisTheme.Radius.Control * s);
-        list.AddRect(pos, pos + size, ImGui.GetColorU32(tint with { W = .45f }), GratisTheme.Radius.Control * s,
-            ImDrawFlags.None, s);
-        ChromeControls.Feedback(list, pos, pos + size, fill: false);
-        var label = card.Armed ? $"Pay {card.Cost ?? 0:N0} gil and teleport" : "Teleport";
-        var cost = card.Armed ? "" : CostLabel(card);
-        var costWidth = cost.Length > 0 ? ImGui.CalcTextSize(cost).X + 12 * s : 0;
-        var y = (size.Y - ImGui.GetFontSize()) / 2;
-        list.AddText(pos + new Vector2(14 * s, y),
-            ImGui.GetColorU32(card.Armed ? GratisTheme.WarmAccent : GratisTheme.Primary),
-            ChromeControls.FitLabel(label, size.X - 28 * s - costWidth));
-        if (cost.Length > 0)
-            list.AddText(pos + new Vector2(size.X - 14 * s - ImGui.CalcTextSize(cost).X, y),
-                ImGui.GetColorU32(GratisTheme.WarmAccent), cost);
-        return clicked;
+    private readonly ActionLabelCache travelLabel = new();
+    private uint? travelCost;
+    private bool travelFree;
+    private CultureInfo? travelCulture;
+    private string travelCostLabel = "", travelConfirmLabel = "";
+
+    private bool TeleportAction(TeleportCardModel card, float width) {
+        var culture = CultureInfo.CurrentCulture;
+        if (travelCost != card.Cost || travelFree != card.Free || !ReferenceEquals(travelCulture, culture)
+            || !culture.IsReadOnly || !culture.NumberFormat.IsReadOnly) {
+            travelCost = card.Cost;
+            travelFree = card.Free;
+            travelCulture = culture;
+            travelCostLabel = CostLabel(card);
+            travelConfirmLabel = $"Pay {card.Cost ?? 0:N0} gil and teleport";
+        }
+        return global::Gratis.Rendering.ActionButton.Draw("##travel-action", card.Armed ? travelConfirmLabel : "Teleport",
+            new(card.Armed ? ActionFaces.ConfirmTravel : ActionFaces.Travel,
+                TrailingText: card.Armed ? "" : travelCostLabel, Enabled: card.Enabled,
+                Size: new(width, GratisTheme.ControlHeight * GratisTheme.ChromeScale), LabelCache: travelLabel));
     }
 }

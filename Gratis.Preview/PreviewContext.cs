@@ -242,10 +242,11 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     }
 
     private sealed class Font(ImFontPtr font) : IDrawFont {
+        private static readonly PopFont pop = new();
         public IDisposable Push() {
             using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.FontPush);
             ImGui.PushFont(font);
-            return new PopFont();
+            return pop;
         }
     }
     private sealed class PopFont : IDisposable {

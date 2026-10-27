@@ -122,9 +122,9 @@ internal static partial class Program {
                     "", new(36));
                 break;
             case "text": ChromeControls.TextButton("Action", new(132, 36)); break;
-            case "quiet": MapAssistance.QuietButton("Cancel"); break;
-            case "action": MapAssistance.ActionButton("Show on map", GratisIcons.MapPin); break;
-            case "primary": MapAssistance.PrimaryTravelButton("Send", GratisIcons.Check); break;
+            case "quiet": ActionButton.Draw("Cancel", "Cancel", new(ActionFaces.Quiet)); break;
+            case "action": ActionButton.Draw("Show on map", "Show on map", new(ActionFaces.Action, Icon: GratisIcons.MapPin)); break;
+            case "primary": ActionButton.Draw("Send", "Send", new(ActionFaces.PrimaryTravel, Icon: GratisIcons.Check)); break;
             case "toggle":
                 if (config.IsGratis) SettingsTheme.Toggle("##toggle", ref selected, config.AccentColor);
                 else ImGui.Checkbox("Enabled", ref selected);

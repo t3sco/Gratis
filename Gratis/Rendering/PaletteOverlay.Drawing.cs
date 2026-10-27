@@ -187,7 +187,8 @@ public sealed partial class PaletteOverlay {
                     using var hint = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale,
                         ChromeFontRole.Body)?.Push();
                     if (confirming is { } target) {
-                        var clicked = MapAssistance.PrimaryTravelButton("Confirm teleport", GratisIcons.Compass);
+                        var clicked = ActionButton.Draw("Confirm teleport", "Confirm teleport",
+                            new(ActionFaces.PrimaryTravel, Icon: GratisIcons.Compass));
                         ConfirmationCenter = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
                         if (clicked)
                             Teleport(target, true);
@@ -378,13 +379,16 @@ public sealed partial class PaletteOverlay {
         if (buttonWidth > 0) {
             ImGui.SetCursorScreenPos(start + new Vector2(rowWidth - buttonWidth, 21 * scale));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())
-                if (MapAssistance.ActionButton(canTravel ? "Travel here" : result.Access.Cost is { } cost
-                    ? $"{cost:N0} gil" : "Teleport",
-                    GratisIcons.Compass))
+                if (DrawTravelAction(result, canTravel))
                     Teleport(result.Place, false);
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, rowHeight + GratisTheme.Grid * scale));
         ImGui.Dummy(Vector2.Zero);
         ImGui.PopID();
+    }
+
+    private bool DrawTravelAction(PlaceResult result, bool canTravel) {
+        var label = canTravel ? "Travel here" : rowNames.ActionLabel(result, results);
+        return ActionButton.Draw(label, label, new(ActionFaces.Action, Icon: GratisIcons.Compass));
     }
 }

@@ -48,50 +48,12 @@ public sealed partial class MapAssistance {
         ImGui.Spacing();
     }
 
-    internal static bool QuietButton(string text) {
-        var s = GratisTheme.ChromeScale;
-        var pos = ImGui.GetCursorScreenPos();
-        var size = new Vector2(ImGui.CalcTextSize(text).X + 16 * s, GratisTheme.ControlHeight * s);
-        var clicked = ChromeControls.Button(text, size);
-        var list = ImGui.GetWindowDrawList();
-        using var motion = UiMotion.Control(list, pos, pos + size);
-        ChromeControls.Feedback(list, pos, pos + size);
-        list.AddText(pos + new Vector2(8 * s, (size.Y - ImGui.GetFontSize()) / 2),
-            ImGui.GetColorU32(GratisTheme.Secondary), text);
-        return clicked;
-    }
+    internal static bool QuietButton(string text) =>
+        global::Gratis.Rendering.ActionButton.Draw(text, text, new(ActionFaces.Quiet));
 
-    internal static bool ActionButton(string text, char icon) {
-        var s = GratisTheme.ChromeScale;
-        var min = ImGui.GetCursorScreenPos();
-        var textSize = ImGui.CalcTextSize(text);
-        var size = new Vector2(textSize.X + 38 * s, GratisTheme.ControlHeight * s);
-        var clicked = ChromeControls.Button(text, size);
-        var list = ImGui.GetWindowDrawList();
-        using var motion = UiMotion.Control(list, min, min + size);
-        list.AddRectFilled(min, min + size,
-            ImGui.GetColorU32(new Vector4(.25f, .48f, .56f, ImGui.IsItemHovered() ? .5f : .27f)), GratisTheme.Radius.Control * s);
-        GratisIcons.Draw(list, min + new Vector2(13 * s, size.Y / 2), icon, GratisTheme.Transport, 14 * s);
-        ChromeControls.Feedback(list, min, min + size, fill: false);
-        list.AddText(min + new Vector2(27 * s, (size.Y - ImGui.GetFontSize()) / 2),
-            ImGui.GetColorU32(GratisTheme.Primary), text);
-        return clicked;
-    }
+    internal static bool ActionButton(string text, char icon) =>
+        global::Gratis.Rendering.ActionButton.Draw(text, text, new(ActionFaces.Action, Icon: icon));
 
-    internal static bool PrimaryTravelButton(string text, char icon) {
-        var s = GratisTheme.ChromeScale;
-        var min = ImGui.GetCursorScreenPos();
-        var size = new Vector2(ImGui.CalcTextSize(text).X + 40 * s, GratisTheme.ControlHeight * s);
-        var clicked = ChromeControls.Button(text, size);
-        var list = ImGui.GetWindowDrawList();
-        using var motion = UiMotion.Control(list, min, min + size);
-        var ink = GratisTheme.Surface with { W = 1 };
-        list.AddRectFilled(min, min + size,
-            ImGui.GetColorU32(GratisTheme.Crystal with { W = ImGui.IsItemHovered() ? 1 : .94f }),
-            GratisTheme.Radius.Control * s);
-        ChromeControls.Feedback(list, min, min + size, fill: false);
-        GratisIcons.Draw(list, min + new Vector2(15 * s, size.Y / 2), icon, ink, GratisTheme.IconSize * s);
-        list.AddText(min + new Vector2(30 * s, (size.Y - ImGui.GetFontSize()) / 2), ImGui.GetColorU32(ink), text);
-        return clicked;
-    }
+    internal static bool PrimaryTravelButton(string text, char icon) =>
+        global::Gratis.Rendering.ActionButton.Draw(text, text, new(ActionFaces.PrimaryTravel, Icon: icon));
 }

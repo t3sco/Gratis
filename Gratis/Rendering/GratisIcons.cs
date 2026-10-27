@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -162,6 +163,8 @@ public static class GratisIcons {
         _ => Info,
     };
 
+    private static readonly Dictionary<char, string> glyphText = new(128);
+
     public static bool Draw(ImDrawListPtr list, Vector2 center, char codepoint, Vector4 color, float pixels) {
         var context = MapDrawContext.Current;
         var handle = context.GetIconFont(TextDrawing.PixelSize(pixels));
@@ -175,7 +178,11 @@ public static class GratisIcons {
         var ratio = pixels / font.FontSize;
         var position = TextDrawing.Snap(center - new Vector2(bounds.X + bounds.Z, bounds.Y + bounds.W) * (.5f * ratio));
         DrawBinding.PushFontTexture(list);
-        list.AddText(font, pixels, position, ImGui.GetColorU32(color), codepoint.ToString());
+        if (!glyphText.TryGetValue(codepoint, out var text)) {
+            text = codepoint.ToString();
+            glyphText.Add(codepoint, text);
+        }
+        list.AddText(font, pixels, position, ImGui.GetColorU32(color), text);
         DrawBinding.PopTexture(list);
         return true;
     }

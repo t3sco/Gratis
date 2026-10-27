@@ -115,13 +115,11 @@ public static class FeedbackButtonDrawing {
                     ImGui.CloseCurrentPopup();
             }
             var ready = draft.Trim().Length > 0 && FeedbackSender.CanSend;
-            ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * (ready ? 1 : .4f));
-            var send = MapAssistance.PrimaryTravelButton("Send", GratisIcons.Check);
-            ImGui.PopStyleVar();
+            var send = ActionButton.Draw("Send", "Send", new(ActionFaces.Send, Icon: GratisIcons.Check, Enabled: ready));
             if (send && ready)
                 FeedbackSender.Send(draft, includeReport ? FeedbackLink.BuildReport?.Invoke() : null);
             ImGui.SameLine();
-            if (MapAssistance.QuietButton("Open on GitHub"))
+            if (ActionButton.Draw("Open on GitHub", "Open on GitHub", new(ActionFaces.Quiet)))
                 FeedbackLink.Open?.Invoke(FeedbackLink.Url());
         }
         finally { popup.Dispose(); }

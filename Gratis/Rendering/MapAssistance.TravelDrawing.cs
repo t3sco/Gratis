@@ -22,7 +22,7 @@ public sealed partial class MapAssistance {
             return;
         Panel("##travel-progress", ChromeLayout.Position(bounds), size, () => {
             CardHeading("Travelling", DestinationName.Length == 0 ? "Your destination" : DestinationName, "");
-            if (QuietButton("Cancel")) {
+            if (global::Gratis.Rendering.ActionButton.Draw("Cancel", "Cancel", new(ActionFaces.Quiet))) {
                 provider.Abort();
                 Message = "Travel cancelled.";
             }

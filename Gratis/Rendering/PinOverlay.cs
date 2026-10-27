@@ -351,7 +351,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             }
             ImGui.Spacing();
             var primary = importing ? "Import pin" : "Save pin";
-            if (MapAssistance.PrimaryTravelButton(primary, GratisIcons.Check))
+            if (ActionButton.Draw(primary, primary, new(ActionFaces.PrimaryTravel, Icon: GratisIcons.Check)))
                 SaveEditor();
             Buttons[primary] = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
             if (ImGui.GetItemRectSize().X + ImGui.CalcTextSize("Cancel").X + 24 * s < ImGui.GetContentRegionAvail().X)
@@ -368,7 +368,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
     }
 
     private bool Button(string text) {
-        var result = MapAssistance.QuietButton(text);
+        var result = ActionButton.Draw(text, text, new(ActionFaces.Quiet));
         Buttons[text] = (ImGui.GetItemRectMin() + ImGui.GetItemRectMax()) / 2;
         return result;
     }

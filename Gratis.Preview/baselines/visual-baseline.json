@@ -299,14 +299,14 @@
       "Scene": "library-teleport",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "47EC9E53C8C6E9967372592582138CE421B5A478E82CB29CDEC11771E840F721"
+      "Sha256": "D70D8A787C81093C0EFDD9846D4CE6C12BC69FD693CA70CC90FC9CA05CF7519E"
     },
     {
       "Name": "library-teleport-disabled",
       "Scene": "library-teleport-disabled",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "253034832991437ABDC48CB96A02A64BB895B7F3AC6C3DE85B6730B8DBD1A051"
+      "Sha256": "93D13EA6913CA45D84CA9B0B7259298CD8366BCD6135E1EABD4F7EE436C33A55"
     },
     {
       "Name": "library-popup",
@@ -394,7 +394,7 @@
         "--settle"
       ],
       "Size": "960x800",
-      "Sha256": "1604E165A6DE3E13A50E7FABBF1A1C955B5E8D4014A313F0DAD3448DD75BEE65"
+      "Sha256": "655D419D7AACD20CFF355B2308EAB1BB9A0B867D92F3B15DCAC6752AA4FF3E34"
     },
     {
       "Name": "palette-quests",
@@ -667,7 +667,7 @@
       "Scene": "ui-gallery",
       "Args": [],
       "Size": "1800x10695",
-      "Sha256": "EF12E6DD82F8900562D6D577E38E84872493CAC45C4B98D0CCEF8CC3915988EA"
+      "Sha256": "2B41681A699CE39C9C3A39FE1E970265236779ECB0918974A6DBE7B8E1D23ECA"
     },
     {
       "Name": "ui-gallery-classic",

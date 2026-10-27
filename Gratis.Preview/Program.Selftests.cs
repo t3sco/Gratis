@@ -15,6 +15,7 @@ internal static partial class Program {
         ("frames-interface-motion", InterfaceMotionVerification.Frames),
         ("frames-unfade", InterfaceMotionVerification.Unfade),
         ("corner-radii", RadiusVerification.Run),
+        ("action-buttons", ActionButtonVerification.Run),
         ("chrome-three", ChromeThreeVerification.State),
         ("frames-bottom-cards", ChromeThreeVerification.BottomRow),
         ("frames-location-menu", LocationMenuVerification.Run),

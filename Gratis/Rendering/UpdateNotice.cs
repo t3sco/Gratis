@@ -50,17 +50,7 @@ public static class UpdateNotice {
             ImGui.GetColorU32(GratisTheme.Primary), label);
         var buttonPos = pos + new Vector2(12 * s + labelWidth + 12 * s, 4 * s);
         ImGui.SetCursorScreenPos(buttonPos);
-        var pressed = ChromeControls.Button("##update-action", buttonSize);
-        var hovered = ImGui.IsItemHovered();
-        list.AddRectFilled(buttonPos, buttonPos + buttonSize,
-            ImGui.GetColorU32(GratisTheme.Crystal with { W = hovered ? .30f : .20f }),
-            GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s));
-        list.AddRect(buttonPos, buttonPos + buttonSize, ImGui.GetColorU32(GratisTheme.Crystal with { W = .45f }),
-            GratisTheme.Radius.Inner(GratisTheme.Radius.Card * s, 4 * s), ImDrawFlags.None, s);
-        list.AddText(buttonPos + new Vector2(12 * s, (buttonSize.Y - ImGui.GetFontSize()) / 2),
-            ImGui.GetColorU32(GratisTheme.Primary), "Update");
-        ChromeControls.Tooltip("Opens the plugin installer so you can update Gratis",
-            windowBounds: MapToolbarDrawing.WindowBounds);
+        var pressed = ActionButton.Draw("##update-action", "Update", new(ActionFaces.Update, Size: buttonSize));
         ActionCenter = buttonPos + buttonSize / 2;
         if (pressed)
             OpenInstaller?.Invoke();

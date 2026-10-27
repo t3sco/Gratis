@@ -97,18 +97,11 @@ public sealed partial class QuestLogPanel {
         finally { ImGui.EndChild(); }
         ImGui.SetCursorScreenPos(new(start.X, footerY));
         DetailDivider(s);
-        ImGui.BeginDisabled(quest.Targets.Count == 0);
-        var buttonStart = ImGui.GetCursorScreenPos();
-        var buttonSize = new Vector2(width, GratisTheme.ControlHeight * s);
-        var clicked = ChromeControls.Button("##quest-detail-map", buttonSize);
+        var label = quest.Targets.Count > 0 ? "Show on map" : "No map destination";
+        var clicked = ActionButton.Draw("##quest-detail-map", label,
+            new(ActionFaces.QuestMap, Enabled: quest.Targets.Count > 0, Size: new(width, GratisTheme.ControlHeight * s)));
         if (clicked || ImGui.IsItemClicked(ImGuiMouseButton.Right)) ShowOnMap(quest);
         DetailMapBounds = ItemBounds();
-        ChromeControls.Feedback(ImGui.GetWindowDrawList(), buttonStart, buttonStart + buttonSize, true);
-        var label = quest.Targets.Count > 0 ? "Show on map" : "No map destination";
-        TextDrawing.Draw(ImGui.GetWindowDrawList(), buttonStart + (buttonSize - TextDrawing.Measure(label)) / 2,
-            ImGui.GetColorU32(GratisTheme.WarmAccent), label);
-        ChromeControls.Tooltip("Show on map", "M / Shift+Enter");
-        ImGui.EndDisabled();
     }
 
     private static void DetailDivider(float s) {

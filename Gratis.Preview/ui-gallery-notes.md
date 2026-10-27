@@ -2,12 +2,30 @@
 
 `ui-gallery` and `ui-gallery-classic` render real linked plugin code. Bundled Noto Sans
 is used for gallery labels. Adjacent generated coverage JSON is the cell-level source,
-state and crop ledger. No proposed UI-library API is implemented here.
+state and crop ledger. Action faces now share `ActionButton.Draw(id, label, in ActionOptions)`
+in `Gratis/Rendering/ActionButton.cs`. `ActionFaces` contains readonly Quiet, Action,
+PrimaryTravel, Send, Travel, ConfirmTravel, Update, QuestMap and NativeText profiles.
+The existing gallery captions and composition are retained for byte parity; their
+MapAssistance/ChromeControls compatibility helpers forward to the same module.
 
 Direct rows cover the button substrate, icon/close/pin/search buttons, text/quiet/action/
 primary faces, switch/Classic checkbox, slider, combo, menu/selectable adapters, pill,
 palette background, text/colour editors, lens key capture, surface painter, scroll region/
 bar, four text roles, and icon plus label. Presenter crops supply the remaining kinds.
+
+## Isolatable action faces
+
+Quiet/action/primary rows call the module directly. Travel (including trailing cost),
+ConfirmTravel, Update and QuestMap can now be drawn independently with the same
+profiles, explicit native ID and size. Presenter crops stay in their existing rows
+so the gallery PNG and its 82-scene baseline remain byte-identical. Their surrounding
+card, notice, form and quest content remains presenter-owned. Send's profile takes
+`Enabled: false` as Alpha*.4 and keeps native navigation; readiness stays in Feedback.
+Teleport uses a native disabled scope around its entire face. Update retains no
+custom focus/press feedback. QuestMap retains selected feedback without a transform.
+All fonts are inherited, matching the original presenter font scopes. NativeText
+retains the ambient native Classic fallback. The caller-owned fitted-label cache
+invalidates on label, width, font/size or host changes; formatting stays with callers.
 
 ## Not isolatable yet
 
@@ -15,15 +33,15 @@ These are crops from the named **real presenter with an existing fixture**, not 
 component calls. They form the extraction backlog:
 
 - Toolbar segments, selection fill, notification dots and divider: `MapToolbarDrawing`.
-- Teleport face, cost, confirmation-disabled action, heading/detail pill, close and card:
+- Teleport heading/detail pill, close and card:
   `MapAssistance.TeleportCard`. Confirmation timing and travel policy stay domain-owned.
-- Update action, dismiss, label/badge and notice shell: `UpdateNotice`. Its existing lack
+- Update dismiss, label/badge and notice shell: `UpdateNotice`. Its existing lack
   of press/focus decoration is preserved.
 - Filter icon chips, normal/quiet/hidden/solo/loud states and drawer: `FilterBarDrawing` and
   `MarkerVisibility`. These are multi-state controls.
 - Palette scope/quest-filter segments, search/clear, result/quick/expansion/artwork rows,
   empty/helper content and selection: `PaletteOverlay` with `PaletteFixture`.
-- Quest tabs, toggle/pin, sticky headers, rows, search, progress, map action, reward
+- Quest tabs, toggle/pin, sticky headers, rows, search, progress, reward
   metrics/count badges/artwork and empty states: `QuestLogPanel` with `QuestLogFixture`
   and `SummaryFixture`.
 - Item content tooltip and reward menu: `ItemTooltipDrawing`, reached by real hover and
@@ -33,9 +51,9 @@ component calls. They form the extraction backlog:
 - Location search, hierarchy/menu rows and dropdown: `LocationMenuDrawing` with the
   existing location-menu verification source.
 - Context-menu rows and popup entry/exit: `ContextMenu` with `ContextMenuFixture`.
-- Feedback field, checkbox, privacy note, dimmed unavailable Send, buttons and popup:
+- Feedback field, checkbox, privacy note and popup:
   `FeedbackButtonDrawing`. The fixture never invokes Send or external links.
-- Pin title/note fields, selected colour swatches, buttons and editor: `PinOverlay`
+- Pin title/note fields, selected colour swatches and editor: `PinOverlay`
   with the existing pin store fixture.
 - Bottom location/coordinate cards: `BottomCardsDrawing` / `MapCoordinateDrawing`.
 - Hover-card stack and native Classic tooltip: `DrawHelpers.Interaction` / `HoverCardDrawing`.
