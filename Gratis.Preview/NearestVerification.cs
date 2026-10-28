@@ -45,7 +45,8 @@ internal static class NearestVerification {
             Player = null
         }, _ => new(true)).Length == 0, "No player: do not invent distances");
         Require(NearestPlaces.Find(all, "zzzzzz", context, _ => new(true)).Length == 0, "Unknown category");
-        Require(NearestPlaces.Direction(default, new(0, -1)) == "↑"
+        Require(NearestPlaces.Direction(default, default) == "Here"
+            && NearestPlaces.Direction(default, new(0, -1)) == "↑"
             && NearestPlaces.Direction(default, new(1, 1)) == "↘",
             "World compass");
     }

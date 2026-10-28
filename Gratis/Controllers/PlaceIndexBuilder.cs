@@ -33,8 +33,9 @@ public static class PlaceIndexBuilder {
         var mapRows = maps.Where(m => m.Id != 0 && !IsUnnamed(m.Name)).ToDictionary(m => m.Id);
         foreach (var map in mapRows.Values)
             yield return new PlaceEntry($"z:{map.Id}", PlaceKind.Zone,
-                map.Name + (map.Layer.Length > 0 ? " · " + map.Layer : ""), Group(map), map.Id, map.Territory,
-                Aliases: map.Aliases, Expansion: map.Expansion) {
+                map.Name, Group(map), map.Id, map.Territory,
+                Aliases: map.Aliases + " " + map.Layer, Expansion: map.Expansion) {
+                Layer = map.Layer,
                 ExpansionName = map.ExpansionName,
                 ArtPath = map.ArtPath, ExpansionIcon = map.ExpansionIcon
             };

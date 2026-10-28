@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -102,6 +102,8 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         places.Entries.FirstOrDefault(p => p.Kind == PlaceKind.Aetheryte && p.MapId == places.Context.MapId
             && (p.Name == title || p.AetheryteId == marker.DataId));
 
+    private readonly PlaceTooltip transportTooltip = new();
+
     public bool HoverTransport(Classes.MarkerInfo marker, string title) {
         if (!MapDrawContext.Current.Config.TravelActions
             || MarkerIcon.Family(marker) is not (MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet))
@@ -114,7 +116,7 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var reason = !places.Access(match).Attuned ? "Not yet attuned" : UnavailableReason;
         if (reason.Length == 0 && match.IsShard && !available)
             reason = "Lifestream unavailable";
-        UiMotion.TooltipText(match.Name + (reason.Length > 0 ? " · " + reason : ""));
+        transportTooltip.Show(match.Name, reason);
         return true;
     }
 

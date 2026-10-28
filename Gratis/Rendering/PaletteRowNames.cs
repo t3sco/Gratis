@@ -5,10 +5,32 @@ using Gratis.Controllers;
 
 namespace Gratis.Rendering;
 
+internal readonly record struct PaletteRowText(string Name, string Detail, string Expansion, string Distance,
+    string Coordinates, string Identifier);
+
 internal sealed class PaletteRowNames {
+    private readonly Dictionary<(int, PlaceKind), string> counts = [];
+    private readonly Dictionary<(string, bool, float), ActionLabelCache> fitted = [];
+
+    public string Fit(string text, float width, bool secondary = false) {
+        if (!fitted.TryGetValue((text, secondary, width), out var cache)) {
+            cache = new();
+            fitted.Add((text, secondary, width), cache);
+        }
+        return cache.Fit(text, width);
+    }
+
+    public string Count(int count, PlaceKind kind) {
+        if (!counts.TryGetValue((count, kind), out var text)) {
+            text = PaletteBrowser.Count(count, kind);
+            counts.Add((count, kind), text);
+        }
+        return text;
+    }
+
     private sealed class Names {
         public CultureInfo? Culture;
-        public readonly Dictionary<PlaceResult, string> Rows = [];
+        public readonly Dictionary<PlaceResult, PaletteRowText> Rows = [];
         public readonly Dictionary<uint, string> Costs = [];
     }
 
@@ -35,10 +57,15 @@ internal sealed class PaletteRowNames {
         return label;
     }
 
-    public string Get(PlaceResult result, PlaceResult[] results) {
+    public string Get(PlaceResult result, PlaceResult[] results) => Text(result, results).Name;
+
+    public PaletteRowText Text(PlaceResult result, PlaceResult[] results) {
         var names = For(results);
         if (!names.Rows.TryGetValue(result, out var name)) {
-            name = PaletteBrowser.Name(result, results);
+            var coordinates = PaletteBrowser.Coordinates(result, results);
+            name = new(PaletteBrowser.Name(result, results), PaletteBrowser.Detail(result.Place),
+                PaletteBrowser.Expansion(result.Place), result.Distance is { } distance ? $"{distance:0}y" : "",
+                coordinates, result.Place.World == null && coordinates.Length > 0 ? result.Place.Id : "");
             names.Rows.Add(result, name);
         }
         return name;

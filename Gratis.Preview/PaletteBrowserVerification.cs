@@ -29,17 +29,35 @@ internal static class PaletteBrowserVerification {
             new(generic with { Id = "two", World = new(200, 30) }, 0, default, 200)];
         var grouped = PaletteBrowser.Distinct(duplicates);
         Require(grouped.Length == 2
-            && PaletteBrowser.Name(grouped[0], grouped) != PaletteBrowser.Name(grouped[1], grouped),
+            && grouped[0].Distance != grouped[1].Distance
+            && PaletteBrowser.Name(grouped[0], grouped) == "Area",
             "Physical duplicates collapse; separate aetherytes have distinct distance labels");
         var equalDistances = new[] { grouped[0], grouped[1] with { Distance = grouped[0].Distance } };
-        Require(PaletteBrowser.Name(equalDistances[0], equalDistances) != PaletteBrowser.Name(equalDistances[1],
+        Require(PaletteBrowser.Coordinates(equalDistances[0], equalDistances) != PaletteBrowser.Coordinates(equalDistances[1],
             equalDistances),
             "Equal-distance destinations use their distinct coordinates");
-        Require(PaletteBrowser.Name(grouped[0] with { Distance = null }, grouped).Contains("100, 20"),
+        Require(PaletteBrowser.Coordinates(grouped[0] with { Distance = null }, grouped) == "X 100, Z 20",
             "Missing player uses coordinates for disambiguation");
         Require(PaletteBrowser.Distinct([new(generic with { Kind = PlaceKind.Quest }, 0, default, null),
             new(generic with { Id = "quest2", Kind = PlaceKind.Quest }, 0, default, null)]).Length == 2,
             "Quest objectives remain individually searchable");
+        var cache = new PaletteRowNames();
+        var rowText = cache.Text(grouped[0], grouped);
+        Require(rowText.Name == "Area" && rowText.Detail == "Area" && rowText.Distance == "100y"
+            && rowText.Expansion == "A Realm Reborn", "Name, context, distance and expansion remain separate fields");
+        for (var i = 0; i < 64; i++) _ = cache.Text(grouped[0], grouped);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 1024; i++) _ = cache.Text(grouped[0], grouped);
+        Require(GC.GetAllocatedBytesForCurrentThread() == before, "Warmed row metadata must not allocate");
+        Require(cache.Text(grouped[0] with { Distance = null }, grouped).Distance == "",
+            "Missing distance does not invent proximity");
+        var unknown = new[] { grouped[0] with { Distance = null } };
+        Require(cache.Text(unknown[0], unknown).Coordinates == "X 100, Z 20",
+            "A single destination without player distance retains its coordinates");
+        var unlocated = equalDistances.Select(r => r with { Place = r.Place with { World = null }, Distance = null }).ToArray();
+        var firstUnlocated = cache.Text(unlocated[0], unlocated);
+        Require(firstUnlocated.Coordinates == "Map 1" && firstUnlocated.Identifier == "one"
+            && firstUnlocated.Name == "Area", "Unknown coordinates keep map and identity separate from the name");
         foreach (var columns in new[] { 1, 2, 3 }) {
             Require(PaletteBrowser.Navigate(0, 6, columns, 0, 1) == columns, "Down advances one grid row");
             Require(PaletteBrowser.Navigate(5, 6, columns, 1, 1) == 5
@@ -56,6 +74,18 @@ internal static class PaletteBrowserVerification {
         using (var driver = new ScriptedFrameDriver(browserConfig, new FrameScript { Palette = true })) {
             driver.Step(new(0));
             driver.Step(new(.02));
+            const string longLabel = "A long destination shared by rows with and without a distance";
+            for (var i = 0; i < 64; i++) {
+                _ = cache.Fit(longLabel, 90);
+                _ = cache.Fit(longLabel, 120);
+            }
+            var fittedBefore = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 1024; i++) {
+                _ = cache.Fit(longLabel, 90);
+                _ = cache.Fit(longLabel, 120);
+            }
+            Require(GC.GetAllocatedBytesForCurrentThread() == fittedBefore,
+                "Repeated names at different row widths must not allocate after warm-up");
             var overlay = driver.Palette!;
             overlay.Open();
             driver.Step(new(.04));

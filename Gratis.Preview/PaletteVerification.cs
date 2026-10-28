@@ -87,6 +87,10 @@ internal static class PaletteVerification {
         Require(places.Single(p => p.AetheryteId == 3).Expansion == 1, "Expansion grouping preserved");
         Require(places.Single(p => p.AetheryteId == 3).Subtitle.StartsWith("Heavensward > Dravania"),
             "Expansion/region group labels");
+        var layered = PlaceIndexBuilder.Build([new(88, 1, "Limsa", "La Noscea", Layer: "Upper Decks")], []).Single();
+        Require(layered.Name == "Limsa" && layered.Layer == "Upper Decks"
+            && layered.SearchAliases.Contains("upper decks") && PaletteBrowser.Detail(layered) == "Upper Decks",
+            "Map layer remains separate, visible and searchable");
         PlaceMapRow[] artwork = [
             new(1, 1, "Missing", ""),
             new(2, 1, "Second art", "", ArtPath: "second.tex"),

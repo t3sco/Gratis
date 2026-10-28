@@ -30,7 +30,7 @@ internal static class PlaceChipVerification {
         Check(b.Opacity == 0, "initial baseline");
         b.Update(c, Location(3), 1);
         b.Update(c, Location(3), 1.2);
-        Check(b.Text == "Lower La Noscea · Moraby Drydocks" && b.Opacity == 1, "sub-area change");
+        Check(b.Text == "Moraby Drydocks" && b.Zone == "Lower La Noscea" && b.Opacity == 1, "sub-area change");
         b.Update(c, Location(3), 2.65);
         Check(b.Opacity > 0 && b.Opacity < 1, "fade out");
         b.Update(c, Location(3), 2.9);

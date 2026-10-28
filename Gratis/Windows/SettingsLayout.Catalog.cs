@@ -303,7 +303,7 @@ public sealed partial class SettingsLayout {
         Add("SubZoneBanner", "Sub-zone arrival banner",
             tip: "Show area changes for 1.8 seconds, even while the controls are hidden.");
         Add("CompactTitle", "Location card", when: c => c.ShowTitleOnMap);
-        Add("LocationCardShows", "Location card shows", choices: "Area only|Zone|Zone + area|Region · Zone · Area",
+        Add("LocationCardShows", "Location card shows", choices: "Area only|Zone|Zone + area|Region, zone and area",
             when: c => c.ShowTitleOnMap && c.CompactTitle);
         Group("Chrome & motion", "Classic title", Classic);
         Add("TitleCorner", "Title corner", choices: "Top left|Top right|Bottom left|Bottom right",

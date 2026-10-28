@@ -11,6 +11,6 @@ public static class CoordinateShare {
         ((map - Vector2.One) * (2048 * factor / 41f) - new Vector2(1024))
         / factor - offset;
     public static string Text(Vector2 point, string? mapName = null) =>
-        (string.IsNullOrWhiteSpace(mapName) ? "" : mapName + " · ")
-        + FormattableString.Invariant($"{point.X:F1}, {point.Y:F1}");
+        string.IsNullOrWhiteSpace(mapName) ? FormattableString.Invariant($"{point.X:F1}, {point.Y:F1}")
+        : mapName + FormattableString.Invariant($" ({point.X:F1}, {point.Y:F1})");
 }
