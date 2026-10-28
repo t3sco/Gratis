@@ -29,7 +29,7 @@ public readonly record struct TabProfile {
 public static class TabFaces {
     public static readonly TabProfile QuestLog = new() {
         Height = 28, WidthInset = 8, Columns = 3, Gap = 4,
-        Ink = GratisTheme.Secondary, SelectedInk = GratisTheme.WarmAccent,
+        Ink = GratisTheme.Secondary, SelectedInk = GratisTheme.Primary,
     };
     public static readonly TabProfile Settings = new() {
         Height = 36, WidthInset = 4, Columns = 1, TextInset = 34,

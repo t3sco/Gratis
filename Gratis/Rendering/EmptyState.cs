@@ -12,14 +12,14 @@ public readonly record struct EmptyProfile(EmptyText Text, float FontSize = 0,
     ChromeFontRole FontRole = ChromeFontRole.Body, bool Spacing = false, string? Helper = null, Vector4 Ink = default);
 
 public static class EmptyFaces {
-    public static readonly EmptyProfile PaletteSearch = new(EmptyText.Plain, Spacing: true,
+    public static readonly EmptyProfile PaletteSearch = new(EmptyText.SecondaryWrapped, Spacing: true, Ink: GratisTheme.Secondary,
         Helper: "Try a zone name or choose another filter.");
-    public static readonly EmptyProfile PaletteRecent = new(EmptyText.Disabled, 12);
-    public static readonly EmptyProfile PaletteBrowser = new(EmptyText.Wrapped);
-    public static readonly EmptyProfile Location = new(EmptyText.Disabled);
-    public static readonly EmptyProfile Quest = new(EmptyText.Wrapped);
-    public static readonly EmptyProfile QuestHelper = new(EmptyText.Wrapped);
-    public static readonly EmptyProfile ClassicSettings = new(EmptyText.Disabled);
+    public static readonly EmptyProfile PaletteRecent = new(EmptyText.SecondaryWrapped, 12, Ink: GratisTheme.Secondary);
+    public static readonly EmptyProfile PaletteBrowser = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
+    public static readonly EmptyProfile Location = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
+    public static readonly EmptyProfile Quest = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
+    public static readonly EmptyProfile QuestHelper = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
+    public static readonly EmptyProfile ClassicSettings = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
     public static readonly EmptyProfile SettingsHelper = new(EmptyText.SecondaryWrapped, 12, Ink: GratisTheme.Secondary);
 }
 
@@ -38,6 +38,10 @@ public static class EmptyState {
                 ImGui.PopStyleColor();
                 break;
         }
-        if (face.Helper is { } helper) ImGui.TextWrapped(helper);
+        if (face.Helper is { } helper) {
+            ImGui.PushStyleColor(ImGuiCol.Text, face.Ink);
+            ImGui.TextWrapped(helper);
+            ImGui.PopStyleColor();
+        }
     }
 }

@@ -24,10 +24,10 @@ public readonly record struct PillProfile {
 
 public static class PillFaces {
     public static readonly PillProfile PaletteRow = new() {
-        Padding = new(12, 3), Inset = new(6, 1), Fill = GratisTheme.Primary with { W = .055f },
+        Padding = new(16, 4), Inset = new(8, 2), Fill = GratisTheme.Primary with { W = .055f },
     };
     public static readonly PillProfile HeadingDetail = new() {
-        Layout = PillLayout.Heading, Padding = new(8, 4), Inset = new(4, 2),
+        Layout = PillLayout.Heading, Padding = new(12, 4), Inset = new(6, 2),
         Fill = GratisTheme.WarmAccent with { W = .10f }, Ink = GratisTheme.Secondary,
     };
     public static readonly PillProfile PinLabel = new() {
