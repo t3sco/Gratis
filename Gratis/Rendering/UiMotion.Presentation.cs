@@ -70,6 +70,8 @@ public static partial class UiMotion {
     }
 
     private static string tooltip = "";
+    private static string? tooltipMeta;
+    private static HintRow[]? tooltipRows;
     private static Vector4 tooltipBounds;
     private static int tooltipSeen = -2, tooltipDrawn = -2;
     private static float tooltipWrap, tooltipScale;
@@ -90,7 +92,35 @@ public static partial class UiMotion {
         TooltipText(text, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s, s);
     }
 
+    public static void TooltipCard(string title, string? meta, HintRow[]? rows, float? scale = null) {
+        if (!PolicyConfig.IsGratis) {
+            ImGui.SetTooltip(meta == null ? title : title + "\n" + meta);
+            return;
+        }
+        var s = scale ?? GratisTheme.ChromeScale;
+        using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
+            ChromeFontRole.Body)?.Push();
+        var viewport = ImGui.GetWindowViewport();
+        var size = HintCard.Measure(title, meta, rows, 340 * s, s) + new Vector2(24) * s;
+        var p = ImGui.GetMousePos() + new Vector2(18, 24) * s;
+        p = Vector2.Clamp(p, viewport.Pos, Vector2.Max(viewport.Pos, viewport.Pos + viewport.Size - size));
+        TooltipCard(title, meta, rows, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s, s);
+    }
+
+    public static void TooltipCard(string title, string? meta, HintRow[]? rows, Vector4 bounds, float wrap,
+        float? scale = null) {
+        tooltipMeta = meta;
+        tooltipRows = rows;
+        TooltipOpen(title, bounds, wrap, scale);
+    }
+
     public static void TooltipText(string text, Vector4 bounds, float wrap, float? scale = null) {
+        tooltipMeta = null;
+        tooltipRows = null;
+        TooltipOpen(text, bounds, wrap, scale);
+    }
+
+    private static void TooltipOpen(string text, Vector4 bounds, float wrap, float? scale) {
         Begin();
         tooltip = text;
         tooltipBounds = bounds;
@@ -126,9 +156,13 @@ public static partial class UiMotion {
             Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0)) {
             DrawPopupEdge(s);
             PopupDiagnostics.Capture(open ? "tooltip" : "tooltip-exit", GratisTheme.Radius.Popup * s);
-            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + tooltipWrap);
-            ImGui.TextUnformatted(tooltip);
-            ImGui.PopTextWrapPos();
+            if (tooltipMeta != null || tooltipRows != null)
+                HintCard.Draw(tooltip, tooltipMeta, tooltipRows, tooltipWrap, s);
+            else {
+                ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + tooltipWrap);
+                ImGui.TextUnformatted(tooltip);
+                ImGui.PopTextWrapPos();
+            }
         }
         ImGui.EndTooltip();
     }

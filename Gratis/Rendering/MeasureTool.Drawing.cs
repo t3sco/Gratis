@@ -13,6 +13,8 @@ namespace Gratis.Rendering;
 public sealed partial class MeasureTool {
     private string labelText = "";
     private Vector2 labelPos, labelSize;
+    private Vector2 hintFirst = new(float.NaN), hintSecond;
+    private readonly HintRow[] hintRows = [new("From", ""), new("To", ""), new("Copy", "Right-click", true)];
     private void DrawLabelExit() {
         var alpha = UiMotion.Visibility(ImGui.GetID("##measure-label"), false);
         ChipMin = ChipMax = Vector2.Zero;
@@ -73,8 +75,14 @@ public sealed partial class MeasureTool {
             GratisTheme.IconSize * s);
         list.AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2),
             ImGui.GetColorU32(GratisTheme.Primary), text);
-        if (ImGui.IsMouseHoveringRect(pos, pos + size, false))
-            UiMotion.TooltipText(string.Create(CultureInfo.InvariantCulture,
-                $"({first.X:0.0}, {first.Y:0.0}) → ({second.X:0.0}, {second.Y:0.0}) · Right-click to copy"));
+        if (!ImGui.IsMouseHoveringRect(pos, pos + size, false))
+            return;
+        if (hintFirst != first || hintSecond != second) {
+            hintFirst = first;
+            hintSecond = second;
+            hintRows[0] = hintRows[0] with { Value = string.Create(CultureInfo.InvariantCulture, $"({first.X:0.0}, {first.Y:0.0})") };
+            hintRows[1] = hintRows[1] with { Value = string.Create(CultureInfo.InvariantCulture, $"({second.X:0.0}, {second.Y:0.0})") };
+        }
+        UiMotion.TooltipCard("Measured line", null, hintRows);
     }
 }

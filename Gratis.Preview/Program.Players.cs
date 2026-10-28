@@ -20,9 +20,9 @@ internal static partial class Program {
         }
         Label(new Vector2(.08f, .16f), "Players · dots / self arrow only");
         var samples = new[] {
-            (new Vector2(.22f, .35f), 60421u, "Party", "Alisaie", "RDM · Lv. 100"),
-            (new Vector2(.48f, .35f), 60403u, "Alliance", "G'raha Tia", "PLD · Lv. 100"),
-            (new Vector2(.72f, .35f), 60444u, "Nearby / friend", "Tataru", "ACN · Lv. 90"),
+            (new Vector2(.22f, .35f), 60421u, "Party", "Alisaie", "RDM\tLv. 100"),
+            (new Vector2(.48f, .35f), 60403u, "Alliance", "G'raha Tia", "PLD\tLv. 100"),
+            (new Vector2(.72f, .35f), 60444u, "Nearby / friend", "Tataru", "ACN\tLv. 90"),
         };
         foreach (var (position, id, label, name, job) in samples) {
             DrawHelpers.DrawMapMarker(new MarkerInfo {

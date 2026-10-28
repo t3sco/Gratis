@@ -43,6 +43,10 @@ public static class PillFaces {
         Fill = GratisTheme.Surface with { W = 1 }, Ink = GratisTheme.Primary,
         Rounding = PillRounding.Inner, RadiusInset = 2,
     };
+    public static readonly PillProfile Tag = new() {
+        Padding = new(10, 4), Inset = new(5, 2), Fill = GratisTheme.Primary with { W = .10f },
+        Ink = GratisTheme.Primary, Rounding = PillRounding.Inner, RadiusInset = 1,
+    };
     public static readonly PillProfile SettingsDot = new() {
         Layout = PillLayout.Dot, Inset = new(28, 8), Radius = 2.5f, Fill = GratisTheme.WarmAccent,
     };
@@ -76,9 +80,11 @@ public static class Pill {
             : face.Rounding == PillRounding.Inner
                 ? GratisTheme.Radius.Inner(GratisTheme.Radius.Control * scale, face.RadiusInset * scale)
                 : GratisTheme.Radius.Pill(size);
+        var fade = alpha ?? 1;
         var colour = ink ?? face.Ink;
-        list.AddRectFilled(min, max, ImGui.GetColorU32(face.Layout == PillLayout.Metric
-            ? colour with { W = face.Fill.W } : face.Fill), radius);
+        var fill = face.Layout == PillLayout.Metric ? colour with { W = face.Fill.W } : face.Fill;
+        list.AddRectFilled(min, max, ImGui.GetColorU32(fill with { W = fill.W * fade }), radius);
+        colour.W *= fade;
         if (face.Layout == PillLayout.Heading) ImGui.TextColored(colour, label);
         else {
             var position = face.Layout == PillLayout.Metric

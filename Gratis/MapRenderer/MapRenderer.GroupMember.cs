@@ -29,8 +29,8 @@ public unsafe partial class MapRenderer {
                 PrimaryText = () => System.SystemConfig.IsGratis ? partyMember.NameString
                     : $"Lv. {partyMember.Level} {partyMember.NameString}",
                 SecondaryText = () => System.SystemConfig.IsGratis
-                    ? $"{Service.DataManager.GetExcelSheet<ClassJob>().GetRow(partyMember.ClassJob).Abbreviation.ExtractText()} "
-                        + $"· Lv. {partyMember.Level}"
+                    ? $"{Service.DataManager.GetExcelSheet<ClassJob>().GetRow(partyMember.ClassJob).Abbreviation.ExtractText()}\t"
+                        + $"Lv. {partyMember.Level}"
                     : null,
             });
         }
@@ -64,8 +64,8 @@ public unsafe partial class MapRenderer {
                 PrimaryText = () => System.SystemConfig.IsGratis ? allianceMember.NameString
                     : $"Lv. {allianceMember.Level} {allianceMember.NameString}",
                 SecondaryText = () => System.SystemConfig.IsGratis
-                    ? $"{Service.DataManager.GetExcelSheet<ClassJob>().GetRow(allianceMember.ClassJob).Abbreviation.ExtractText()} "
-                        + $"· Lv. {allianceMember.Level}"
+                    ? $"{Service.DataManager.GetExcelSheet<ClassJob>().GetRow(allianceMember.ClassJob).Abbreviation.ExtractText()}\t"
+                        + $"Lv. {allianceMember.Level}"
                     : null,
             });
         }

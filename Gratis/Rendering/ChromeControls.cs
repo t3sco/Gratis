@@ -76,7 +76,7 @@ public static partial class ChromeControls {
     }
 
     public static void Tooltip(string label, string? shortcut = null, float? scale = null,
-        Vector4? windowBounds = null) {
+        Vector4? windowBounds = null, string? meta = null, HintRow[]? rows = null) {
         var focused = ImGui.IsItemFocused() && ImGui.GetIO().NavVisible;
         if (!ImGui.IsItemHovered() && !focused)
             return;
@@ -106,11 +106,16 @@ public static partial class ChromeControls {
         var text = string.IsNullOrEmpty(shortcut) ? label : label + "  " + shortcut;
         var padding = ImGui.GetStyle().WindowPadding;
         var wrap = MathF.Max(1, MathF.Min(360 * s, regionMax.X - regionMin.X - padding.X * 2));
-        var size = ImGui.CalcTextSize(text, false, wrap) + padding * 2;
+        var card = meta != null || rows != null;
+        var size = (card ? HintCard.Measure(label, meta, rows, wrap, s) : ImGui.CalcTextSize(text, false, wrap))
+            + padding * 2;
         LastTooltipBounds = ChromePopoverMath.Place(bounds, size, regionMin, regionMax, 4 * s);
         LastTooltipAnchor = bounds;
         LastTooltipTime = now;
-        UiMotion.TooltipText(text, LastTooltipBounds, wrap, s);
+        if (card)
+            UiMotion.TooltipCard(label, meta, rows, LastTooltipBounds, wrap, s);
+        else
+            UiMotion.TooltipText(text, LastTooltipBounds, wrap, s);
     }
 
     public static string FitLabel(string text, float width) {

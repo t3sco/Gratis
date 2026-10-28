@@ -202,11 +202,13 @@ internal static class FilterBarVerification {
             "Filters section resets mode, categories and lenses");
         Require(Gratis.Windows.SettingsLayout.Find(saved, "Filters", "").Any(e => e.Path == "CustomLenses"),
             "Lens controls remain in the dedicated settings section");
-        Require(FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Normal) == "FATEs"
-            && FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, MarkerVisibilityState.Hidden) == "FATEs \u00b7 Muted"
+        Require(FilterBarDrawing.TooltipTitle(MarkerGroup.Fates) == "FATEs"
+            && FilterBarDrawing.TooltipMeta(MarkerVisibilityState.Normal) == null
+            && FilterBarDrawing.TooltipMeta(MarkerVisibilityState.Hidden) == "Muted"
             && Enum.GetValues<MarkerVisibilityState>().All(s =>
-                !FilterBarDrawing.TooltipLabel(MarkerGroup.Fates, s).Contains('\n')),
-            "One-line tooltips contain only category and state");
+                FilterBarDrawing.TooltipMeta(s) is null or { Length: > 0 }
+                    && FilterBarDrawing.TooltipMeta(s)?.Contains(' ') != true),
+            "Tooltips keep the category as the title and the state as a one-word secondary line");
         foreach (var size in new[] { new Vector2(360, 280), new Vector2(960, 640) }) {
             using var driver = new ScriptedFrameDriver(Config(size), Fixture());
             double time = 0;
@@ -232,10 +234,12 @@ internal static class FilterBarVerification {
                 "Popover includes map categories and omits empty groups");
             var fate = Center(FilterBarDrawing.ChipBounds[(int)MarkerGroup.Fates]);
             Step(fate);
-            Require(FilterBarDrawing.LastTooltip == "FATEs", "Actual hover uses the short FATEs label");
+            Require(FilterBarDrawing.LastTooltip == "FATEs" && FilterBarDrawing.LastTooltipMeta == null,
+                "Actual hover uses the short FATEs title without a state line");
             Step(fate, true);
             Step(fate);
-            Require(FilterBarDrawing.LastTooltip == "FATEs \u00b7 Muted" && FilterBarDrawing.ActiveCount == 1
+            Require(FilterBarDrawing.LastTooltip == "FATEs" && FilterBarDrawing.LastTooltipMeta == "Muted"
+                && FilterBarDrawing.ActiveCount == 1
                 && FilterBarDrawing.TriggerLabel == "1 muted",
                 "Muted state has a short label and an explicit trigger count");
             driver.Context.Visibility.ResetFilters();

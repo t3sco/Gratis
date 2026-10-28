@@ -43,6 +43,7 @@ public static class FilterBarDrawing {
     public static string TriggerLabel { get; private set; } = "";
     public static int SoloGroup { get; private set; } = -1;
     public static string LastTooltip { get; private set; } = "";
+    public static string? LastTooltipMeta { get; private set; }
     public static bool PointerOver => ReferenceEquals(drawnContext, MapDrawContext.Current)
         && ImGui.IsMouseHoveringRect(new(LastBounds.X, LastBounds.Y), new(LastBounds.Z, LastBounds.W), false);
     private static string[] BuildIds() {
@@ -52,16 +53,22 @@ public static class FilterBarDrawing {
         return result;
     }
 
-    public static string TooltipLabel(MarkerGroup group, MarkerVisibilityState state) => Names[(int)group]
-        + (state switch {
-            MarkerVisibilityState.Hidden => " \u00b7 Muted",
-            MarkerVisibilityState.Loud => " \u00b7 Loud",
-            MarkerVisibilityState.Quiet => " \u00b7 Quiet",
-            _ => "",
-        });
-    private static void Tooltip(string text) {
-        LastTooltip = text;
-        ChromeControls.Tooltip(text, windowBounds: MapToolbarDrawing.WindowBounds);
+    private static readonly HintRow[] Legend = [
+        new("Mute", "Click", true),
+        new("Solo", "Ctrl", true, "Alt"),
+        new("Loud / quiet", "Right-click", true)];
+
+    public static string TooltipTitle(MarkerGroup group) => Names[(int)group];
+    public static string? TooltipMeta(MarkerVisibilityState state) => state switch {
+        MarkerVisibilityState.Hidden => "Muted",
+        MarkerVisibilityState.Loud => "Loud",
+        MarkerVisibilityState.Quiet => "Quiet",
+        _ => null,
+    };
+    private static void Tooltip(string title, string? meta = null) {
+        LastTooltip = title;
+        LastTooltipMeta = meta;
+        ChromeControls.Tooltip(title, windowBounds: MapToolbarDrawing.WindowBounds, meta: meta);
     }
 
     private static bool ShowGroup(MarkerGroup group) => MapDrawContext.Current.Config.FilterOptions.Contains(group)
@@ -80,6 +87,7 @@ public static class FilterBarDrawing {
         Array.Clear(ChipBounds);
         Hovered = InputActive = PopoverOpen = false;
         LastTooltip = TriggerLabel = "";
+        LastTooltipMeta = null;
         ActiveCount = MutedCount = 0;
         if (!context.Config.IsGratis)
             return;
@@ -162,8 +170,11 @@ public static class FilterBarDrawing {
         var budget = Math.Clamp((int)((max.X - min.X - 24 * s) / stride), 1, 7);
         var columns = Math.Clamp(visible + 1, 1, budget);
         var rows = (visible + columns) / columns;
+        float legend;
+        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
+            legend = HintCard.RowsSize(Legend, s).Y;
         var size = new Vector2(MathF.Min(MathF.Max(240 * s, columns * stride + 20 * s), max.X - min.X),
-            MathF.Min(rows * stride + 60 * s, max.Y - min.Y));
+            MathF.Min(rows * stride + legend + 36 * s, max.Y - min.Y));
         var bounds = ChromePopoverMath.Place(trigger, size, min, max, GratisTheme.Gap * s);
         size = new(bounds.Z - bounds.X, bounds.W - bounds.Y);
         ImGui.SetNextWindowPos(new(bounds.X, bounds.Y));
@@ -197,12 +208,14 @@ public static class FilterBarDrawing {
             ImGui.GetWindowDrawList().AddText(origin + new Vector2(stride, (button - ImGui.GetFontSize()) / 2),
                 ImGui.GetColorU32(GratisTheme.Primary), "No markers here yet");
         }
-        ImGui.SetCursorScreenPos(origin + new Vector2(0, rows * stride + 4 * s));
-        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
-            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(.72f, .72f, .72f, 1));
-            ImGui.TextWrapped("Click mute · Ctrl/Alt solo · Right loud/quiet");
-            ImGui.PopStyleColor();
-        }
+        var legendTop = origin.Y + rows * stride + 4 * s;
+        var width = ImGui.GetContentRegionAvail().X;
+        ImGui.GetWindowDrawList().AddLine(new(origin.X, legendTop), new(origin.X + width, legendTop),
+            ImGui.GetColorU32(GratisTheme.Secondary with { W = .18f }), s);
+        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
+            HintCard.DrawRows(ImGui.GetWindowDrawList(), origin.X, legendTop + 8 * s, width, Legend, s);
+        ImGui.SetCursorScreenPos(origin);
+        ImGui.Dummy(new Vector2(width, legendTop + 8 * s + legend - origin.Y));
     }
 
     private static void DrawChip(MarkerGroup group, Vector2 pos, Vector2 size) {
@@ -262,6 +275,6 @@ public static class FilterBarDrawing {
             list.AddLine(pos + new Vector2(8 * s, size.Y - s), pos + new Vector2(size.X - 8 * s, size.Y - s),
                 ImGui.GetColorU32(GratisTheme.WarmAccent), s);
         if (hovered)
-            Tooltip(index == SoloGroup ? Names[index] + " · Solo" : TooltipLabel(group, state));
+            Tooltip(TooltipTitle(group), index == SoloGroup ? "Solo" : TooltipMeta(state));
     }
 }
