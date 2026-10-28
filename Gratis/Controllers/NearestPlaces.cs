@@ -122,7 +122,7 @@ public static class NearestPlaces {
     public static string Direction(Vector2 from, Vector2 to) {
         var d = to - from;
         if (d.LengthSquared() < .01f)
-            return "•";
+            return "Here";
         string[] arrows = ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"];
         return arrows[((int)MathF.Round(MathF.Atan2(d.Y, d.X) / (MathF.PI / 4)) + 8) % 8];
     }

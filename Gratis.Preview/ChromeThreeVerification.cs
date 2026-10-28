@@ -48,8 +48,8 @@ internal static class ChromeThreeVerification {
         Check(place.Lines(LocationCardContent.AreaOnly) == ("", "Hawkers' Alley")
             && place.Lines(LocationCardContent.Zone) == ("", "Limsa Lominsa Lower Decks")
             && place.Lines(LocationCardContent.ZoneAndArea) == ("Limsa Lominsa Lower Decks", "Hawkers' Alley")
-            && place.Lines(LocationCardContent.RegionZoneArea) == ("La Noscea · Limsa Lominsa Lower Decks",
-                "Hawkers' Alley"),
+            && place.Lines(LocationCardContent.RegionZoneArea) == ("Limsa Lominsa Lower Decks",
+                "Hawkers' Alley") && place.Overline(LocationCardContent.RegionZoneArea) == "La Noscea",
             "Four levels of location detail");
         var min = new Vector2(14);
         var max = new Vector2(766, 586);

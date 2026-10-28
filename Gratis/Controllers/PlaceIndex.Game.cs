@@ -253,7 +253,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         }
         foreach (var flag in System.FlagConfig.FlagHistory) {
             var name = flag.GetMap().PlaceName.ValueNullable?.Name.ExtractText() ?? "Flag";
-            live.Add(new PlaceEntry("flag:" + flag.GetIdString(), PlaceKind.Flag, name + " · flag",
+            live.Add(new PlaceEntry("flag:" + flag.GetIdString(), PlaceKind.Flag, name,
                 "Flag history > " + name, flag.Map, flag.Territory, flag.GetCoordinate()));
         }
         if (Pins != null)

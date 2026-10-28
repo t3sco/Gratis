@@ -150,10 +150,10 @@ public sealed partial class PaletteOverlay {
                 UiMotion.ItemId("##card");
                 using var entrance = UiMotion.Surface("##card-enter", position, IsOpen, i < 8 ? i * .02f : 0);
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
-                var subtitle = (scope == 2 ? "" : PaletteBrowser.Count(expansions[i].Zones, PlaceKind.Zone) + " · ")
-                    + PaletteBrowser.Count(expansions[i].Places, scopes[scope]);
+                var subtitle = rowNames.Count(expansions[i].Places, scopes[scope]);
+                var zones = scope == 2 ? "" : rowNames.Count(expansions[i].Zones, PlaceKind.Zone);
                 DrawCard(cover, expansions[i].Name, "", ExpansionAccent(cover.Expansion), subtitle, position,
-                    cardSize, i == browserSelection, config, scale, expansionCard: true);
+                    cardSize, i == browserSelection, config, scale, expansionCard: true, trailing: zones);
             }
             ImGui.PopID();
             if (clicked) {
@@ -184,14 +184,20 @@ public sealed partial class PaletteOverlay {
             }
             ImGui.PushID("zone-" + item.Zone.MapId + (item.More ? "-more" : ""));
             var expanded = openZones.Contains(item.Zone.MapId);
-            var label = item.More ? $"Show {Math.Min(ZonePageSize, item.Zone.Places.Length
-                - zoneLimits.GetValueOrDefault(item.Zone.MapId, ZonePageSize))} more"
-                : $"{(expanded ? "v" : ">")} {item.Zone.Name} · {PaletteBrowser.Count(item.Zone.Places.Length, scopes[scope])}";
-            ImGui.PushStyleColor(ImGuiCol.Button, i == browserSelection
-                ? config.AccentColor with { W = .17f } : new Vector4(1, 1, 1, .035f));
-            var clicked = ChromeControls.TextButton(ChromeControls.FitLabel(label, width - 24 * scale),
-                new Vector2(-1, 42 * scale));
-            ImGui.PopStyleColor();
+            var position = ImGui.GetCursorScreenPos();
+            var clicked = ChromeControls.Button("##zone", new Vector2(width, 42 * scale));
+            var list = ImGui.GetWindowDrawList();
+            PaletteRowDrawing.Background(list, position, new(width, 42 * scale), config.AccentColor,
+                i == browserSelection, ImGui.IsItemHovered(), scale);
+            ChromeControls.Feedback(list, position, position + new Vector2(width, 42 * scale),
+                fill: false, scale: scale);
+            var label = item.More ? rowNames.Count(Math.Min(ZonePageSize, item.Zone.Places.Length
+                - zoneLimits.GetValueOrDefault(item.Zone.MapId, ZonePageSize)), scopes[scope]) : item.Zone.Name;
+            GratisIcons.Draw(list, position + new Vector2(16, 21) * scale,
+                !item.More && expanded ? GratisIcons.Minus : GratisIcons.Plus,
+                GratisTheme.Secondary, 12 * scale);
+            PaletteRowDrawing.TextPair(list, position + new Vector2(32, 13) * scale, width - 44 * scale,
+                label, item.More ? "Show more" : rowNames.Count(item.Zone.Places.Length, scopes[scope]), scale, rowNames);
             if (ImGui.IsItemHovered() && !keyboardMoved && ImGui.GetIO().MouseDelta.LengthSquared() > 0)
                 browserSelection = i;
             if (keyboardMoved && i == browserSelection)
@@ -229,11 +235,11 @@ public sealed partial class PaletteOverlay {
             if (ImGui.IsItemVisible()) {
                 UiMotion.ItemId("##card");
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
-                var subtitle = found is { } result
-                    ? (result.Distance is { } distance ? $"{distance:0}y · " : "") + result.Place.Subtitle.Split('>').Last().Trim()
-                    : "Search this zone";
-                DrawCard(found?.Place, NearbyCards[i].Title, "NEARBY", GratisTheme.Transport, subtitle, position,
-                    cardSize, hovered, config, scale);
+                var text = found is { } result ? rowNames.Text(result, results) : default;
+                var subtitle = found.HasValue ? text.Detail : "Search this zone";
+                DrawCard(found?.Place, found?.Place.Name ?? NearbyCards[i].Title, NearbyCards[i].Title,
+                    GratisTheme.Transport, subtitle, position,
+                    cardSize, hovered, config, scale, trailing: found.HasValue ? text.Distance : "");
             }
             ImGui.PopID();
             if (!clicked)
@@ -285,20 +291,16 @@ public sealed partial class PaletteOverlay {
         list.AddCircleFilled(position + new Vector2(22, 29) * scale, 19 * scale,
             ImGui.GetColorU32(GratisTheme.Transport with { W = .09f }));
         DrawKindIcon(result.Place, list, position + new Vector2(22, 29) * scale, 18 * scale);
-        list.PushClipRect(position + new Vector2(50 * scale, 0), position + new Vector2(width, 60 * scale), true);
-        using (MapDrawContext.Current.GetChromeFont((GratisTheme.TextSize + 2) * scale, ChromeFontRole.Title)?.Push())
-            TextDrawing.Draw(list, position + new Vector2(52, 8) * scale, ImGui.GetColorU32(GratisTheme.Primary),
-                title);
-        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push())
-            TextDrawing.Draw(list, position + new Vector2(52, 33) * scale, ImGui.GetColorU32(GratisTheme.Secondary),
-                (result.Distance is { } distance ? $"{distance:0}y · " : "") + result.Place.Name + " · "
-                    + result.Place.Subtitle.Split('>').Last().Trim());
-        list.PopClipRect();
+        var text = rowNames.Text(result, results);
+        PaletteRowDrawing.TextPair(list, position + new Vector2(52, 8) * scale, width - 64 * scale,
+            title, text.Distance, scale, rowNames);
+        PaletteRowDrawing.TextPair(list, position + new Vector2(52, 33) * scale, width - 64 * scale,
+            text.Detail, text.Expansion, scale, rowNames, secondary: true);
         ImGui.PopID();
     }
 
     private void DrawCard(PlaceEntry? place, string title, string tag, Vector4 accent, string subtitle, Vector2 min,
-        Vector2 size, bool active, MapDrawingConfig config, float scale, bool expansionCard = false) {
+        Vector2 size, bool active, MapDrawingConfig config, float scale, bool expansionCard = false, string trailing = "") {
         var list = ImGui.GetWindowDrawList();
         var max = min + size;
         if (place != null)
@@ -316,16 +318,11 @@ public sealed partial class PaletteOverlay {
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())
                 TextDrawing.Draw(list, min + new Vector2(12, 24) * scale, ImGui.GetColorU32(accent), tag);
         list.PushClipRect(min + new Vector2(12 * scale, 0), max - new Vector2(10 * scale, 0), true);
-        using (MapDrawContext.Current.GetChromeFont((GratisTheme.TextSize + 4) * scale, ChromeFontRole.Title)?.Push())
-            TextDrawing.Draw(list, min + new Vector2(12 * scale, size.Y - 57 * scale),
-                ImGui.GetColorU32(GratisTheme.Primary), title);
-        if (expansionCard)
-            list.PushClipRect(min, max - new Vector2(48 * scale, 0), true);
-        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push())
-            TextDrawing.Draw(list, min + new Vector2(12 * scale, size.Y - 27 * scale),
-                ImGui.GetColorU32(GratisTheme.Primary with { W = .7f }), subtitle);
-        if (expansionCard)
-            list.PopClipRect();
+        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, size.Y - 57 * scale), size.X - 24 * scale,
+            title, "", scale, rowNames);
+        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, size.Y - 27 * scale),
+            size.X - (expansionCard ? 60 : 24) * scale, subtitle, trailing, scale, rowNames, secondary: true,
+            keepTrailing: !expansionCard);
         list.PopClipRect();
         if (expansionCard && place != null) {
             var crest = source.Crest(place);

@@ -40,6 +40,14 @@ internal static class TravelVerification {
         var ipc = new FakeTravelIpc();
         var source = new TravelFixture(driver);
         var ui = driver.Context.Assistance = new MapAssistance(ipc.Provider(), source, () => true, () => { });
+        var metadata = ui.TravelMeta("A Realm Reborn > La Noscea > Lower Decks > Aftcastle", "Aftcastle", "Aethernet");
+        Require(metadata.Area == "Lower Decks" && metadata.Kind == "Aethernet", "Travel area and kind stay separate");
+        for (var i = 0; i < 64; i++)
+            _ = ui.TravelMeta("A Realm Reborn > La Noscea > Lower Decks > Aftcastle", "Aftcastle", "Aethernet");
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 1024; i++)
+            _ = ui.TravelMeta("A Realm Reborn > La Noscea > Lower Decks > Aftcastle", "Aftcastle", "Aethernet");
+        Require(GC.GetAllocatedBytesForCurrentThread() == allocated, "Warmed travel metadata must not allocate");
         driver.Step(new(0));
         driver.Step(new(.02));
         Require(config.TravelActions && config.TravelActionsInitialized, "default on after detection");

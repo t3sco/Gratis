@@ -11,11 +11,15 @@ namespace Gratis.Rendering;
 
 public sealed partial class PaletteOverlay {
     private static string PlaceStatus(PlaceResult result) {
-        if (result.Place.Kind != PlaceKind.Aetheryte) return result.Place.Kind.ToString();
+        if (result.Place.Kind != PlaceKind.Aetheryte) return result.Place.Kind switch {
+            PlaceKind.Zone => "Zone", PlaceKind.Quest => "Quest", PlaceKind.Marker => "Marker",
+            PlaceKind.Flag => "Flag", PlaceKind.Pin => "Pin", PlaceKind.Action => "Action", _ => "Place",
+        };
         if (result.Place.IsShard) return "Aethernet";
         return result.Access.Attuned ? "Attuned" : "Not yet attuned";
     }
 
+    private readonly PlaceTooltip placeTooltip = new();
     private uint selectionMotionKey;
     public void Draw(MapDrawingConfig config) {
 #if GRATIS_PREVIEW
@@ -321,31 +325,28 @@ public sealed partial class PaletteOverlay {
         else
             DrawKindIcon(result.Place, list, start + new Vector2(21, 26) * scale, GratisTheme.IconSize * scale);
         var textMin = start + new Vector2(imageWidth > 0 ? imageWidth + 18 * scale : 40 * scale, 9 * scale);
-        var textMax = start + new Vector2(rowWidth - buttonWidth - 8 * scale, rowHeight);
+        var textMax = start + new Vector2(rowWidth - buttonWidth - (buttonWidth == 0 ? 24 : 8) * scale, rowHeight);
+        var text = rowNames.Text(result, results);
+        var textWidth = MathF.Max(0, textMax.X - textMin.X);
         list.PushClipRect(textMin, Vector2.Max(textMin + Vector2.One, textMax), true);
-        TextDrawing.Draw(list, textMin, ImGui.GetColorU32(GratisTheme.Primary),
-            ChromeControls.FitLabel(rowNames.Get(result, results),
-                MathF.Max(0, textMax.X - textMin.X)));
+        PaletteRowDrawing.TextPair(list, textMin, textWidth, text.Name,
+            text.Distance.Length > 0 ? text.Distance : text.Identifier, scale, rowNames);
+        PaletteRowDrawing.TextPair(list, textMin + new Vector2(0, 23 * scale), textWidth,
+            text.Detail == text.Name ? "" : text.Detail, text.Expansion, scale, rowNames, secondary: true);
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push()) {
-            var secondaryInk = new Vector4(.72f, .72f, .72f, 1);
-            TextDrawing.Draw(list, textMin + new Vector2(0, 23 * scale), ImGui.GetColorU32(secondaryInk),
-                ChromeControls.FitLabel(PaletteBrowser.Detail(result.Place), textMax.X - textMin.X));
             var status = PlaceStatus(result);
-            var metadata = result.Distance is { } distance ? $"{distance:0}y away" : result.Place.World is { } world
-                ? $"World X {world.X:0}, Z {world.Y:0}" : "";
-            var pillMin = textMin + new Vector2(0, 42 * scale);
-            var pillSize = TextDrawing.Measure(status) + new Vector2(12, 3) * scale;
+            var pillSize = Pill.Measure(status, PillFaces.PaletteRow, scale);
+            var pillMin = new Vector2(MathF.Max(textMin.X, textMax.X - pillSize.X), textMin.Y + 42 * scale);
             PaletteRowDrawing.Pill(list, pillMin, status,
                 result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
                     ? GratisTheme.Transport : GratisTheme.Secondary, scale);
-            TextDrawing.Draw(list, pillMin + new Vector2(pillSize.X + 8 * scale, scale),
-                ImGui.GetColorU32(secondaryInk),
-                ChromeControls.FitLabel(metadata, MathF.Max(0, textMax.X - pillMin.X - pillSize.X - 8 * scale)));
+            TextDrawing.Draw(list, textMin + new Vector2(0, 43 * scale), ImGui.GetColorU32(GratisTheme.Secondary),
+                rowNames.Fit(text.Coordinates, MathF.Max(0, pillMin.X - textMin.X - 12 * scale), secondary: true));
         }
         list.PopClipRect();
         if (hovered)
-            ChromeControls.Tooltip(rowNames.Get(result, results)
-                + (result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned ? " · Not yet attuned" : ""));
+            placeTooltip.Show(text.Name, text.Detail, result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned
+                ? "Not yet attuned" : text.Coordinates);
         if (buttonWidth == 0 && rowWidth > 240 * scale) {
             var chevron = start + new Vector2(rowWidth - 13 * scale, rowHeight / 2);
             var colour = ImGui.GetColorU32(GratisTheme.Secondary);

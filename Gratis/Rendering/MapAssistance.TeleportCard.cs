@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Collections.Generic;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -14,15 +15,21 @@ public sealed partial class MapAssistance {
 
     public Vector2 TravelCloseCenter { get; private set; }
 
-    private readonly record struct TeleportCardModel(string Name, string Meta, string Note, uint? Cost, bool Free,
+    private readonly record struct TeleportCardModel(string Name, TravelMetadata Meta, string Note, uint? Cost, bool Free,
         bool Armed, bool Enabled);
 
-    internal static string TravelMeta(string subtitle, string name, string prefix = "") {
+    internal readonly record struct TravelMetadata(string Area, string Kind);
+    private readonly PaletteRowNames travelText = new();
+    private readonly Dictionary<(string, string, string), TravelMetadata> travelMetadata = [];
+
+    internal TravelMetadata TravelMeta(string subtitle, string name, string prefix = "") {
+        var key = (subtitle, name, prefix);
+        if (travelMetadata.TryGetValue(key, out var cached)) return cached;
         var parts = subtitle.Split('>', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var start = parts.Length > 2 ? 1 : 0;
-        var end = parts.Length > start && parts[^1] == name ? parts.Length - 1 : parts.Length;
-        var region = string.Join(" · ", parts[start..end]);
-        return prefix.Length == 0 ? region : region.Length == 0 ? prefix : prefix + " · " + region;
+        var end = parts.Length > 0 && parts[^1] == name ? parts.Length - 1 : parts.Length;
+        var metadata = new TravelMetadata(end > 0 ? parts[end - 1] : "", prefix);
+        travelMetadata.Add(key, metadata);
+        return metadata;
     }
 
     private static float TitleWrap(float width, float s) => width - 24 * s - 18 * s - CloseSize * s - 8 * s;
@@ -32,7 +39,7 @@ public sealed partial class MapAssistance {
         var width = MathF.Min(TeleportCardWidth * s, maxWidth);
         var context = MapDrawContext.Current;
         float title, meta;
-        using (context.GetChromeFont(GratisTheme.TravelTitleSize * s, ChromeFontRole.Title)?.Push())
+        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
             title = ImGui.CalcTextSize(name, false, TitleWrap(width, s)).Y;
         using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             meta = ImGui.GetTextLineHeight();
@@ -50,7 +57,7 @@ public sealed partial class MapAssistance {
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
         float lineHeight;
-        using (context.GetChromeFont(GratisTheme.TravelTitleSize * s, ChromeFontRole.Title)?.Push()) {
+        using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
             lineHeight = ImGui.GetTextLineHeight();
             var crystal = start + new Vector2(5, lineHeight / 2) * s;
             list.AddQuad(crystal - new Vector2(0, 6) * s, crystal + new Vector2(4, 0) * s,
@@ -58,7 +65,7 @@ public sealed partial class MapAssistance {
                 ImGui.GetColorU32(GratisTheme.Crystal), s);
             ImGui.SetCursorScreenPos(start + new Vector2(18 * s, 0));
             ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + TitleWrap(width + 24 * s, s));
-            ImGui.TextUnformatted(card.Name);
+            ImGui.TextColored(GratisTheme.Primary, card.Name);
             ImGui.PopTextWrapPos();
         }
         var titleBottom = ImGui.GetCursorScreenPos().Y;
@@ -69,8 +76,13 @@ public sealed partial class MapAssistance {
         ImGui.SetCursorScreenPos(new(start.X, rowBottom + 4 * s));
         using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
             var note = card.Note.Length > 0;
-            var text = ChromeControls.FitLabel(note ? card.Note : card.Meta, width);
-            ImGui.TextColored(note ? GratisTheme.Primary : GratisTheme.Secondary, text);
+            if (note)
+                ImGui.TextColored(GratisTheme.Secondary, travelText.Fit(card.Note, width, secondary: true));
+            else {
+                PaletteRowDrawing.TextPair(list, ImGui.GetCursorScreenPos(), width, card.Meta.Area, card.Meta.Kind,
+                    s, travelText, secondary: true);
+                ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
+            }
             ImGui.SetCursorScreenPos(new(start.X, ImGui.GetCursorScreenPos().Y + 12 * s));
         }
         var pressed = TeleportAction(card, width);

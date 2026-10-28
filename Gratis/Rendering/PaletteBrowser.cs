@@ -71,26 +71,25 @@ public static class PaletteBrowser {
 
     public static string Name(PlaceResult result, IReadOnlyList<PlaceResult> results) {
         var place = result.Place;
-        var generic = place.SearchName is "aetheryte" or "aethernet" or "neutral" or "auto";
-        if (!generic && !results.Any(p => p.Place.Id != place.Id && p.Place.Name == place.Name))
-            return place.Name;
-        var area = place.Subtitle.Split('>', StringSplitOptions.TrimEntries
-            | StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-        var name = generic && area is { Length: > 0 } && area != "Current map" ? area + " · " + place.Name : place.Name;
-        var suffix = result.Distance is { } d ? $" · {d:0}y" : "";
-        var equalDistance = result.Distance == null
-            || results.Any(p => p.Place.Id != place.Id && p.Place.Name == place.Name && p.Distance is { } other
-                && MathF.Round(other) == MathF.Round(result.Distance.Value));
-        if (equalDistance)
-            suffix += place.World is { } w ? $" · {w.X:0}, {w.Y:0}" : $" · Map {place.MapId} · {place.Id}";
-        return name + suffix;
+        var area = Detail(place);
+        return place.SearchName is "aetheryte" or "aethernet" or "neutral" or "auto"
+            && area.Length > 0 && area != "Current map" ? area : place.Name;
+    }
+
+    public static string Coordinates(PlaceResult result, IReadOnlyList<PlaceResult> results) {
+        var place = result.Place;
+        var duplicate = results.Any(p => p.Place.Id != place.Id && p.Place.Name == place.Name
+            && (result.Distance == null || p.Distance is { } other
+                && MathF.Round(other) == MathF.Round(result.Distance.Value)));
+        if (!duplicate && (result.Distance != null || place.World == null)) return "";
+        return place.World is { } w ? $"X {w.X:0}, Z {w.Y:0}" : $"Map {place.MapId}";
     }
 
     public static string Detail(PlaceEntry place) {
-        var detail = place.Subtitle;
-        var expansion = Expansion(place);
-        if (detail.StartsWith(expansion + " > ", StringComparison.Ordinal))
-            detail = detail[(expansion.Length + 3)..];
-        return detail + "  ·  " + expansion;
+        if (place.Layer.Length > 0) return place.Layer;
+        var parts = place.Subtitle.Split('>', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        for (var i = parts.Length - 1; i >= 0; i--)
+            if (parts[i] != place.Name && parts[i] != Expansion(place)) return parts[i];
+        return "";
     }
 }

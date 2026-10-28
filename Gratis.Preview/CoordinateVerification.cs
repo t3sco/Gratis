@@ -37,7 +37,7 @@ internal static class CoordinateVerification {
         try {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
             if (CoordinateShare.Text(new(21.3f, 14.8f)) != "21.3, 14.8"
-                || CoordinateShare.Text(new(21.3f, 14.8f), "La Noscea") != "La Noscea · 21.3, 14.8")
+                || CoordinateShare.Text(new(21.3f, 14.8f), "La Noscea") != "La Noscea (21.3, 14.8)")
                 throw new InvalidOperationException("invariant coordinate copy");
         }
         finally { CultureInfo.CurrentCulture = culture; }
@@ -65,7 +65,7 @@ internal static class CoordinateVerification {
             throw new InvalidOperationException("coordinate click copies exact displayed value without pan");
         driver.Step(new(.18, Shift: true, Left: true));
         driver.Step(new(.20, Left: false));
-        if (driver.Context.ContextMenu.Toast != "Copied Middle La Noscea · 21.3, 14.8")
+        if (driver.Context.ContextMenu.Toast != "Copied Middle La Noscea (21.3, 14.8)")
             throw new InvalidOperationException("Shift-click includes map name");
         b = CoordinateCopy.CursorBounds;
         point = new((b.X + b.Z) / 2, (b.Y + b.W) / 2);

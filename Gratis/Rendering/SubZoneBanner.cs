@@ -7,6 +7,7 @@ public sealed record SubZoneLocation(uint MapId, uint AreaPlaceNameId, uint SubA
 
 public sealed class SubZoneBanner {
     public SubZoneLocation? Location { get; private set; }
+    public string Zone { get; private set; } = "";
     public string Text { get; private set; } = "";
     public float Opacity { get; private set; }
     private double began = double.NegativeInfinity, lastTime = double.NaN;
@@ -18,20 +19,20 @@ public sealed class SubZoneBanner {
         if (!config.IsGratis || !config.SubZoneBanner || location is null || location.MapId == 0 || now < lastTime) {
             began = double.NegativeInfinity;
             Opacity = 0;
-            Text = "";
+            Text = Zone = "";
             lastTime = now;
             return;
         }
         lastTime = now;
         if (old?.MapId != location.MapId) {
             began = double.NegativeInfinity;
-            Text = "";
+            Text = Zone = "";
         }
         else if (old.AreaPlaceNameId != location.AreaPlaceNameId
             || old.SubAreaPlaceNameId != location.SubAreaPlaceNameId) {
             var local = !string.IsNullOrWhiteSpace(location.SubAreaName) ? location.SubAreaName : location.AreaName;
-            Text = string.IsNullOrWhiteSpace(local) ? "" : string.IsNullOrWhiteSpace(location.MapName) ? local
-                : location.MapName + " · " + local;
+            Text = string.IsNullOrWhiteSpace(local) ? "" : local;
+            Zone = location.MapName == Text ? "" : location.MapName;
             began = now;
         }
         var age = now - began;

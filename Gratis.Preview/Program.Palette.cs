@@ -17,14 +17,14 @@ internal static partial class Program {
             or "palette-narrow" or "palette-circular" or "palette-glass-dark-recolour"
             or "palette-aetherytes-browse" or "palette-zones-browse"
             or "palette-aetherytes-zones" or "palette-zones-zones" or "palette-quests" or "palette-quests-narrow"
-            or "palette-quests-scaled"))
+            or "palette-quests-scaled" or "palette-long-name"))
             throw new ArgumentException("Unknown palette scene " + scene);
         var outputAt = Array.IndexOf(args, "--out");
         var output = Path.GetFullPath(outputAt < 0 ? Path.Combine("_preview", scene + ".png") : args[outputAt + 1]);
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         var config = PaletteVerification.Config();
         config.WindowSize = scene is "palette-narrow" or "palette-small" or "palette-quests-narrow"
-            or "palette-quests-scaled" ? new(330, 480) : scene == "palette-circular"
+            or "palette-quests-scaled" or "palette-long-name" ? new(330, 480) : scene == "palette-circular"
             ? new(720) : new(820, 650);
         config.MapCircle = scene == "palette-circular";
         config.PaletteHintSeen = true;
@@ -38,9 +38,21 @@ internal static partial class Program {
             new FrameScript { Palette = true, Width = 960, Height = 800 });
         if (scene is "palette-quests" or "palette-quests-narrow" or "palette-quests-scaled")
             driver.PlaceSource!.AdditionalPlaces.AddRange(PaletteFixture.QuestPlaces);
+        if (scene == "palette-long-name") {
+            const string name = "The observation deck above the northern reaches of Limsa Lominsa";
+            driver.PlaceSource!.AdditionalPlaces.AddRange([
+                new("long:1", Gratis.Controllers.PlaceKind.Marker, name, "La Noscea > Limsa Lominsa Lower Decks",
+                    1, 1, new(10, 20), Aliases: "longname"),
+                new("long:2", Gratis.Controllers.PlaceKind.Marker, name, "La Noscea > Limsa Lominsa Lower Decks",
+                    1, 1, new(20, 10), Aliases: "longname"),
+                new("long:3", Gratis.Controllers.PlaceKind.Zone, name, "La Noscea > Limsa Lominsa Lower Decks",
+                    99, 1, Aliases: "longname")
+            ]);
+        }
         driver.Step(new(0));
         driver.Step(new(.02));
         driver.Palette!.Open(scene switch {
+            "palette-long-name" => "longname",
             "palette-empty" => "no-such-place-zzzz",
             "palette-query-limsa" => "limsa",
             "palette-unattuned" => "a:summer",

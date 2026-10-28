@@ -26,12 +26,13 @@ public readonly record struct MapLocation(string Region, string Zone, string Are
         return mode switch {
             LocationCardContent.AreaOnly => ("", primary),
             LocationCardContent.Zone => ("", Zone),
-            LocationCardContent.RegionZoneArea => (Join(Region, primary == Zone ? "" : Zone), primary),
+            LocationCardContent.RegionZoneArea => (primary == Zone ? Region : Zone, primary),
             _ => (primary == Zone ? Region : Zone, primary),
         };
     }
 
-    private static string Join(string a, string b) => a.Length == 0 ? b : b.Length == 0 || a == b ? a : a + " · " + b;
+    public string Overline(LocationCardContent mode) => mode == LocationCardContent.RegionZoneArea
+        && Area.Length > 0 && Area != Zone && Region != Zone && Region != Area ? Region : "";
 }
 
 public static class BottomCardsDrawing {
@@ -45,6 +46,9 @@ public static class BottomCardsDrawing {
     private static Vector4 locationBounds, coordinatesBounds;
     private static int frame = -1;
     private static float coordinateWidth;
+    private static readonly PlaceTooltip locationTooltip = new();
+    private static readonly ActionLabelCache primaryLabel = new(), secondaryLabel = new(), regionLabel = new();
+    public static string LocationRegion { get; private set; } = "";
     public static string LocationPrimary { get; private set; } = "";
     public static string LocationSecondary { get; private set; } = "";
     public static float DigitAdvance { get; private set; }
@@ -80,12 +84,14 @@ public static class BottomCardsDrawing {
         locationBounds = coordinatesBounds = Vector4.Zero;
         var safeLocation = new MapLocation(location.Region ?? "", location.Zone ?? "", location.Area ?? "");
         (LocationSecondary, LocationPrimary) = safeLocation.Lines(c.LocationCardShows);
+        LocationRegion = safeLocation.Overline(c.LocationCardShows);
         var showLocation = c.ShowTitleOnMap && c.CompactTitle && LocationPrimary.Length > 0;
         float titleWidth;
-        using (current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
+        using (current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = ImGui.CalcTextSize(LocationPrimary).X;
         using (current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-            titleWidth = MathF.Max(titleWidth, ImGui.CalcTextSize(LocationSecondary).X);
+            titleWidth = MathF.Max(titleWidth, MathF.Max(ImGui.CalcTextSize(LocationSecondary).X,
+                ImGui.CalcTextSize(LocationRegion).X));
         titleWidth = Math.Clamp(titleWidth + 24 * s, 96 * s, 280 * s);
         var coordWidth = requestedCoordinates;
         if (showLocation && requestedCoordinates > 0 && c.LocationAnchor == c.CoordinateAnchor) {
@@ -121,22 +127,25 @@ public static class BottomCardsDrawing {
         MapWindowDrawing.RecordBounds(pos, pos + size, true);
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s, surface: GlassSurface.Title);
-        using (c.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-            list.AddText(pos + new Vector2(12, 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
-                ChromeControls.FitLabel(LocationSecondary, size.X - 24 * s));
-        using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
-            list.AddText(pos + new Vector2(12 * s,
-                LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2),
-                ImGui.GetColorU32(GratisTheme.Primary), ChromeControls.FitLabel(LocationPrimary, size.X - 24 * s));
-        ImGui.SetCursorScreenPos(pos);
-        var fullText = LocationSecondary.Length > 0 ? LocationSecondary + " · " + LocationPrimary : LocationPrimary;
-        if (c.Config.IsGratis)
-            LocationMenuDrawing.Draw(locationBounds, fullText);
-        else {
-            ImGui.Dummy(size);
-            if (ImGui.IsItemHovered())
-                UiMotion.TooltipText(fullText);
+        var threeLines = LocationRegion.Length > 0;
+        using (c.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
+            if (threeLines)
+                list.AddText(pos + new Vector2(12, 5) * s, ImGui.GetColorU32(GratisTheme.Secondary),
+                    regionLabel.Fit(LocationRegion, size.X - 24 * s));
+            list.AddText(pos + new Vector2(12, threeLines ? 20 : 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
+                secondaryLabel.Fit(LocationSecondary, size.X - 24 * s));
         }
+        using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
+            list.AddText(pos + new Vector2(12 * s,
+                threeLines ? 35 * s : LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2),
+                ImGui.GetColorU32(GratisTheme.Primary), primaryLabel.Fit(LocationPrimary, size.X - 24 * s));
+        ImGui.SetCursorScreenPos(pos);
+        if (c.Config.IsGratis)
+            LocationMenuDrawing.Draw(locationBounds, LocationPrimary);
+        else
+            ImGui.Dummy(size);
+        if (ImGui.IsItemHovered())
+            locationTooltip.Show(LocationPrimary, LocationSecondary, LocationRegion);
     }
 
     public static void DrawCoordinates(Vector2? player, Vector2? cursor) {
