@@ -13,8 +13,9 @@ internal static class TabStripVerification {
     public static void Run() {
         var secondary = new Vector4(143 / 255f, 143 / 255f, 143 / 255f, 1);
         var accent = new Vector4(.85f, .72f, .48f, 1);
+        var primary = new Vector4(237 / 255f, 237 / 255f, 237 / 255f, 1);
         Require(TabFaces.QuestLog == new TabProfile {
-            Height = 28, WidthInset = 8, Columns = 3, Gap = 4, Ink = secondary, SelectedInk = accent,
+            Height = 28, WidthInset = 8, Columns = 3, Gap = 4, Ink = secondary, SelectedInk = primary,
         }, "Quest literals changed.");
         var settings = new TabProfile {
             Height = 36, WidthInset = 4, Columns = 1, TextInset = 34,
@@ -151,7 +152,7 @@ internal static class TabStripVerification {
             ChromeControls.Feedback(ImGui.GetWindowDrawList(), start, start + size, selected);
             var text = TextDrawing.Measure(label);
             TextDrawing.Draw(ImGui.GetWindowDrawList(), start + (size - text) / 2,
-                ImGui.GetColorU32(selected ? GratisTheme.WarmAccent : GratisTheme.Secondary), label);
+                ImGui.GetColorU32(selected ? GratisTheme.Primary : GratisTheme.Secondary), label);
             return clicked;
         }
         else {

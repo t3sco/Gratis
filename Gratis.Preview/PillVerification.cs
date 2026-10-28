@@ -14,10 +14,10 @@ internal static class PillVerification {
         var primary = new Vector4(237 / 255f, 237 / 255f, 237 / 255f, 1);
         var warm = new Vector4(.85f, .72f, .48f, 1);
         Require(PillFaces.PaletteRow == new PillProfile {
-            Padding = new(12, 3), Inset = new(6, 1), Fill = primary with { W = .055f },
+            Padding = new(16, 4), Inset = new(8, 2), Fill = primary with { W = .055f },
         }, "Palette literals changed.");
         Require(PillFaces.HeadingDetail == new PillProfile {
-            Layout = PillLayout.Heading, Padding = new(8, 4), Inset = new(4, 2),
+            Layout = PillLayout.Heading, Padding = new(12, 4), Inset = new(6, 2),
             Fill = warm with { W = .10f }, Ink = new(143 / 255f, 143 / 255f, 143 / 255f, 1),
         }, "Heading literals changed.");
         Require(PillFaces.PinLabel == new PillProfile {
@@ -145,16 +145,16 @@ internal static class PillVerification {
                 ImGui.GetColorU32(i == 5 ? GratisTheme.WarmAccent with { W = .43f } : GratisTheme.WarmAccent));
         }
         else if (i == 0) {
-            var size = TextDrawing.Measure(text) + new Vector2(12, 3) * s;
+            var size = TextDrawing.Measure(text) + new Vector2(16, 4) * s;
             list.AddRectFilled(p, p + size, ImGui.GetColorU32(GratisTheme.Primary with { W = .055f }),
                 GratisTheme.Radius.Pill(size));
-            TextDrawing.Draw(list, p + new Vector2(6, 1) * s, ImGui.GetColorU32(ink), text);
+            TextDrawing.Draw(list, p + new Vector2(8, 2) * s, ImGui.GetColorU32(ink), text);
         }
         else if (i == 1) {
             var measured = ImGui.CalcTextSize(text);
-            list.AddRectFilled(p - new Vector2(4, 2) * s, p + measured + new Vector2(4, 2) * s,
+            list.AddRectFilled(p - new Vector2(6, 2) * s, p + measured + new Vector2(6, 2) * s,
                 ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .10f }),
-                GratisTheme.Radius.Pill(measured + new Vector2(8, 4) * s));
+                GratisTheme.Radius.Pill(measured + new Vector2(12, 4) * s));
             ImGui.TextColored(GratisTheme.Secondary, text);
         }
         else if (i == 2) {

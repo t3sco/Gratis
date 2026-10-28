@@ -262,9 +262,9 @@ internal static class SectionHeaderVerification {
                     ImGui.SameLine(x - 6 * s);
                     var chip = ImGui.GetCursorScreenPos();
                     var measured = ImGui.CalcTextSize(detail);
-                    list.AddRectFilled(chip - new Vector2(4, 2) * s, chip + measured + new Vector2(4, 2) * s,
+                    list.AddRectFilled(chip - new Vector2(6, 2) * s, chip + measured + new Vector2(6, 2) * s,
                         ImGui.GetColorU32(GratisTheme.WarmAccent with { W = .10f }),
-                        GratisTheme.Radius.Pill(measured + new Vector2(8, 4) * s));
+                        GratisTheme.Radius.Pill(measured + new Vector2(12, 4) * s));
                     ImGui.TextColored(GratisTheme.Secondary, detail);
                 }
             }
