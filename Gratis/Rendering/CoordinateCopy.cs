@@ -9,6 +9,7 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public static class CoordinateCopy {
+    private static readonly HintRow[] ShiftHint = [new("Include map name", "Shift", true)];
     private static int inputFrame = -1, layoutFrame = -1;
     private static MapDrawContext? inputContext, layoutContext;
     public static Vector4 PlayerBounds { get; private set; }
@@ -48,9 +49,8 @@ public static class CoordinateCopy {
                 inputContext = context;
             }
             if (ImGui.IsItemHovered())
-                UiMotion.TooltipText(id.Contains("cursor", StringComparison.Ordinal)
-                    ? "Copy cursor coordinates · Shift: include map name"
-                    : "Copy player coordinates · Shift: include map name");
+                UiMotion.TooltipCard(id.Contains("cursor", StringComparison.Ordinal)
+                    ? "Copy cursor coordinates" : "Copy player coordinates", null, ShiftHint);
         }
         void Target(string id, Vector4 bounds, Vector2? value) {
             if (value is not { } v || bounds == Vector4.Zero)

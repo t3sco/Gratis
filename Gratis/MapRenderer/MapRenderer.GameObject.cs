@@ -87,7 +87,7 @@ public partial class MapRenderer {
                 PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString()
                     : GetTooltipForGameObject(obj),
                 SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
-                    ? $"{character.ClassJob.Value.Abbreviation.ExtractText()} · Lv. {character.Level}" : null,
+                    ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}" : null,
             });
         }
     }

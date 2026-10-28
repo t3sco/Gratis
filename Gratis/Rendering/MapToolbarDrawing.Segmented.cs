@@ -74,8 +74,6 @@ public static partial class MapToolbarDrawing {
             for (var index = 0; index < count; index++) {
                 var buttonIndex = compact || count == 2 ? index == 0 ? 0 : index + 3 : index;
                 var (id, action, tooltip) = Buttons[buttonIndex];
-                if (id == "Filters" && FilterBarDrawing.TriggerLabel.Length > 0)
-                    tooltip += " · " + FilterBarDrawing.TriggerLabel;
                 var separated = index > 0 && !(buttonIndex == 2 && !compact);
                 if (!context.Config.SegmentedToolbar && buttonIndex == 4)
                     x = MathF.Max(x, width - 4 * scale - (count - index) * GratisTheme.ControlHeight * scale
@@ -119,7 +117,9 @@ public static partial class MapToolbarDrawing {
                     Pill.Draw(list, min, "", PillFaces.SettingsDot, scale, alpha: news);
                 if (id == "Filters" && FilterBarDrawing.ActiveCount > 0)
                     Pill.Draw(list, min, "", PillFaces.FilterDot, scale);
-                ChromeControls.Tooltip(tooltip, windowBounds: WindowBounds);
+                ChromeControls.Tooltip(tooltip, windowBounds: WindowBounds,
+                    meta: id == "Filters" && FilterBarDrawing.TriggerLabel.Length > 0
+                        ? FilterBarDrawing.TriggerLabel : null);
                 if (clicked) {
                     if (id == "Lens")
                         ImGui.OpenPopup(MapMenu);

@@ -15,7 +15,14 @@ public static class HoverCardDrawing {
     private readonly record struct Entry(string Key, string Title, string? Secondary, MarkerCategory? Category,
         Classes.MarkerInfo? Marker);
 
+    private sealed class Columns {
+        public string? Source;
+        public bool Active;
+        public string[] Left = [], Right = [];
+    }
+
     private static readonly List<Entry> queued = [], shown = [];
+    private static readonly Columns[] columns = [new(), new(), new(), new()];
     private static readonly (Entry Entry, float Swatch, Vector2 Primary, Vector2 Secondary)[] layout =
         new (Entry, float, Vector2, Vector2)[MaxRows];
     private static MapDrawContext? owner;
@@ -102,8 +109,10 @@ public static class HoverCardDrawing {
             Vector2 primary, secondary;
             using (context.GetChromeFont(titleSize, ChromeFontRole.Title)?.Push())
                 primary = DrawBinding.MeasureText(titleSize, entry.Title, wrap);
+            var split = Split(i, entry.Secondary);
             using (context.GetChromeFont(secondarySize, ChromeFontRole.Body)?.Push())
                 secondary = string.IsNullOrEmpty(entry.Secondary) ? Vector2.Zero
+                    : split ? MeasureColumns(i, secondarySize, wrap, scale)
                     : DrawBinding.MeasureText(secondarySize, entry.Secondary, wrap);
             layout[i] = (entry, swatch, primary, secondary);
             width = Math.Max(width, Math.Max(primary.X, secondary.X) + swatch);
@@ -137,7 +146,8 @@ public static class HoverCardDrawing {
                     ImGui.GetColorU32(GratisTheme.Secondary with { W = .18f * fade }), scale);
             }
             DrawRow(list, entry, new(position.X + padding.X, y), swatch, primary.Y, secondary.Y > 0, fade, scale,
-                titleSize, secondarySize, Math.Max(1, Math.Min(300 * scale, available.X - padding.X * 2 - swatch)));
+                titleSize, secondarySize, Math.Max(1, Math.Min(300 * scale, available.X - padding.X * 2 - swatch)), i,
+                size.X - padding.X * 2 - swatch);
             y += primary.Y + (secondary.Y > 0 ? 4 * scale + secondary.Y : 0) + rowGap;
         }
         if (more.Length > 0)
@@ -152,7 +162,8 @@ public static class HoverCardDrawing {
     }
 
     private static void DrawRow(ImDrawListPtr list, Entry entry, Vector2 origin, float swatch, float titleHeight,
-        bool hasSecondary, float fade, float scale, float titleSize, float secondarySize, float wrap) {
+        bool hasSecondary, float fade, float scale, float titleSize, float secondarySize, float wrap, int row,
+        float columnWidth) {
         var context = MapDrawContext.Current;
         var marker = entry.Marker;
         var attuned = AetheryteAttunement.Status(context.Config, marker);
@@ -179,9 +190,69 @@ public static class HoverCardDrawing {
         if (!hasSecondary || string.IsNullOrEmpty(entry.Secondary))
             return;
         using var secondaryFont = context.GetChromeFont(secondarySize, ChromeFontRole.Body)?.Push();
+        var at = text + new Vector2(0, titleHeight + 4 * scale);
+        if (columns[row].Active) {
+            DrawColumns(list, row, at, columnWidth, secondarySize, wrap, scale, fade);
+            return;
+        }
         DrawBinding.PushFontTexture(list);
-        list.AddText(ImGui.GetFont(), secondarySize, text + new Vector2(0, titleHeight + 4 * scale),
-            ImGui.GetColorU32(GratisTheme.Secondary with { W = fade }), entry.Secondary, wrap);
+        list.AddText(ImGui.GetFont(), secondarySize, at, ImGui.GetColorU32(GratisTheme.Secondary with { W = fade }),
+            entry.Secondary, wrap);
         DrawBinding.PopTexture(list);
+    }
+
+    private static bool Split(int row, string? text) {
+        var cache = columns[row];
+        cache.Active = text != null && text.Contains('	');
+        if (!cache.Active || cache.Source == text)
+            return cache.Active;
+        cache.Source = text;
+        var lines = text!.Split('\n');
+        cache.Left = new string[lines.Length];
+        cache.Right = new string[lines.Length];
+        for (var i = 0; i < lines.Length; i++) {
+            var tab = lines[i].IndexOf('	');
+            cache.Left[i] = tab < 0 ? lines[i] : lines[i][..tab];
+            cache.Right[i] = tab < 0 ? "" : lines[i][(tab + 1)..];
+        }
+        return true;
+    }
+
+    private static float ColumnTop(Columns cache, int line, float scale) => line == 0 ? 0
+        : (cache.Right[line].Length > 0 && cache.Right[line - 1].Length == 0 ? 6 : 2) * scale;
+
+    private static Vector2 MeasureColumns(int row, float size, float wrap, float scale) {
+        var cache = columns[row];
+        var total = Vector2.Zero;
+        for (var i = 0; i < cache.Left.Length; i++) {
+            var left = cache.Left[i].Length > 0 ? DrawBinding.MeasureText(size, cache.Left[i], wrap) : Vector2.Zero;
+            var pill = cache.Right[i].Length > 0 ? Pill.Measure(cache.Right[i], PillFaces.Tag, scale) : Vector2.Zero;
+            total.X = Math.Max(total.X, left.X + (pill.X > 0 ? 18 * scale + pill.X : 0));
+            total.Y += ColumnTop(cache, i, scale) + Math.Max(left.Y, pill.Y);
+        }
+        return total;
+    }
+
+    private static void DrawColumns(ImDrawListPtr list, int row, Vector2 origin, float width, float size, float wrap,
+        float scale, float fade) {
+        var cache = columns[row];
+        var colour = ImGui.GetColorU32(GratisTheme.Secondary with { W = fade });
+        var y = origin.Y;
+        for (var i = 0; i < cache.Left.Length; i++) {
+            y += ColumnTop(cache, i, scale);
+            var left = cache.Left[i].Length > 0 ? DrawBinding.MeasureText(size, cache.Left[i], wrap) : Vector2.Zero;
+            var pill = cache.Right[i].Length > 0 ? Pill.Measure(cache.Right[i], PillFaces.Tag, scale) : Vector2.Zero;
+            var height = Math.Max(left.Y, pill.Y);
+            if (left.X > 0) {
+                DrawBinding.PushFontTexture(list);
+                list.AddText(ImGui.GetFont(), size, new(origin.X, y + (height - left.Y) / 2), colour,
+                    cache.Left[i], wrap);
+                DrawBinding.PopTexture(list);
+            }
+            if (pill.X > 0)
+                Pill.Draw(list, new(origin.X + width - pill.X, y + (height - pill.Y) / 2), cache.Right[i],
+                    PillFaces.Tag, scale, alpha: fade);
+            y += height;
+        }
     }
 }

@@ -239,6 +239,7 @@ public sealed class MarkerBatch {
         }
         if (root.Count > listed)
             memberText.Append('\n').Append('+').Append(root.Count - listed).Append(" more");
-        HoverCardDrawing.Draw("marker-cluster", label + " ambient markers · click to zoom", memberText.ToString());
+        memberText.Append('\n').Append("Zoom in\tClick");
+        HoverCardDrawing.Draw("marker-cluster", label + " ambient markers", memberText.ToString());
     }
 }

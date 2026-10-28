@@ -29,6 +29,10 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
     private bool focusTitle, importing;
     private string title = "", note = "", editorMessage = "";
     private int colour;
+    private static readonly HintRow[] EditorKeys = [new("Save", "Enter", true), new("Cancel", "Esc", true)];
+    private string headerMap = "", headerCoords = "", counterText = "";
+    private (uint Map, float X, float Y) headerKey = (uint.MaxValue, 0, 0);
+    private int counterLength = -1;
     private int editorSerial;
     private uint viewedMap;
     public static readonly Vector4[] Colours = [new(.35f,.79f,.84f,1),new(.37f,.63f,.96f,1),new(.53f,.54f,.94f,1),
@@ -310,7 +314,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
                 ImGui.SetNextFrameWantCaptureKeyboard(true);
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
                 ImGui.TextUnformatted(importing ? "Import pin" : "Pin details");
-            ImGui.TextDisabled($"Map {draft.MapId} · {draft.X:0.0}, {draft.Y:0.0}");
+            DrawEditorHeader(draft, s);
             ImGui.Spacing();
             ImGui.TextUnformatted("Title");
             ImGui.SetNextItemWidth(-1);
@@ -328,9 +332,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             var pointer = draft.Pointer;
             if (ImGui.Checkbox("Edge pointer", ref pointer))
                 draft.Pointer = pointer;
-            using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-                ImGui.TextDisabled(ChromeControls.FitLabel($"{note.Length}/280  ·  Enter saves  ·  Esc cancels",
-                    ImGui.GetContentRegionAvail().X));
+            DrawEditorFooter(s);
             var columns = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + 4 * s) / (40 * s)));
             for (var i = 0; i < 8; i++) {
                 if (i % columns != 0)
@@ -362,6 +364,43 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             else if (interactive && ImGui.IsKeyPressed(ImGuiKey.Enter, false))
                 SaveEditor();
         }, scroll: true, interactive: interactive);
+    }
+
+    private void DrawEditorHeader(UserPin draft, float s) {
+        if (headerKey != (draft.MapId, draft.X, draft.Y)) {
+            headerKey = (draft.MapId, draft.X, draft.Y);
+            headerMap = $"Map {draft.MapId}";
+            headerCoords = $"{draft.X:0.0}, {draft.Y:0.0}";
+        }
+        var list = ImGui.GetWindowDrawList();
+        var at = ImGui.GetCursorScreenPos();
+        var width = ImGui.GetContentRegionAvail().X;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
+            var tag = Pill.Measure(headerCoords, PillFaces.Tag, s);
+            TextDrawing.Draw(list, at + new Vector2(0, (tag.Y - TextDrawing.Measure(headerMap).Y) / 2),
+                ImGui.GetColorU32(GratisTheme.Secondary), headerMap);
+            Pill.Draw(list, at + new Vector2(width - tag.X, 0), headerCoords, PillFaces.Tag, s);
+            ImGui.Dummy(new Vector2(width, tag.Y));
+        }
+    }
+
+    private void DrawEditorFooter(float s) {
+        if (counterLength != note.Length) {
+            counterLength = note.Length;
+            counterText = $"{note.Length}/280";
+        }
+        var list = ImGui.GetWindowDrawList();
+        var at = ImGui.GetCursorScreenPos();
+        var width = ImGui.GetContentRegionAvail().X;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
+            var height = HintCard.RowHeight(s);
+            var counter = TextDrawing.Measure(counterText);
+            TextDrawing.Draw(list, at + new Vector2(0, (height - counter.Y) / 2),
+                ImGui.GetColorU32(GratisTheme.Secondary), counterText);
+            if (counter.X + 16 * s + HintCard.InlineWidth(EditorKeys, s) <= width)
+                HintCard.DrawInline(list, at.X + width, at.Y, EditorKeys, s);
+            ImGui.Dummy(new Vector2(width, height));
+        }
     }
 
     private bool Button(string text) {
