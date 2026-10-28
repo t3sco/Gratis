@@ -17,6 +17,7 @@ internal sealed class SummaryItemsFixture : IItemTooltipSource {
             Category = id == 4 ? "Crystal" : "Materia", StackSize = 999,
             Effects = id == 4 ? "A tiny crystalline manifestation of aetheric wind energy." : "Spell Speed +8",
             ItemLevel = 15, Jobs = "All Classes", EquipLevel = 1, Rarity = 2, SellPrice = 1,
+            Untradable = id == 4, Unique = id == 4,
         };
     }
 }
@@ -24,11 +25,11 @@ internal sealed class SummaryItemsFixture : IItemTooltipSource {
 internal static class SummaryFixture {
     public static void Apply(QuestLogFixture fixture, string variant) {
         var original = fixture.Snapshot.Quests[0];
-        var quest = original with { Start = "Wuk Lamat · Tuliyollal", Requirements = "Level 100 · Disciple of War or Magic" };
+        var quest = original with { StartNpc = "Wuk Lamat", StartArea = "Tuliyollal", Jobs = "Disciple of War or Magic" };
         if (variant == "long-text")
             quest = quest with {
                 Name = "An Unusually Long Journey Beyond the Mountains and the Distant Horizon",
-                Start = "A remarkably well-travelled companion of the Third Promise · The highlands beyond Tuliyollal",
+                StartNpc = "A remarkably well-travelled companion of the Third Promise", StartArea = "The highlands beyond Tuliyollal",
                 Prerequisites = "The Promise of a New Beginning\nThe Road Beyond the Horizon", MoreConditions = true,
                 Description = string.Join("\n\n", Enumerable.Repeat(
                     "Your companions await you at the overlook, where the winding mountain road opens onto the distant sea. "
@@ -40,7 +41,7 @@ internal static class SummaryFixture {
                 new QuestLogRewardItem((uint)(4 + i), "A long reward item name " + (i + 1), (uint)(20004 + i),
                     (uint)(i == 0 ? 999 : i + 1), i >= 10)).ToArray()) };
         if (variant == "missing")
-            quest = quest with { Start = "", Requirements = "", Prerequisites = "", Rewards = null,
+            quest = quest with { StartNpc = "", StartArea = "", Jobs = "", Prerequisites = "", Rewards = null,
                 Description = "", Objective = "", Duty = "", Targets = [] };
         fixture.Snapshot = fixture.Snapshot with { Revision = fixture.Snapshot.Revision + 1,
             Quests = [quest, .. fixture.Snapshot.Quests.Skip(1)] };

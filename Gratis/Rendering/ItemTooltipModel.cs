@@ -28,7 +28,9 @@ public interface IItemTooltipSource {
     void Search(uint id) { }
 }
 
-public sealed record ItemTooltipSection(string Heading, string Text);
+public sealed record ItemTooltipSection(string Heading, string Text) {
+    public IReadOnlyList<string> Tags { get; init; } = [];
+}
 
 public static class ItemTooltipModel {
     private static readonly ConditionalWeakTable<ItemTooltipRecord, Presentation> presentations = new();
@@ -88,9 +90,10 @@ public static class ItemTooltipModel {
         var trade = new List<string>(3);
         if (item.ShopPrice is > 0) trade.Add($"Shop selling price: {item.ShopPrice:N0} gil");
         if (item.SellPrice is { } sell) trade.Add(sell > 0 ? $"Sells for {sell:N0} gil" : "Unsellable");
-        if (item.Untradable || item.Unique)
-            trade.Add(item.Untradable && item.Unique ? "Untradable · Unique" : item.Untradable ? "Untradable" : "Unique");
-        if (trade.Count > 0) sections.Add(new("Base Item", string.Join("\n", trade)));
+        var tags = new List<string>(2);
+        if (item.Untradable) tags.Add("Untradable");
+        if (item.Unique) tags.Add("Unique");
+        if (trade.Count > 0 || tags.Count > 0) sections.Add(new("Base Item", string.Join("\n", trade)) { Tags = tags });
         return sections;
     }
 

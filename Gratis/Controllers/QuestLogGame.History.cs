@@ -86,8 +86,10 @@ public sealed partial class QuestLogGame {
         var required = row.ClassJobRequired.ValueNullable?.Name.ExtractText() ?? "";
         var previous = row.PreviousQuest.Where(q => q.RowId != 0).Select(q => Prerequisite(q.RowId)).ToArray();
         return quest with {
-            Start = (string.IsNullOrWhiteSpace(npc) ? "Start NPC unavailable" : npc) + " · " + area,
-            Requirements = $"Level {quest.Level} · {jobs}" + (required.Length > 0 ? " · " + required : ""),
+            StartNpc = string.IsNullOrWhiteSpace(npc) ? "Start NPC unavailable" : npc,
+            StartArea = area,
+            Jobs = jobs,
+            RequiredClass = required,
             Prerequisites = string.Join("\n", previous),
             MoreConditions = QuestLogText.MoreConditions(previous.Length, row.PreviousQuestJoin,
                 row.QuestLock.Any(q => q.RowId != 0)),

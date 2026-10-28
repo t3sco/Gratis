@@ -17,8 +17,11 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public bool Completed { get; init; }
     public bool ClientKnown { get; init; }
     public bool Repeatable { get; init; }
-    public string Start { get; init; } = "";
-    public string Requirements { get; init; } = "";
+    public string ObjectiveProgress { get; init; } = "";
+    public string StartNpc { get; init; } = "";
+    public string StartArea { get; init; } = "";
+    public string Jobs { get; init; } = "";
+    public string RequiredClass { get; init; } = "";
     public string Prerequisites { get; init; } = "";
     public bool MoreConditions { get; init; }
 }

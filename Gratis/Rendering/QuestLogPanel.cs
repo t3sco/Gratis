@@ -220,7 +220,7 @@ public sealed partial class QuestLogPanel {
             ChromeControls.Feedback(parent, min, min + size, IsOpen, radius: GratisTheme.Radius.Card * s);
             GratisIcons.Draw(parent, min + size / 2, GratisIcons.BookOpen,
                 IsOpen ? GratisTheme.WarmAccent : GratisTheme.Secondary, GratisTheme.IconSize * s);
-            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Quest Log · pinned open" : "Quest Log");
+            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Quest Log\nPinned open" : "Quest Log");
             min = new(Layout.Pin.X, Layout.Pin.Y);
             MapWindowDrawing.DrawSurface(parent, min, min + size, GratisTheme.Radius.Card * s);
             ImGui.SetCursorScreenPos(min);
@@ -296,7 +296,7 @@ public sealed partial class QuestLogPanel {
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 64 * s), 0));
         var searchButtonStart = ImGui.GetCursorScreenPos();
         if (ChromeControls.IconButton("##quest-log-search-toggle", GratisIcons.Search,
-            searchOpen ? "Hide search · Esc" : "Search quests · Ctrl+F", new(30 * s))) {
+            searchOpen ? "Hide search\nEsc" : "Search quests\nCtrl+F", new(30 * s))) {
             if (searchOpen) HideSearch(); else ShowSearch();
         }
         SearchToggleBounds = ItemBounds();
@@ -342,8 +342,14 @@ public sealed partial class QuestLogPanel {
         presentation.Filter(query, Tab, context.Config.QuestLogShowLocked, repeatableOnly);
         filtered = presentation.Filtered;
         if (!shortPanel) {
-            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-                ImGui.TextColored(GratisTheme.Secondary, $"{QuestLogText.TabLabel(Tab)} quests · {filtered.Length}");
+            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
+                var count = captionCount.Count(filtered.Length);
+                var captionStart = ImGui.GetCursorScreenPos();
+                TextDrawing.Draw(list, captionStart, ImGui.GetColorU32(GratisTheme.Secondary), QuestLogText.Caption(Tab));
+                TextDrawing.Draw(list, captionStart + new Vector2(width - TextDrawing.Measure(count).X, 0),
+                    ImGui.GetColorU32(GratisTheme.Primary), count);
+                ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
+            }
         }
         if (Tab == QuestLogTab.Unaccepted)
             EmptyState.Draw(QuestLogText.NearbySubtitle, EmptyFaces.QuestHelper);
@@ -352,8 +358,10 @@ public sealed partial class QuestLogPanel {
         if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
             EmptyState.Draw("Showing the first 500 quests by name.", EmptyFaces.QuestHelper);
         if (ImGui.GetContentRegionAvail().Y > 100 * s)
-            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-                ImGui.TextColored(GratisTheme.Secondary, "Click: summary · Right-click: map");
+            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
+                if (rowKeyboard) QuestKeyHints.Bar("Enter", "Summary", "M", "Map", width, s);
+                else QuestKeyHints.Bar("Click", "Summary", "Right-click", "Show on map", width, s);
+            }
         var remaining = ImGui.GetContentRegionAvail();
         if (remaining.Y < 8 * s)
             return;
@@ -445,6 +453,7 @@ public sealed partial class QuestLogPanel {
                 + "\nIncludes base story and patches; alternate starting paths count separately.");
     }
 
+    private readonly SectionHeaderCache captionCount = new();
     private readonly Dictionary<QuestBucket, SectionHeaderCache> sectionHeaders = [];
 
     private void DrawSection(QuestBucket bucket, QuestLogQuest[] quests, float top, float s) {
@@ -555,18 +564,25 @@ public sealed partial class QuestLogPanel {
                 ChromeControls.FitLabel(quest.Name, MathF.Max(1, textWidth - levelWidth - 8 * s)));
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
                 var dutyWidth = quest.Duty.Length > 0 ? TextDrawing.Measure("Duty").X + 12 * s : 0;
+                var progress = Tab == QuestLogTab.Unaccepted ? "" : quest.ObjectiveProgress;
+                var progressWidth = progress.Length > 0 ? TextDrawing.Measure(progress).X : 0;
+                var dutyInset = dutyWidth > 0 ? dutyWidth + 8 * s : 0;
                 var objective = Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : quest.Objective.Length > 0 ? quest.Objective
                     : quest.Targets.Count == 0 ? "No map destination" : "Objective unavailable";
                 TextDrawing.Draw(list, text + new Vector2(0, 20 * s), ImGui.GetColorU32(muted),
-                    ChromeControls.FitLabel(objective, MathF.Max(1, textWidth - (dutyWidth > 0 ? dutyWidth + 8 * s : 0))));
+                    ChromeControls.FitLabel(objective, MathF.Max(1, textWidth - dutyInset - (progressWidth > 0 ? progressWidth + 8 * s : 0))));
+                if (progressWidth > 0)
+                    TextDrawing.Draw(list, text + new Vector2(textWidth - progressWidth - dutyInset, 20 * s),
+                        ImGui.GetColorU32(GratisTheme.Primary), progress);
                 if (dutyWidth > 0)
                     PaletteRowDrawing.Pill(list, start + new Vector2(width - dutyWidth - 8 * s, 28 * s),
                         "Duty", GratisTheme.Crystal, s);
             }
             if (hovered)
                 ChromeControls.Tooltip(quest.Name + (quest.Objective.Length > 0 ? "\n" + quest.Objective : "")
+                    + (quest.ObjectiveProgress.Length > 0 ? "\n" + quest.ObjectiveProgress : "")
                     + (quest.Duty.Length > 0 ? "\n" + quest.Duty : "")
-                    + (quest.Targets.Count == 0 ? "\nNo map destination is currently available." : "\nLeft-click: summary · Right-click: show on map\nEnter: summary · Shift+Enter / M: map"));
+                    + (quest.Targets.Count == 0 ? "\nNo map destination is currently available." : ""));
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, height));
         ImGui.Dummy(new(0, GratisTheme.Gap * s));

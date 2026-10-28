@@ -27,8 +27,10 @@ internal sealed class QuestLogFixture : IQuestLogSource {
                 with { Expansion = 5, ExpansionIcon = 61880 },
             Quest(70001, "A New Adventure", 90, QuestBucket.Scenario, "Speak with Tataru at the Rising Stones.")
                 with { Expansion = 4, ExpansionIcon = 61879 },
-            Quest(69703, "Cutting the Cheese", 80, QuestBucket.SideQuests, "Deliver the cheese to the waiting scholar."),
-            Quest(66233, "Hallo Halatali", 20, QuestBucket.SideQuests, "Speak with Fafajoni.", "Halatali · Duty unlock"),
+            Quest(69703, "Cutting the Cheese", 80, QuestBucket.SideQuests, "Deliver the cheese to the waiting scholar.")
+                with { ObjectiveProgress = "1/3" },
+            Quest(66233, "Hallo Halatali", 20, QuestBucket.SideQuests, "Speak with Fafajoni.", "Halatali")
+                with { ObjectiveProgress = "0/1" },
             Quest(70371, "A Hunter True", 100, QuestBucket.JobClass, "Meet your companions in Tuliyollal."),
             Quest(68628, "Annihilation", 70, QuestBucket.Chronicles, "Speak with the company dramaturge."),
             Quest(70501, "A Little Kindness Goes a Long Way", 100, QuestBucket.AlliedSocieties,
@@ -37,8 +39,8 @@ internal sealed class QuestLogFixture : IQuestLogSource {
                 "", target: false),
         ], "Beyond the Mountains", new(5, "Dawntrail", 61880, 127, 143), 1) {
             Completed = [Quest(66001, "A Journey Remembered", 50, QuestBucket.Scenario, "", target: false)
-                with { Completed = true, Repeatable = true, Start = "Tataru · Mor Dhona",
-                    Requirements = "Level 50 · Disciple of War or Magic", Prerequisites = "A New Beginning" }],
+                with { Completed = true, Repeatable = true, StartNpc = "Tataru", StartArea = "Mor Dhona",
+                    Jobs = "Disciple of War or Magic", Prerequisites = "A New Beginning" }],
             Unaccepted = [Quest(66002, "A Familiar Face", 50, QuestBucket.SideQuests, "Available")
                 with { ClientKnown = true },
                 Quest(66003, "A Future Secret", 100, QuestBucket.SideQuests, "Available", target: false)],

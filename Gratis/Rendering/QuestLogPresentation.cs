@@ -10,8 +10,7 @@ internal sealed class QuestLogPresentation {
     internal sealed class Text(QuestLogQuest quest) {
         public readonly string Id = quest.RowId.ToString();
         public readonly string Level = $"Lv. {quest.Level}";
-        public readonly string Requirements = quest.Requirements.Length > 0 ? quest.Requirements : $"Level {quest.Level}";
-        public readonly string[] Start = quest.Start.Split(" · ", 2, StringSplitOptions.TrimEntries);
+        public readonly string LevelNumber = quest.Level.ToString();
         public readonly string ChildId = "##quest-detail-body-" + quest.RowId;
         public readonly string Gil = $"{quest.Rewards?.Gil:N0} gil";
         public readonly string Exp = $"{quest.Rewards?.Exp:N0} EXP";

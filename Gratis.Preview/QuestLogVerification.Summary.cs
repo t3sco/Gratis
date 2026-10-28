@@ -27,7 +27,7 @@ internal static partial class QuestLogVerification {
         Require(sections.Select(s => s.Heading).SequenceEqual(["Effects", "Requirements", "Base Item"])
             && sections[0].Text == "Spell Speed +8" && sections[1].Text == "Item Level 15\nAll Classes\nLv. 1"
             && sections[2].Text.Contains("Shop selling price: 120 gil") && sections[2].Text.Contains("Unsellable")
-            && sections[2].Text.Contains("Untradable · Unique"), "Item sections retain reliable game fields");
+            && sections[2].Tags.SequenceEqual(["Untradable", "Unique"]), "Item sections retain reliable game fields");
         Require(ItemTooltipModel.Stack(item, 2, 0) == "2/999 (Total: 0)"
             && ItemTooltipModel.Stack(item, 2, null) == "" && ItemTooltipModel.Stack(item, 2, -1) == "",
             "Owned count is only displayed when read successfully");

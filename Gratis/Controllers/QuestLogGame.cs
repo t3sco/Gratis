@@ -88,13 +88,15 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
             var quests = accepted.Keys.Select(id => {
                 var data = metadata.GetValueOrDefault(id);
                 var destinations = targets.GetValueOrDefault(id) ?? [];
+                var tracked = objectives.GetValueOrDefault(id);
                 var details = data == null ? default : ReadJournal(data.Row, accepted[id],
-                    string.IsNullOrWhiteSpace(objectives.GetValueOrDefault(id)));
+                    string.IsNullOrWhiteSpace(tracked.Text));
                 var quest = new QuestLogQuest(id, data?.Name ?? $"Quest {id}", data?.Level ?? 0,
                     data?.Bucket ?? QuestBucket.Other,
                     data?.Icon ?? 71023,
-                    QuestLogText.PreferTracked(objectives.GetValueOrDefault(id), details.Objective),
+                    QuestLogText.PreferTracked(tracked.Text, details.Objective),
                     data?.Duty ?? "", destinations) {
+                    ObjectiveProgress = string.IsNullOrWhiteSpace(tracked.Text) ? "" : tracked.Progress,
                     Expansion = data?.Expansion ?? 0, ExpansionIcon = data?.Crest ?? 0,
                     Description = details.Description ?? "", Rewards = details.Rewards,
                     Completed = data != null && Service.UnlockState.IsQuestCompleted(data.Row),
@@ -185,8 +187,9 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
         return result;
     }
 
-    private static unsafe Dictionary<uint, string> ReadObjectives(IReadOnlyDictionary<uint, byte> accepted) {
-        var result = new Dictionary<uint, string>();
+    private static unsafe Dictionary<uint, (string Text, string Progress)> ReadObjectives(
+        IReadOnlyDictionary<uint, byte> accepted) {
+        var result = new Dictionary<uint, (string Text, string Progress)>();
         var ui = UIState.Instance();
         if (ui == null)
             return result;
@@ -202,7 +205,7 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
             var text = objective.Objective.ToString();
             var count = objective.ProgressText.ToString();
             if (!string.IsNullOrWhiteSpace(text))
-                result[65536u + quest.QuestId] = text + (count.Length > 0 ? " · " + count : "");
+                result[65536u + quest.QuestId] = (text, count);
         }
         return result;
     }

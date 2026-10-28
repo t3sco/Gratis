@@ -30,7 +30,7 @@ public sealed partial class QuestLogPanel {
                 ImGui.GetColorU32(GratisTheme.WarmAccent), "QUEST SUMMARY");
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 30 * s), 0));
         if (ChromeControls.IconButton("##quest-detail-close", GratisIcons.X,
-            Layout.DetailOverlay ? "Back to Quest Log · Esc" : "Close summary · Esc", new(30 * s)))
+            Layout.DetailOverlay ? "Back to Quest Log\nEsc" : "Close summary\nEsc", new(30 * s)))
             CloseDetail();
         DetailCloseBounds = ItemBounds();
         ImGui.SetCursorScreenPos(start + new Vector2(0, 42 * s));
@@ -52,18 +52,19 @@ public sealed partial class QuestLogPanel {
             ImGui.Dummy(new(0, 4 * s));
             DetailChips(quest, s);
             DetailDivider(s);
-            if (quest.Start.Length > 0) {
+            if (quest.StartNpc.Length > 0) {
                 DetailHeading("WHERE", s);
-                var parts = text.Start;
-                ImGui.TextWrapped(parts[0]);
-                if (parts.Length > 1) {
+                ImGui.TextWrapped(quest.StartNpc);
+                if (quest.StartArea.Length > 0) {
                     ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-                    ImGui.TextWrapped(parts[1]);
+                    ImGui.TextWrapped(quest.StartArea);
                     ImGui.PopStyleColor();
                 }
             }
             DetailHeading("REQUIREMENTS", s);
-            ImGui.TextWrapped(text.Requirements);
+            DetailRow("Level", text.LevelNumber, s);
+            if (quest.Jobs.Length > 0) DetailRow("Class", quest.Jobs, s);
+            if (quest.RequiredClass.Length > 0) DetailRow("Job", quest.RequiredClass, s);
             if (quest.Prerequisites.Length > 0 || quest.MoreConditions) {
                 DetailHeading("REQUIRES", s);
                 if (quest.Prerequisites.Length > 0) ImGui.TextWrapped(quest.Prerequisites);
@@ -111,6 +112,43 @@ public sealed partial class QuestLogPanel {
         ImGui.Dummy(new(0, 2 * s));
     }
 
+    private static void DetailRow(string label, string value, float s) {
+        var start = ImGui.GetCursorScreenPos();
+        var width = ImGui.GetContentRegionAvail().X;
+        var list = ImGui.GetWindowDrawList();
+        var valueSize = TextDrawing.Measure(value);
+        bool stacked;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
+            var labelSize = TextDrawing.Measure(label);
+            stacked = labelSize.X + valueSize.X + 12 * s > width;
+            if (stacked) ImGui.TextColored(GratisTheme.Secondary, label);
+            else TextDrawing.Draw(list, start + new Vector2(0, (valueSize.Y - labelSize.Y) / 2),
+                ImGui.GetColorU32(GratisTheme.Secondary), label);
+        }
+        if (stacked) {
+            ImGui.TextWrapped(value);
+            return;
+        }
+        TextDrawing.Draw(list, start + new Vector2(width - valueSize.X, 0), ImGui.GetColorU32(GratisTheme.Primary), value);
+        ImGui.Dummy(new(width, valueSize.Y));
+    }
+
+    private static void DetailCaption(string label, string note, float s) {
+        var start = ImGui.GetCursorScreenPos();
+        var width = ImGui.GetContentRegionAvail().X;
+        var list = ImGui.GetWindowDrawList();
+        var noteWidth = TextDrawing.Measure(note).X;
+        TextDrawing.Draw(list, start, ImGui.GetColorU32(GratisTheme.Secondary), label);
+        if (TextDrawing.Measure(label).X + noteWidth + 12 * s > width) {
+            ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
+            ImGui.TextColored(GratisTheme.Secondary with { W = .7f }, note);
+            return;
+        }
+        TextDrawing.Draw(list, start + new Vector2(width - noteWidth, 0),
+            ImGui.GetColorU32(GratisTheme.Secondary with { W = .7f }), note);
+        ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
+    }
+
     private static void DetailHeading(string title, float s) =>
         SectionHeader.Draw(title, SectionFaces.Detail, s);
 
@@ -146,7 +184,7 @@ public sealed partial class QuestLogPanel {
             RewardMetric(text.Exp, GratisTheme.Crystal, s);
         }
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-            ImGui.TextColored(GratisTheme.Secondary, "Base rewards · before scaling and bonuses");
+            DetailCaption("Base rewards", "Before scaling and bonuses", s);
         DrawRewardGroup(rewards.Items, text.Counts, false, s);
         DrawRewardGroup(rewards.Items, text.Counts, true, s);
     }

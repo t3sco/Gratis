@@ -86,7 +86,7 @@ internal static partial class QuestLogVerification {
             && QuestLogText.DescriptionIndex(reap, 255) == 3
             && QuestLogText.DescriptionIndex([1, 3, 3, 255], 3) == 2,
             "Journal paragraphs follow distinct stages, including the final sequence");
-        Require(QuestLogText.PreferTracked("Slay enemies. · 2/3", "Slay enemies.") == "Slay enemies. · 2/3"
+        Require(QuestLogText.PreferTracked("Slay enemies.", "Speak with Tonu Vanu.") == "Slay enemies."
             && QuestLogText.PreferTracked(" ", "Speak with Tonu Vanu.") == "Speak with Tonu Vanu."
             && QuestLogText.PreferTracked(null, null) == "",
             "Tracked progress wins and missing text falls back safely");

@@ -122,7 +122,8 @@ public sealed class ItemTooltipDrawing {
         var headerHeight = MathF.Max(48 * s, titleHeight + (item.Category.Length > 0 ? 22 * s : 0));
         var height = 24 * s + headerHeight + (stack.Length > 0 ? 24 * s : 0);
         foreach (var section in sections)
-            height += 40 * s + ImGui.CalcTextSize(section.Text, false, width).Y;
+            height += 40 * s + (section.Text.Length > 0 ? ImGui.CalcTextSize(section.Text, false, width).Y : 0)
+                + (section.Tags.Count > 0 ? 28 * s : 0);
         UiMotion.TooltipContent(() => {
             var p = ImGui.GetCursorScreenPos();
             var list = ImGui.GetWindowDrawList();
@@ -150,9 +151,24 @@ public sealed class ItemTooltipDrawing {
 
     private static void DrawSection(ItemTooltipSection section, string heading, float width, float s) {
         SectionHeader.Draw(heading, SectionFaces.ItemTooltip, s, width: width);
-        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
-        ImGui.TextUnformatted(section.Text);
-        ImGui.PopTextWrapPos();
+        if (section.Text.Length > 0) {
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
+            ImGui.TextUnformatted(section.Text);
+            ImGui.PopTextWrapPos();
+        }
+        if (section.Tags.Count == 0) return;
+        var list = ImGui.GetWindowDrawList();
+        var origin = ImGui.GetCursorScreenPos() + new Vector2(0, 2 * s);
+        var x = 0f;
+        var height = 0f;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
+            foreach (var tag in section.Tags) {
+                var size = Pill.Measure(tag, PillFaces.PaletteRow, s);
+                PaletteRowDrawing.Pill(list, origin + new Vector2(x, 0), tag, GratisTheme.Secondary, s);
+                x += size.X + 6 * s;
+                height = size.Y;
+            }
+        ImGui.Dummy(new(width, height + 2 * s));
     }
 
     private static Vector4 Rarity(byte rarity) => rarity switch {

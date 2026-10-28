@@ -21,6 +21,6 @@ internal static class QuestGlyphFixture {
         new(id, name, id == 69989 || id == 69994 ? (ushort)89 : (ushort)90,
             QuestBucket.Scenario, 71003, "", "", []) {
             Completed = true, ClientKnown = true, Expansion = 4, ExpansionIcon = 61879,
-            Start = "Ultima Thule", Requirements = "Disciple of War or Magic",
+            StartNpc = "Ultima Thule", Jobs = "Disciple of War or Magic",
         };
 }
