@@ -61,6 +61,7 @@ public sealed partial class ContextMenu {
 
     private static bool ImGuiShift() => ImGui.GetIO().KeyShift;
     public void Copy(string text) {
+        text = text.Replace('\t', ' ');
         ImGui.SetClipboardText(text);
         Notify("Copied " + text);
     }

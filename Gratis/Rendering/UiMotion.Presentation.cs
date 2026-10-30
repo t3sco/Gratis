@@ -156,7 +156,10 @@ public static partial class UiMotion {
             Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0)) {
             DrawPopupEdge(s);
             PopupDiagnostics.Capture(open ? "tooltip" : "tooltip-exit", GratisTheme.Radius.Popup * s);
-            if (tooltipMeta != null || tooltipRows != null)
+            var split = tooltipMeta == null && tooltipRows == null ? tooltip.IndexOf('\n') : -1;
+            if (split > 0)
+                HintCard.Draw(tooltip[..split], tooltip[(split + 1)..], null, tooltipWrap, s);
+            else if (tooltipMeta != null || tooltipRows != null)
                 HintCard.Draw(tooltip, tooltipMeta, tooltipRows, tooltipWrap, s);
             else {
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + tooltipWrap);
