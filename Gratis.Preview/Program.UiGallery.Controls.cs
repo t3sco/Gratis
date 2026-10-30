@@ -40,7 +40,7 @@ internal static partial class Program {
 
     private static IEnumerable<GalleryRow> CaptureGalleryControls(bool classic, string directory) {
         Directory.CreateDirectory(directory);
-        var config = new SystemConfig { AcceptedSpoilerWarning = true, VisualStyle = classic ? 1 : 0,
+        var config = new SystemConfig { AcceptedSpoilerWarning = true, ChromeIdleDelay = 2.1f, VisualStyle = classic ? 1 : 0,
             WindowSize = new(280, 200), InterfaceAnimations = InterfaceAnimationMode.Full };
         using var driver = new ScriptedFrameDriver(config, new FrameScript { Width = 320, Height = 240 });
         driver.BenchmarkMapVisible = false;

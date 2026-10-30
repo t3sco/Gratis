@@ -10,6 +10,7 @@ public sealed class SubZoneBanner {
     public string Zone { get; private set; } = "";
     public string Text { get; private set; } = "";
     public float Opacity { get; private set; }
+    private const double Hold = 1.8;
     private double began = double.NegativeInfinity, lastTime = double.NaN;
     public void Update(MapDrawingConfig config, SubZoneLocation? location, double now) {
         if (!double.IsFinite(now))
@@ -39,9 +40,9 @@ public sealed class SubZoneBanner {
         var speed = Math.Clamp(float.IsFinite(config.AnimationSpeed) ? config.AnimationSpeed : 1, .5f, 1.5f);
         var duration = InterfaceMotionTokens.Standard / speed;
         var instant = config.ReduceMotion || config.EffectiveInterfaceMotion != InterfaceAnimationMode.Full;
-        Opacity = Text.Length == 0 || age >= 1.8 ? 0 : instant ? 1
+        Opacity = Text.Length == 0 || age >= Hold ? 0 : instant ? 1
             : InterfaceMotionTokens.Ease((float)Math.Clamp(age / duration, 0, 1), InterfaceCurve.Enter)
-                * (1 - InterfaceMotionTokens.Ease((float)Math.Clamp((age - (1.8 - duration)) / duration, 0, 1),
+                * (1 - InterfaceMotionTokens.Ease((float)Math.Clamp((age - (Hold - duration)) / duration, 0, 1),
                     InterfaceCurve.Exit));
 
     }

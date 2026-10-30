@@ -51,7 +51,7 @@ internal static class ChromeVerification {
         config.AutoHideChrome = false;
         config.PinChrome = true;
         config.ResetChromeVisibility();
-        Require(config.AutoHideChrome && !config.PinChrome && config.ChromeIdleDelay == 2.1f
+        Require(config.AutoHideChrome && !config.PinChrome && config.ChromeIdleDelay == 0
             && config.ChromeFadeDurationMs == 403 && config.ChromeTitleMinAlpha == .73f
             && config.ChromeControlsMinAlpha == 0,
             "Chrome reset");

@@ -64,7 +64,7 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public bool SegmentedToolbar = true;
     public float IconSize = 16;
     public bool AutoHideChrome = true;
-    public float ChromeIdleDelay = 2.1f;
+    public float ChromeIdleDelay = 0;
     public float ChromeFadeDurationMs = 403;
     public float ChromeTitleMinAlpha = .73f;
     public float ChromeControlsMinAlpha = 0;

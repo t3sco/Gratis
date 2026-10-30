@@ -15,7 +15,6 @@ public static class SubZoneBannerDrawing {
             return;
         var context = MapDrawContext.Current;
         var s = GratisTheme.ChromeScale;
-        using var alpha = new ChromeVisibility.AlphaScope(true, banner.Opacity);
         using var font = context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var (min, max) = ChromeLayout.SafeBounds();
         var width = MathF.Max(1, max.X - min.X - 48 * s);
@@ -33,7 +32,7 @@ public static class SubZoneBannerDrawing {
             return;
         var pos = ChromeLayout.Position(bounds);
         var list = ImGui.GetWindowDrawList();
-        using var motion = new UiMotion.VisualScope(list, pos, 1,
+        using var motion = new UiMotion.VisualScope(list, pos, banner.Opacity,
             UiMotion.Full ? new Vector2(0, (1 - banner.Opacity) * 6 * s) : Vector2.Zero);
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s);
         GratisIcons.Draw(list, pos + new Vector2(18 * s, size.Y / 2), GratisIcons.Compass, GratisTheme.WarmAccent,

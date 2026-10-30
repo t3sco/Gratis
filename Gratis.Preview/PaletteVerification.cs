@@ -13,7 +13,7 @@ internal static class PaletteVerification {
     }
 
     public static SystemConfig Config() => new() {
-        AcceptedSpoilerWarning = true, FadeMode = 0, WindowPosition = new(32), WindowSize = new(700, 600),
+        AcceptedSpoilerWarning = true, FadeMode = 0, ChromeIdleDelay = 2.1f, WindowPosition = new(32), WindowSize = new(700, 600),
         FollowPlayer = false, ClampToMap = false, ScaleWithFrame = false, PaletteHintSeen = true,
         ReduceMotion = true, AutoHideChrome = true, GlassEnabled = true,
     };
