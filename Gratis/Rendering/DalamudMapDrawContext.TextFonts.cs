@@ -16,6 +16,10 @@ internal sealed partial class DalamudMapDrawContext {
 
     private int defaultFallbacks;
 
+    private bool textSnap;
+
+    private int textOversample = 1;
+
     private sealed class Font(IFontHandle handle) : IDrawFont {
         public IDisposable Push() => handle.Push();
     }
@@ -112,22 +116,26 @@ internal sealed partial class DalamudMapDrawContext {
 
     private IFontHandle CreateTextFont(int pixels) {
         const string filename = "Geist-Regular.ttf";
+        var snap = Config.TextPixelSnap;
+        var oversample = Math.Clamp(Config.TextOversampleH, 1, 2);
+        textSnap = snap;
+        textOversample = oversample;
         return Service.PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(toolkit => {
             using var stream = typeof(DalamudMapDrawContext).Assembly.GetManifestResourceStream(
                 $"Gratis.Assets.Fonts.{filename}")
                 ?? throw new global::System.IO.FileNotFoundException(filename);
             toolkit.Font = toolkit.AddFontFromStream(stream, new SafeFontConfig {
                 SizePx = pixels,
-                OversampleH = 1,
+                OversampleH = oversample,
                 OversampleV = 1,
-                PixelSnapH = true,
+                PixelSnapH = snap,
                 GlyphRanges = FontAtlasBudget.TextRanges
             }, false, filename);
             toolkit.AddDalamudAssetFont(global::Dalamud.DalamudAsset.NotoSansCjkMedium, new SafeFontConfig {
                 SizePx = pixels,
-                OversampleH = 1,
+                OversampleH = oversample,
                 OversampleV = 1,
-                PixelSnapH = true,
+                PixelSnapH = snap,
                 MergeFont = toolkit.Font,
                 GlyphRanges = FontAtlasBudget.FallbackRanges,
             });
@@ -150,7 +158,7 @@ internal sealed partial class DalamudMapDrawContext {
             + $"textArea={geistBudget.EstimatedArea} iconArea={iconArea} "
             + $"budgetWarning={geistBudget.Denied > 0 || totalArea > FontAtlasBudget.MaximumArea / 2} "
             + $"denied={geistBudget.Denied} iconLegacyDenied={fontBudget.Denied} "
-            + $"defaultFallbacks={defaultFallbacks} oversample=1x1 neverEvict=true");
+            + $"defaultFallbacks={defaultFallbacks} oversample={textOversample}x1 pixelSnapH={textSnap} neverEvict=true");
         foreach (var pair in titleFonts) {
             textDrawFonts.TryGetValue(pair.Value, out var font);
             var ranges = pair.Key.Choice == 1 ? "legacy" : pair.Key.Choice is >= 2 and <= 5 ? "game-bitmap"

@@ -408,6 +408,10 @@ public sealed partial class SettingsLayout {
         Add("WindowSize", "Window size", 200, 4096, "%.0f px");
         Group("Advanced", "Diagnostics");
         Add("DebugMode", "Debug marker details", tip: "Shows marker IDs on hover. Not saved.");
+        Add("TextPixelSnap", "Snap text glyphs to pixels", when: c => c.IsGratis,
+            tip: "Off spaces letters by their true widths. Applies after reloading the plugin.");
+        Add("TextOversampleH", "Text horizontal oversample", 1, 2, "%.0f", when: c => c.IsGratis,
+            tip: "2 smooths small text but uses twice the font atlas area. Applies after reloading the plugin.");
         return entries.OrderBy(GroupRank).ToArray();
     }
 

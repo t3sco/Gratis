@@ -217,6 +217,8 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public PlayerArrowDirection ArrowPoints = PlayerArrowDirection.Character;
     [JsonIgnore]
     public bool DebugMode = false;
+    public bool TextPixelSnap = false;
+    public int TextOversampleH = 1;
 
     protected static Vector4 ColorVector(KnownColor color) {
         var value = Color.FromKnownColor(color);
