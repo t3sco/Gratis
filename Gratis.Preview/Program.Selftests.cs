@@ -27,6 +27,7 @@ internal static partial class Program {
         ("chrome-three", ChromeThreeVerification.State),
         ("frames-bottom-cards", ChromeThreeVerification.BottomRow),
         ("frames-location-menu", LocationMenuVerification.Run),
+        ("frames-location-fit", LocationMenuVerification.Fit),
         ("quest-log-model", QuestLogVerification.Model),
         ("performance-caches", PerformanceCacheVerification.Run),
         ("frames-quest-log", QuestLogVerification.Frames),

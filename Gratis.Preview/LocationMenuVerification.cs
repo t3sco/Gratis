@@ -132,6 +132,21 @@ internal static class LocationMenuVerification {
         Console.WriteLine("Location menu: card, zone search, map actions, parents, Escape, input, chrome, Classic and six anchors verified.");
     }
 
+    public static void Fit() {
+        foreach (var (title, width, height) in new[] {
+            ("Thanalan - Ul'dah - Steps of Nald", 334, 188), ("Thanalan - Ul'dah - Steps of Nald", 402, 186),
+            ("Living Memory - Meso Terminal", 402, 186), ("Mor Dhona - Rhalgr's Reach", 402, 186),
+            ("Living Memory - Meso Terminal", 820, 660) }) {
+            using var driver = new ScriptedFrameDriver(Config(new(width, height)),
+                new() { Width = Math.Max(480, width + 48), Height = Math.Max(320, height + 48), Palette = true, Title = title });
+            for (var i = 0; i < 6; i++)
+                driver.Step(new(.04 * (i + 1), Mouse: new(-1000)));
+            Require(BottomCardsDrawing.LocationPrimary.Length > 0, $"Location card has text for {title}");
+            Require(!BottomCardsDrawing.LocationTruncated,
+                $"Location card does not truncate '{BottomCardsDrawing.LocationPrimary}' in {width}x{height}");
+        }
+    }
+
     internal sealed class Source(ScriptedFrameDriver driver) : ILocationMenuSource, IPaletteSource {
         public int ParentCalls { get; private set; }
         public IPaletteSource Places => this;

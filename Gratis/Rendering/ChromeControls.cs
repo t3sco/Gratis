@@ -124,7 +124,8 @@ public static partial class ChromeControls {
     }
 
     public static string FitLabel(string text, float width) {
-        if (ImGui.CalcTextSize(text).X <= width)
+        // Half a pixel of tolerance: callers size boxes to the measured text, so equality is the common case.
+        if (ImGui.CalcTextSize(text).X <= width + .5f)
             return text;
         const string ellipsis = "\u2026";
         if (ImGui.CalcTextSize(ellipsis).X > width)

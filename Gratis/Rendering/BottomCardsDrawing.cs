@@ -51,6 +51,7 @@ public static class BottomCardsDrawing {
     public static string LocationRegion { get; private set; } = "";
     public static string LocationPrimary { get; private set; } = "";
     public static string LocationSecondary { get; private set; } = "";
+    public static bool LocationTruncated { get; private set; }
     public static float DigitAdvance { get; private set; }
     public static void Prepare(string title, SubZoneLocation? sub = null, MapLocation? place = null) {
 #if GRATIS_PREVIEW
@@ -92,7 +93,7 @@ public static class BottomCardsDrawing {
         using (current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = MathF.Max(titleWidth, MathF.Max(ImGui.CalcTextSize(LocationSecondary).X,
                 ImGui.CalcTextSize(LocationRegion).X));
-        titleWidth = Math.Clamp(titleWidth + 24 * s, 96 * s, 280 * s);
+        titleWidth = Math.Clamp(MathF.Ceiling(titleWidth) + 26 * s, 96 * s, 360 * s);
         var coordWidth = requestedCoordinates;
         if (showLocation && requestedCoordinates > 0 && c.LocationAnchor == c.CoordinateAnchor) {
             var pairedTitleWidth = MathF.Min(titleWidth, available - coordWidth - GratisTheme.Gap * s);
@@ -135,10 +136,13 @@ public static class BottomCardsDrawing {
             list.AddText(pos + new Vector2(12, threeLines ? 20 : 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
                 secondaryLabel.Fit(LocationSecondary, size.X - 24 * s));
         }
-        using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
+        using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
+            var fitted = primaryLabel.Fit(LocationPrimary, size.X - 24 * s);
+            LocationTruncated = fitted != LocationPrimary;
             list.AddText(pos + new Vector2(12 * s,
                 threeLines ? 35 * s : LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2),
-                ImGui.GetColorU32(GratisTheme.Primary), primaryLabel.Fit(LocationPrimary, size.X - 24 * s));
+                ImGui.GetColorU32(GratisTheme.Primary), fitted);
+        }
         ImGui.SetCursorScreenPos(pos);
         if (c.Config.IsGratis)
             LocationMenuDrawing.Draw(locationBounds, LocationPrimary, LocationRegion, LocationSecondary);
