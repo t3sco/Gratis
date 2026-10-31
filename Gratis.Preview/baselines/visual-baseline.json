@@ -514,7 +514,7 @@
       "Scene": "settings-appearance",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "361339E42CEFFCC1CA509CA1F69C27827C4906472F278CF1E53E07A86E5A32B0"
+      "Sha256": "3E7B3D25F1DDCC303700BF04A2575C937974739060FB708075F71E5F27C915ED"
     },
     {
       "Name": "settings-appearance-classic",
@@ -524,7 +524,7 @@
         "classic"
       ],
       "Size": "1000x800",
-      "Sha256": "822B58EBA0D68EA3F94E2500AD502420DA7C1C345F16411C8C25876852EE49C1"
+      "Sha256": "A66DD51684E01C1960C0B9077587448837267C201E22A992E1B2E5687C3BE205"
     },
     {
       "Name": "settings-map",
@@ -661,6 +661,13 @@
       ],
       "Size": "1000x800",
       "Sha256": "9086B1E7D4FB5D3F88E436907EF0C8F4FA4AA9A88BE95344F1C97FCD61DC16F7"
+    },
+    {
+      "Name": "profiles",
+      "Scene": "profiles",
+      "Args": [],
+      "Size": "1000x800",
+      "Sha256": "2377E4A06AD814669A8236D7518A99FBFBF5D7A403EDED382759AF69E813D2C2"
     },
     {
       "Name": "ui-gallery",

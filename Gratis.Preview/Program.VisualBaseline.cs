@@ -48,6 +48,7 @@ internal static partial class Program {
             Add(scene, "1000x800");
             Add(scene, "1000x800", "--style", "classic");
         }
+        Add("profiles", "1000x800");
         Add("ui-gallery", "1800x1");
         Add("ui-gallery-classic", "1800x1");
         return cases.ToArray();

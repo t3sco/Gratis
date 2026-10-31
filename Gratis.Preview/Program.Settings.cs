@@ -31,6 +31,8 @@ internal static partial class Program {
             Marshal.Copy(pixels, atlas, 0, atlas.Length);
             io.Fonts.SetTexID(textures.Add(width, height, atlas));
             var config = new SystemConfig { VisualStyle = options.Style ?? (options.Scene == "settings-classic" ? 1 : 0) };
+            if (options.Scene == "profiles")
+                config = ProfilesSceneConfig();
             if (options.Scene == "window-presets")
                 config = WindowPresetVerification.SceneConfig();
             var layout = new SettingsLayout {
@@ -48,6 +50,7 @@ internal static partial class Program {
                 },
                 Search = options.Scene switch {
                     "window-presets" => "window presets",
+                    "profiles" => "settings profiles",
                     "tweaks-page-search" => "map",
                     "settings-search" => "zoom",
                     "settings-quest-journal" => "Journal replacement",

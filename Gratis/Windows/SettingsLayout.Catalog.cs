@@ -30,6 +30,11 @@ public sealed partial class SettingsLayout {
         Add("PvpMapOnly", "PvP: show only what the game map shows", when: _ => false,
             tip: "Always on. In PvP the map shows only what the game map shows: your party and alliance, not enemies or nearby players. The game's own map still works.");
 
+        Group("Appearance", "Profiles");
+        Add("Profiles", "Settings profiles",
+            tip: "Save up to five named sets of your settings, switch between them, or copy one as text to share. "
+                + "Window position, filters and pins are not included. Applying a profile can be undone once.");
+
         Group("Appearance", "Style");
         Add("VisualStyle", "Visual style", choices: "Gratis|Classic");
         Add("MapCircle", "Circular map");
@@ -423,7 +428,7 @@ public sealed partial class SettingsLayout {
     }
 
     private static readonly string[] GroupPriority = [
-        "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
+        "Appearance/Profiles", "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
         "Appearance/Glass surfaces", "Appearance/Edge feather", "Appearance/Conic ring",
         "Map/Viewport", "Map/Zoom", "Map/Map labels and fog", "Map/Zone changes", "Map/On open", "Map/Place search",
         "Map/Travel", "Map/Map links", "Map/Window", "Map/Spotlight", "Map/Edge pointers", "Map/Measure",

@@ -48,6 +48,10 @@ public sealed class SettingsEntry {
         }).ToArray();
     }
 
+    public float Minimum => minimum;
+    public float Maximum => maximum;
+    public int ChoiceCount => choices?.Length ?? 0;
+
     public bool Matches(string search) => string.IsNullOrWhiteSpace(search)
         || search.Split(' ', StringSplitOptions.RemoveEmptyEntries).All(word =>
             Label.Contains(word, StringComparison.OrdinalIgnoreCase)
@@ -79,6 +83,8 @@ public sealed class SettingsEntry {
     }
 
     public void Reset(SystemConfig config, SystemConfig defaults) {
+        if (Path == "Profiles")
+            return;
         Set(config, Value(defaults));
         if (Path == "ToolbarAnchor")
             config.ToolbarAnchorExplicit = defaults.ToolbarAnchorExplicit;
@@ -91,6 +97,8 @@ public sealed class SettingsEntry {
     public bool Draw(SystemConfig config) {
         if (Path == "WindowPresets")
             return SettingsWindowPresets.Draw(config);
+        if (Path == "Profiles")
+            return SettingsProfilesDrawing.Draw(config);
         if (Path == "ActiveLens")
             return Rendering.LensDrawing.DrawSelector(config);
         if (Path == "CustomLenses")

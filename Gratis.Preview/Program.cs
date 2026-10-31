@@ -79,7 +79,7 @@ internal static partial class Program {
 
     private static bool TrySpecialScene(string[] args) => TryGalleryScene(args) || TryLibraryStateScene(args)
         || TryViewportCoverScene(args) || TryAutoFitScene(args)
-        || TryWindowPresetsScene(args)
+        || TryWindowPresetsScene(args) || TryProfilesScene(args)
         || TryArrowSmoothingScene(args) || TryCameraScene(args) || TrySmallInstanceScene(args)
         || TryChromeLayoutScene(args) || TryMeasureScene(args) || TryNearestScene(args) || TryEdgePointerScene(args)
         || TryDiff(args) || TryLiveScene(args) || TryFrameScript(args) || TryMoveHandleScene(args)
