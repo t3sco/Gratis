@@ -41,6 +41,10 @@ public sealed class GratisPlugin : IDalamudPlugin {
         System.WindowManager = new WindowManager(Service.PluginInterface);
         System.WindowManager.AddWindow(System.ConfigWindow, WindowFlags.IsConfigWindow | WindowFlags.RequireLoggedIn);
         System.WindowManager.AddWindow(System.MapWindow, WindowFlags.RequireLoggedIn);
+        System.WindowManager.AddWindow(new WhatsNewWindow());
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/whatsnew", Delegate = _ => System.WindowManager.GetWindow<WhatsNewWindow>()?.ShowNow(),
+        });
 
         screenshotCapture = new Gratis.Classes.ScreenshotCapture();
         glassDiagnosticCommand = new Gratis.Classes.GlassDiagnosticCommand();
