@@ -173,6 +173,8 @@ public sealed partial class SettingsLayout {
         Add("SpotlightIncludePlayer", "Fit you and the target");
         Add("SpotlightDistanceChip", "Show distance");
         Add("SpotlightGuideLine", "Dotted line to target", tip: "A straight line, not a route.");
+        Add("SpotlightHideOthers", "Hide other icons at first",
+            tip: "Other map icons almost vanish for the first two seconds so the target stands out.");
         Group("Map", "Measure", Gratis);
         Add("MeasureTool", "Ctrl-drag ruler",
             tip: "Hold Ctrl and drag to measure distance in yalms. Esc clears it, right-click "

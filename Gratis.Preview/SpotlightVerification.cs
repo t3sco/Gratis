@@ -107,8 +107,8 @@ internal static class SpotlightVerification {
             var filtered = driver.Step(new(.74));
             Require(filtered.QuestsDrawn > 0 && MarkerVisual.Alpha(driver.Markers[0]) == 1,
                 "Spotlight target stays fully visible through lens filters");
-            Require(MathF.Abs(driver.Renderer.Spotlight.MarkerAlpha(driver.Markers[1]) - .4f) < .001f,
-                "Ambient markers dim to forty percent");
+            Require(MathF.Abs(driver.Renderer.Spotlight.MarkerAlpha(driver.Markers[1]) - .06f) < .001f,
+                "Ambient markers almost vanish at the start of a spotlight");
             Require(MathF.Abs(driver.Renderer.Spotlight.MarkerBreath(driver.Markers[0]) - 1) > .001f,
                 "Target icon breathes with the pulse");
             driver.Step(new(.8, Mouse: new Vector2(350, 240)));

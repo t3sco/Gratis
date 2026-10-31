@@ -31,6 +31,7 @@ public sealed partial class Spotlight {
     public bool Pulse { get; private set; }
     public bool DistanceChip { get; private set; }
     public bool GuideLine { get; private set; }
+    public bool HideOthers { get; private set; }
     public float Distance { get; private set; }
     private float savedScale, savedExtent, zoomVelocity, seconds, endOpacity;
     private Vector2 savedOffset, panVelocity;
@@ -63,6 +64,7 @@ public sealed partial class Spotlight {
         Pulse = options.Pulse ?? config.SpotlightPulse;
         DistanceChip = options.DistanceChip ?? config.SpotlightDistanceChip;
         GuideLine = options.GuideLine ?? config.SpotlightGuideLine;
+        HideOthers = config.SpotlightHideOthers;
         IncludePlayer = request.IncludePlayer ?? config.SpotlightIncludePlayer;
         Remaining = seconds;
         Decision = IncludePlayer ? "frame player + target" : "frame target (other map/player excluded)";

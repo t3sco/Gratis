@@ -25,6 +25,7 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public bool SpotlightIncludePlayer = true;
     public bool SpotlightDistanceChip = true;
     public bool SpotlightGuideLine = true;
+    public bool SpotlightHideOthers = true;
 
     public void ResetViewport() => ScaleWithFrame = ClampToMap = FitSmallRoomsToContent = true;
 
