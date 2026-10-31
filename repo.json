@@ -3,7 +3,7 @@
     "Author": "t3sco (based on Mappy by MidoriKami, harbingerftw)",
     "Name": "Gratis",
     "InternalName": "Gratis",
-    "AssemblyVersion": "0.1.0.5",
+    "AssemblyVersion": "0.1.0.6",
     "Description": "Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.",
     "Punchline": "A flat, minimal, quality-of-life-packed map.",
     "ApplicableVersion": "any",
@@ -17,13 +17,13 @@
     "DalamudApiLevel": 15,
     "LoadPriority": 0,
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
-    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
-    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
-    "IconUrl": "https://raw.githubusercontent.com/t3sco/Gratis/master/docs/images/icon.png",
+    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.6/Gratis.zip",
+    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.6/Gratis.zip",
+    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.6/Gratis.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793419695,
-    "Changelog": "Settings profiles: save up to five, share as text, revert to defaults. First-install Quick setup (look, marker icons, behaviours). Aetheryte and aethernet clicks open the travel card. Quest highlight hides other icons for two seconds; completed quests are green. Location card, tooltips and zone list fixes. Vanilla+ defaults. FATE progress still to come."
+    "LastUpdate": 1793467858,
+    "IconUrl": "https://raw.githubusercontent.com/t3sco/Gratis/master/docs/images/icon.png",
+    "Changelog": "Everything where you'd look for it: an Essentials settings tab with sub-tabs, Show advanced and one-click presets; a Changelog tab and a What's new window after updates; Quick setup looks that recolour the map; a tidier Quest Log whose Show on map leads somewhere reachable; an up-one-level button on the location card; Nearby and expansion cards with game art; calmer tooltips and scrollbars; easier window corners. Hovering the Quest Log no longer stops your character moving."
   }
 ]
