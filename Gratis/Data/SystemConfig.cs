@@ -92,7 +92,7 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public bool ScaleTextWithZoom = false;
     public float AutoZoomScaleFactor = 0.38f;
 
-    public bool SuppressNativeMapOpenSound = true;
+    public bool SuppressNativeMapOpenSound = false;
 
 #if !GRATIS_PREVIEW
     public static SystemConfig Load() => Service.PluginInterface.LoadConfigFile<SystemConfig>("System.config.json");

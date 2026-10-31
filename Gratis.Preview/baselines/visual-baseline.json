@@ -6,7 +6,7 @@
       "Scene": "map-default",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "4385AF9D803FE352C6211F5FC64E68AD1029AF55DF0B067A4B3527408D3981E4"
+      "Sha256": "78A085A8006CFDEF7BE036DFE43568F2882489A6986E04695A61279C3C9F675A"
     },
     {
       "Name": "map-default-classic",
@@ -40,7 +40,7 @@
       "Scene": "hover-tooltip",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "B0EE527F3516080A1B18B612BE1728999BAB2AFBD19CC163F82B761DA146BE20"
+      "Sha256": "02DE8842588611FF7EBE4C8BA0045A8607950485FD6CD31440DF44AF412590A2"
     },
     {
       "Name": "hover-tooltip-classic",
@@ -57,7 +57,7 @@
       "Scene": "markers",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "09417DC14D5594C6D8714ED234D9556DA20F943CA09451A2319BD5956285DC53"
+      "Sha256": "7CA7D7635B27E1F05C92F1F0D89F2B969093A98DEAF4BCCACD965C25A69795A2"
     },
     {
       "Name": "markers-classic",
@@ -74,7 +74,7 @@
       "Scene": "toolbar",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "22BD78FC5F0088F4B1D748AA70CAF5C43E9B2862D483929189FBD3E2D074606F"
+      "Sha256": "8A2FEB3A123856DC8975B0830EA23AC8104FF65EB30EAC96C5B556FA911E3131"
     },
     {
       "Name": "toolbar-classic",
@@ -91,7 +91,7 @@
       "Scene": "glass-on",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "B0EE527F3516080A1B18B612BE1728999BAB2AFBD19CC163F82B761DA146BE20"
+      "Sha256": "02DE8842588611FF7EBE4C8BA0045A8607950485FD6CD31440DF44AF412590A2"
     },
     {
       "Name": "glass-on-classic",
@@ -108,7 +108,7 @@
       "Scene": "glass-off",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "920CB4D436D97873BE5FF794706AB3E15B1627A959F93A41093190F062374F10"
+      "Sha256": "1ED12BAA8E1799CF2DF28CE2E3099A9BB99B5F3062AD5913E1B738F5B6055165"
     },
     {
       "Name": "glass-off-classic",
@@ -125,7 +125,7 @@
       "Scene": "glass-toolbar",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "E2F27C25E9546708F6FF4230CBC146825CA503C6B35F632671479F6B4E483CF2"
+      "Sha256": "0F96B350EC0700DB79542F2A4D36D79F51669CF9BD79035947F53A416C645164"
     },
     {
       "Name": "glass-toolbar-classic",
@@ -142,7 +142,7 @@
       "Scene": "glass-card",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "F50688217ABD4490800A607B81098E63362A5F53ED2088B97FA2EDF5BE91B1C2"
+      "Sha256": "A443543E0066491C1CAF9AD800869535F25CB618789C7F3ADB5961916E2330BA"
     },
     {
       "Name": "glass-card-classic",
@@ -159,7 +159,7 @@
       "Scene": "glass-tinted",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "57623D0AC854B2AB00D8D541DD1B286FA22C93FEFEF92A65F03BBBD3D23FF6D5"
+      "Sha256": "ED6484DA7B627DCA481D1CB367EAD8E54054F746F3053554EBADF6AD068663F5"
     },
     {
       "Name": "glass-tinted-classic",
@@ -176,7 +176,7 @@
       "Scene": "glass-unavailable",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "57623D0AC854B2AB00D8D541DD1B286FA22C93FEFEF92A65F03BBBD3D23FF6D5"
+      "Sha256": "ED6484DA7B627DCA481D1CB367EAD8E54054F746F3053554EBADF6AD068663F5"
     },
     {
       "Name": "glass-unavailable-classic",
@@ -193,7 +193,7 @@
       "Scene": "glass-circle",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "0F63284A94C5ADCDC47D9F467B2A5C326D520EC4D9EE444A0099677F83729AA9"
+      "Sha256": "EAE11FDEC6F7B35C5F967E0CDFAA40041336C52BD040BB0D8DF8F4E25D63C340"
     },
     {
       "Name": "glass-circle-classic",
@@ -210,7 +210,7 @@
       "Scene": "library-toolbar",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "A0A13BB6B3B8BCA373CA82771B4C3DC367CE686C45728E7536EF1B144B7920F2"
+      "Sha256": "54E14BF3970C418BEED9ED91EE1705617D5692C9BF5AC0FBF8DC0B0E3666D51A"
     },
     {
       "Name": "library-toolbar-classic",
@@ -227,7 +227,7 @@
       "Scene": "library-toolbar-hover",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "4B82A5696ED8779DCE02D330547A28763EC6D63871C6DBAB19F26ACB7EAC5789"
+      "Sha256": "542156BD7B0350A5BA55DAE8D7EF89E3687D30084186AA509538EB294A8E97BF"
     },
     {
       "Name": "library-toolbar-hover-classic",
@@ -244,7 +244,7 @@
       "Scene": "library-bottom-cards",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "A0A13BB6B3B8BCA373CA82771B4C3DC367CE686C45728E7536EF1B144B7920F2"
+      "Sha256": "54E14BF3970C418BEED9ED91EE1705617D5692C9BF5AC0FBF8DC0B0E3666D51A"
     },
     {
       "Name": "library-bottom-cards-classic",
@@ -261,7 +261,7 @@
       "Scene": "library-move",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "28CF5FEAA0B26923CF1728F44EA7789383E3C7377DB8509026BEC87790171227"
+      "Sha256": "98E20206C232A11369C0042DBB1F4C8BA6F3D31290D29631C9606DFF299F2D53"
     },
     {
       "Name": "library-move-classic",
@@ -278,105 +278,105 @@
       "Scene": "library-location",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "ABACB6BE34CDC2356827C1BFBBC2C8D4D7A45173B98107FB6F767A7D0F352EF8"
+      "Sha256": "5D4E40BCA99CE7BD5DD51E24312CFF4999CBC85C1B7ADB5E0812E1A8A3081F5D"
     },
     {
       "Name": "library-feedback",
       "Scene": "library-feedback",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "48E0F5C66F78890F88481E8994D267940E955A30BE918344410344B8B640B35D"
+      "Sha256": "1EF1C80C6AC7747E93D17B0735DFDEFE7AEA5DA2FCC1F7F2991C00028097C24E"
     },
     {
       "Name": "library-update",
       "Scene": "library-update",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "7F3093B815DCE7A6E66F8CE83A400120DF26BB273C37B0A9478623182C62CC6A"
+      "Sha256": "5F51E4617648B9073861FD0DFD7F86BD773C804A3ECCEE47646E4021C55E8248"
     },
     {
       "Name": "library-teleport",
       "Scene": "library-teleport",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "62DFE1E7C3E451D8DDFC5110D86004939688423EF2C65A670E63B3B74468E2E6"
+      "Sha256": "3AD34AF7CE91437DE17D7B4ECB367952533140516DE8849D8908B618BD7ED856"
     },
     {
       "Name": "library-teleport-disabled",
       "Scene": "library-teleport-disabled",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "F568363918920B4CBE4A38300B0F38EFDBB561FADDE65630CACF02E50ECBEC87"
+      "Sha256": "F58B4F082477610F803C70CD491B54E0761DA1EDAD31361E3EC49E0D4A08CB6C"
     },
     {
       "Name": "library-popup",
       "Scene": "library-popup",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "C8CB312122A0D411B1F85728F1A1DCB9756D5E5CE4F879E328456E6256893B8F"
+      "Sha256": "D705C1D3AD05078A907A1D8CF27428E5A3C36466B1600015ADC40E5B3B0BA595"
     },
     {
       "Name": "library-popup-exit",
       "Scene": "library-popup-exit",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "E63AE09FBF555D028DC9B5E6D7ED1D53F6316BF0D8614F2184EF97103713028C"
+      "Sha256": "DE77BDD02CDDCF3A1AFCCF6A202A414F1ABE94ADB83F394438CC88CC76F51287"
     },
     {
       "Name": "library-location-exit",
       "Scene": "library-location-exit",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "53961CD342EC2BBAA3F7115F4B98E32AC96AC22289CE83DEB8965D38B117CF9F"
+      "Sha256": "D2C92348D20F6CCDC95D6A7A23293241F7A6B8317023897D4FDF1EDE2BB79DFC"
     },
     {
       "Name": "library-feedback-exit",
       "Scene": "library-feedback-exit",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "206A45CF2851B342552BE77CAFA74132F69A00ACFE5E81016026EC957272DBF2"
+      "Sha256": "1C8706057A9D3F16A3D1788111985EA346ED9C73C8B610FC3060F06A349E4A4D"
     },
     {
       "Name": "library-filters",
       "Scene": "library-filters",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "1BFD00346E9AAB6D6EAA9EF48D86989B685CF7DD8B8165161E067440CC491DF6"
+      "Sha256": "CEC42E9ECDB8C3F83C1791ACB4AC13C2A9C84A0052FD611A38435082DD200850"
     },
     {
       "Name": "library-filters-quiet",
       "Scene": "library-filters-quiet",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "AF7CAF8D84717BD43B31056C173F949A3FFCC5BBB3E42F7790BA812E05F1C26E"
+      "Sha256": "38D5DB1B95112198DD6FC314F7063839FC3B6E9E316907B52E629BED5828F722"
     },
     {
       "Name": "library-filters-hidden",
       "Scene": "library-filters-hidden",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "A16574AF413B0D86154A87B1D4FFE04CFF451849CD22FF8CCA4328A4BF4EEDAE"
+      "Sha256": "7770CF0451DEB7EDEF18A713A355F09CD53897738CF22FA7E2BCDD37B9775A77"
     },
     {
       "Name": "library-filters-solo",
       "Scene": "library-filters-solo",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "C313520CB64AEC35FDECB4D063FA74C7C1894372321BA76F3676FAAD1526EE63"
+      "Sha256": "78C6A5FEC54B3D7CDCCE2B6A4B3DBEEBF44D8862465E2D097332D2944185A9F0"
     },
     {
       "Name": "library-filters-loud",
       "Scene": "library-filters-loud",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "012616CAF93DB7040F2393669008E250A62D22AB14DD0746BB0D0615E6AF920C"
+      "Sha256": "D3802D8CCF0CF0D05A24CF1A02DEF51ACD82136425D2165AF6D19FE074B54173"
     },
     {
       "Name": "library-ghost",
       "Scene": "library-ghost",
       "Args": [],
       "Size": "960x740",
-      "Sha256": "21C2A4CCEF771DFE0F3ED568FCC3079CCD9BCF3A505D29A4A6D9685DD29F2D1E"
+      "Sha256": "37EB26F710B36F4B9CA40EC3F8D40B795777750B5F7C0F475679392596F32376"
     },
     {
       "Name": "palette-home",
@@ -385,7 +385,7 @@
         "--settle"
       ],
       "Size": "960x800",
-      "Sha256": "2A7CF8D58EDA25E48CEDB97A4D105B973D83C3293C4742AA2666E098372FD75A"
+      "Sha256": "DB7F9AC18023DEF71712B288AE6A0CD53C0B9E2502143618CD034F0386730EB6"
     },
     {
       "Name": "palette-query-limsa",
@@ -394,7 +394,7 @@
         "--settle"
       ],
       "Size": "960x800",
-      "Sha256": "0C5DCB93FAFA5AC8FDBF450AD941587659C14717FD446717418224B0CCFBD4A7"
+      "Sha256": "2226E8CC242CA755FD212CD9C55E3F60D07BB028134ED210E14ED47608CC3961"
     },
     {
       "Name": "palette-quests",
@@ -403,7 +403,7 @@
         "--settle"
       ],
       "Size": "960x800",
-      "Sha256": "60EEF97CD365B44AE801CA49690749308625FF83A1117B3DC14A8112B04FA975"
+      "Sha256": "61E658ABE53D0034867BCC0F9451EF3CCDE71208BF0A01BCB752A446F406D92B"
     },
     {
       "Name": "palette-empty",
@@ -412,42 +412,42 @@
         "--settle"
       ],
       "Size": "960x800",
-      "Sha256": "3BA9C1C8156CE421ABE5F066D10D859C638FEC7AF4E1FA8530D1075D04B15883"
+      "Sha256": "AB3368429F4B92A288162CDBA941302D2A2EFCD3EC3866BDA068B29EF7431CFA"
     },
     {
       "Name": "context-menu-map",
       "Scene": "context-menu-map",
       "Args": [],
       "Size": "960x800",
-      "Sha256": "019B23063791454A148839F91050D3192CCE1CB4FDB792C242133FA45E151C9B"
+      "Sha256": "9290E429FA6550986FFA0D8C312AFD2682CC27C082DC4ADAB9AE4AACDB101668"
     },
     {
       "Name": "pin-editor",
       "Scene": "pin-editor",
       "Args": [],
       "Size": "960x800",
-      "Sha256": "3DFC4F83D44C15CE360DB3CE6BCC965155B78D167E8AF76A7068195A4AAFF450"
+      "Sha256": "CFEFEAFD6E397F190750D17AB4C1CA3BC04FDD6C0B68485838800CE310011680"
     },
     {
       "Name": "quest-log",
       "Scene": "quest-log",
       "Args": [],
       "Size": "1100x700",
-      "Sha256": "B591B2C7AFC604DB1070A2AE06FFB4318F7EA1B75ADD8048224AB3C9ED5D778C"
+      "Sha256": "038904F214DB8B9AE00ED085F7FF59F68CCDEE85F327015B0923522AAF304427"
     },
     {
       "Name": "quest-log-detail",
       "Scene": "quest-log-detail",
       "Args": [],
       "Size": "1100x700",
-      "Sha256": "6D3643C49E63727C26226418874175BF5C90B072CAED340BEC6E66D3CA0E536C"
+      "Sha256": "2637F09CB462FA17D42B9FFDCD36CFACEE025E29E3F4432B1789655D4714ED49"
     },
     {
       "Name": "quest-log-search",
       "Scene": "quest-log-search",
       "Args": [],
       "Size": "1100x700",
-      "Sha256": "E9B9FFB9C0DE13500D0DA124E13A38021D782C39CB5792ADA0242994E23117EF"
+      "Sha256": "578C846A2594B54EE24AC4B362B35937F35A6DC45E6F078AFC2921DE71E3849D"
     },
     {
       "Name": "quest-log-completed",
@@ -457,7 +457,7 @@
         "completed"
       ],
       "Size": "1100x700",
-      "Sha256": "BA93A4CEDDC7E8146D6BC3F4016CE029814742B6E30D903EC8A79BD0696200F3"
+      "Sha256": "E7DEB0534DE8E87B8ACD56C09B988E7CC41ED0E2EA766DA3000538C56CC3C7C4"
     },
     {
       "Name": "quest-log-available",
@@ -467,7 +467,7 @@
         "available"
       ],
       "Size": "1100x700",
-      "Sha256": "87413580BC8123A4137FE6EF0CD547D16099644E0741B3814164B43467571CA2"
+      "Sha256": "4513A5DED7C5446BE8260F5090F068072C3E5EDA3B767B05272E452FB4D618A0"
     },
     {
       "Name": "quest-log-available-empty",
@@ -477,7 +477,7 @@
         "available-empty"
       ],
       "Size": "1100x700",
-      "Sha256": "D53A77A7556CE5B0FC0433B702EC66E0E2F36CF8CC1BB3791FC8748EBB759B47"
+      "Sha256": "BD15680423D62F753BEDA83E1757F40EBD36EEE9B8D0C7A9D6A5D4FA0EE9CF61"
     },
     {
       "Name": "quest-log-detail-tooltip",
@@ -487,7 +487,7 @@
         "tooltip"
       ],
       "Size": "1100x700",
-      "Sha256": "9C46637DC9CF26EE2F4DA1483ADFE73124CDDA8E188A6C9A9860616158741DBF"
+      "Sha256": "D9EF0828A11F4A4F94A4F59D453273897EF86196A762C8D621BBBA92347580A8"
     },
     {
       "Name": "quest-log-detail-menu",
@@ -497,7 +497,7 @@
         "menu"
       ],
       "Size": "1100x700",
-      "Sha256": "20862BC4257914CFD1FF614D1CDC84C82A60A1BEA7BCBCBEF9F98C5BA5E2B44A"
+      "Sha256": "93AF05870C8C8C46E1EB83D4D2CCBFE1754A43176E84047F8B8A577D35450C7B"
     },
     {
       "Name": "quest-log-detail-completed",
@@ -507,14 +507,14 @@
         "completed"
       ],
       "Size": "1100x700",
-      "Sha256": "24C97336865C6ABD12B5FFD9CF181A35393FCF6ECF83E40A153623ECDB9EE223"
+      "Sha256": "725AD5F5911D5F88C95123AB6E11146C262EA165745C18B367C377FE21B85052"
     },
     {
       "Name": "settings-appearance",
       "Scene": "settings-appearance",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "3E7B3D25F1DDCC303700BF04A2575C937974739060FB708075F71E5F27C915ED"
+      "Sha256": "E6D2E01BAEC82644DFCD3846AF788CC41DC344D33D9A7D8EAF8F615529BE90E6"
     },
     {
       "Name": "settings-appearance-classic",
@@ -599,7 +599,7 @@
       "Scene": "settings-advanced",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "A5B49BF582FB034C737BD43E06FE370E58641400438BC58D8F69FE300EB053F0"
+      "Sha256": "FD6655882C9F7F7577E521096BE5ED7F561716BD6A45000C0B5374A6A89802DF"
     },
     {
       "Name": "settings-advanced-classic",
@@ -609,7 +609,7 @@
         "classic"
       ],
       "Size": "1000x800",
-      "Sha256": "769152B5B5EDA59571C6CD0C0F8A3C1C40950EBB79994824F7586AE4014549EA"
+      "Sha256": "D984C681C614FF803CC0972455BC64624248BD0ADBF16DB05725C88A4610B510"
     },
     {
       "Name": "settings-filters",
@@ -674,7 +674,7 @@
       "Scene": "ui-gallery",
       "Args": [],
       "Size": "1800x10695",
-      "Sha256": "E0DB7E6B714043C95BAA0B8F190DF9B922AF4DB133BF4C2A3C4739C1565CA814"
+      "Sha256": "53E897D0A3E923384CC67F09687C078CA82ACF7C70C4057136ED69F5E621A411"
     },
     {
       "Name": "ui-gallery-classic",

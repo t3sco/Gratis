@@ -103,7 +103,7 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public bool NeutralFrame = true;
     public FramePreset FramePreset = FramePreset.Hairline;
     public void ResetFramePreset() => FramePreset = global::Gratis.Rendering.FramePreset.Hairline;
-    public float FlatCornerRadius = 48;
+    public float FlatCornerRadius = 12;
     public bool CompactTitle = true;
     public bool StyledCoordinates = true;
     public int FrameFont = 0;
