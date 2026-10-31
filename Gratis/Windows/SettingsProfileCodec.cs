@@ -32,7 +32,7 @@ public static class ProfileCodec {
         var defaults = new SystemConfig();
         return SettingsLayout.Entries.Where(e => !Excluded.Contains(e.Path) && !e.Path.StartsWith("Filters.", StringComparison.Ordinal)).GroupBy(e => e.Path)
             .Select(g => g.First()).Where(e => e.Value(defaults) is bool or int or float or string or Enum or Vector2
-                or Vector4).ToArray();
+                or Vector3 or Vector4).ToArray();
     }
 
     public static Dictionary<string, JsonElement> Capture(SystemConfig config) {
@@ -50,6 +50,7 @@ public static class ProfileCodec {
     private static bool Finite(object value) => value switch {
         float f => float.IsFinite(f),
         Vector2 v => float.IsFinite(v.X) && float.IsFinite(v.Y),
+        Vector3 v => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z),
         Vector4 v => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z) && float.IsFinite(v.W),
         _ => true,
     };
@@ -58,6 +59,7 @@ public static class ProfileCodec {
         object plain = value switch {
             Enum e => Convert.ToInt32(e),
             Vector2 v => new[] { v.X, v.Y },
+            Vector3 v => new[] { v.X, v.Y, v.Z },
             Vector4 v => new[] { v.X, v.Y, v.Z, v.W },
             _ => value,
         };
@@ -169,6 +171,9 @@ public static class ProfileCodec {
             case Vector2 when Components(element, 2, out var pair):
                 value = new Vector2(Math.Clamp(pair[0], entry.Minimum, entry.Maximum),
                     Math.Clamp(pair[1], entry.Minimum, entry.Maximum));
+                return true;
+            case Vector3 when Components(element, 3, out var rgb):
+                value = new Vector3(Math.Clamp(rgb[0], 0, 1), Math.Clamp(rgb[1], 0, 1), Math.Clamp(rgb[2], 0, 1));
                 return true;
             case Vector4 when Components(element, 4, out var colour):
                 value = new Vector4(Math.Clamp(colour[0], 0, 1), Math.Clamp(colour[1], 0, 1),

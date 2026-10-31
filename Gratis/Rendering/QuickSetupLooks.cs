@@ -14,7 +14,9 @@ public static class QuickSetupLooks {
     public const int Vanilla = 0, Glass = 1, Classic = 2;
     // Every setting a look may change. Applying one resets these first, so looks never stack and the rest is untouched.
     private static readonly string[] Owned = ["VisualStyle", "FlatCornerRadius", "GlassEnabled", "GlassBlur",
-        "AccentColor", "FramePreset", "NeutralFrame"];
+        "AccentColor", "FramePreset", "NeutralFrame", "MapColour.Preset", "MapColour.Brightness",
+        "MapColour.Contrast", "MapColour.Saturation", "MapColour.HueShift", "MapColour.Tint", "MapColour.TintStrength",
+        "MapColour.GradientEnabled", "MapColour.Shadow", "MapColour.Mid", "MapColour.Highlight"];
     private static QuickSetupLook[]? built;
     private static SettingsEntry[]? ownedEntries;
 
@@ -35,13 +37,20 @@ public static class QuickSetupLooks {
             ["AccentColor"] = Element(new[] { accent.X, accent.Y, accent.Z, accent.W }),
             ["FramePreset"] = Element((int)FramePreset.Hairline),
             ["NeutralFrame"] = Element(true),
+            // The recolour from the author's own setup: near-black shadows, mid grey and high contrast.
+            ["MapColour.Preset"] = Element((int)MapColourPreset.Custom),
+            ["MapColour.Brightness"] = Element(-.99f),
+            ["MapColour.Contrast"] = Element(3f),
+            ["MapColour.Saturation"] = Element(1.03f),
+            ["MapColour.Shadow"] = Element(new[] { .0711744f, .0711744f, .0711744f }),
+            ["MapColour.Mid"] = Element(new[] { .284698f, .284698f, .284698f }),
         };
         return [
-            Make("Vanilla+", "The defaults: lightly rounded corners and quiet frosted panels.", new(),
+            Make("Vanilla+", "The defaults: lightly rounded corners, quiet frosted panels and the map's original colours.", new(),
                 defaults.FlatCornerRadius, defaults.GlassEnabled, false),
-            Make("Gratis glass", "Rounder corners and frosted glass panels, with a teal accent.", glass, 48, true,
+            Make("Gratis glass", "Rounder corners, frosted glass panels and a dark, high-contrast map recolour.", glass, 48, true,
                 false),
-            Make("Classic", "Mappy's layout: plain window and toolbar. Gratis features are not available.",
+            Make("Classic", "Mappy's layout: plain window and toolbar, with no map recolour. Gratis features are not available.",
                 new() { ["VisualStyle"] = Element(1) }, defaults.MapRounding, false, true),
         ];
     }

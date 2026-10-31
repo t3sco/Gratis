@@ -59,8 +59,14 @@ public sealed partial class QuickSetup {
     }
 
     private bool swallowEscape, gesture, keyboardFocus, fits, reveal;
+    // A step change fades the old page out, then slides the new one in while the panel eases to its height.
+    private const float FadeOut = .12f, FadeIn = .26f, Slide = 18;
     private int focus = -1, pending = -1, slotCount, primary;
     private float scroll;
+    private QuickSetupStep movedFrom;
+    private int moveDirection;
+    private double moveStart = double.NegativeInfinity;
+    private float moveHeight, lastHeight;
     private readonly StepSnapshot?[] snapshots = new StepSnapshot?[4];
     private readonly Vector4[] hit = new Vector4[MaxSlots];
     private readonly string[] names = new string[MaxSlots];
@@ -137,6 +143,7 @@ public sealed partial class QuickSetup {
     }
 
     public void Next(SystemConfig config) {
+        Move(1);
         snapshots[(int)Step] = null;
         // Classic has no place search, teleport cards or quest log to configure.
         var skipsBehaviours = Step == QuickSetupStep.Look && !config.IsGratis;
@@ -151,11 +158,25 @@ public sealed partial class QuickSetup {
     }
 
     public void Back(SystemConfig config) {
+        Move(-1);
         Step = Step == QuickSetupStep.Done && !config.IsGratis ? QuickSetupStep.Look : Step - 1;
         Enter(config);
     }
 
     public void Finish(SystemConfig config) => Close(config);
+
+    /// <summary>Starts the page change animation from the page on screen; reduced motion and a hidden panel skip it.</summary>
+    private void Move(int direction) {
+        if (!UiMotion.Full || !Visible || !fits)
+            return;
+        movedFrom = Step;
+        moveDirection = direction;
+        moveHeight = lastHeight;
+        moveStart = ImGui.GetTime();
+    }
+
+    /// <summary>True while a page change is animating. Clicks are ignored so a half-faded page cannot be pressed.</summary>
+    public bool Moving => ImGui.GetTime() - moveStart < FadeOut + FadeIn;
 
     public void ChooseLook(SystemConfig config, int look) {
         if (QuickSetupLooks.Apply(config, look) > 0)

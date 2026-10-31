@@ -19,11 +19,12 @@ public static class QuickSetupFaces {
 
 public sealed partial class QuickSetup {
     public const string SkipLabel = "Skip, use defaults", CompactSkipLabel = "Skip";
-    private const float Pad = 20, CompactPad = 12, Gap = 8, CardHeight = 96, SwatchHeight = 58, Row = 36,
-        WheelStep = 48, FooterTop = 4, MinBody = 24, MinWidth = 150;
+    private const float Pad = 20, CompactPad = 12, Gap = 8, Row = 36, WheelStep = 48, FooterTop = 4, MinBody = 24,
+        MinWidth = 150;
     private bool draw, fBack, fUndo, fSkip, compactFooter, inFooter;
     private float fx, fy, fw, fs, viewTop, viewBottom;
     private int slots;
+    private QuickSetupStep page;
     private string fNext = "";
     private ImDrawListPtr list;
     // Footer buttons in slot order (Back, Undo, Skip, Next): position relative to the footer block, and width.
@@ -45,6 +46,9 @@ public sealed partial class QuickSetup {
         var pad = Pad * s;
         // Text is measured in the body font, so it is pushed before anything is laid out.
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
+        var t = (float)(ImGui.GetTime() - moveStart);
+        var moving = t >= 0 && t < FadeOut + FadeIn;
+        page = moving && t < FadeOut ? movedFrom : Step;
         var (body, footer) = Measure(config, s, width, pad);
         if (body + footer + 2 * pad > room) {
             pad = MathF.Min(pad, CompactPad * s);
@@ -52,6 +56,19 @@ public sealed partial class QuickSetup {
         }
         var height = MathF.Min(body + footer + 2 * pad, room);
         var view = height - 2 * pad - footer;
+        // The panel eases to the new page's height once the old page has faded; its contents are laid out at the final one.
+        var shownHeight = moving && t >= FadeOut && moveHeight > 0
+            ? moveHeight + (height - moveHeight) * InterfaceMotionTokens.Ease((t - FadeOut) / FadeIn, InterfaceCurve.Enter)
+            : height;
+        var contentAlpha = 1f;
+        var slide = 0f;
+        if (moving) {
+            var leave = t < FadeOut;
+            var ease = InterfaceMotionTokens.Ease(leave ? t / FadeOut : (t - FadeOut) / FadeIn,
+                leave ? InterfaceCurve.Exit : InterfaceCurve.Enter);
+            contentAlpha = leave ? 1 - ease : ease;
+            slide = (leave ? -ease : 1 - ease) * moveDirection * Slide * s;
+        }
         if (width < MinWidth * s || view < MinBody * s) {
             Visible = InputActive = fits = Scrolls = false;
             Bounds = Vector4.Zero;
@@ -65,17 +82,19 @@ public sealed partial class QuickSetup {
         using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * shown, true);
         list = ImGui.GetWindowDrawList();
         var pos = new Vector2(MathF.Round((min.X + max.X - width) / 2),
-            MathF.Round(MathF.Max(min.Y, (min.Y + max.Y - height) / 2)));
-        Bounds = new(pos.X, pos.Y, pos.X + width, pos.Y + height);
+            MathF.Round(MathF.Max(min.Y, (min.Y + max.Y - shownHeight) / 2)));
+        Bounds = new(pos.X, pos.Y, pos.X + width, pos.Y + shownHeight);
+        lastHeight = shownHeight;
         draw = true;
         slots = 0;
-        fx = pos.X + pad;
+        fx = pos.X + pad + slide;
         viewTop = pos.Y + pad;
         viewBottom = viewTop + (Scrolls ? view : body);
         fy = viewTop - scroll;
         ImGui.PushID("quick-setup");
         try {
-            MapWindowDrawing.DrawSurface(list, pos, pos + new Vector2(width, height), GratisTheme.Radius.Card * 1.5f * s);
+            MapWindowDrawing.DrawSurface(list, pos, pos + new Vector2(width, shownHeight), GratisTheme.Radius.Card * 1.5f * s);
+            using var content = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * contentAlpha, moving);
             // The body scrolls inside its own clip; the footer sits below it and is never clipped.
             ImGui.PushClipRect(new(pos.X, viewTop), new(pos.X + width, viewBottom), true);
             try {
@@ -87,7 +106,8 @@ public sealed partial class QuickSetup {
             if (Scrolls)
                 ScrollBar(pos.X + width - 6 * s, body, view, s);
             inFooter = true;
-            DrawFooter(config, pos.Y + height - pad - footer);
+            fx = pos.X + pad;
+            DrawFooter(config, pos.Y + shownHeight - pad - footer);
         }
         finally {
             ImGui.PopID();
@@ -113,7 +133,7 @@ public sealed partial class QuickSetup {
     }
 
     private void Body(SystemConfig config) {
-        switch (Step) {
+        switch (page) {
             case QuickSetupStep.Welcome:
                 Heading("Welcome to Gratis");
                 Para("Gratis is an alternative FFXIV map and a fork of Mappy by MidoriKami, shared under the AGPL "
@@ -122,7 +142,7 @@ public sealed partial class QuickSetup {
                 break;
             case QuickSetupStep.Look:
                 Heading("Pick a look");
-                Cards(config);
+                Looks(config);
                 Para(QuickSetupLooks.All[QuickSetupLooks.Current(config)].Blurb);
                 if (!config.IsGratis)
                     Para("Place search, teleport cards and the quest log work in Gratis looks only, so the next step "
@@ -185,7 +205,7 @@ public sealed partial class QuickSetup {
             else
                 reveal = false;
         }
-        return clicked || pending == index;
+        return !Moving && (clicked || pending == index);
     }
 
     private float ButtonWidth(string label) => compactFooter
@@ -280,60 +300,23 @@ public sealed partial class QuickSetup {
                 Next(config);
         }
     }
-    private void Cards(SystemConfig config) {
+    private void Looks(SystemConfig config) {
         var looks = QuickSetupLooks.All;
         var gap = Gap * fs;
         var width = (fw - gap * (looks.Count - 1)) / looks.Count;
-        var height = CardHeight * fs;
+        var height = (GratisTheme.ControlHeight - 4) * fs;
         var current = QuickSetupLooks.Current(config);
         for (var i = 0; draw && i < looks.Count; i++) {
             var min = new Vector2(fx + i * (width + gap), fy);
-            var max = min + new Vector2(width, height);
             ImGui.SetCursorScreenPos(min);
             ImGui.PushID(slots);
-            var clicked = ChromeControls.Button("##card", new Vector2(width, height));
-            var hovered = ImGui.IsItemHovered();
+            var clicked = SegmentedChip.Draw("##look", looks[i].Name, i == current,
+                new(ChipFaces.Regular, GratisTheme.WarmAccent, new Vector2(width, height), fs, Centered: true));
             ImGui.PopID();
-            var radius = GratisTheme.Radius.Card * fs;
-            list.AddRectFilled(min, max, ImGui.GetColorU32(new Vector4(1, 1, 1, hovered ? .07f : .035f)), radius);
-            list.AddRect(min, max, ImGui.GetColorU32(i == current ? GratisTheme.WarmAccent : GratisTheme.Border),
-                radius, ImDrawFlags.None, (i == current ? 1.5f : 1) * fs);
-            Swatch(min + new Vector2(6 * fs), new Vector2(max.X - 6 * fs, min.Y + (6 + SwatchHeight) * fs), looks[i],
-                config);
-            var name = looks[i].Name;
-            var size = TextDrawing.Measure(name);
-            TextDrawing.Draw(list, new(min.X + (width - size.X) / 2, max.Y - size.Y - 8 * fs),
-                ImGui.GetColorU32(i == current ? GratisTheme.Primary : GratisTheme.Secondary), name);
-            if (Slot(name, min, max, clicked))
+            if (Slot(looks[i].Name, min, min + new Vector2(width, height), clicked))
                 ChooseLook(config, i);
         }
         fy += height + Gap * fs;
-    }
-
-    /// <summary>A miniature of the look: corner radius, frame, panel material and accent, drawn live from its numbers.</summary>
-    private void Swatch(Vector2 min, Vector2 max, QuickSetupLook look, SystemConfig config) {
-        var round = MathF.Min(look.Radius * fs * .4f, MathF.Min(max.X - min.X, max.Y - min.Y) / 2);
-        var accent = look.Classic ? new Vector4(1, 1, 1, .55f) : config.AccentColor with { W = .85f };
-        list.AddRectFilled(min, max, ImGui.GetColorU32(new Vector4(.13f, .17f, .2f, 1)), round);
-        list.AddCircleFilled(min + (max - min) * new Vector2(.28f, .66f), 11 * fs,
-            ImGui.GetColorU32(new Vector4(.28f, .36f, .3f, .8f)));
-        list.AddCircleFilled(min + (max - min) * new Vector2(.72f, .6f), 7 * fs,
-            ImGui.GetColorU32(new Vector4(.3f, .34f, .42f, .8f)));
-        list.AddCircleFilled(min + (max - min) * new Vector2(.58f, .4f), 3 * fs, ImGui.GetColorU32(accent));
-        var pill = new Vector2((max.X - min.X) * .46f, 9 * fs);
-        var top = min + new Vector2((max.X - min.X - pill.X) / 2, 7 * fs);
-        if (look.Classic)
-            for (var i = 0; i < 3; i++)
-                list.AddRectFilled(min + new Vector2((6 + i * 12) * fs, 6 * fs),
-                    min + new Vector2((14 + i * 12) * fs, 14 * fs), ImGui.GetColorU32(new Vector4(1, 1, 1, .5f)));
-        else {
-            list.AddRectFilled(top, top + pill, ImGui.GetColorU32(new Vector4(1, 1, 1, look.Glass ? .2f : .12f)),
-                GratisTheme.Radius.Pill(pill));
-            if (look.Glass)
-                list.AddRect(top, top + pill, ImGui.GetColorU32(new Vector4(1, 1, 1, .3f)),
-                    GratisTheme.Radius.Pill(pill), ImDrawFlags.None, fs);
-        }
-        list.AddRect(min, max, ImGui.GetColorU32(accent), round, ImDrawFlags.None, look.Classic ? 1.5f * fs : fs);
     }
 
     private void Icons(SystemConfig config) {
