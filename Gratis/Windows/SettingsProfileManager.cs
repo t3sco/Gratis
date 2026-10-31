@@ -35,7 +35,9 @@ public static class ProfileManager {
             return -1;
         var before = ProfileCodec.Encode("Before profile", ProfileCodec.Capture(config));
         var changed = ProfileCodec.Apply(config, data!);
-        set.Undo = before;
+        // A no-op apply must not replace the undo point with the already-applied state.
+        if (changed > 0)
+            set.Undo = before;
         return changed;
     }
 

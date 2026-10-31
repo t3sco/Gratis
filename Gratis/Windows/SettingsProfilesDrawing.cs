@@ -11,6 +11,7 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Windows;
 
 public static class SettingsProfilesDrawing {
+    private static SettingsProfileSet? owner;
     private static int selected;
     private static string name = "";
     private static string message = "";
@@ -23,6 +24,14 @@ public static class SettingsProfilesDrawing {
         var set = config.ProfileOptions;
         var scale = config.IsGratis ? SettingsTheme.Scale : (float?)null;
         var changed = false;
+        if (!ReferenceEquals(owner, set)) {
+            owner = set;
+            selected = 0;
+            message = "";
+            incoming = null;
+            deleteArmed = false;
+            name = "";
+        }
         if (set.Find(selected) == null) {
             selected = set.Profiles.Count > 0 ? set.Profiles[0].Slot : 0;
             name = set.Find(selected)?.Name ?? "";
@@ -128,6 +137,7 @@ public static class SettingsProfilesDrawing {
                 name = set.Find(slot)?.Name ?? "";
                 message = "Imported " + name + ". Apply it when you are ready.";
                 incoming = null;
+                deleteArmed = false;
                 changed = true;
             }
             ImGui.EndDisabled();

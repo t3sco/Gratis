@@ -30,7 +30,7 @@ public static class ProfileCodec {
 
     private static SettingsEntry[] Build() {
         var defaults = new SystemConfig();
-        return SettingsLayout.Entries.Where(e => !Excluded.Contains(e.Path)).GroupBy(e => e.Path)
+        return SettingsLayout.Entries.Where(e => !Excluded.Contains(e.Path) && !e.Path.StartsWith("Filters.", StringComparison.Ordinal)).GroupBy(e => e.Path)
             .Select(g => g.First()).Where(e => e.Value(defaults) is bool or int or float or string or Enum or Vector2
                 or Vector4).ToArray();
     }
@@ -149,7 +149,9 @@ public static class ProfileCodec {
                 return true;
             case float when element.ValueKind == JsonValueKind.Number && element.TryGetSingle(out var number)
                 && float.IsFinite(number):
-                value = Math.Clamp(number, entry.Minimum, entry.Maximum);
+                value = entry.Path == "FlatMarkerSize"
+                    ? Math.Clamp(number, entry.Minimum / 6, entry.Maximum / .2f) // stored value is the displayed size divided by icon scale
+                    : Math.Clamp(number, entry.Minimum, entry.Maximum);
                 return true;
             case int when element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var whole):
                 if (entry.ChoiceCount > 0 && (whole < 0 || whole >= entry.ChoiceCount))

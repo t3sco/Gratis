@@ -111,6 +111,24 @@ internal static class ProfileVerification {
         Require(target.TitleOffset == new Vector2(100, 2), "vectors are clamped to the slider range");
         Require(ProfileCodec.Recognised(evil) < evil.Values.Count, "unrecognised settings are not counted");
 
+        // Review findings: marker size is stored relative to icon scale, filters stay out, a no-op apply keeps undo.
+        var sized = new SystemConfig { IconScale = 3, FlatMarkerSize = 2 };
+        ProfileManager.Save(sized, "sized");
+        var sizedTarget = new SystemConfig { Profiles = sized.Profiles };
+        ProfileManager.Apply(sizedTarget, 1);
+        Require(sizedTarget.FlatMarkerSize == 2 && sizedTarget.IconScale == 3,
+            "marker size survives a round trip at a large icon scale");
+        sizedTarget.FlatMarkerSize = 5;
+        ProfileManager.Apply(sizedTarget, 1);
+        Require(ProfileManager.Undo(sizedTarget) && sizedTarget.FlatMarkerSize == 5, "undo restores the exact marker size");
+        Require(!ProfileCodec.Portable.Any(e => e.Path.StartsWith("Filters.", StringComparison.Ordinal)),
+            "filter visibility is not part of a profile");
+        var keep = new SystemConfig { Profiles = config.Profiles };
+        ProfileManager.Apply(keep, 1);
+        var undoPoint = keep.ProfileOptions.Undo;
+        Require(undoPoint.Length > 0 && ProfileManager.Apply(keep, 1) == 0 && keep.ProfileOptions.Undo == undoPoint,
+            "applying a profile that changes nothing keeps the earlier undo point");
+
         // Normalisation drops damaged stored profiles.
         var set = new SettingsProfileSet { Profiles = [new() { Slot = 1, Name = "ok", Data = text },
             new() { Slot = 1, Name = "dupe", Data = text }, new() { Slot = 9, Name = "far", Data = text },
