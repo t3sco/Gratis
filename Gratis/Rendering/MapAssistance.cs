@@ -99,8 +99,9 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         && place.Kind == PlaceKind.Aetheryte && places.Access(place).Attuned && (!place.IsShard || available);
 
     private PlaceEntry? FindTransport(Classes.MarkerInfo marker, string title) =>
-        places.Entries.FirstOrDefault(p => p.Kind == PlaceKind.Aetheryte && p.MapId == places.Context.MapId
-            && (p.Name == title || p.AetheryteId == marker.DataId));
+        AetheryteAttunement.Find(places.Entries, MarkerIcon.Family(marker), marker.DataId ?? 0, places.Context.MapId)
+        ?? places.Entries.FirstOrDefault(p => p.Kind == PlaceKind.Aetheryte && p.MapId == places.Context.MapId
+            && p.Name == title);
 
     private readonly PlaceTooltip transportTooltip = new();
 
