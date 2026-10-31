@@ -61,10 +61,11 @@ public sealed class JournalMirrorState {
         return JournalMirrorAction.Restore;
     }
 
-    public JournalMirrorAction LocalClose() {
+    // keepMap: the log closed because the user pressed Show on map, so the map it opened must stay.
+    public JournalMirrorAction LocalClose(bool keepMap = false) {
         if (!Mirroring || ClosingNative) return JournalMirrorAction.None;
         ClosingNative = true;
-        var closeMap = OpenedMap;
+        var closeMap = OpenedMap && !keepMap;
         OpenedMap = false;
         return JournalMirrorAction.CloseNative | (closeMap ? JournalMirrorAction.CloseMap : 0);
     }
@@ -247,7 +248,7 @@ public sealed unsafe class AddonJournalController : IDisposable {
             Apply(state.Disable(), Native());
             return;
         }
-        Apply(state.LocalClose(), Native());
+        Apply(state.LocalClose(Panel.KeepMapOnClose), Native());
     }
 
     private void FinishNativeClose(AtkUnitBase* addon) {

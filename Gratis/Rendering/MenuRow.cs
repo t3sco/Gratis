@@ -41,7 +41,7 @@ public static class RowFaces {
         Ink = GratisTheme.Primary, SecondaryInk = GratisTheme.Secondary,
     };
     public static readonly RowProfile Reward = new() {
-        Height = 36, TextInset = 8, Ink = GratisTheme.Primary, TextDrawing = true,
+        Height = 36, TextInset = 8, Ink = GratisTheme.Primary, SecondaryInk = GratisTheme.Secondary, TextDrawing = true,
     };
     public static readonly RowProfile Context = Location with {
         TextInset = 40, IconInset = 18, IconSize = GratisTheme.IconSize,

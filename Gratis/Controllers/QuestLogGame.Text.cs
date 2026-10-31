@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using Gratis.Rendering;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using Lumina.Text.Payloads;
 using Lumina.Text.ReadOnly;
 
 namespace Gratis.Controllers;
@@ -83,17 +84,40 @@ public sealed partial class QuestLogGame {
 
     private static string EvaluateJournal(ReadOnlySeString text) {
         try {
-            return Service.SeStringEvaluator.Evaluate(text).ExtractText();
+            return JournalPlainText(Service.SeStringEvaluator.Evaluate(text));
         }
         catch (Exception) {
             return "";
         }
     }
 
+    // Walks payloads so paragraph breaks survive and font-less game glyphs are remapped (see QuestLogText).
+    private static string JournalPlainText(ReadOnlySeString text) {
+        try {
+            var builder = new global::System.Text.StringBuilder(text.Data.Length);
+            foreach (var payload in text)
+                switch (payload.Type) {
+                    case ReadOnlySePayloadType.Text:
+                        builder.Append(global::System.Text.Encoding.UTF8.GetString(payload.Body.Span));
+                        break;
+                    case ReadOnlySePayloadType.Macro when payload.MacroCode == MacroCode.NewLine:
+                        builder.Append('\n');
+                        break;
+                    case ReadOnlySePayloadType.Macro when payload.MacroCode == MacroCode.Hyphen:
+                        builder.Append('-');
+                        break;
+                }
+            return QuestLogText.CleanJournalText(builder.ToString());
+        }
+        catch (Exception) {
+            return QuestLogText.CleanJournalText(text.ExtractText());
+        }
+    }
+
     private static unsafe string JournalObjective(uint id, byte index, ReadOnlySeString text) {
         try {
             if (text.Data.Span.IndexOf((byte)2) < 0)
-                return text.ExtractText();
+                return JournalPlainText(text);
             var events = EventFramework.Instance();
             var player = Service.ObjectTable.LocalPlayer;
             var handler = events == null ? null : (QuestEventHandler*)events->GetEventHandlerById(id);
@@ -101,8 +125,8 @@ public sealed partial class QuestLogGame {
                 return "";
             uint arg0 = 0, arg1 = 0, arg2 = 0;
             handler->GetTodoArgs((BattleChara*)player.Address, index, &arg0, &arg1, &arg2);
-            return Service.SeStringEvaluator.Evaluate(text,
-                [new SeStringParameter(arg0), new SeStringParameter(arg1), new SeStringParameter(arg2)]).ExtractText();
+            return JournalPlainText(Service.SeStringEvaluator.Evaluate(text,
+                [new SeStringParameter(arg0), new SeStringParameter(arg1), new SeStringParameter(arg2)]));
         }
         catch (Exception) {
             return "";

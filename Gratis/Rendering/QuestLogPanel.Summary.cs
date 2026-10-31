@@ -25,39 +25,41 @@ public sealed partial class QuestLogPanel {
         var context = MapDrawContext.Current;
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
-        using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push())
-            TextDrawing.Draw(ImGui.GetWindowDrawList(), start + new Vector2(0, 8 * s),
-                ImGui.GetColorU32(GratisTheme.WarmAccent), "QUEST SUMMARY");
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 30 * s), 0));
         if (ChromeControls.IconButton("##quest-detail-close", GratisIcons.X,
             Layout.DetailOverlay ? "Back to Quest Log\nEsc" : "Close summary\nEsc", new(30 * s)))
             CloseDetail();
         DetailCloseBounds = ItemBounds();
-        ImGui.SetCursorScreenPos(start + new Vector2(0, 42 * s));
+        // The title shares the close button's row, wrapping within the width left of it; chips sit directly beneath.
+        ImGui.SetCursorScreenPos(start);
+        using (context.GetChromeFont(24 * s, ChromeFontRole.Title)?.Push()) {
+            ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + MathF.Max(1, width - 36 * s));
+            ImGui.TextWrapped(quest.Name);
+            ImGui.PopTextWrapPos();
+        }
+        ImGui.Dummy(new(0, 4 * s));
+        DetailChips(quest, s);
+        DetailDivider(s);
+        var bodyTop = ImGui.GetCursorScreenPos().Y;
         var remaining = ImGui.GetContentRegionAvail();
         var footerHeight = 56 * s;
-        if (remaining.Y < footerHeight + 24 * s) {
+        if (remaining.Y < footerHeight + 40 * s) {
             EmptyState.Draw("Enlarge the map to read this quest.", EmptyFaces.QuestHelper);
             return;
         }
-        var footerY = start.Y + 42 * s + remaining.Y - footerHeight;
+        var footerY = bodyTop + remaining.Y - footerHeight;
         UiMotion.Child(text.ChildId, new(remaining.X, remaining.Y - footerHeight - 8 * s),
             ImGuiWindowFlags.NoBackground);
         try {
             using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), detailOpacity,
                 UiMotion.Full ? new Vector2((1 - detailOpacity) * 18 * s, 0) : Vector2.Zero);
             UiMotion.Scroll();
-            using (context.GetChromeFont(24 * s, ChromeFontRole.Title)?.Push())
-                ImGui.TextWrapped(quest.Name);
-            ImGui.Dummy(new(0, 4 * s));
-            DetailChips(quest, s);
-            DetailDivider(s);
             if (quest.StartNpc.Length > 0) {
                 DetailHeading("WHERE", s);
-                ImGui.TextWrapped(quest.StartNpc);
+                ImGui.TextWrapped(QuestLogTitleCase.Of(quest.StartNpc));
                 if (quest.StartArea.Length > 0) {
                     ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-                    ImGui.TextWrapped(quest.StartArea);
+                    ImGui.TextWrapped(QuestLogTitleCase.Of(quest.StartArea));
                     ImGui.PopStyleColor();
                 }
             }
@@ -65,14 +67,9 @@ public sealed partial class QuestLogPanel {
             DetailRow("Level", text.LevelNumber, s);
             if (quest.Jobs.Length > 0) DetailRow("Class", quest.Jobs, s);
             if (quest.RequiredClass.Length > 0) DetailRow("Job", quest.RequiredClass, s);
-            if (quest.Prerequisites.Length > 0 || quest.MoreConditions) {
+            if (quest.Prerequisites.Length > 0) {
                 DetailHeading("REQUIRES", s);
-                if (quest.Prerequisites.Length > 0) ImGui.TextWrapped(quest.Prerequisites);
-                if (quest.MoreConditions) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
-                    ImGui.TextWrapped("More conditions may apply");
-                    ImGui.PopStyleColor();
-                }
+                ImGui.TextWrapped(quest.Prerequisites);
             }
             DrawRewards(quest.Rewards, text, s);
             if (DetailOpen) itemTooltip.Finish(source?.Items, s);
@@ -98,9 +95,11 @@ public sealed partial class QuestLogPanel {
         finally { ImGui.EndChild(); }
         ImGui.SetCursorScreenPos(new(start.X, footerY));
         DetailDivider(s);
-        var label = quest.Targets.Count > 0 ? "Show on map" : "No map destination";
+        var label = quest.Targets.Count > 0 ? "Show on map"
+            : quest.DestinationNote.Length > 0 ? quest.DestinationNote : "No map destination";
         var clicked = ActionButton.Draw("##quest-detail-map", label,
             new(ActionFaces.QuestMap, Enabled: quest.Targets.Count > 0, Size: new(width, GratisTheme.ControlHeight * s)));
+        if (quest.DestinationNote.Length > 0 && ImGui.IsItemHovered()) ChromeControls.Tooltip(quest.DestinationNote);
         if (clicked || ImGui.IsItemClicked(ImGuiMouseButton.Right)) ShowOnMap(quest);
         DetailMapBounds = ItemBounds();
     }
@@ -133,22 +132,6 @@ public sealed partial class QuestLogPanel {
         ImGui.Dummy(new(width, valueSize.Y));
     }
 
-    private static void DetailCaption(string label, string note, float s) {
-        var start = ImGui.GetCursorScreenPos();
-        var width = ImGui.GetContentRegionAvail().X;
-        var list = ImGui.GetWindowDrawList();
-        var noteWidth = TextDrawing.Measure(note).X;
-        TextDrawing.Draw(list, start, ImGui.GetColorU32(GratisTheme.Secondary), label);
-        if (TextDrawing.Measure(label).X + noteWidth + 12 * s > width) {
-            ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
-            ImGui.TextColored(GratisTheme.Secondary with { W = .7f }, note);
-            return;
-        }
-        TextDrawing.Draw(list, start + new Vector2(width - noteWidth, 0),
-            ImGui.GetColorU32(GratisTheme.Secondary with { W = .7f }), note);
-        ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
-    }
-
     private static void DetailHeading(string title, float s) =>
         SectionHeader.Draw(title, SectionFaces.Detail, s);
 
@@ -167,7 +150,6 @@ public sealed partial class QuestLogPanel {
         Chip(presentation.For(quest).Level, GratisTheme.WarmAccent);
         Chip(quest.Completed ? "Completed" : Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : "Accepted",
             GratisTheme.Crystal);
-        if (quest.Repeatable) Chip("Repeatable", GratisTheme.Secondary);
     }
 
     private void DrawRewards(QuestLogRewards? rewards, QuestLogPresentation.Text text, float s) {
@@ -183,8 +165,6 @@ public sealed partial class QuestLogPanel {
             }
             RewardMetric(text.Exp, GratisTheme.Crystal, s);
         }
-        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
-            DetailCaption("Base rewards", "Before scaling and bonuses", s);
         DrawRewardGroup(rewards.Items, text.Counts, false, s);
         DrawRewardGroup(rewards.Items, text.Counts, true, s);
     }

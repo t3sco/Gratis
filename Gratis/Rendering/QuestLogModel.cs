@@ -18,6 +18,7 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public bool ClientKnown { get; init; }
     public bool Repeatable { get; init; }
     public string ObjectiveProgress { get; init; } = "";
+    public string DestinationNote { get; init; } = "";
     public string StartNpc { get; init; } = "";
     public string StartArea { get; init; } = "";
     public string Jobs { get; init; } = "";
@@ -53,14 +54,14 @@ public interface IQuestLogSource {
 
 public static class QuestLogModel {
     public static QuestLogQuest[] Filter(QuestLogSnapshot snapshot, string query,
-        QuestLogTab tab = QuestLogTab.Accepted, bool showLocked = false, bool repeatableOnly = false) {
+        QuestLogTab tab = QuestLogTab.Accepted, bool showLocked = false) {
         var words = PlaceSearch.Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var quests = tab switch {
             QuestLogTab.Completed => snapshot.Completed,
             QuestLogTab.Unaccepted => snapshot.Unaccepted.Where(q => showLocked || q.ClientKnown),
             _ => snapshot.Quests,
         };
-        return quests.Where(q => !repeatableOnly || q.Repeatable).Where(q => {
+        return quests.Where(q => {
             var text = PlaceSearch.Normalize(q.Name + " " + q.Objective + " " + q.Duty + " "
                 + QuestBuckets.Label(q.Bucket));
             return words.All(w => text.Contains(w, StringComparison.Ordinal));

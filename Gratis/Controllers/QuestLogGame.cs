@@ -87,7 +87,7 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
             var objectives = ReadObjectives(accepted);
             var quests = accepted.Keys.Select(id => {
                 var data = metadata.GetValueOrDefault(id);
-                var destinations = targets.GetValueOrDefault(id) ?? [];
+                var destination = ResolveDestination(id, data, targets.GetValueOrDefault(id) ?? []);
                 var tracked = objectives.GetValueOrDefault(id);
                 var details = data == null ? default : ReadJournal(data.Row, accepted[id],
                     string.IsNullOrWhiteSpace(tracked.Text));
@@ -95,7 +95,8 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
                     data?.Bucket ?? QuestBucket.Other,
                     data?.Icon ?? 71023,
                     QuestLogText.PreferTracked(tracked.Text, details.Objective),
-                    data?.Duty ?? "", destinations) {
+                    data?.Duty ?? "", destination.Targets) {
+                    DestinationNote = destination.Note,
                     ObjectiveProgress = string.IsNullOrWhiteSpace(tracked.Text) ? "" : tracked.Progress,
                     Expansion = data?.Expansion ?? 0, ExpansionIcon = data?.Crest ?? 0,
                     Description = details.Description ?? "", Rewards = details.Rewards,
@@ -228,8 +229,7 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
         var agent = AgentMap.Instance();
         if (agent == null)
             return false;
-        var target = quest.Targets.FirstOrDefault(t => t.MapId == agent->SelectedMapId)
-            ?? quest.Targets.FirstOrDefault();
+        var target = QuestTargetSelection.Choose(quest.Targets, agent->SelectedMapId);
         if (target?.World is not { } world)
             return false;
         System.ZoneSwitchController?.NotifyUserAction();

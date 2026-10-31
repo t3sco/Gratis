@@ -25,7 +25,7 @@ internal sealed class QuestLogPresentation {
     private bool indexed;
     private string? query;
     private QuestLogTab tab;
-    private bool showLocked, repeatable;
+    private bool showLocked;
     public uint ScenarioId { get; private set; }
     public QuestLogQuest[] Filtered { get; private set; } = [];
     public (QuestBucket Bucket, QuestLogQuest[] Quests)[] Groups { get; private set; } = [];
@@ -72,14 +72,13 @@ internal sealed class QuestLogPresentation {
         return text;
     }
 
-    public void Filter(string search, QuestLogTab currentTab, bool locked, bool repeatableOnly) {
-        if (query == search && tab == currentTab && showLocked == locked && repeatable == repeatableOnly)
+    public void Filter(string search, QuestLogTab currentTab, bool locked) {
+        if (query == search && tab == currentTab && showLocked == locked)
             return;
         query = search;
         tab = currentTab;
         showLocked = locked;
-        repeatable = repeatableOnly;
-        Filtered = QuestLogModel.Filter(snapshot!, search, tab, locked, repeatableOnly);
+        Filtered = QuestLogModel.Filter(snapshot!, search, tab, locked);
         Groups = QuestBuckets.Order.Select(bucket => {
             var rows = Filtered.Where(q => q.Bucket == bucket).ToArray();
             if (bucket == QuestBucket.Scenario)

@@ -28,7 +28,7 @@ public readonly record struct TabProfile {
 
 public static class TabFaces {
     public static readonly TabProfile QuestLog = new() {
-        Height = 28, WidthInset = 8, Columns = 3, Gap = 4,
+        Height = 30, WidthInset = 8, Columns = 3, Gap = 4,
         Ink = GratisTheme.Secondary, SelectedInk = GratisTheme.Primary,
     };
     public static readonly TabProfile Settings = new() {
@@ -48,11 +48,15 @@ public readonly struct TabStrip {
     public Vector2 Size { get; }
     public bool Clicked { get; }
 
-    public TabStrip(string id, in TabProfile profile, float width, float scale, bool selected = false) {
+    public TabStrip(string id, in TabProfile profile, float width, float scale, bool selected = false)
+        : this(id, profile, new Vector2((width - profile.WidthInset * scale) / profile.Columns, profile.Height * scale),
+            scale, selected) { }
+
+    public TabStrip(string id, in TabProfile profile, Vector2 size, float scale, bool selected = false) {
         face = profile;
         this.scale = scale;
         Min = ImGui.GetCursorScreenPos();
-        Size = new((width - face.WidthInset * scale) / face.Columns, face.Height * scale);
+        Size = size;
         if (face.SelectionKey is null) Clicked = ChromeControls.Button(id, Size);
         else {
             ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);

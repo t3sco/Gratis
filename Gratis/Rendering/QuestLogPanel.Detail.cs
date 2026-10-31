@@ -38,7 +38,10 @@ public sealed partial class QuestLogPanel {
             return;
         CloseDetail();
         if (!MapDrawContext.Current.Config.QuestLogPinned) {
+            // The map the log opened is the one the quest is being shown on, so closing the log must not close it.
+            KeepMapOnClose = true;
             CloseLog();
+            KeepMapOnClose = false;
         }
     }
 
@@ -94,10 +97,7 @@ public sealed partial class QuestLogPanel {
                         || ImGui.GetIO().KeyShift && ImGui.IsKeyPressed(ImGuiKey.Enter, false)))
                         ShowOnMap(detailQuest);
                 }
-                if (detailKeyboard || PointerOver) {
-                    MapDrawContext.Current.Chrome.Reveal(host.Now);
-                    ImGui.SetNextFrameWantCaptureKeyboard(true);
-                }
+                if (PointerOver) MapDrawContext.Current.Chrome.Reveal(host.Now);
             }
             finally { ImGui.EndDisabled(); }
         }

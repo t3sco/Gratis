@@ -59,7 +59,8 @@ public sealed partial class QuestLogGame {
             details[id] = quest with { Description = text.Description, Rewards = text.Rewards };
         }
         return details.TryGetValue(quest.RowId, out var detail)
-            ? WithRequirements(detail with { ClientKnown = known, Completed = quest.Completed, Targets = quest.Targets }, data.Row) : quest;
+            ? WithRequirements(detail with { ClientKnown = known, Completed = quest.Completed, Targets = quest.Targets,
+                DestinationNote = quest.DestinationNote }, data.Row) : quest;
     }
 
     private void ReadLists(IReadOnlyDictionary<uint, byte> accepted) {
@@ -90,7 +91,7 @@ public sealed partial class QuestLogGame {
             StartArea = area,
             Jobs = jobs,
             RequiredClass = required,
-            Prerequisites = string.Join("\n", previous),
+            Prerequisites = QuestLogText.FilterPrerequisites(string.Join('\n', previous)),
             MoreConditions = QuestLogText.MoreConditions(previous.Length, row.PreviousQuestJoin,
                 row.QuestLock.Any(q => q.RowId != 0)),
         };

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text.Evaluator;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Gratis.Rendering;
@@ -12,6 +14,7 @@ namespace Gratis.Controllers;
 public sealed class ItemTooltipProvider : IItemTooltipSource {
     private readonly Dictionary<uint, ItemTooltipRecord?> cache = [];
     private Dictionary<uint, string>? materia;
+    private readonly Dictionary<uint, ushort> tryOn = [];
 
     public ItemTooltipRecord? Get(uint id) {
         if (cache.TryGetValue(id, out var cached)) return cached;
@@ -106,5 +109,46 @@ public sealed class ItemTooltipProvider : IItemTooltipSource {
     }
     public unsafe void Search(uint id) {
         if (CanSearch && id != 0) ItemFinderModule.Instance()->SearchForItem(ItemTooltipModel.BaseId(id));
+    }
+
+    // Bit (race - 1) * 2 + sex is set when that race/gender may wear the item; 0 means it is not equippable gear.
+    private ushort TryOnMask(uint id) {
+        var baseId = ItemTooltipModel.BaseId(id);
+        if (tryOn.TryGetValue(baseId, out var cached)) return cached;
+        ushort mask = 0;
+        try {
+            if (Service.DataManager.GetExcelSheet<Item>().GetRowOrDefault(baseId) is { } item
+                && item.EquipSlotCategory.ValueNullable is { } slot
+                && (slot.MainHand != 0 || slot.OffHand != 0 || slot.Head != 0 || slot.Body != 0 || slot.Gloves != 0
+                    || slot.Waist != 0 || slot.Legs != 0 || slot.Feet != 0 || slot.Ears != 0 || slot.Neck != 0
+                    || slot.Wrists != 0 || slot.FingerL != 0 || slot.FingerR != 0)) {
+                var race = item.EquipRestriction.ValueNullable;
+                for (var r = 0; r < 8; r++)
+                    for (var g = 0; g < 2; g++) {
+                        var allowed = race is not { } e || (r switch {
+                            0 => e.Hyur, 1 => e.Elezen, 2 => e.Lalafell, 3 => e.Miqote,
+                            4 => e.Roegadyn, 5 => e.AuRa, 6 => e.Hrothgar, _ => e.Viera,
+                        } && (g == 0 ? e.Male : e.Female));
+                        if (allowed) mask |= (ushort)(1 << (r * 2 + g));
+                    }
+            }
+        }
+        catch (Exception error) { Service.Log.Debug(error, "[QuestLog] Try On data unavailable for {Item}", baseId); }
+        tryOn[baseId] = mask;
+        return mask;
+    }
+
+    public unsafe bool CanTryOn(uint id) {
+        if (id == 0 || Service.ObjectTable.LocalPlayer == null) return false;
+        var player = PlayerState.Instance();
+        if (player == null || player->Race is < 1 or > 8 || player->Sex > 1) return false;
+        return (TryOnMask(id) & (1 << ((player->Race - 1) * 2 + player->Sex))) != 0;
+    }
+
+    public bool TryOnEnabled => !Service.ClientState.IsPvP && Service.ObjectTable.LocalPlayer != null
+        && !Service.Condition[ConditionFlag.InCombat];
+
+    public unsafe void TryOn(uint id) {
+        if (CanTryOn(id) && TryOnEnabled) AgentTryon.TryOn(0, ItemTooltipModel.BaseId(id), 0, 0, 0, false);
     }
 }

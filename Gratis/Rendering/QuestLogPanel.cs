@@ -29,11 +29,12 @@ public sealed partial class QuestLogPanel {
     public Vector4 SearchToggleBounds { get; private set; }
     private int motionEpoch;
     private int escapeFrame = -1;
-    private bool requestedOpen, repeatableOnly;
+    private bool requestedOpen;
     public QuestLogTab Tab { get; private set; }
     public Vector4[] TabBounds { get; } = new Vector4[3];
     public Vector4 CloseBounds { get; private set; }
     public event Action? Closed;
+    public bool KeepMapOnClose { get; private set; }
     public void OpenFromJournal() {
         requestedOpen = true;
         IsOpen = true;
@@ -190,7 +191,8 @@ public sealed partial class QuestLogPanel {
             ? rows.FirstOrDefault(r => Over(r.Bounds)).Id : 0;
         if (PointerOver || IsOpen && !suspended)
             context.Chrome.Reveal(host.Now);
-        if (CapturesKeyboard || PointerOver)
+        // Hovering alone must not take the keyboard, or the character stops moving while the pointer rests on the panel.
+        if (CapturesKeyboard)
             ImGui.SetNextFrameWantCaptureKeyboard(true);
     }
 
@@ -270,11 +272,9 @@ public sealed partial class QuestLogPanel {
             ImGui.BeginDisabled(!IsOpen);
             try {
                 DrawContent(s);
-                keyboard = IsOpen && (rowKeyboard || detailKeyboard || ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
-                if (keyboard || PointerOver) {
-                    context.Chrome.Reveal(host.Now);
-                    ImGui.SetNextFrameWantCaptureKeyboard(true);
-                }
+                keyboard = IsOpen && searchOpen && ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows);
+                if (PointerOver) context.Chrome.Reveal(host.Now);
+                if (keyboard) ImGui.SetNextFrameWantCaptureKeyboard(true);
             }
             finally { ImGui.EndDisabled(); }
         }
@@ -289,10 +289,7 @@ public sealed partial class QuestLogPanel {
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
         var list = ImGui.GetWindowDrawList();
-        GratisIcons.Draw(list, start + new Vector2(10, 15) * s, GratisIcons.BookOpen,
-            GratisTheme.WarmAccent, 18 * s);
-        using (context.GetChromeFont(16 * s, ChromeFontRole.Title)?.Push())
-            TextDrawing.Draw(list, start + new Vector2(28, 4) * s, ImGui.GetColorU32(GratisTheme.Primary), "Quest Log");
+        DrawTabs(s, MathF.Max(0, width - 70 * s), start);
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 64 * s), 0));
         var searchButtonStart = ImGui.GetCursorScreenPos();
         if (ChromeControls.IconButton("##quest-log-search-toggle", GratisIcons.Search,
@@ -314,7 +311,6 @@ public sealed partial class QuestLogPanel {
             EmptyState.Draw("Enlarge the map to read quests.", EmptyFaces.QuestHelper);
             return;
         }
-        DrawTabs(s, width);
         var shortPanel = ImGui.GetContentRegionAvail().Y < 180 * s;
         if (!shortPanel && Tab == QuestLogTab.Accepted)
             DrawScenario(s, width);
@@ -339,7 +335,7 @@ public sealed partial class QuestLogPanel {
             list.PopClipRect();
             ImGui.SetCursorScreenPos(searchStart + new Vector2(0, searchHeight * searchReveal));
         }
-        presentation.Filter(query, Tab, context.Config.QuestLogShowLocked, repeatableOnly);
+        presentation.Filter(query, Tab, context.Config.QuestLogShowLocked);
         filtered = presentation.Filtered;
         if (!shortPanel) {
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
@@ -357,11 +353,6 @@ public sealed partial class QuestLogPanel {
             EmptyState.Draw("Checking completion history...", EmptyFaces.QuestHelper);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
             EmptyState.Draw("Showing the first 500 quests by name.", EmptyFaces.QuestHelper);
-        if (ImGui.GetContentRegionAvail().Y > 100 * s)
-            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
-                if (rowKeyboard) QuestKeyHints.Bar("Enter", "Summary", "M", "Map", width, s);
-                else QuestKeyHints.Bar("Click", "Summary", "Right-click", "Show on map", width, s);
-            }
         var remaining = ImGui.GetContentRegionAvail();
         if (remaining.Y < 8 * s)
             return;
@@ -395,26 +386,35 @@ public sealed partial class QuestLogPanel {
 
     private readonly string[] tabIds = ["##quest-tab-0", "##quest-tab-1", "##quest-tab-2"];
 
-    private void DrawTabs(float s, float width) {
+    private readonly float[] tabText = new float[3];
+
+    // The tabs share the header row with the search and close buttons, so they size to their labels and squeeze
+    // (padding first, then the labels themselves) rather than ever running under those buttons.
+    private void DrawTabs(float s, float available, Vector2 start) {
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push();
+        var gap = TabFaces.QuestLog.Gap * s;
+        var minInset = 3 * s;
+        var text = 0f;
+        for (var i = 0; i < 3; i++)
+            text += tabText[i] = TextDrawing.Measure(QuestLogText.TabLabel((QuestLogTab)i)).X;
+        var room = MathF.Max(0, available - 2 * gap);
+        var inset = Math.Clamp((room - text) / 6, minInset, 8 * s);
+        var squeeze = MathF.Min(1, room / (text + 6 * inset));
+        var height = TabFaces.QuestLog.Height * s;
+        ImGui.SetCursorScreenPos(start);
         for (var i = 0; i < 3; i++) {
-            if (i > 0) ImGui.SameLine(0, TabFaces.QuestLog.Gap * s);
-            var tab = new TabStrip(tabIds[i], TabFaces.QuestLog, width, s);
+            if (i > 0) ImGui.SameLine(0, gap);
+            var width = MathF.Max(1, (tabText[i] + 2 * inset) * squeeze);
+            var tab = new TabStrip(tabIds[i], TabFaces.QuestLog, new Vector2(width, height), s);
             if (tab.Clicked) {
                 Tab = (QuestLogTab)i;
                 selected = 0;
                 CloseDetail();
             }
             TabBounds[i] = ItemBounds();
-            tab.Draw(QuestLogText.TabLabel((QuestLogTab)i), Tab == (QuestLogTab)i);
+            var label = QuestLogText.TabLabel((QuestLogTab)i);
+            tab.Draw(squeeze < 1 ? ChromeControls.FitLabel(label, width - 2 * minInset) : label, Tab == (QuestLogTab)i);
         }
-        if (ImGui.GetContentRegionAvail().Y < 140 * s) return;
-        var start = ImGui.GetCursorScreenPos();
-        if (ChromeControls.Button("##repeatable-filter", new(TextDrawing.Measure("Repeatable").X + 16 * s, 24 * s))) {
-            repeatableOnly = !repeatableOnly;
-        }
-        PaletteRowDrawing.Pill(ImGui.GetWindowDrawList(), start + new Vector2(2 * s), "Repeatable",
-            repeatableOnly ? GratisTheme.WarmAccent : GratisTheme.Secondary, s);
     }
 
     private void DrawScenario(float s, float width) {
@@ -582,7 +582,8 @@ public sealed partial class QuestLogPanel {
                 ChromeControls.Tooltip(quest.Name + (quest.Objective.Length > 0 ? "\n" + quest.Objective : "")
                     + (quest.ObjectiveProgress.Length > 0 ? "\n" + quest.ObjectiveProgress : "")
                     + (quest.Duty.Length > 0 ? "\n" + quest.Duty : "")
-                    + (quest.Targets.Count == 0 ? "\nNo map destination is currently available." : ""));
+                    + (quest.DestinationNote.Length > 0 ? "\n" + quest.DestinationNote
+                        : quest.Targets.Count == 0 ? "\nNo map destination is currently available." : ""));
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, height));
         ImGui.Dummy(new(0, GratisTheme.Gap * s));

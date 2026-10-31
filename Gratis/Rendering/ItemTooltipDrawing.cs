@@ -17,7 +17,8 @@ public sealed class ItemTooltipDrawing {
     private QuestLogRewardItem? shownReward;
     private uint summary;
     private bool hoveredThisFrame;
-    private readonly MenuRowCache linkRow = new("Link"), copyRow = new("Copy name"), searchRow = new("Search for Item");
+    private readonly MenuRowCache linkRow = new(ItemTooltipModel.LinkEntry), copyRow = new(ItemTooltipModel.CopyNameEntry),
+        searchRow = new(ItemTooltipModel.SearchEntry), tryOnRow = new(ItemTooltipModel.TryOnEntry);
     public Vector4 MenuBounds { get; private set; }
     public static Vector4 LastTooltipBounds { get; private set; }
     public static uint LastTooltipItem { get; private set; }
@@ -74,7 +75,8 @@ public sealed class ItemTooltipDrawing {
     private void DrawMenu(string id, QuestLogRewardItem reward, IItemTooltipSource? source, float s) {
         using var style = PopupSurface.Push(PopupFaces.Chrome, scale: s);
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
-        var entries = ItemTooltipModel.MenuEntries(source?.CanLink == true, source?.CanSearch == true);
+        var entries = ItemTooltipModel.MenuEntries(source?.CanLink == true, source?.CanSearch == true,
+            source?.CanTryOn(reward.Id) == true);
         var size = new Vector2(208, 24 + entries.Count * 36 + (entries.Count - 1) * 4) * s;
         var viewport = ImGui.GetWindowViewport();
         var min = Vector2.Clamp(menuAnchor, viewport.Pos,
@@ -87,12 +89,17 @@ public sealed class ItemTooltipDrawing {
         ImGui.BeginDisabled(!popup.Interactive);
         try {
             foreach (var entry in entries) {
-                var cached = entry == "Link" ? linkRow : entry == "Search for Item" ? searchRow : copyRow;
-                var row = new MenuRow(cached, new(RowFaces.Reward, s, Width: size.X - 24 * s));
+                var cached = entry == ItemTooltipModel.TryOnEntry ? tryOnRow : entry == ItemTooltipModel.LinkEntry ? linkRow
+                    : entry == ItemTooltipModel.SearchEntry ? searchRow : copyRow;
+                var enabled = entry != ItemTooltipModel.TryOnEntry || source?.TryOnEnabled == true;
+                ImGui.BeginDisabled(!enabled);
+                var row = new MenuRow(cached, new(RowFaces.Reward, s, Width: size.X - 24 * s, Enabled: enabled));
                 row.Draw(entry);
+                ImGui.EndDisabled();
                 if (!row.Clicked) continue;
-                if (entry == "Link") source?.Link(reward.Id);
-                else if (entry == "Search for Item") source?.Search(reward.Id);
+                if (entry == ItemTooltipModel.TryOnEntry) source?.TryOn(reward.Id);
+                else if (entry == ItemTooltipModel.LinkEntry) source?.Link(reward.Id);
+                else if (entry == ItemTooltipModel.SearchEntry) source?.Search(reward.Id);
                 else ImGui.SetClipboardText(reward.Name);
                 ImGui.CloseCurrentPopup();
                 menuOpen = false;

@@ -24,8 +24,11 @@ public interface IItemTooltipSource {
     int? OwnedCount(uint id) => null;
     bool CanLink => false;
     bool CanSearch => false;
+    bool CanTryOn(uint id) => false;
+    bool TryOnEnabled => true;
     void Link(uint id) { }
     void Search(uint id) { }
+    void TryOn(uint id) { }
 }
 
 public sealed record ItemTooltipSection(string Heading, string Text) {
@@ -100,8 +103,24 @@ public static class ItemTooltipModel {
     public static string Stack(ItemTooltipRecord item, uint count, int? owned) =>
         item.StackSize > 0 && owned is >= 0 ? $"{count:N0}/{item.StackSize:N0} (Total: {owned:N0})" : "";
 
-    public static IReadOnlyList<string> MenuEntries(bool canLink, bool canSearch) =>
-        canSearch ? [canLink ? "Link" : "Copy name", "Search for Item"] : [canLink ? "Link" : "Copy name"];
+    public const string TryOnEntry = "Try On", SearchEntry = "Search for Item", LinkEntry = "Link", CopyNameEntry = "Copy name";
+    private static readonly IReadOnlyList<string>[] menus = BuildMenus();
+
+    private static IReadOnlyList<string>[] BuildMenus() {
+        var result = new IReadOnlyList<string>[8];
+        for (var i = 0; i < result.Length; i++) {
+            var entries = new List<string>(3);
+            if ((i & 4) != 0) entries.Add(TryOnEntry);
+            if ((i & 2) != 0) entries.Add(SearchEntry);
+            entries.Add((i & 1) != 0 ? LinkEntry : CopyNameEntry);
+            result[i] = entries.ToArray();
+        }
+        return result;
+    }
+
+    // Order follows the game's journal reward menu minus Item Comparison (no safe API): Try On, Search for Item, Link.
+    public static IReadOnlyList<string> MenuEntries(bool canLink, bool canSearch, bool canTryOn = false) =>
+        menus[(canTryOn ? 4 : 0) | (canSearch ? 2 : 0) | (canLink ? 1 : 0)];
 
     public static uint BaseId(uint id) => id is >= 1_000_000 and < 2_000_000 ? id - 1_000_000 : id;
 
