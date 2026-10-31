@@ -21,7 +21,7 @@ public static class ProfileCodec {
     public const string Prefix = "GRATIS1:";
     private const int MaxJson = 65536, MaxValues = 1024;
     private static readonly HashSet<string> Excluded = [
-        "Profiles", "WindowPresets", "ActiveLens", "CustomLenses", "LensCycleKey", "TextPixelSnap",
+        "Profiles", "QuickSetupDone", "WindowPresets", "ActiveLens", "CustomLenses", "LensCycleKey", "TextPixelSnap",
         "TextOversampleH", "PvpMapOnly", "DebugMode", "WindowPosition", "WindowSize",
     ];
     private static SettingsEntry[]? portable;

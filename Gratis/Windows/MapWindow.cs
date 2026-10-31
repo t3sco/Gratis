@@ -40,6 +40,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost {
         DisableWindowSounds = true;
         RegisterCommands();
         Rendering.MapDrawContext.Current.WindowPresets.ShowWindow = UnCollapseOrShow;
+        Rendering.MapDrawContext.Current.QuickSetup.ShowMap = UnCollapseOrShow;
     }
 
     public override bool DrawConditions() => IntegrationsController.ShouldShowMap();

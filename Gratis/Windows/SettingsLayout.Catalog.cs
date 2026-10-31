@@ -35,6 +35,11 @@ public sealed partial class SettingsLayout {
             tip: "Save up to five named sets of your settings, switch between them, or copy one as text to share. "
                 + "Window position, filters and pins are not included. Applying a profile can be undone once.");
 
+        Group("Appearance", "Quick setup");
+        Add("QuickSetupDone", "Run Quick setup again",
+            tip: "Pick a look and a few behaviours in short steps on the map. Choices apply as you make them "
+                + "and each step can be undone or skipped.");
+
         Group("Appearance", "Style");
         Add("VisualStyle", "Visual style", choices: "Gratis|Classic");
         Add("MapCircle", "Circular map");
@@ -428,7 +433,7 @@ public sealed partial class SettingsLayout {
     }
 
     private static readonly string[] GroupPriority = [
-        "Appearance/Profiles", "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
+        "Appearance/Profiles", "Appearance/Quick setup", "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
         "Appearance/Glass surfaces", "Appearance/Edge feather", "Appearance/Conic ring",
         "Map/Viewport", "Map/Zoom", "Map/Map labels and fog", "Map/Zone changes", "Map/On open", "Map/Place search",
         "Map/Travel", "Map/Map links", "Map/Window", "Map/Spotlight", "Map/Edge pointers", "Map/Measure",

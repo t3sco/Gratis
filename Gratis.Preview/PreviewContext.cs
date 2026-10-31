@@ -13,6 +13,9 @@ internal sealed class PreviewContext(Textures textures, MapDrawingConfig? config
     public List<BackdropBlur> Blurs { get; } = [];
     public bool PvP { get; set; }
     public override bool IsPvP => PvP;
+    // Stands in for a loading screen or a duty.
+    public bool Busy { get; set; }
+    public override bool QuickSetupBlocked => Busy;
     public ILocationMenuSource? LocationSource { get; set; }
     public override ILocationMenuSource? LocationMenu => LocationSource;
     public IQuestLogSource? QuestSource { get; set; }

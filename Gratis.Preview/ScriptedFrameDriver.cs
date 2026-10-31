@@ -168,6 +168,7 @@ internal sealed partial class ScriptedFrameDriver : IMapWindowHost, IMapRenderer
             Context.PvP = pvp;
             Context.SynchronizePvp();
         }
+        Context.Busy = frame.Busy ?? Context.Busy;
         mouse = frame.Mouse ?? mouse;
         left = frame.Left ?? left;
         right = frame.Right ?? right;

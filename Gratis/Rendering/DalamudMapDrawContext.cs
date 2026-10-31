@@ -6,6 +6,7 @@ using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
+using Gratis.Compat.Extensions;
 using Math = global::System.Math;
 
 namespace Gratis.Rendering;
@@ -66,6 +67,9 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     public override MapDrawingConfig Config => System.SystemConfig;
 
     public override void SaveConfig() => Data.SystemConfig.Save();
+
+    public override bool QuickSetupBlocked => Service.Condition.IsBoundByDuty() || Service.Condition.IsBetweenAreas()
+        || !Service.ClientState.IsLoggedIn;
 
     public override bool LensInDuty =>
         Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];

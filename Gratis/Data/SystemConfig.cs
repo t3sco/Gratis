@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Numerics;
 #if !GRATIS_PREVIEW
 using Gratis.Compat.Configuration;
@@ -95,8 +96,19 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public bool SuppressNativeMapOpenSound = false;
 
 #if !GRATIS_PREVIEW
-    public static SystemConfig Load() => Service.PluginInterface.LoadConfigFile<SystemConfig>("System.config.json");
+    private const string FileName = "System.config.json";
 
-    public static void Save() => Service.PluginInterface.SaveConfigFile("System.config.json", System.SystemConfig);
+    public static SystemConfig Load() {
+        // LoadConfigFile writes a default file straight away, so only now can we tell a first-ever run from a reload.
+        var existed = File.Exists(Path.Combine(Service.PluginInterface.ConfigDirectory.FullName, FileName));
+        var config = Service.PluginInterface.LoadConfigFile<SystemConfig>(FileName);
+        if (!existed) {
+            config.MarkFreshInstall();
+            Service.PluginInterface.SaveConfigFile(FileName, config);
+        }
+        return config;
+    }
+
+    public static void Save() => Service.PluginInterface.SaveConfigFile(FileName, System.SystemConfig);
 #endif
 }

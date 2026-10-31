@@ -49,6 +49,8 @@ internal static partial class Program {
             Add(scene, "1000x800", "--style", "classic");
         }
         Add("profiles", "1000x800");
+        foreach (var variant in new[] { "welcome", "look", "behaviours", "done", "classic-look" })
+            Add("quick-setup", "960x740", "--variant", variant);
         Add("ui-gallery", "1800x1");
         Add("ui-gallery-classic", "1800x1");
         return cases.ToArray();

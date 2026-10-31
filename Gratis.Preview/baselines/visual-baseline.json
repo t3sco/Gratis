@@ -514,7 +514,7 @@
       "Scene": "settings-appearance",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "E6D2E01BAEC82644DFCD3846AF788CC41DC344D33D9A7D8EAF8F615529BE90E6"
+      "Sha256": "31E0365E04DEA74C5367C346084BB8274843ECC1F732328C5A74D9AADB39FF0A"
     },
     {
       "Name": "settings-appearance-classic",
@@ -524,7 +524,7 @@
         "classic"
       ],
       "Size": "1000x800",
-      "Sha256": "A66DD51684E01C1960C0B9077587448837267C201E22A992E1B2E5687C3BE205"
+      "Sha256": "2D79A6A50990CF324BA8961BBBE8A684A8212E0CA0AF962A664147EAECE907A0"
     },
     {
       "Name": "settings-map",
@@ -668,6 +668,56 @@
       "Args": [],
       "Size": "1000x800",
       "Sha256": "2377E4A06AD814669A8236D7518A99FBFBF5D7A403EDED382759AF69E813D2C2"
+    },
+    {
+      "Name": "quick-setup-welcome",
+      "Scene": "quick-setup",
+      "Args": [
+        "--variant",
+        "welcome"
+      ],
+      "Size": "960x740",
+      "Sha256": "3BAE43291680F9F18A151A42055FDAEBABD85955DE23923AAF2F95884202B679"
+    },
+    {
+      "Name": "quick-setup-look",
+      "Scene": "quick-setup",
+      "Args": [
+        "--variant",
+        "look"
+      ],
+      "Size": "960x740",
+      "Sha256": "06F3DE536F0D8BEB11E5447F885A13876A2C7CAD22EC66259EC8446AFE0653C5"
+    },
+    {
+      "Name": "quick-setup-behaviours",
+      "Scene": "quick-setup",
+      "Args": [
+        "--variant",
+        "behaviours"
+      ],
+      "Size": "960x740",
+      "Sha256": "89BB7574CF62D064A3B8D41941301C7879AA8BFD41CEFB892B5E01719109B978"
+    },
+    {
+      "Name": "quick-setup-done",
+      "Scene": "quick-setup",
+      "Args": [
+        "--variant",
+        "done"
+      ],
+      "Size": "960x740",
+      "Sha256": "E5296EC90F09F7748B81A37C735450566E51A18E90DB6A7544F98A1A72DAF908"
+    },
+    {
+      "Name": "quick-setup-classic-look",
+      "Scene": "quick-setup",
+      "Args": [
+        "--variant",
+        "classic-look"
+      ],
+      "Size": "960x740",
+      "Sha256": "4945A7D3ABAA92420B70C856C190399E856C40CA7A3668E0A17C54420A82CBF8"
     },
     {
       "Name": "ui-gallery",

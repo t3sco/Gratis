@@ -74,7 +74,10 @@ public sealed partial class MapWindowFrame {
         MapDrawContext.Current.Assistance?.Prepare(host.Config, host.PlayerMoving);
         host.Palette?.Prepare(host.Config, ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows));
         var paletteInput = host.Palette?.CapturesInput == true;
-        var questInput = host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive;
+        MapDrawContext.Current.QuickSetup.Prepare(host);
+        // The first-install panel takes pointer input exactly like the quest log panel does.
+        var questInput = host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive
+            || MapDrawContext.Current.QuickSetup.InputActive;
         MapDrawContext.Current.ContextMenu.Prepare(host.Config);
         var assistanceInput = MapDrawContext.Current.Assistance?.InputActive == true
             || MapDrawContext.Current.ContextMenu.CapturesInput;
@@ -197,6 +200,7 @@ public sealed partial class MapWindowFrame {
             if (!MapDrawContext.Current.Measure.InputActive && !questInput)
                 MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.Draw(host.Config);
+            MapDrawContext.Current.QuickSetup.Draw(host);
             DrawGhostHint(host);
             HoverCardDrawing.DrawTail();
             UiMotion.DrawTooltipTail();

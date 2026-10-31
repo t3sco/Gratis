@@ -83,7 +83,7 @@ public sealed class SettingsEntry {
     }
 
     public void Reset(SystemConfig config, SystemConfig defaults) {
-        if (Path == "Profiles")
+        if (Path is "Profiles" or "QuickSetupDone")
             return;
         Set(config, Value(defaults));
         if (Path == "ToolbarAnchor")
@@ -99,6 +99,8 @@ public sealed class SettingsEntry {
             return SettingsWindowPresets.Draw(config);
         if (Path == "Profiles")
             return SettingsProfilesDrawing.Draw(config);
+        if (Path == "QuickSetupDone")
+            return SettingsQuickSetupDrawing.Draw(config);
         if (Path == "ActiveLens")
             return Rendering.LensDrawing.DrawSelector(config);
         if (Path == "CustomLenses")

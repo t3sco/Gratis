@@ -50,6 +50,9 @@ public abstract class MapDrawContext {
     public virtual ILocationMenuSource? LocationMenu => null;
     public virtual IQuestLogSource? QuestLogSource => null;
     public QuestLogPanel QuestLog { get; } = new();
+    public QuickSetup QuickSetup { get; } = new();
+    // True while loading or inside a duty, when Quick setup must not appear.
+    public virtual bool QuickSetupBlocked => false;
     public EdgePointers EdgePointers { get; } = new();
     public MapMarkerTargets MarkerTargets { get; } = new();
     public MeasureTool Measure { get; } = new();

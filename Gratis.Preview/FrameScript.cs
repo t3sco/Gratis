@@ -12,7 +12,7 @@ internal sealed record ScriptFrame(double Time, Vector2? Mouse = null, bool? Lef
     uint? TerritoryId = null, ImGuiKey[]? Keys = null, string? Text = null, bool? Moving = null, bool MapKey = false,
     SubZoneLocation? SubZone = null, long? UnixTime = null, float? CameraYaw = null, float? NativeConeDegrees = null,
     bool? IsPvP = null, bool? TextureReady = null, Vector2? TextureSize = null, bool? ContentReady = null,
-    MapContentBounds? Content = null, Vector2? ViewportSize = null, float? Dpi = null);
+    MapContentBounds? Content = null, Vector2? ViewportSize = null, float? Dpi = null, bool? Busy = null);
 
 internal sealed record ScriptQuestLink(Vector2? Target, uint MapId, bool SameMap = true, uint? Icon = null);
 
