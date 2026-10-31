@@ -31,7 +31,7 @@ public partial class MapWindow {
 
     bool Rendering.IMapWindowHost.MapFocused => IsFocused;
 
-    string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis && System.SystemConfig.CompactTitle
+    string Rendering.IMapWindowHost.Title => System.SystemConfig.IsGratis
         ? compactMapTitle : WindowName;
 
     Rendering.MapLocation? Rendering.IMapWindowHost.Location => cardLocation;

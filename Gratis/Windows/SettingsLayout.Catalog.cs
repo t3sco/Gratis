@@ -11,6 +11,10 @@ public sealed partial class SettingsLayout {
         var entries = new List<SettingsEntry>();
         var section = "";
         var group = "";
+        var advanced = AdvancedPaths();
+        advanced.UnionWith(SettingsPresets.CoveredPaths());
+        advanced.UnionWith(SettingsMultiSelects.CoveredPaths());
+        var advancedSeen = 0;
         Func<SystemConfig, bool> visible = _ => true;
         void Group(string area, string name, Func<SystemConfig, bool>? show = null) {
             section = area;
@@ -18,17 +22,17 @@ public sealed partial class SettingsLayout {
             visible = show ?? (_ => true);
         }
         void Add(string path, string label, float min = 0, float max = 1, string format = "%.2f",
-            string? choices = null, Func<SystemConfig, bool>? when = null, string? tip = null) =>
-            entries.Add(new SettingsEntry(section, group, path, label, min, max, format, choices, visible, when, tip));
+            string? choices = null, Func<SystemConfig, bool>? when = null, string? tip = null) {
+            var isAdvanced = advanced.Contains(path);
+            advancedSeen += isAdvanced ? 1 : 0;
+            entries.Add(new SettingsEntry(section, group, path, label, min, max, format, choices, visible, when, tip,
+                isAdvanced));
+        }
         bool Gratis(SystemConfig c) => c.IsGratis;
         bool Classic(SystemConfig c) => !c.IsGratis;
         bool ConicRing(SystemConfig c) => c.IsGratis && !c.NeutralFrame && c.FramePreset == FramePreset.Hairline;
         bool FlatMarkers(SystemConfig c) => c.IsGratis && c.MarkerStyle == 1
             && c.Markers.IconStyle != MarkerIconStyle.Game;
-
-        Group("Map", "PvP");
-        Add("PvpMapOnly", "PvP: show only what the game map shows", when: _ => false,
-            tip: "Always on. In PvP the map shows only what the game map shows: your party and alliance, not enemies or nearby players. The game's own map still works.");
 
         Group("Appearance", "Profiles");
         Add("Profiles", "Settings profiles",
@@ -111,6 +115,8 @@ public sealed partial class SettingsLayout {
                 + "Teleport and, if installed, Lifestream for aethernet. Turns on when Lifestream is first found.");
         Add("TravelConfirmGil", "Confirm travel cost", 0, 10000, "%.0f gil");
         Add("AetheryteChips", "Nearest aetheryte buttons");
+        Add("AetheryteAttunementStyle", "Style unattuned map markers",
+            tip: "Dim aetherytes you have not attuned to and show their status on hover.");
         Group("Map", "Viewport");
         Add("FollowPlayer", "Follow player");
         Add("RememberMapView", "Remember map views", when: Gratis,
@@ -144,8 +150,6 @@ public sealed partial class SettingsLayout {
         Add("PaletteImagery", "Location artwork",
             tip: "Show artwork from the game on search results. A simple placeholder appears "
                 + "while it loads.");
-        Add("AetheryteAttunementStyle", "Style unattuned map markers",
-            tip: "Dim aetherytes you have not attuned to and show their status on hover.");
         Add("PaletteMaxResults", "Search results shown", 1, 12, "%.0f");
         Group("Map", "Quest Log", Gratis);
         Add("QuestLogShowLocked", "Show quests you have not unlocked",
@@ -309,14 +313,15 @@ public sealed partial class SettingsLayout {
         Add("ShowTitleOnMap", "Title on map");
         Add("ShowRegionLabel", "Region in title");
         Add("ShowMapLabel", "Map in title");
-        Add("ShowAreaLabel", "Area in title", when: c => !c.IsGratis || !c.CompactTitle);
-        Add("ShowSubAreaLabel", "Sub-area in title", when: c => !c.IsGratis || !c.CompactTitle);
+        Add("ShowAreaLabel", "Area in title", when: c => !c.IsGratis);
+        Add("ShowSubAreaLabel", "Sub-area in title", when: c => !c.IsGratis);
+        // Gratis always draws the location card, so this flag has no row. It stays in the catalog, never shown, so
+        // old saves and shared profiles that carry it still load.
+        Group("Chrome & motion", "Gratis title", _ => false);
+        Add("CompactTitle", "Location card");
         Group("Chrome & motion", "Gratis title", Gratis);
-        Add("SubZoneBanner", "Sub-zone arrival banner",
-            tip: "Show area changes for 1.8 seconds, even while the controls are hidden.");
-        Add("CompactTitle", "Location card", when: c => c.ShowTitleOnMap);
         Add("LocationCardShows", "Location card shows", choices: "Area only|Zone|Zone + area|Region, zone and area",
-            when: c => c.ShowTitleOnMap && c.CompactTitle);
+            when: c => c.ShowTitleOnMap);
         Group("Chrome & motion", "Classic title", Classic);
         Add("TitleCorner", "Title corner", choices: "Top left|Top right|Bottom left|Bottom right",
             when: c => c.ShowTitleOnMap);
@@ -346,15 +351,9 @@ public sealed partial class SettingsLayout {
         Group("Chrome & motion", "Coordinates");
         Add("ShowCoordinateBar", "Coordinates");
         Group("Chrome & motion", "Gratis coordinates", Gratis);
-        Add("StyledCoordinates", "Coordinate chip", when: c => c.ShowCoordinateBar);
         Add("CoordinatesShow", "Coordinates show", choices: "Player|Cursor|Both", when: c => c.ShowCoordinateBar);
         Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar,
-            tip: "Use the coordinate chip to show ET beside map coordinates.");
-        Add("GratisContextMenu", "Gratis context menu");
-        Add("ShowUpdateNotice", "Update notice",
-            tip: "Shows a small notice in the top-right corner of the map when a new version of Gratis is available.");
-        Add("ShowFeedbackButton", "Feedback button",
-            tip: "A small button in the bottom-left corner of the map that opens the bug report page.");
+            tip: "Use the coordinate card to show ET beside map coordinates.");
         Group("Chrome & motion", "Classic coordinates", Classic);
         Add("CoordinateTextColor", "Coordinate text colour", when: c => c.ShowCoordinateBar);
         Add("CoordinateBarFade", "Coordinate bar opacity", when: c => c.ShowCoordinateBar);
@@ -366,8 +365,6 @@ public sealed partial class SettingsLayout {
         Add("AnimationSpeed", "Animation speed", .5f, 1.5f, "%.2fx",
             when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("ReduceMotion", "Reduce motion");
-        Add("FlagArrival", "Flag arrival notification");
-        Add("FlagArrivalRadius", "Flag arrival radius", 1, 40, "%.1f yalms");
         Add("Motion.Pings", "Flag, quest and FATE pings", when: c => !c.ReduceMotion);
         Add("Motion.PingSeconds", "Ping duration", .3f, 1.5f, "%.2f s", when: c => !c.ReduceMotion && c.Motion.Pings);
         Add("Motion.PlayerTrail", "Player trail", when: c => !c.ReduceMotion);
@@ -390,9 +387,17 @@ public sealed partial class SettingsLayout {
         Group("Chrome & motion", "Map opacity");
         Add("FadeMode", "Fade map");
         Add("FadePercent", "Map opacity when faded", .05f, 1, when: c => (int)c.FadeMode != 0);
-
-        Group("Modules / tools", "FATE list");
-        Add("SetFlagOnFateClick", "Place flag on FATE click");
+        Group("Chrome & motion", "Arrival notices", Gratis);
+        Add("SubZoneBanner", "Sub-zone arrival banner",
+            tip: "Show area changes for 1.8 seconds, even while the controls are hidden.");
+        Add("FlagArrival", "Flag arrival notification");
+        Add("FlagArrivalRadius", "Flag arrival radius", 1, 40, "%.1f yalms");
+        Group("Chrome & motion", "Extras", Gratis);
+        Add("GratisContextMenu", "Gratis context menu");
+        Add("ShowUpdateNotice", "Update notice",
+            tip: "Shows a small notice in the top-right corner of the map when a new version of Gratis is available.");
+        Add("ShowFeedbackButton", "Feedback button",
+            tip: "A small button in the bottom-left corner of the map that opens the bug report page.");
 
         Group("Advanced", "Window behaviour");
         Add("KeepOpen", "Keep map open");
@@ -415,26 +420,37 @@ public sealed partial class SettingsLayout {
         Add("BlurBackground", "Blur behind map",
             tip: "Blurs everything behind the map. Frosted panels only blur the small panels.");
         Add("BlurStrength", "Blur strength", .5f, 10, "%.1fx", when: c => c.BlurBackground);
-        Group("Advanced", "Window geometry");
-        Add("WindowPosition", "Window position", -8192, 8192, "%.0f px");
-        Add("WindowSize", "Window size", 200, 4096, "%.0f px");
         Group("Advanced", "Diagnostics");
         Add("DebugMode", "Debug marker details", tip: "Shows marker IDs on hover. Not saved.");
         Add("TextPixelSnap", "Snap text glyphs to pixels", when: c => c.IsGratis,
             tip: "Off spaces letters by their true widths. Applies after reloading the plugin.");
         Add("TextOversampleH", "Text horizontal oversample", 1, 2, "%.0f", when: c => c.IsGratis,
             tip: "2 smooths small text but uses twice the font atlas area. Applies after reloading the plugin.");
+        presetCache = SettingsPreset.CreateAll(SettingsPresets.Definitions, entries);
+        multiSelectCache = SettingsMultiSelect.CreateAll(SettingsMultiSelects.Definitions, entries);
+        if (advancedSeen != advanced.Count)
+            throw new InvalidOperationException("Advanced settings not in the catalog: "
+                + string.Join(", ", advanced.Except(entries.Select(e => e.Path))));
         return entries.OrderBy(GroupRank).ToArray();
     }
 
-    private static int GroupRank(SettingsEntry entry) {
-        var rank = Array.IndexOf(GroupPriority, $"{entry.Section}/{entry.Group}");
+    private static int GroupRank(SettingsEntry entry) => GroupRank(entry.Section, entry.Group);
+
+    private static int GroupRank(string section, string group) {
+        var rank = Array.IndexOf(GroupPriority, $"{section}/{group}");
         return rank < 0 ? GroupPriority.Length : rank;
     }
 
+    // Set while the catalog is built, so it has no initializer for the catalog's initializer to overwrite.
+    private static SettingsPreset[]? presetCache;
+    public static SettingsPreset[] Presets => presetCache ?? throw new InvalidOperationException("The catalog is not built.");
+    private static SettingsMultiSelect[]? multiSelectCache;
+    public static SettingsMultiSelect[] MultiSelects =>
+        multiSelectCache ?? throw new InvalidOperationException("The catalog is not built.");
+
     private static readonly string[] GroupPriority = [
         "Appearance/Profiles", "Appearance/Quick setup", "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
-        "Appearance/Glass surfaces", "Appearance/Edge feather", "Appearance/Conic ring",
+        "Appearance/Frame effects", "Appearance/Glass surfaces", "Appearance/Edge feather", "Appearance/Conic ring",
         "Map/Viewport", "Map/Zoom", "Map/Map labels and fog", "Map/Zone changes", "Map/On open", "Map/Place search",
         "Map/Travel", "Map/Map links", "Map/Window", "Map/Spotlight", "Map/Edge pointers", "Map/Measure",
         "Markers/Visibility and interaction", "Markers/Game icon scale", "Markers/Marker colours and size",
@@ -443,6 +459,9 @@ public sealed partial class SettingsLayout {
         "Chrome & motion/Gratis toolbar", "Chrome & motion/Classic toolbar", "Chrome & motion/Title",
         "Chrome & motion/Gratis title", "Chrome & motion/Classic title", "Chrome & motion/Coordinates",
         "Chrome & motion/Gratis coordinates", "Chrome & motion/Classic coordinates", "Chrome & motion/Chrome layout",
-        "Chrome & motion/Hover cards", "Chrome & motion/Motion",
+        "Chrome & motion/Hover cards", "Chrome & motion/Motion", "Chrome & motion/Arrival notices",
+        "Chrome & motion/Extras",
+        "Filters/Categories in the list", "Filters/Lenses",
+        "Advanced/Window behaviour", "Advanced/Native window", "Advanced/Map backdrop", "Advanced/Diagnostics",
     ];
 }

@@ -223,7 +223,7 @@ public static class MapWindowDrawing {
             title = title[..idIndex];
         if (string.IsNullOrWhiteSpace(title))
             return;
-        if (config.IsGratis && config.CompactTitle) {
+        if (config.IsGratis) {
             DrawCompactTitle(title);
             return;
         }

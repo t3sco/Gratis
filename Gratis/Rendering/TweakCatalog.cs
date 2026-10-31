@@ -35,10 +35,10 @@ public static class TweakCatalog {
             items.Add(new(id, group, icon, name, description, path, section, configureGroup, integration));
         Add("pvp-map-only", "Markers", GratisIcons.Flag, "PvP: show only what the game map shows",
             "Always on. Shows your party and alliance, not enemies or nearby players.", "PvpMapOnly",
-            section: "Map", configureGroup: "PvP", integration: "Always on. The game's own map still works in PvP.");
+            integration: "Always on. The game's own map still works in PvP.");
         Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival",
             "Show a quiet notification when you reach your flag.", "FlagArrival", section: "Chrome & motion",
-            configureGroup: "Motion");
+            configureGroup: "Arrival notices");
         Add("map-memory", "Navigation", GratisIcons.BookOpen, "Remember map views",
             "Reopen each map at the zoom and position you left it.", "RememberMapView", section: "Map", configureGroup: "Viewport");
         Add("zone-switch", "Navigation", GratisIcons.Compass, "Automatic zone switch",
@@ -128,7 +128,8 @@ public static class TweakCatalog {
         Add("mute-map-sound", "Time and info", GratisIcons.Bell, "Mute the game's map sound",
             "Silence the sound the game plays when the map opens.", "SuppressNativeMapOpenSound");
         Add("whats-new", "Time and info", GratisIcons.Sparkles, "Show what's new",
-            "Show a small badge and release notes when there are new tweaks.", "ShowWhatsNew");
+            "Show a short What's new window once after each update, and a small badge on the settings button when "
+            + "there is something new in the Changelog.", "ShowWhatsNew");
         if (items.Select(t => t.Id).Distinct(StringComparer.Ordinal).Count() != items.Count
             || items.Select(t => t.ConfigPath).Distinct(StringComparer.Ordinal).Count() != items.Count
             || items.Any(t => !Groups.Contains(t.Group) || string.IsNullOrWhiteSpace(t.Description)))

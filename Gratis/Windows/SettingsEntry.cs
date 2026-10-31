@@ -18,6 +18,8 @@ public sealed class SettingsEntry {
     public string Path { get; }
     public string Label { get; }
     public string? Tooltip { get; }
+    /// <summary>Hidden in the Gratis settings window unless "Show advanced" is on or the user is searching.</summary>
+    public bool Advanced { get; }
     public Func<SystemConfig, bool> Visible { get; }
     public Func<SystemConfig, bool> Enabled { get; }
     private readonly FieldInfo[] fields;
@@ -28,12 +30,13 @@ public sealed class SettingsEntry {
 
     public SettingsEntry(string section, string group, string path, string label, float min = 0, float max = 1,
         string format = "%.2f", string? choices = null, Func<SystemConfig, bool>? visible = null, Func<SystemConfig,
-        bool>? enabled = null, string? tip = null) {
+        bool>? enabled = null, string? tip = null, bool advanced = false) {
         Section = section;
         Group = group;
         Path = path;
         Label = label;
         Tooltip = tip;
+        Advanced = advanced;
         minimum = min;
         maximum = max;
         this.format = format;
@@ -54,11 +57,10 @@ public sealed class SettingsEntry {
 
     public bool Matches(string search) => string.IsNullOrWhiteSpace(search)
         || search.Split(' ', StringSplitOptions.RemoveEmptyEntries).All(word =>
-            Label.Contains(word, StringComparison.OrdinalIgnoreCase)
+            SettingsLayout.RowLabel(this).Contains(word, StringComparison.OrdinalIgnoreCase)
             || Path.Contains(word, StringComparison.OrdinalIgnoreCase)
             || Group.Contains(word, StringComparison.OrdinalIgnoreCase)
             || Section.Contains(word, StringComparison.OrdinalIgnoreCase)
-            || SettingsLayout.RowLabel(this).Contains(word, StringComparison.OrdinalIgnoreCase)
             || SettingsLayout.GroupLabel(Group).Contains(word, StringComparison.OrdinalIgnoreCase)
             || SettingsLayout.SectionLabel(Section).Contains(word, StringComparison.OrdinalIgnoreCase));
 

@@ -14,7 +14,6 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout {
     public bool ModifiedTweaksOnly;
-    public bool WhatsNewOpen;
 #if GRATIS_PREVIEW
     public readonly global::System.Collections.Generic.Dictionary<string, Vector2> TestTweakActions = [];
     private void RecordTweakAction(string id) =>
@@ -35,31 +34,6 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
         RecordTweakAction("modified");
 #endif
-        if (config.ShowWhatsNew) {
-            var unseen = TweakNews.HasUnseen(config);
-            if (ChromeControls.TextButton(unseen ? "What's new  *" : "What's new", scale: SettingsTheme.Scale))
-                WhatsNewOpen = !WhatsNewOpen;
-            if (WhatsNewOpen) {
-                foreach (var release in TweakNews.Releases) {
-                    ImGui.TextUnformatted($"{release.Version} / {release.Date} / {release.TweakIds.Count} tweaks");
-                    SettingsTheme.Helper(release.Notes);
-                    if (ImGui.TreeNode("Included tweaks##" + release.Version)) {
-                        foreach (var tweak in TweakCatalog.All.Where(t => release.TweakIds.Contains(t.Id)))
-                            ImGui.TextUnformatted(tweak.Name);
-                        ImGui.TreePop();
-                    }
-                }
-                if (unseen) {
-                    if (ChromeControls.TextButton("Mark as seen", scale: SettingsTheme.Scale)) {
-                        TweakNews.Dismiss(config);
-                        changed = true;
-                    }
-#if GRATIS_PREVIEW
-                    RecordTweakAction("dismiss-news");
-#endif
-                }
-            }
-        }
         ImGui.Spacing();
         var results = TweakCatalog.Find(config, Search, ModifiedTweaksOnly);
         ImGui.TextDisabled($"{results.Length} shown / {TweakCatalog.All.Count(t => t.IsModified(config))} modified");
@@ -97,7 +71,7 @@ public sealed partial class SettingsLayout {
                     }
                     if (tweak.ConfigureSection is not null) {
                         if (ImGui.SmallButton("Configure  >"))
-                            ConfigureTweak(tweak);
+                            ConfigureTweak(tweak, config);
 #if GRATIS_PREVIEW
                         RecordTweakAction(tweak.Id + "/configure");
 #endif
@@ -139,11 +113,24 @@ public sealed partial class SettingsLayout {
         return changed;
     }
 
-    public void ConfigureTweak(TweakDefinition tweak) {
+    /// <summary>
+    /// Opens the page that holds a tweak's setting. Gratis picks the tab and sub-tab the row sits under, so no search
+    /// is needed; Classic keeps its section page and a search for the group.
+    /// </summary>
+    public void ConfigureTweak(TweakDefinition tweak, SystemConfig? config = null) {
         if (tweak.ConfigureSection is null)
             return;
         SelectedSection = Array.IndexOf(Sections, tweak.ConfigureSection);
-        Search = tweak.ConfigureGroup ?? "";
+        var group = tweak.ConfigureGroup ?? "";
+        if (config is { IsGratis: false }) {
+            Search = group;
+            return;
+        }
+        var entry = Array.Find(Entries, e => e.Path == tweak.ConfigPath);
+        var home = entry is null ? Home(tweak.ConfigureSection, group) : Home(entry.Section, entry.Group);
+        SelectTab(home.Tab, home.Sub);
+        // A locked tweak's row is never drawn outside a search, so it keeps its group search.
+        Search = tweak.Locked ? group : "";
     }
 
     private static string TweakEllipsis(string text, float width) {

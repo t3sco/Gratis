@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Gratis.Controllers;
 using Gratis.Data;
 #if GRATIS_PREVIEW
@@ -18,6 +19,12 @@ public sealed partial class WindowPresetController {
     public void PrepareWindow(IMapWindowHost window, bool moving) {
         host = window;
         var config = window.Config;
+        if (resetPending) {
+            resetPending = false;
+            ImGui.SetNextWindowPos(config.WindowPosition);
+            ImGui.SetNextWindowSize(config.WindowSize);
+            window.SaveWindowPosition();
+        }
         var settings = config.WindowPresetOptions;
         if (settings.Presets.Count == 0 && Pending == 0)
             return;
@@ -44,6 +51,13 @@ public sealed partial class WindowPresetController {
             lastArea = area;
             lastScale = scale;
         }
+    }
+
+    /// <summary>Resets the window to its default geometry on the game's main screen, where it can always be seen.</summary>
+    public void ResetCurrent(SystemConfig config) {
+        var viewport = ImGui.GetMainViewport();
+        ResetGeometry(config, new(viewport.WorkPos, viewport.WorkPos + viewport.WorkSize),
+            host?.MinimumWindowSize ?? new Vector2(400, 250) * MapDrawContext.Current.GlobalScale);
     }
 
     public bool SaveCurrent(SystemConfig config, string name = "") {

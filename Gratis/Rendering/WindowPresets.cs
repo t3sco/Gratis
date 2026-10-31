@@ -99,6 +99,12 @@ public static class WindowPresetMath {
         return new(Vector2.Clamp(position, area.Min, area.Min + available - size), size);
     }
 
+    /// <summary>The shipped position and size, kept whole on one screen: the way back for a window lost off-screen.</summary>
+    public static WindowGeometry Default(MoveWorkArea area, Vector2 minimum) {
+        var defaults = new SystemConfig();
+        return Clamp(new(defaults.WindowPosition, defaults.WindowSize), area, minimum);
+    }
+
     public static WindowPreset Capture(int slot, string name, WindowGeometry geometry, MoveWorkArea area) {
         geometry = Clamp(geometry, area, Vector2.One);
         var available = Vector2.Max(Vector2.One, area.Max - area.Min);
@@ -161,6 +167,22 @@ public sealed partial class WindowPresetController {
         Decision = "applied";
         return true;
     }
+
+    /// <summary>
+    /// Puts the window back at its default position and size on the given screen. A queued preset is dropped so it
+    /// cannot move the window again, and the next frame places the window even if it is focused.
+    /// </summary>
+    public WindowGeometry ResetGeometry(SystemConfig config, MoveWorkArea area, Vector2 minimum) {
+        var geometry = WindowPresetMath.Default(area, minimum);
+        config.WindowPosition = geometry.Position;
+        config.WindowSize = geometry.Size;
+        Pending = 0;
+        Decision = "reset";
+        resetPending = true;
+        return geometry;
+    }
+
+    private bool resetPending;
 
     public string Diagnostics(SystemConfig config, bool inDuty) =>
         $"window presets={config.WindowPresetOptions.Presets.Count}/5 openAt={config.WindowPresetOptions.OpenAt} "

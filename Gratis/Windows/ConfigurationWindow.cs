@@ -9,18 +9,15 @@ namespace Gratis.Windows;
 public class ConfigurationWindow : Window {
     private readonly SettingsLayout layout = new();
 
-    public ConfigurationWindow() : base("Gratis settings", new Vector2(780, 620)) {
+    public ConfigurationWindow() : base("Gratis###GratisSettingsWindow", new Vector2(780, 620)) {
         System.CommandManager.RegisterCommand(new CommandHandler {
             Delegate = _ => System.ConfigWindow.Toggle(), ActivationPath = "/",
         });
     }
 
     public void OpenSection(string section) {
-        var index = global::System.Array.IndexOf(SettingsLayout.Sections, section);
-        if (index < 0)
+        if (!layout.OpenSection(section))
             return;
-        layout.SelectedSection = index;
-        layout.Search = "";
         UnCollapseOrShow();
         ImGui.SetWindowFocus(WindowName);
     }

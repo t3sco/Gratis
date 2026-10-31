@@ -20,13 +20,22 @@ public sealed partial class SettingsLayout {
         "Modules / tools",
         "Advanced",
         "Filters",
-        "Tweaks"];
+        "Tweaks",
+        "Changelog"];
     private static readonly char[] SectionIcons = [GratisIcons.Eye, GratisIcons.Compass, GratisIcons.MapPin,
-        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid, GratisIcons.Wrench];
+        GratisIcons.Layers, GratisIcons.Flag, GratisIcons.Settings, GratisIcons.LayoutGrid, GratisIcons.Wrench,
+        GratisIcons.Sparkles];
     private static readonly string[][] SingleSections = Sections.Select(s => new[] { s }).ToArray();
     public string Search = "";
     public int SelectedSection;
     public static SettingsEntry[] Entries { get; } = CreateEntries();
+
+    /// <summary>
+    /// The Gratis settings page hides Advanced rows until Show advanced is on. A search always finds them, and Classic
+    /// settings show everything. Resets and Find ignore this: they act on every row.
+    /// </summary>
+    public static bool HidesAdvanced(SystemConfig config, string search) =>
+        config.IsGratis && !config.ShowAdvancedSettings && string.IsNullOrWhiteSpace(search);
 
     public static SettingsEntry[] Find(SystemConfig config, string section, string search) {
         _ = config.FilterOptions;
@@ -44,6 +53,8 @@ public sealed partial class SettingsLayout {
         var defaults = new SystemConfig();
         foreach (var entry in entries)
             entry.Reset(config, defaults);
+        if (section == "Map")
+            config.PvpMapOnly = defaults.PvpMapOnly; // a policy with no row: reset still puts it back
         if (section == "Filters" && config.IsGratis) {
             config.ResetFilterBar();
             MapDrawContext.Current?.Visibility.ResetFilters();
@@ -78,7 +89,7 @@ public sealed partial class SettingsLayout {
             var navWidth = 180 * scale;
             if (ImGui.BeginChild("settings-navigation", new Vector2(navWidth, available.Y))) {
                 for (var index = 0; index < Sections.Length; index++) {
-                    if (Sections[index] == "Filters")
+                    if (Sections[index] is "Filters" or "Changelog")
                         continue;
                     var start = ImGui.GetCursorScreenPos();
                     var rowHeight = 38 * scale;
@@ -107,7 +118,8 @@ public sealed partial class SettingsLayout {
                 foreach (var section in sectionNames) {
                     var entries = VisibleCatalogue(config, section);
                     var extension = ExtensionMatches(config, section, Search);
-                    if (entries.Count == 0 && !extension)
+                    var geometry = section == "Advanced" && GeometryMatches(Search);
+                    if (entries.Count == 0 && !extension && !geometry)
                         continue;
                     found = true;
                     ImGui.PushID(section);
@@ -164,6 +176,8 @@ public sealed partial class SettingsLayout {
                         }
                         ImGui.Spacing();
                     }
+                    if (geometry)
+                        changed |= DrawWindowGeometryClassic(config);
                     if (section == "Map" && string.IsNullOrWhiteSpace(Search)
                         && ImGui.Button("Marker declutter settings"))
                         SelectedSection = 2;

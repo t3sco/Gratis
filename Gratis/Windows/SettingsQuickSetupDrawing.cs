@@ -16,7 +16,10 @@ public static class SettingsQuickSetupDrawing {
         var scale = config.IsGratis ? SettingsTheme.Scale : (float?)null;
         var width = MathF.Max(1, ImGui.GetContentRegionAvail().X);
         if (ChromeControls.TextButton("Start", new Vector2(width, 0), scale: scale))
-            MapDrawContext.Current.QuickSetup.Replay(config);
+            Run(config);
         return false;
     }
+
+    /// <summary>Starts Quick setup from the first step. Shared by the Quick setup row and the Essentials button.</summary>
+    public static void Run(SystemConfig config) => MapDrawContext.Current.QuickSetup.Replay(config);
 }
