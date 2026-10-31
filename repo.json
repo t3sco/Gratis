@@ -3,7 +3,7 @@
     "Author": "t3sco (based on Mappy by MidoriKami, harbingerftw)",
     "Name": "Gratis",
     "InternalName": "Gratis",
-    "AssemblyVersion": "0.1.0.4",
+    "AssemblyVersion": "0.1.0.5",
     "Description": "Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.",
     "Punchline": "A flat, minimal, quality-of-life-packed map.",
     "ApplicableVersion": "any",
@@ -17,12 +17,12 @@
     "DalamudApiLevel": 15,
     "LoadPriority": 0,
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.4/Gratis.zip",
-    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.4/Gratis.zip",
-    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.4/Gratis.zip",
+    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
+    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
+    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793045091,
-    "Changelog": "Quest Log: summary panel, pin and search, expansion crests, Journal replacement (opt-in), Available tab with spoiler setting, item reward tooltips. Rounded popups, separate coordinate cards, cover scaling for wide windows, glyph fallback for cypher quest names."
+    "LastUpdate": 1793419695,
+    "Changelog": "Settings profiles: save up to five, share as text, revert to defaults. First-install Quick setup (look, marker icons, behaviours). Aetheryte and aethernet clicks open the travel card. Quest highlight hides other icons for two seconds; completed quests are green. Location card, tooltips and zone list fixes. Vanilla+ defaults. FATE progress still to come."
   }
 ]
