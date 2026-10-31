@@ -16,10 +16,6 @@ bundled from the official v1.8.2 release under the SIL Open Font License 1.1:
 https://github.com/vercel/geist-font/releases/tag/v1.8.2
 The complete license and copyright notice are in Gratis/Assets/Fonts/OFL.txt.
 
-Noto Sans CJK glyph subset (Gratis.Preview/Assets/NotoSansCJK-Glyphs.otf), by Adobe and Google, SIL Open
-Font License 1.1, used only by the preview harness; the license is in
-Gratis.Preview/Assets/LICENSE-NotoSansCJK.txt. The plugin itself uses the copy Dalamud provides.
-
 Lucide icon font from the official lucide-static 1.61.0 npm package:
 https://www.npmjs.com/package/lucide-static/v/1.61.0
 Lucide Icons and Contributors, ISC license (with MIT notices for Feather-derived
@@ -29,7 +25,7 @@ font/codepoints.json. The package was downloaded as data; no package scripts ran
 
 Phosphor Icons (Fill weight), https://github.com/phosphor-icons/web, MIT license. The solid
 marker glyphs come from it; the license is in Gratis/Assets/Fonts/Icons/LICENSE-Phosphor.txt.
-tools/icon-font/build.py merges the Lucide TTF and a subset of the Phosphor TTF into the
+The Lucide TTF and a subset of the Phosphor TTF are merged into the
 single Gratis/Assets/Fonts/Icons/icons.ttf that the plugin embeds.
 
 ## Authorship of the code this project builds on

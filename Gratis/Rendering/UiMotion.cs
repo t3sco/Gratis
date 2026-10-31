@@ -25,12 +25,16 @@ public static partial class UiMotion {
     }
     public static uint Item { get; private set; }
     public static void ItemId(string id) => Item = ImGui.GetID(id);
-    public static bool Child(string id, Vector2 size, ImGuiWindowFlags flags) =>
+    public static bool Child(string id, Vector2 size, ImGuiWindowFlags flags) {
+        var bar = ScrollbarBegin(id, flags);
 #if GRATIS_PREVIEW
-        ImGui.BeginChild(id, size, ImGuiChildFlags.None, flags);
+        var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.None, flags);
 #else
-        ImGui.BeginChild(id, size, false, flags);
+        var visible = ImGui.BeginChild(id, size, false, flags);
 #endif
+        ScrollbarEnd(bar, visible);
+        return visible;
+    }
     public static bool Full => PolicyConfig.EffectiveInterfaceMotion == InterfaceAnimationMode.Full;
     public static bool Off => PolicyConfig.EffectiveInterfaceMotion == InterfaceAnimationMode.Off;
     public static void Begin() {
@@ -38,6 +42,7 @@ public static partial class UiMotion {
             context = MapDrawContext.Current;
             Store.Reset();
             scrolls.Clear();
+            fades.Clear();
             exitNames.Clear();
             ResetPresentation();
             frame = -1;
@@ -213,7 +218,9 @@ public static partial class UiMotion {
         ImGui.SetNextWindowViewport(viewport.ID);
         ImGui.SetNextWindowPos(min);
         ImGui.SetNextWindowSize(size);
+        var bar = desired ? ScrollbarBegin(key, flags) : 0;
         var native = desired && ImGui.BeginPopup(id, flags);
+        ScrollbarEnd(bar, native);
         var alpha = Visibility(key, native);
         if (!native) {
             if (!desired && ImGui.BeginPopup(id, flags)) {
@@ -230,8 +237,10 @@ public static partial class UiMotion {
             ImGui.SetNextWindowPos(min);
             ImGui.SetNextWindowSize(size);
             ImGui.SetNextWindowViewport(viewport.ID);
+            bar = ScrollbarBegin(key, flags);
             ImGui.Begin(name, flags | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoFocusOnAppearing |
                 ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings);
+            ScrollbarEnd(bar, false);
         }
         var visual = new VisualScope(ImGui.GetWindowDrawList(), min, alpha,
             Full ? new Vector2(0, (1 - alpha) * InterfaceMotionTokens.Slide * s) : Vector2.Zero,

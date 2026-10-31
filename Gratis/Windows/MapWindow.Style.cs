@@ -1,3 +1,4 @@
+using System;
 ﻿using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
@@ -23,8 +24,10 @@ public partial class MapWindow {
         if (pushedChromeStyles) {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+            // ImGui sizes the corner resize zones from the window rounding. The frame is drawn by Gratis, so the
+            // rounding is only a hit-size knob here: raise it so the corners are easier to grab.
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding,
-                System.SystemConfig.FlatCornerRadius * ImGuiHelpers.GlobalScale);
+                MathF.Max(System.SystemConfig.FlatCornerRadius, 26) * ImGuiHelpers.GlobalScale);
         }
         if ((IsFocused || HoveredFlags.Any()) && !pushedChromeStyles)
             return;

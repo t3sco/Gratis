@@ -20,6 +20,7 @@
     "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
     "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
     "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.5/Gratis.zip",
+    "IconUrl": "https://raw.githubusercontent.com/t3sco/Gratis/master/docs/images/icon.png",
     "IsHide": false,
     "IsTestingExclusive": false,
     "LastUpdate": 1793419695,

@@ -75,7 +75,9 @@ public static class SegmentedChip {
                 : new Vector2(options.Centered ? (min.X + max.X - textSize.X) / 2 : min.X + face.TextInset * s,
                     (min.Y + max.Y - textSize.Y) / 2);
             TextDrawing.Draw(list, position, ImGui.GetColorU32(face.Ink), text);
-            ChromeControls.Tooltip(options.Tooltip ?? label, windowBounds: MapToolbarDrawing.WindowBounds);
+            // A tooltip that repeats the visible label says nothing: show one only when it adds text or the label was cut.
+            if (options.Tooltip != null || !ReferenceEquals(text, label))
+                ChromeControls.Tooltip(options.Tooltip ?? label, windowBounds: MapToolbarDrawing.WindowBounds);
             return clicked;
         }
         finally { ImGui.PopStyleColor(); }

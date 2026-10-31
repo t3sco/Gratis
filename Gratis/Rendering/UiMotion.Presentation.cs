@@ -101,7 +101,7 @@ public static partial class UiMotion {
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s,
             ChromeFontRole.Body)?.Push();
         var viewport = ImGui.GetWindowViewport();
-        var size = HintCard.Measure(title, meta, rows, 340 * s, s) + new Vector2(24) * s;
+        var size = HintCard.Measure(title, meta, rows, 340 * s, s) + new Vector2(34, 26) * s;
         var p = ImGui.GetMousePos() + new Vector2(18, 24) * s;
         p = Vector2.Clamp(p, viewport.Pos, Vector2.Max(viewport.Pos, viewport.Pos + viewport.Size - size));
         TooltipCard(title, meta, rows, new(p.X, p.Y, p.X + size.X, p.Y + size.Y), 340 * s, s);
@@ -151,6 +151,8 @@ public static partial class UiMotion {
         ImGui.SetNextWindowPos(new(tooltipBounds.X, tooltipBounds.Y));
         ImGui.SetNextWindowSize(new(tooltipBounds.Z - tooltipBounds.X, tooltipBounds.W - tooltipBounds.Y));
         ImGui.SetNextWindowViewport(tooltipViewport);
+        // No scrollbar on a tooltip, ever: a hair-thin one is neither seen nor given room (ImGui asserts on a size of 0).
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, .01f);
         ImGui.BeginTooltip();
         using (var motion = new VisualScope(ImGui.GetWindowDrawList(), new(tooltipBounds.X, tooltipBounds.Y), alpha,
             Full ? new Vector2(0, (1 - alpha) * 3 * s) : Vector2.Zero, start: 0)) {
@@ -168,6 +170,7 @@ public static partial class UiMotion {
             }
         }
         ImGui.EndTooltip();
+        ImGui.PopStyleVar();
     }
 
     private static int contentTooltipSeen = -2;
@@ -189,6 +192,7 @@ public static partial class UiMotion {
         ImGui.SetNextWindowPos(p);
         ImGui.SetNextWindowSize(size);
         ImGui.SetNextWindowViewport(viewport.ID);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, .01f);
         ImGui.BeginTooltip();
         try {
             using var motion = new VisualScope(ImGui.GetWindowDrawList(), p, alpha,
@@ -197,7 +201,10 @@ public static partial class UiMotion {
             PopupDiagnostics.Capture("item-tooltip", GratisTheme.Radius.Popup * s);
             draw();
         }
-        finally { ImGui.EndTooltip(); }
+        finally {
+            ImGui.EndTooltip();
+            ImGui.PopStyleVar();
+        }
     }
 
     public static void ResetPresentation() {

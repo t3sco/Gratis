@@ -326,7 +326,10 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             TitleFocused = interactive && ImGui.IsItemActive();
             ImGui.TextUnformatted("Note");
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextMultiline("##pin-note-" + editorSerial, ref note, 280, new Vector2(-1, 78 * s));
+            var noteId = "##pin-note-" + editorSerial;
+            var noteBar = UiMotion.ScrollbarBegin(noteId);
+            var typed = ImGui.InputTextMultiline(noteId, ref note, 280, new Vector2(-1, 78 * s));
+            UiMotion.ScrollbarEndItem(noteBar, typed);
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
             var pointer = draft.Pointer;

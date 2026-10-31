@@ -7,5 +7,11 @@ _preview/
 _artifacts/
 dist/
 
-# Visual baseline reference images are local only; the manifest hashes are committed.
-Gratis.Preview/baselines/images/
+# The preview/test harness is kept locally and is not part of the repository.
+Gratis.Preview/
+
+# Developer notes and tooling are kept locally and are not part of the repository.
+tools/
+docs/ARCHITECTURE.md
+docs/GLOSSARY.md
+docs/adr/

@@ -10,7 +10,7 @@
         <Description>Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.</Description>
         <RepoUrl>https://github.com/t3sco/Gratis</RepoUrl>
         <Tags>map;mapping;overlay;utility</Tags>
-        <CategoryTags>jobs</CategoryTags>
+        <CategoryTags>ui</CategoryTags>
         <AcceptsFeedback>true</AcceptsFeedback>
     </PropertyGroup>
 
