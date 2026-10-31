@@ -101,8 +101,12 @@ public static partial class UiMotion {
     }
 
     public static Vector2 Selection(uint key, Vector2 target) {
-        return new(Value(key, 4, target.X, InterfaceMotionTokens.Standard, InterfaceCurve.Spring),
-            Value(key, 5, target.Y, InterfaceMotionTokens.Standard, InterfaceCurve.Spring));
+        // Animate in window space: when the window is dragged the target shifts every frame, and a spring in
+        // screen space would trail behind it.
+        var origin = ImGui.GetWindowPos();
+        var relative = target - origin;
+        return origin + new Vector2(Value(key, 4, relative.X, InterfaceMotionTokens.Standard, InterfaceCurve.Spring),
+            Value(key, 5, relative.Y, InterfaceMotionTokens.Standard, InterfaceCurve.Spring));
     }
 
     public static void Scroll() {

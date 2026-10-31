@@ -29,6 +29,7 @@ internal static partial class Program {
         ("frames-location-menu", LocationMenuVerification.Run),
         ("frames-location-fit", LocationMenuVerification.Fit),
         ("frames-location-duplicates", LocationMenuVerification.Duplicates),
+        ("selection-motion", SelectionMotionVerification.FollowsWindow),
         ("profiles", ProfileVerification.Run),
         ("quest-log-model", QuestLogVerification.Model),
         ("performance-caches", PerformanceCacheVerification.Run),
