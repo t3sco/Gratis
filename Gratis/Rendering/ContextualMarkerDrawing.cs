@@ -15,6 +15,7 @@ public static class ContextualMarkerDrawing {
     private static readonly Vector4 Contour = new(.025f, .03f, .045f, .95f);
     private static readonly Vector4 Purple = new(.65f, .48f, .91f, 1);
     private static readonly Vector4 Blue = new(.31f, .64f, .93f, 1);
+    private static readonly Vector4 Green = new(.36f, .76f, .43f, 1);
 
     public static MarkerDrawPath Draw(ImDrawListPtr list, Vector2 center, float radius, MarkerInfo marker,
         Vector4 color, float alpha) {
@@ -125,7 +126,8 @@ public static class ContextualMarkerDrawing {
     private static bool Quest(ImDrawListPtr list, Vector2 center, float r, QuestMarker quest, float alpha, bool glyphs) {
         var scale = MapDrawContext.Current.GlobalScale;
         var color = quest.State == QuestMarkerState.Locked ? new Vector4(.68f, .31f, .29f, 1)
-            : quest.State == QuestMarkerState.InProgress ? Muted : quest.Feature ? Blue : Gold;
+            : quest.State == QuestMarkerState.InProgress ? Muted : quest.State == QuestMarkerState.Complete ? Green
+            : quest.Feature ? Blue : Gold;
         Span<Vector2> pin = stackalloc Vector2[15];
         for (var i = 0; i < 14; i++) {
             var angle = MathF.PI * (.75f - 1.5f * i / 13);
@@ -139,7 +141,7 @@ public static class ContextualMarkerDrawing {
         var ink = quest.MainScenario ? new Vector4(.27f, .13f, .4f, 1) : new Vector4(.16f, .13f, .22f, 1);
         if (quest.State == QuestMarkerState.Complete) {
             glyphs = glyphs && GratisIcons.Draw(list, glyphCenter, GratisIcons.Check,
-                new Vector4(.13f, .35f, .17f, alpha), r * 1.8f);
+                new Vector4(1, 1, 1, alpha), r * 1.8f);
         }
         else if (quest.Repeatable || quest.State == QuestMarkerState.Locked) {
             glyphs = glyphs && GratisIcons.Draw(list, glyphCenter,
