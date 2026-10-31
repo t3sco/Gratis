@@ -56,7 +56,7 @@ public static class LocationMenuDrawing {
             ImGui.SetNextFrameWantCaptureKeyboard(true);
     }
 
-    public static void Draw(Vector4 card, string fullText) {
+    public static void Draw(Vector4 card, string fullText, string overline = "", string detail = "") {
         var current = MapDrawContext.Current;
         if (!ReferenceEquals(context, current)) {
             context = current;
@@ -80,7 +80,9 @@ public static class LocationMenuDrawing {
         var clicked = ChromeControls.Button("##location-card", new(card.Z - card.X, card.W - card.Y));
         ChromeControls.Feedback(ImGui.GetWindowDrawList(), new(card.X, card.Y), new(card.Z, card.W), IsOpen,
             radius: GratisTheme.Radius.Card * GratisTheme.ChromeScale);
-        ChromeControls.Tooltip(fullText + "\nBrowse this region");
+        if (!open)
+            ChromeControls.Tooltip(fullText, meta: string.Join("\n",
+                new[] { overline, detail, "Browse this region" }.Where(line => line.Length > 0)));
         if (clicked && !open) {
             query = searched = "";
             revision = -1;

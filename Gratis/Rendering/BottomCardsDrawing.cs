@@ -141,10 +141,10 @@ public static class BottomCardsDrawing {
                 ImGui.GetColorU32(GratisTheme.Primary), primaryLabel.Fit(LocationPrimary, size.X - 24 * s));
         ImGui.SetCursorScreenPos(pos);
         if (c.Config.IsGratis)
-            LocationMenuDrawing.Draw(locationBounds, LocationPrimary);
+            LocationMenuDrawing.Draw(locationBounds, LocationPrimary, LocationRegion, LocationSecondary);
         else
             ImGui.Dummy(size);
-        if (ImGui.IsItemHovered())
+        if (!c.Config.IsGratis && ImGui.IsItemHovered())
             locationTooltip.Show(LocationPrimary, LocationSecondary, LocationRegion);
     }
 

@@ -103,6 +103,11 @@ public static partial class ChromeControls {
                 viewport.Pos.Y + viewport.Size.Y);
         var regionMin = new Vector2(region.X, region.Y);
         var regionMax = new Vector2(region.Z, region.W);
+        if (meta == null && rows == null && string.IsNullOrEmpty(shortcut) && label.IndexOf('\n') is var split and > 0) {
+            // Draw splits at the first newline into a title card, so measure it the same way.
+            meta = label[(split + 1)..];
+            label = label[..split];
+        }
         var text = string.IsNullOrEmpty(shortcut) ? label : label + "  " + shortcut;
         var padding = ImGui.GetStyle().WindowPadding;
         var wrap = MathF.Max(1, MathF.Min(360 * s, regionMax.X - regionMin.X - padding.X * 2));

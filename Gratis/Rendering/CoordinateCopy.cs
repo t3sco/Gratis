@@ -48,9 +48,8 @@ public static class CoordinateCopy {
                 inputFrame = ImGui.GetFrameCount();
                 inputContext = context;
             }
-            if (ImGui.IsItemHovered())
-                UiMotion.TooltipCard(id.Contains("cursor", StringComparison.Ordinal)
-                    ? "Copy cursor coordinates" : "Copy player coordinates", null, ShiftHint);
+            ChromeControls.Tooltip(id.Contains("cursor", StringComparison.Ordinal)
+                ? "Copy cursor coordinates" : "Copy player coordinates", rows: ShiftHint);
         }
         void Target(string id, Vector4 bounds, Vector2? value) {
             if (value is not { } v || bounds == Vector4.Zero)
