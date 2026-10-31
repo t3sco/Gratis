@@ -514,7 +514,7 @@
       "Scene": "settings-appearance",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "31E0365E04DEA74C5367C346084BB8274843ECC1F732328C5A74D9AADB39FF0A"
+      "Sha256": "9776446DB97285659A3C0C0AAE383EB8D3BBC97F578D37F9EA9CA4458EF10C3D"
     },
     {
       "Name": "settings-appearance-classic",
@@ -524,7 +524,7 @@
         "classic"
       ],
       "Size": "1000x800",
-      "Sha256": "2D79A6A50990CF324BA8961BBBE8A684A8212E0CA0AF962A664147EAECE907A0"
+      "Sha256": "DDE508209755984CD6E0F2082A308A46FC7CC0E9DE417289440B7065B692ECD0"
     },
     {
       "Name": "settings-map",
@@ -667,7 +667,7 @@
       "Scene": "profiles",
       "Args": [],
       "Size": "1000x800",
-      "Sha256": "2377E4A06AD814669A8236D7518A99FBFBF5D7A403EDED382759AF69E813D2C2"
+      "Sha256": "D238C20823C0C0020BBC4E1B55E2050642AB8384AF9F98803FAF3DB26FF8D494"
     },
     {
       "Name": "quick-setup-welcome",

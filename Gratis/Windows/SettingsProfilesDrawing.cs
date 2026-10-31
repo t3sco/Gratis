@@ -15,7 +15,7 @@ public static class SettingsProfilesDrawing {
     private static int selected;
     private static string name = "";
     private static string message = "";
-    private static bool deleteArmed;
+    private static bool deleteArmed, revertArmed;
     private static ProfileData? incoming;
     private static int incomingKnown;
     private static string incomingName = "";
@@ -29,7 +29,7 @@ public static class SettingsProfilesDrawing {
             selected = 0;
             message = "";
             incoming = null;
-            deleteArmed = false;
+            deleteArmed = revertArmed = false;
             name = "";
         }
         if (set.Find(selected) == null) {
@@ -146,6 +146,49 @@ public static class SettingsProfilesDrawing {
                 incoming = null;
             if (set.FreeSlot() == 0)
                 ImGui.TextDisabled("Delete a profile first to make room.");
+        }
+        if (revertArmed && !ProfileManager.HasUnsavedChanges(config))
+            revertArmed = false;
+        if (!revertArmed) {
+            if (ChromeControls.TextButton("Revert to defaults", new Vector2(width, 0), scale: scale)) {
+                if (ProfileManager.HasUnsavedChanges(config)) {
+                    revertArmed = true;
+                    message = "";
+                }
+                else {
+                    var count = ProfileManager.RevertToDefaults(config);
+                    message = count == 0 ? "Already on the defaults." : $"Reverted {count} settings to the defaults.";
+                    changed |= count > 0;
+                }
+            }
+        }
+        else {
+            ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.WarmAccent);
+            ImGui.TextWrapped("Your current settings are not saved as a profile. Reverting replaces them. You can "
+                + "undo once afterwards.");
+            ImGui.PopStyleColor();
+            ImGui.BeginDisabled(set.FreeSlot() == 0);
+            if (ChromeControls.TextButton("Save, then revert", new Vector2(width, 0), scale: scale)) {
+                var slot = ProfileManager.Save(config, "");
+                selected = slot;
+                name = set.Find(slot)?.Name ?? "";
+                var count = ProfileManager.RevertToDefaults(config);
+                message = $"Saved {name}, then reverted {count} settings to the defaults.";
+                revertArmed = false;
+                changed = true;
+            }
+            ImGui.EndDisabled();
+            if (ChromeControls.TextButton("Revert anyway", new Vector2(half, 0), scale: scale)) {
+                var count = ProfileManager.RevertToDefaults(config);
+                message = $"Reverted {count} settings to the defaults. Undo is available.";
+                revertArmed = false;
+                changed |= count > 0;
+            }
+            ImGui.SameLine();
+            if (ChromeControls.TextButton("Cancel", new Vector2(half, 0), scale: scale))
+                revertArmed = false;
+            if (set.FreeSlot() == 0)
+                ImGui.TextDisabled("All profile slots are used, so it cannot be saved first.");
         }
         ImGui.BeginDisabled(set.Undo.Length == 0);
         if (ChromeControls.TextButton("Undo last applied profile", new Vector2(width, 0), scale: scale)) {

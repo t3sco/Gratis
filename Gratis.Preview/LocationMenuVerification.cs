@@ -147,11 +147,43 @@ internal static class LocationMenuVerification {
         }
     }
 
-    internal sealed class Source(ScriptedFrameDriver driver) : ILocationMenuSource, IPaletteSource {
+    public static void Duplicates() {
+        using var driver = new ScriptedFrameDriver(Config(), Scene());
+        var source = new Source(driver, true);
+        driver.Context.LocationSource = source;
+        driver.Context.Assistance = new(NullTravelProvider.Instance, new TravelFixture(driver), () => false, () => { });
+        double time = 0;
+        void Step(Vector2? mouse = null, bool left = false) =>
+            driver.Step(new(time += .04, Mouse: mouse ?? new(-1000), Left: left));
+        Step();
+        Step();
+        var card = Center(LocationMenuDrawing.CardBounds);
+        Step(card);
+        Step(card, true);
+        Step(card);
+        Step(card);
+        Require(LocationMenuDrawing.IsOpen, "Dropdown opens for the duplicate check");
+        var ids = LocationMenuDrawing.Rows.Select(r => r.Id).ToArray();
+        Require(ids.Count(id => id is "z:90" or "z:91" or "z:92") == 1,
+            "Maps sharing a name and layer are listed once");
+        Require(ids.Contains("z:93") && ids.Contains("z:94"),
+            "Maps sharing a name but on different layers are each listed");
+        Require(!ids.Contains("z:95"), "A map duplicating the current zone's name and layer is not listed");
+    }
+
+    internal sealed class Source(ScriptedFrameDriver driver, bool duplicates = false) : ILocationMenuSource, IPaletteSource {
         public int ParentCalls { get; private set; }
         public IPaletteSource Places => this;
         public IReadOnlyList<LocationMenuParent> Parents => [new("La Noscea", () => ParentCalls++)];
-        public IEnumerable<PlaceEntry> Entries => PaletteFixture.Places.Concat(Enumerable.Range(20, 12)
+        private IEnumerable<PlaceEntry> Duplicated => PaletteFixture.Places.Concat([
+            new("z:90", PlaceKind.Zone, "Alexandria", "La Noscea > Coast", 90, 1),
+            new("z:91", PlaceKind.Zone, "Alexandria", "La Noscea > Coast", 91, 1),
+            new("z:92", PlaceKind.Zone, "Alexandria", "La Noscea > Coast", 92, 1),
+            new("z:93", PlaceKind.Zone, "Ruins", "La Noscea > Coast", 93, 1) { Layer = "Upper" },
+            new("z:94", PlaceKind.Zone, "Ruins", "La Noscea > Coast", 94, 1) { Layer = "Lower" },
+            new("z:95", PlaceKind.Zone, PaletteFixture.Places.First(p => p.MapId == driver.MapId).Name,
+                "La Noscea > Coast", 95, 1)]);
+        public IEnumerable<PlaceEntry> Entries => duplicates ? Duplicated : PaletteFixture.Places.Concat(Enumerable.Range(20, 12)
             .Select(i => new PlaceEntry("z:" + i, PlaceKind.Zone, i == 20 ? "Eastern La Noscea" : "Western coast " + i, "La Noscea > Coast", (uint)i, 1)))
             .Append(new("z:other-expansion", PlaceKind.Zone, "Another coast", "La Noscea > Coast", 80, 1, Expansion: 1))
             .Append(new("z:other-region", PlaceKind.Zone, "Another region", "Thanalan > Desert", 81, 1));

@@ -28,6 +28,7 @@ public static class LocationMenuDrawing {
     private static string query = "", searched = "", region = "";
     private static string queryInputId = "##location-query-0";
     private static PlaceEntry[] zones = [], siblings = [];
+    private static string[] siblingLabels = [], resultLabels = [];
     private static PlaceResult[] results = [];
     private static IReadOnlyList<LocationMenuParent> parents = [];
     private static readonly List<string> parentIds = [];
@@ -107,9 +108,13 @@ public static class LocationMenuDrawing {
                 .Select(g => g.First()).ToArray();
             var current = zones.FirstOrDefault(p => p.MapId == map);
             region = current == null ? "" : Region(current);
+            // Several maps can share a name (floors, story phases); list each distinct name and layer once.
             siblings = current == null || region.Length == 0 ? [] : zones.Where(p => p.MapId != map
-                && p.Expansion == current.Expansion && Region(p) == region)
-                .OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(p => p.MapId).ToArray();
+                && p.Expansion == current.Expansion && Region(p) == region
+                && (p.Name != current.Name || p.Layer != current.Layer))
+                .OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(p => p.MapId)
+                .DistinctBy(p => (p.Name, p.Layer)).ToArray();
+            siblingLabels = Labels(siblings);
             searched = "\0";
         }
         if (searched == query)
@@ -117,8 +122,14 @@ public static class LocationMenuDrawing {
         searched = query;
         rowCache.Clear();
         results = string.IsNullOrWhiteSpace(query) ? []
-            : PlaceSearch.Find(zones, query, PlaceKind.Zone, source.Context, Recent, source.Access).Take(6).ToArray();
+            : PlaceSearch.Find(zones, query, PlaceKind.Zone, source.Context, Recent, source.Access)
+                .DistinctBy(r => (r.Place.Name, r.Place.Layer)).Take(6).ToArray();
+        resultLabels = Labels(results.Select(r => r.Place).ToArray());
     }
+
+    // The layer is only shown where it is what tells two rows apart.
+    private static string[] Labels(PlaceEntry[] places) => places.Select(p => p.Layer.Length > 0
+        && places.Count(o => o.Name == p.Name) > 1 ? p.Name + " · " + p.Layer : p.Name).ToArray();
 
     private static string Region(PlaceEntry place) {
         var parts = place.Subtitle.Split('>', StringSplitOptions.TrimEntries);
@@ -183,11 +194,13 @@ public static class LocationMenuDrawing {
         if (constrained)
             BeginList("##location-lists", new(0, remaining));
         try {
-            foreach (var result in results)
-                if (Row(result.Place.Name, result.Place.Id)) {
+            for (var i = 0; i < results.Length; i++) {
+                var result = results[i];
+                if (Row(resultLabels[i], result.Place.Id)) {
                     source.Places.Show(result.Place);
                     Close();
                 }
+            }
             if (!string.IsNullOrWhiteSpace(query) && results.Length == 0)
                 EmptyState.Draw("No zones found", EmptyFaces.Location);
             if (parents.Count > 0) {
@@ -206,9 +219,9 @@ public static class LocationMenuDrawing {
                     MathF.Max(stride, ImGui.GetContentRegionAvail().Y));
                 BeginList("##location-region", new(0, listHeight));
                 try {
-                    foreach (var place in siblings)
-                        if (Row(place.Name, place.Id)) {
-                            source.Places.Show(place);
+                    for (var i = 0; i < siblings.Length; i++)
+                        if (Row(siblingLabels[i], siblings[i].Id)) {
+                            source.Places.Show(siblings[i]);
                             Close();
                         }
                 }

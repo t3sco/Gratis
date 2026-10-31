@@ -129,6 +129,28 @@ internal static class ProfileVerification {
         Require(undoPoint.Length > 0 && ProfileManager.Apply(keep, 1) == 0 && keep.ProfileOptions.Undo == undoPoint,
             "applying a profile that changes nothing keeps the earlier undo point");
 
+        // Revert to defaults: warns only when the current settings are not saved, and keeps one undo point.
+        var tidy = new SystemConfig();
+        Require(!ProfileManager.HasUnsavedChanges(tidy), "default settings never need saving");
+        tidy.IconScale = .7f;
+        Require(ProfileManager.HasUnsavedChanges(tidy), "changed settings that match no profile are unsaved");
+        ProfileManager.Save(tidy, "Mine");
+        Require(!ProfileManager.HasUnsavedChanges(tidy), "settings that match a saved profile are not unsaved");
+        tidy.ChromeIdleDelay = 3;
+        Require(ProfileManager.HasUnsavedChanges(tidy), "a further change makes them unsaved again");
+        Require(ProfileManager.RevertToDefaults(tidy) >= 2 && tidy.IconScale == defaults.IconScale
+            && tidy.ChromeIdleDelay == defaults.ChromeIdleDelay && !ProfileManager.HasUnsavedChanges(tidy),
+            "reverting restores every portable default");
+        Require(ProfileManager.Undo(tidy) && tidy.IconScale == .7f && tidy.ChromeIdleDelay == 3,
+            "undo brings back the settings from before the revert");
+        tidy.WindowPosition = new(11, 12);
+        ProfileManager.RevertToDefaults(tidy);
+        Require(tidy.WindowPosition == new Vector2(11, 12) && tidy.ProfileOptions.Find(1) != null,
+            "reverting keeps window geometry and saved profiles");
+        var already = new SystemConfig();
+        Require(ProfileManager.RevertToDefaults(already) == 0 && already.ProfileOptions.Undo.Length == 0,
+            "reverting defaults changes nothing and sets no undo point");
+
         // Normalisation drops damaged stored profiles.
         var set = new SettingsProfileSet { Profiles = [new() { Slot = 1, Name = "ok", Data = text },
             new() { Slot = 1, Name = "dupe", Data = text }, new() { Slot = 9, Name = "far", Data = text },

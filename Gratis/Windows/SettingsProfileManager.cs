@@ -50,6 +50,35 @@ public static class ProfileManager {
         return true;
     }
 
+    /// <summary>True when the current settings differ from the defaults and match no saved profile.</summary>
+    public static bool HasUnsavedChanges(SystemConfig config) {
+        var current = ProfileCodec.Capture(config);
+        if (current.Count == 0)
+            return false;
+        foreach (var profile in config.ProfileOptions.Profiles) {
+            if (!ProfileCodec.TryDecode(profile.Data, out var data, out _) || data!.Values.Count != current.Count)
+                continue;
+            var same = true;
+            foreach (var pair in current)
+                if (!data.Values.TryGetValue(pair.Key, out var saved) || saved.GetRawText() != pair.Value.GetRawText()) {
+                    same = false;
+                    break;
+                }
+            if (same)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Puts every portable setting back to its default, keeping one undo point. Returns how many changed.</summary>
+    public static int RevertToDefaults(SystemConfig config) {
+        var before = ProfileCodec.Encode("Before revert", ProfileCodec.Capture(config));
+        var changed = ProfileCodec.Apply(config, new ProfileData("Defaults", []));
+        if (changed > 0)
+            config.ProfileOptions.Undo = before;
+        return changed;
+    }
+
     public static bool Rename(SystemConfig config, int slot, string? name) {
         if (config.ProfileOptions.Find(slot) is not { } profile
             || !ProfileCodec.TryDecode(profile.Data, out var data, out _))
