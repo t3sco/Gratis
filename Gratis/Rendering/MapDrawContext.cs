@@ -70,6 +70,10 @@ public abstract class MapDrawContext {
     public virtual void SaveConfig() {
     }
 
+    /// <summary>Records on its own, outside the settings file, that Quick setup has been finished or skipped.</summary>
+    public virtual void MarkQuickSetupDone() {
+    }
+
     public virtual void OpenFilterSettings() {
     }
 

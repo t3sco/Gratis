@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 #if !GRATIS_PREVIEW
 using Gratis.Compat.Configuration;
@@ -33,6 +35,21 @@ public enum FadeMode {
 
     [Description("When Unfocused")]
     WhenUnFocused = 1 << 4,
+}
+
+/// <summary>
+/// Tells a first-ever install from a returning one by what is in the plugin config directory, so a deleted or
+/// damaged System.config.json never makes a returning user look new. Pure, so the preview harness can test it.
+/// </summary>
+public static class FirstRun {
+    /// <summary>Written on its own the moment Quick setup is finished or skipped.</summary>
+    public const string DoneMarker = "quick-setup.done";
+
+    /// <summary>A fresh install has nothing at all in the config directory; any file or folder is a past run.</summary>
+    public static bool IsFreshInstall(IEnumerable<string> entries) => !entries.Any(e => !string.IsNullOrWhiteSpace(e));
+
+    public static bool HasDoneMarker(IEnumerable<string> entries) => entries.Any(e => string.Equals(e, DoneMarker,
+        StringComparison.OrdinalIgnoreCase));
 }
 
 public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
@@ -98,15 +115,40 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
 #if !GRATIS_PREVIEW
     private const string FileName = "System.config.json";
 
+    private static string[]? ConfigEntries() {
+        try {
+            var directory = Service.PluginInterface.ConfigDirectory.FullName;
+            return Directory.Exists(directory)
+                ? Directory.EnumerateFileSystemEntries(directory).Select(Path.GetFileName).OfType<string>().ToArray() : [];
+        }
+        catch (Exception) {
+            return null;
+        }
+    }
+
     public static SystemConfig Load() {
-        // LoadConfigFile writes a default file straight away, so only now can we tell a first-ever run from a reload.
-        var existed = File.Exists(Path.Combine(Service.PluginInterface.ConfigDirectory.FullName, FileName));
+        // LoadConfigFile writes a default file straight away, so the directory is read before it. A directory that
+        // cannot be read counts as a returning install: better to skip Quick setup than to show it again.
+        var entries = ConfigEntries();
+        var fresh = entries is not null && FirstRun.IsFreshInstall(entries);
         var config = Service.PluginInterface.LoadConfigFile<SystemConfig>(FileName);
-        if (!existed) {
+        if (fresh) {
             config.MarkFreshInstall();
             Service.PluginInterface.SaveConfigFile(FileName, config);
         }
+        else if (entries is null || FirstRun.HasDoneMarker(entries))
+            config.QuickSetupDone = true;
         return config;
+    }
+
+    /// <summary>Best effort: a marker that cannot be written still leaves the flag in the settings file.</summary>
+    public static void WriteDoneMarker() {
+        try {
+            File.WriteAllText(Path.Combine(Service.PluginInterface.GetPluginConfigDirectory(), FirstRun.DoneMarker), "");
+        }
+        catch (Exception e) {
+            Service.Log.Warning(e, "Could not write the Quick setup marker.");
+        }
     }
 
     public static void Save() => Service.PluginInterface.SaveConfigFile(FileName, System.SystemConfig);

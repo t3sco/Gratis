@@ -16,6 +16,12 @@ public static class QuickSetupLooks {
     private static readonly string[] Owned = ["VisualStyle", "FlatCornerRadius", "GlassEnabled", "GlassBlur",
         "AccentColor", "FramePreset", "NeutralFrame"];
     private static QuickSetupLook[]? built;
+    private static SettingsEntry[]? ownedEntries;
+
+    /// <summary>The settings a look owns, so a step can snapshot and put back exactly those and nothing else.</summary>
+    public static SettingsEntry[] OwnedEntries => ownedEntries ??= Array.ConvertAll(Owned, path =>
+        Array.Find(SettingsLayout.Entries, e => e.Path == path)
+        ?? throw new InvalidOperationException("Unknown look setting " + path));
 
     public static IReadOnlyList<QuickSetupLook> All => built ??= Build();
 

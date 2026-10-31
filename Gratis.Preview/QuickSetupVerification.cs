@@ -77,6 +77,10 @@ internal static class QuickSetupVerification {
         Keyboard();
         Classic();
         Cost();
+        ConcurrentEdits();
+        PendingBack();
+        SmallWindows();
+        FirstRuns();
     }
 
     private static void FreshInstall() {
@@ -377,6 +381,209 @@ internal static class QuickSetupVerification {
         using var narrow = new Rig(small, 400, 300);
         narrow.Idle(4);
         Require(narrow.Setup.IsOpen, "a small window still opens the flow");
+    }
+
+    private static void ConcurrentEdits() {
+        // Replay, pick a look, change an unrelated setting in Settings: Undo and Skip keep it.
+        foreach (var skip in new[] { false, true }) {
+            var config = Fresh();
+            config.QuickSetupDone = true;
+            config.IconScale = .8f;
+            using var rig = new Rig(config);
+            rig.Idle(4);
+            rig.Setup.Replay(config);
+            rig.Idle(4);
+            rig.Click("Next");
+            rig.Click("Gratis glass");
+            rig.Click("Gratis icons");
+            config.IconScale = .3f;
+            config.GhostMode = !config.GhostMode;
+            var ghost = config.GhostMode;
+            if (skip) {
+                rig.Click(QuickSetup.SkipLabel);
+                Require(!rig.Setup.IsOpen, "Skip closes the replay");
+            }
+            else
+                rig.Click("Undo");
+            Require(config.FlatCornerRadius == 12 && config.GlassEnabled == new SystemConfig().GlassEnabled
+                && config.Markers.IconStyle == MarkerIconStyle.Game,
+                "the look and icons are put back");
+            Require(config.IconScale == .3f && config.GhostMode == ghost,
+                (skip ? "Skip" : "Undo") + " keeps a setting edited meanwhile that the step never touched");
+        }
+        // The same for a behaviour step.
+        var behaviours = Fresh();
+        using var second = new Rig(behaviours);
+        second.Idle(4);
+        second.Click("Next");
+        second.Click("Next");
+        second.Click(QuickSetup.Behaviours[1].Label);
+        behaviours.IconScale = .6f;
+        second.Click("Undo");
+        Require(!behaviours.QuestLogReplaceJournal && behaviours.IconScale == .6f,
+            "Undo on Behaviours leaves other settings alone");
+    }
+
+    private static void PendingBack() {
+        var journal = QuickSetup.Behaviours[1].Label;
+        var config = Fresh();
+        using var rig = new Rig(config);
+        rig.Idle(4);
+        rig.Click("Next");
+        rig.Click("Gratis glass");
+        rig.Click("Next");
+        rig.Click(journal);
+        Require(config.QuestLogReplaceJournal, "the journal turns on");
+        rig.Click("Back");
+        Require(rig.Setup.Step == QuickSetupStep.Look && config.QuestLogReplaceJournal,
+            "Back leaves the pending change in place");
+        rig.Click("Next");
+        Require(rig.Setup.Step == QuickSetupStep.Behaviours && rig.Has("Undo") && rig.Setup.HasChange,
+            "returning to the step still offers Undo for it");
+        rig.Click("Back");
+        rig.Click(QuickSetup.SkipLabel);
+        Require(!config.QuestLogReplaceJournal && config.FlatCornerRadius == 48 && config.QuickSetupDone,
+            "Skip after a dirty Back reverts the pending step and keeps the confirmed one");
+
+        var undo = Fresh();
+        using var again = new Rig(undo);
+        again.Idle(4);
+        again.Click("Next");
+        again.Click("Next");
+        again.Click(journal);
+        again.Click("Back");
+        again.Click("Next");
+        again.Click("Undo");
+        Require(!undo.QuestLogReplaceJournal && !again.Has("Undo"), "a re-entered step can Undo its pending change");
+        again.Click(journal);
+        again.Click("Next");
+        again.Click("Back");
+        Require(undo.QuestLogReplaceJournal && !again.Has("Undo"), "a confirmed step starts clean when revisited");
+        again.Click(QuickSetup.SkipLabel);
+        Require(undo.QuestLogReplaceJournal, "Skip keeps a step that Next confirmed");
+
+        // Classic skips Behaviours, so changes left pending there are not kept by accident.
+        var classic = Fresh();
+        using var skipped = new Rig(classic);
+        skipped.Idle(4);
+        skipped.Click("Next");
+        skipped.Click("Next");
+        skipped.Click(journal);
+        skipped.Click("Back");
+        skipped.Click("Classic");
+        skipped.Click("Next");
+        Require(skipped.Setup.Step == QuickSetupStep.Done && !classic.QuestLogReplaceJournal,
+            "skipping Behaviours under Classic puts its pending change back");
+    }
+
+    private static bool Inside(Vector4 b, Vector2 min, Vector2 max) => b.Z > b.X && b.X >= min.X - .5f && b.Y >= min.Y - .5f
+        && b.Z <= max.X + .5f && b.W <= max.Y + .5f;
+
+    private static void FootersFit(Rig rig, SystemConfig config, string where) {
+        var setup = rig.Setup;
+        var window = (Min: config.WindowPosition, Max: config.WindowPosition + config.WindowSize);
+        var panel = setup.Bounds;
+        Require(setup.Visible && panel.Z > panel.X, $"{where}: the panel is drawn (open {setup.IsOpen} vis {setup.Visible} {panel} {setup.Step})");
+        Require(Inside(panel, window.Min, window.Max), $"{where}: the panel is inside the window");
+        var names = new List<string> { setup.Step == QuickSetupStep.Done ? "Finish" : "Next" };
+        if (setup.Step != QuickSetupStep.Welcome)
+            names.Add("Back");
+        if (setup.Step != QuickSetupStep.Done)
+            names.Add(setup.SkipText);
+        foreach (var name in names) {
+            var b = setup.BoundsOf(name);
+            Require(Inside(b, window.Min, window.Max) && Inside(b, new(panel.X, panel.Y), new(panel.Z, panel.W)),
+                $"{where}: '{name}' on {setup.Step} is fully inside the window ({b} in {panel})");
+        }
+    }
+
+    private static void SmallWindows() {
+        // The supported minimum map window, 400 by 250: every step keeps its footer in view.
+        var config = Fresh(432, 282);
+        using var rig = new Rig(config, 432, 282);
+        rig.Idle(4);
+        var setup = rig.Setup;
+        FootersFit(rig, config, "400x250");
+        rig.Click("Next");
+        FootersFit(rig, config, "400x250");
+        Require(setup.Scrolls, "the Look step scrolls in a 400x250 window");
+        rig.Click("Gratis glass");
+        FootersFit(rig, config, "400x250 with Undo");
+        Require(rig.Has("Undo"), "Undo is offered in a small window");
+        rig.Click("Undo");
+        string Walk(string until) {
+            for (var i = 0; i < 16 && setup.FocusedLabel != until; i++)
+                rig.Key(ImGuiKey.Tab);
+            return setup.FocusedLabel;
+        }
+        Require(Walk("Gratis icons") == "Gratis icons", "Tab reaches the icon chips");
+        rig.Idle(4);
+        var chips = setup.BoundsOf("Gratis icons");
+        var panel = setup.Bounds;
+        var next = setup.BoundsOf("Next");
+        Require(setup.ScrollOffset > 0 && chips.Y >= panel.Y && chips.W <= next.Y,
+            $"keyboard focus scrolls the body so the chips are in view above the footer ({chips} {next})");
+        rig.Key(ImGuiKey.Enter);
+        Require(config.Markers.IconStyle == MarkerIconStyle.Icons, "Enter picks the chip in the scrolled body");
+        Require(Walk("Next") == "Next", "focus reaches Next");
+        rig.Key(ImGuiKey.Enter);
+        Require(setup.Step == QuickSetupStep.Behaviours, "keyboard Next works in a small window");
+        FootersFit(rig, config, "400x250 Behaviours");
+        rig.Click("Next");
+        FootersFit(rig, config, "400x250 Done");
+        rig.Click("Back");
+        rig.Click(setup.SkipText);
+        Require(!setup.IsOpen && config.QuickSetupDone && config.Markers.IconStyle == MarkerIconStyle.Icons,
+            "clicking Skip works in a small window and keeps the confirmed step");
+
+        // A small circular map shrinks the safe area; the labels shorten and the buttons wrap but stay in view.
+        var round = Fresh(320, 320);
+        round.MapCircle = true;
+        using var circle = new Rig(round, 320, 320);
+        circle.Idle(4);
+        FootersFit(circle, round, "circular");
+        circle.Click("Next");
+        FootersFit(circle, round, "circular Look");
+        // The card is taller than the circular panel's body, so it is reached with the keyboard, which scrolls it in.
+        for (var i = 0; i < 16 && circle.Setup.FocusedLabel != "Gratis glass"; i++)
+            circle.Key(ImGuiKey.Tab);
+        circle.Key(ImGuiKey.Enter);
+        Require(round.FlatCornerRadius == 48 && circle.Has("Undo"), "keyboard picks a look on a small circular map");
+        FootersFit(circle, round, "circular Look with Undo");
+        Require(circle.Setup.SkipText == QuickSetup.CompactSkipLabel, "a narrow panel shortens the Skip label");
+        circle.Esc();
+        Require(!circle.Setup.IsOpen && round.QuickSetupDone, "Esc skips on a small circular map");
+
+        // A window with no room at all draws nothing, so it must not take the keyboard either.
+        var tiny = Fresh(320, 320);
+        tiny.WindowSize = new(200);
+        tiny.MapCircle = true;
+        using var none = new Rig(tiny, 320, 320);
+        none.Idle(6);
+        Require(none.Setup.IsOpen && !none.Setup.Visible && !none.Setup.CapturesKeyboard && none.Setup.Bounds == Vector4.Zero
+            && !none.Setup.InputActive, "an undrawable panel is neither visible nor capturing");
+        none.Esc();
+        none.Key(ImGuiKey.Enter);
+        Require(none.Setup.IsOpen && none.Setup.Step == QuickSetupStep.Welcome && !tiny.QuickSetupDone,
+            "keys do nothing while the panel cannot be drawn");
+        Require(!none.Setup.CapturesKeyboard, "and Esc is not swallowed");
+    }
+
+    private static void FirstRuns() {
+        string[] none = [], onlySystem = ["System.config.json"], flags = ["Flags.data.json"],
+            icons = ["Icons.config.json", "reports"], marker = [FirstRun.DoneMarker],
+            full = ["System.config.json", "Flags.data.json", FirstRun.DoneMarker];
+        Require(FirstRun.IsFreshInstall(none), "an empty config directory is a fresh install");
+        Require(FirstRun.IsFreshInstall([""]), "blank names are not evidence");
+        Require(!FirstRun.IsFreshInstall(onlySystem), "System.config.json alone means a returning user");
+        Require(!FirstRun.IsFreshInstall(flags), "a deleted System.config.json with Flags.data.json is a returning user");
+        Require(!FirstRun.IsFreshInstall(icons), "other files and folders are evidence too");
+        Require(!FirstRun.IsFreshInstall(marker) && !FirstRun.IsFreshInstall(full), "the marker is evidence");
+        Require(!FirstRun.HasDoneMarker(none) && !FirstRun.HasDoneMarker(onlySystem) && !FirstRun.HasDoneMarker(flags),
+            "no marker, no done");
+        Require(FirstRun.HasDoneMarker(marker) && FirstRun.HasDoneMarker(full)
+            && FirstRun.HasDoneMarker(["QUICK-SETUP.DONE"]), "the marker is found whatever else is present");
+        Require(FirstRun.DoneMarker == "quick-setup.done", "the marker file name is stable");
     }
 
     private static void Cost() {

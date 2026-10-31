@@ -34,7 +34,7 @@ public static class CoordinateCopy {
     }
     public static void Draw(Vector2? player, Vector2? cursor) {
         var context = MapDrawContext.Current;
-        if (!context.Config.IsGratis || context.ContextMenu.CapturesInput)
+        if (!context.Config.IsGratis || context.ContextMenu.CapturesInput || context.QuickSetup.InputActive)
             return;
         if (layoutFrame != ImGui.GetFrameCount() || !ReferenceEquals(layoutContext, context))
             return;

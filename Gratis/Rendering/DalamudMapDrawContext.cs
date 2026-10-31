@@ -68,6 +68,8 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
 
     public override void SaveConfig() => Data.SystemConfig.Save();
 
+    public override void MarkQuickSetupDone() => Data.SystemConfig.WriteDoneMarker();
+
     public override bool QuickSetupBlocked => Service.Condition.IsBoundByDuty() || Service.Condition.IsBetweenAreas()
         || !Service.ClientState.IsLoggedIn;
 
