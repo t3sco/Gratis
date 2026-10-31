@@ -91,9 +91,13 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             ImGui.SetKeyboardFocusHere();
             focusSearch = false;
         }
+        var wasEmpty = query.Length == 0;
         var field = TextField.Draw(queryInputId, ref query, new(FieldFaces.Palette, size, s));
         ClearBounds = field.ClearBounds;
-        if (field.Cleared)
+        // Clear on an empty search has nothing left to clear, so it closes the search.
+        if (field.Cleared && wasEmpty)
+            Close();
+        else if (field.Cleared)
             SetQuery("");
         Search(MapDrawContext.Current.Config);
         ImGui.EndDisabled();
@@ -307,12 +311,16 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         focusSearch = true;
     }
 
-    private static bool BeginChild(string id, Vector2 size, ImGuiWindowFlags flags) =>
+    private static bool BeginChild(string id, Vector2 size, ImGuiWindowFlags flags) {
+        var bar = UiMotion.ScrollbarBegin(id, flags);
 #if GRATIS_PREVIEW
-        ImGui.BeginChild(id, size, ImGuiChildFlags.AlwaysUseWindowPadding, flags);
+        var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.AlwaysUseWindowPadding, flags);
 #else
-        ImGui.BeginChild(id, size, false, flags | ImGuiWindowFlags.AlwaysUseWindowPadding);
+        var visible = ImGui.BeginChild(id, size, false, flags | ImGuiWindowFlags.AlwaysUseWindowPadding);
 #endif
+        UiMotion.ScrollbarEnd(bar, visible);
+        return visible;
+    }
 
     private void Activate(PlaceEntry place) {
         if (MapDrawContext.Current.Config is Gratis.Data.SystemConfig config

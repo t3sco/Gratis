@@ -25,6 +25,7 @@ public static class PaletteBrowser {
         "Shadowbringers",
         "Endwalker",
         "Dawntrail"];
+    internal static IReadOnlyList<string> ExpansionNames => names;
     public static string Expansion(PlaceEntry place) => place.ExpansionName.Length > 0 ? place.ExpansionName
         : place.Expansion < names.Length ? names[place.Expansion] : $"Expansion {place.Expansion}";
 
@@ -43,12 +44,24 @@ public static class PaletteBrowser {
     }
 
     public static PaletteZone[] Zones(IEnumerable<PlaceResult> results, IEnumerable<PlaceEntry> entries) {
-        var names = entries.Where(p => p.Kind == PlaceKind.Zone).GroupBy(p => p.MapId)
-            .ToDictionary(g => g.Key, g => g.First().Name);
-        return results.GroupBy(r => r.Place.MapId).Select(g => new PaletteZone(g.Key,
-            names.GetValueOrDefault(g.Key) ?? g.First().Place.Subtitle.Split('>', StringSplitOptions.TrimEntries
-                | StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? $"Map {g.Key}",
-            g.ToArray())).OrderBy(g => g.Name, StringComparer.Ordinal).ThenBy(g => g.MapId).ToArray();
+        var zones = entries.Where(p => p.Kind == PlaceKind.Zone).GroupBy(p => p.MapId)
+            .ToDictionary(g => g.Key, g => g.First());
+        // Several maps can share a name (floors, story phases); list each distinct name and layer once, under its
+        // lowest map, with every one of those maps' places merged in.
+        var grouped = results.GroupBy(r => r.Place.MapId).Select(g => {
+            var zone = zones.GetValueOrDefault(g.Key);
+            return (MapId: g.Key, Layer: zone?.Layer ?? "", Name: zone?.Name ?? g.First().Place.Subtitle.Split('>',
+                StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).LastOrDefault()
+                ?? $"Map {g.Key}", Places: g);
+        }).OrderBy(g => g.MapId).GroupBy(g => (g.Name, g.Layer)).ToArray();
+        return grouped.Select(g => {
+            var known = new HashSet<(PlaceKind, string, string, Vector2?)>();
+            var places = g.SelectMany(m => m.Places).Where(r => known.Add((r.Place.Kind, r.Place.Name, r.Place.Layer,
+                r.Place.World is { } w ? new Vector2(MathF.Round(w.X), MathF.Round(w.Y)) : null))).ToArray();
+            var name = g.Key.Layer.Length > 0 && grouped.Count(o => o.Key.Name == g.Key.Name) > 1
+                ? g.Key.Name + " \u00b7 " + g.Key.Layer : g.Key.Name;
+            return new PaletteZone(g.First().MapId, name, places);
+        }).OrderBy(z => z.Name, StringComparer.Ordinal).ThenBy(z => z.MapId).ToArray();
     }
 
     public static string Count(int count, PlaceKind kind) => $"{count} " + (kind switch {
@@ -65,8 +78,11 @@ public static class PaletteBrowser {
 
     public static PlaceResult[] Distinct(PlaceResult[] results) {
         var known = new HashSet<(uint, string, Vector2)>();
-        return results.Where(r => r.Place.Kind != PlaceKind.Marker || r.Place.World is not { } world
-            || known.Add((r.Place.MapId, r.Place.SearchName, world))).ToArray();
+        // Several maps can share a zone name (floors, story phases); keep the best-ranked row per name and layer.
+        var zones = new HashSet<(string, string)>();
+        return results.Where(r => r.Place.Kind == PlaceKind.Zone ? zones.Add((r.Place.Name, r.Place.Layer))
+            : r.Place.Kind != PlaceKind.Marker || r.Place.World is not { } world
+                || known.Add((r.Place.MapId, r.Place.SearchName, world))).ToArray();
     }
 
     public static string Name(PlaceResult result, IReadOnlyList<PlaceResult> results) {

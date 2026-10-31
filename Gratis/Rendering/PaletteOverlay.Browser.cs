@@ -14,6 +14,7 @@ namespace Gratis.Rendering;
 public sealed partial class PaletteOverlay {
     public Vector2 FirstCardCenter { get; private set; }
     private const int ZonePageSize = 4;
+    internal const float NearbyCardHeight = 154, ExpansionCardHeight = 216;
     private readonly HashSet<uint> openZones = [];
     private readonly Dictionary<uint, int> zoneLimits = [];
     private bool resetBrowserScroll;
@@ -132,7 +133,7 @@ public sealed partial class PaletteOverlay {
         }
         var start = ImGui.GetCursorScreenPos();
         var gap = GratisTheme.Gap * scale;
-        var cardSize = new Vector2((width - (columns - 1) * gap) / columns, 154 * scale);
+        var cardSize = new Vector2((width - (columns - 1) * gap) / columns, ExpansionCardHeight * scale);
         for (var i = 0; i < count; i++) {
             var position = start + new Vector2(i % columns * (cardSize.X + gap), i / columns * (cardSize.Y + gap));
             ImGui.SetCursorScreenPos(position);
@@ -211,10 +212,11 @@ public sealed partial class PaletteOverlay {
         }
     }
 
-    private static readonly (string Title, string Query)[] NearbyCards = [
-        ("Nearest aetheryte", "aetheryte"),
-        ("Nearest market board", "market board"),
-        ("Nearest inn", "inn"),
+    // Each card carries the game's own marker icon, drawn large when the place has no art of its own.
+    private static readonly (string Title, string Query, uint Icon)[] NearbyCards = [
+        ("Nearest aetheryte", "aetheryte", 60453),
+        ("Nearest market board", "market board", 60460),
+        ("Nearest inn", "inn", 60436),
     ];
 
     private PlaceResult?[] FindNearby() => NearbyCards.Select(card => NearestPlaces.Find(
@@ -224,7 +226,7 @@ public sealed partial class PaletteOverlay {
     private bool DrawNearby(MapDrawingConfig config, float scale, int columns, float width) {
         var start = ImGui.GetCursorScreenPos();
         var gap = GratisTheme.Gap * scale;
-        var cardSize = new Vector2((width - (columns - 1) * gap) / columns, 154 * scale);
+        var cardSize = new Vector2((width - (columns - 1) * gap) / columns, NearbyCardHeight * scale);
         for (var i = 0; i < NearbyCards.Length; i++) {
             var position = start + new Vector2(i % columns * (cardSize.X + gap), i / columns * (cardSize.Y + gap));
             ImGui.SetCursorScreenPos(position);
@@ -236,18 +238,16 @@ public sealed partial class PaletteOverlay {
                 UiMotion.ItemId("##card");
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
                 var text = found is { } result ? rowNames.Text(result, results) : default;
-                var subtitle = found.HasValue ? text.Detail : "Search this zone";
-                DrawCard(found?.Place, found?.Place.Name ?? NearbyCards[i].Title, NearbyCards[i].Title,
-                    GratisTheme.Transport, subtitle, position,
-                    cardSize, hovered, config, scale, trailing: found.HasValue ? text.Distance : "");
+                DrawCard(found?.Place, found?.Place.Name ?? NearbyCards[i].Title,
+                    found.HasValue ? NearbyCards[i].Title : "", GratisTheme.Transport,
+                    found.HasValue ? text.Detail : "None in this zone", position, cardSize, hovered && found.HasValue, config, scale,
+                    trailing: found.HasValue ? text.Distance : "", iconId: NearbyCards[i].Icon, slide: false);
             }
             ImGui.PopID();
-            if (!clicked)
+            // A card with nothing to go to does nothing: searching for it would only show an empty list.
+            if (!clicked || found is not { } target)
                 continue;
-            if (found is { } target)
-                Activate(target.Place);
-            else
-                SetQuery("nearest " + NearbyCards[i].Query);
+            Activate(target.Place);
             return true;
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, (NearbyCards.Length + columns - 1) / columns * (cardSize.Y + gap)));
@@ -300,28 +300,49 @@ public sealed partial class PaletteOverlay {
     }
 
     private void DrawCard(PlaceEntry? place, string title, string tag, Vector4 accent, string subtitle, Vector2 min,
-        Vector2 size, bool active, MapDrawingConfig config, float scale, bool expansionCard = false, string trailing = "") {
+        Vector2 size, bool active, MapDrawingConfig config, float scale, bool expansionCard = false, string trailing = "",
+        uint iconId = 0, bool slide = true) {
         var list = ImGui.GetWindowDrawList();
         var max = min + size;
-        if (place != null)
+        if (place != null && (iconId == 0 || config.PaletteImagery && source.Image(place).Ready))
             DrawArt(place, min, size, config, scale, GratisTheme.Radius.Card * scale);
         else {
             var top = ImGui.GetColorU32(accent with { X = accent.X * .25f, Y = accent.Y * .25f, Z = accent.Z * .25f });
             var bottom = ImGui.GetColorU32(Vector4.Lerp(GratisTheme.Surface with { W = 1 }, accent, .4f));
             RoundedArtwork.Gradient(list, min, max, top, bottom, GratisTheme.Radius.Card * scale);
+            if (iconId != 0 && MapDrawContext.Current.GetIcon(iconId) is { Size.X: > 0 } icon) {
+                var extent = MathF.Min(size.X, size.Y) * .42f;
+                var center = min + new Vector2(size.X / 2, size.Y * .38f);
+                var half = new Vector2(extent) / 2;
+                list.AddImage(icon.Handle, center - half, center + half);
+            }
         }
         RoundedArtwork.Gradient(list, min + size * new Vector2(0, .22f), max, 0, 0xf5101012,
             GratisTheme.Radius.Card * scale, ImDrawFlags.RoundCornersBottom);
-        list.AddRectFilled(min + new Vector2(12, 12) * scale, min + new Vector2(36, 15) * scale,
-            ImGui.GetColorU32(accent), GratisTheme.Radius.Pill(new Vector2(24, 3) * scale));
         if (tag.Length > 0)
-            using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())
-                TextDrawing.Draw(list, min + new Vector2(12, 24) * scale, ImGui.GetColorU32(accent), tag);
+            using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push()) {
+                // A dark pill and white text: coloured text alone vanishes over busy artwork.
+                var label = TextDrawing.Measure(tag);
+                var pill = min + new Vector2(10, 10) * scale;
+                var pillSize = label + new Vector2(16, 8) * scale;
+                list.AddRectFilled(pill, pill + pillSize, ImGui.GetColorU32(new Vector4(0, 0, 0, .72f)),
+                    GratisTheme.Radius.Pill(pillSize));
+                TextDrawing.Draw(list, pill + new Vector2(8, 4) * scale, ImGui.GetColorU32(GratisTheme.Primary), tag);
+            }
+        // The name and its detail line form one tight group pinned bottom-left.
+        float titleHeight, subtitleHeight;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Body)?.Push())
+            titleHeight = ImGui.GetTextLineHeight();
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push())
+            subtitleHeight = ImGui.GetTextLineHeight();
+        var subtitleTop = size.Y - 12 * scale - subtitleHeight;
         list.PushClipRect(min + new Vector2(12 * scale, 0), max - new Vector2(10 * scale, 0), true);
-        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, size.Y - 57 * scale), size.X - 24 * scale,
-            title, "", scale, rowNames);
-        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, size.Y - 27 * scale),
-            size.X - (expansionCard ? 60 : 24) * scale, subtitle, trailing, scale, rowNames, secondary: true,
+        var titleTop = subtitle.Length > 0 || trailing.Length > 0 ? subtitleTop - 2 * scale - titleHeight
+            : size.Y - 12 * scale - titleHeight;
+        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, titleTop), size.X - 24 * scale, title, "", scale,
+            rowNames);
+        PaletteRowDrawing.TextPair(list, min + new Vector2(12 * scale, subtitleTop),
+            size.X - 24 * scale, subtitle, trailing, scale, rowNames, secondary: true,
             keepTrailing: !expansionCard);
         list.PopClipRect();
         if (expansionCard && place != null) {
@@ -329,13 +350,16 @@ public sealed partial class PaletteOverlay {
             if (crest.Ready) {
                 var crestSize = new Vector2(crest.Width, crest.Height)
                     * (28 * scale / Math.Max(crest.Width, crest.Height));
-                var center = max - new Vector2(26, 26) * scale;
-                list.AddImage(crest.Handle, center - crestSize / 2, center + crestSize / 2);
+                // The crest sits above the name, which leaves the count free to align right.
+                var crestMin = min + new Vector2(12 * scale, titleTop - 8 * scale - crestSize.Y);
+                list.AddImage(crest.Handle, crestMin, crestMin + crestSize);
             }
         }
         var opacity = UiMotion.Value(ImGui.GetID("##browser-accent"), 7, active ? 1 : 0, initial: 0);
         if (opacity > .001f) {
-            var indicator = active ? UiMotion.Selection(selectionMotionKey, min) : min;
+            // Only the keyboard-selected card slides; a hovered card is outlined where it is. The slide shares one
+            // animated position, so two active cards would drag each other's outline away.
+            var indicator = active && slide ? UiMotion.Selection(selectionMotionKey, min) : min;
             list.AddRect(indicator, indicator + size, ImGui.GetColorU32(accent with { W = opacity }),
                 GratisTheme.Radius.Card * scale, 0, 1.5f * scale);
         }

@@ -86,14 +86,15 @@ public static class BottomCardsDrawing {
         var safeLocation = new MapLocation(location.Region ?? "", location.Zone ?? "", location.Area ?? "");
         (LocationSecondary, LocationPrimary) = safeLocation.Lines(c.LocationCardShows);
         LocationRegion = safeLocation.Overline(c.LocationCardShows);
-        var showLocation = c.ShowTitleOnMap && c.CompactTitle && LocationPrimary.Length > 0;
+        var showLocation = c.ShowTitleOnMap && (c.IsGratis || c.CompactTitle) && LocationPrimary.Length > 0;
         float titleWidth;
         using (current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = ImGui.CalcTextSize(LocationPrimary).X;
         using (current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = MathF.Max(titleWidth, MathF.Max(ImGui.CalcTextSize(LocationSecondary).X,
                 ImGui.CalcTextSize(LocationRegion).X));
-        titleWidth = Math.Clamp(MathF.Ceiling(titleWidth) + 26 * s, 96 * s, 360 * s);
+        var upReserve = LocationMenuDrawing.UpReserve(s);
+        titleWidth = Math.Clamp(MathF.Ceiling(titleWidth) + 26 * s + (upReserve > 0 ? upReserve - 12 * s : 0), 96 * s, 360 * s);
         var coordWidth = requestedCoordinates;
         if (showLocation && requestedCoordinates > 0 && c.LocationAnchor == c.CoordinateAnchor) {
             var pairedTitleWidth = MathF.Min(titleWidth, available - coordWidth - GratisTheme.Gap * s);
@@ -129,15 +130,16 @@ public static class BottomCardsDrawing {
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s, surface: GlassSurface.Title);
         var threeLines = LocationRegion.Length > 0;
+        var textWidth = size.X - 12 * s - MathF.Max(12 * s, LocationMenuDrawing.UpReserve(s));
         using (c.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
             if (threeLines)
                 list.AddText(pos + new Vector2(12, 5) * s, ImGui.GetColorU32(GratisTheme.Secondary),
-                    regionLabel.Fit(LocationRegion, size.X - 24 * s));
+                    regionLabel.Fit(LocationRegion, textWidth));
             list.AddText(pos + new Vector2(12, threeLines ? 20 : 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
-                secondaryLabel.Fit(LocationSecondary, size.X - 24 * s));
+                secondaryLabel.Fit(LocationSecondary, textWidth));
         }
         using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
-            var fitted = primaryLabel.Fit(LocationPrimary, size.X - 24 * s);
+            var fitted = primaryLabel.Fit(LocationPrimary, textWidth);
             LocationTruncated = fitted != LocationPrimary;
             list.AddText(pos + new Vector2(12 * s,
                 threeLines ? 35 * s : LocationSecondary.Length > 0 ? 30 * s : (size.Y - ImGui.GetFontSize()) / 2),

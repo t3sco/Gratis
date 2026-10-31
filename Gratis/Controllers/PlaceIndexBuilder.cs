@@ -47,10 +47,15 @@ public static class PlaceIndexBuilder {
             var mapId = row.Map != 0 ? row.Map : hub?.Map ?? 0;
             if (!mapRows.TryGetValue(mapId, out var map) || row.Name.Length == 0)
                 continue;
+            // A shard in another zone (Old Sharlayan's "The Hall of Artifice (Labyrinthos)") is located on its own
+            // map; naming the hub as its place made the subtitle say Old Sharlayan while Show opened Labyrinthos.
+            var network = !row.IsHub && hub != null ? hub : null;
+            var elsewhere = network != null && network.Map != 0 && network.Map != mapId;
             yield return new PlaceEntry($"a:{row.Id}", PlaceKind.Aetheryte, row.Name,
-                Group(map) + (!row.IsHub && hub != null ? " > " + hub.Name : ""), mapId,
+                Group(map) + (network != null && !elsewhere ? " > " + network.Name : ""), mapId,
                 row.Territory != 0 ? row.Territory : map.Territory, row.World, row.Id,
                 row.IsHub ? row.Id : hub?.Id ?? row.Id, row.Aliases, map.Expansion) {
+                SearchContext = PlaceSearch.Normalize(Group(map) + (network != null ? " > " + network.Name : "")),
                 AethernetNameId = row.AethernetNameId,
                 ExpansionName = map.ExpansionName,
                 ArtPath = map.ArtPath,

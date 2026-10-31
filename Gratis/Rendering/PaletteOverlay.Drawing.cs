@@ -33,6 +33,11 @@ public sealed partial class PaletteOverlay {
         Search(config);
         var scale = GratisTheme.ChromeScale;
         var (min, max) = ChromeLayout.SafeBounds();
+        // The location card can be taller than the toolbar beside it: keep the panel below it instead of over it.
+        var card = LocationMenuDrawing.CardBounds;
+        var anchorBottom = FieldBounds.Z > FieldBounds.X ? FieldBounds.W : MapToolbarDrawing.LastBounds.W;
+        if (card.Z > card.X && card.Y < anchorBottom && card.W > min.Y)
+            min.Y = MathF.Min(max.Y, MathF.Max(min.Y, card.W + GratisTheme.Gap * GratisTheme.ChromeScale));
         var area = max - min;
         var rows = Math.Clamp(results.Length, 2, Math.Clamp(config.PaletteMaxResults, 2, 12));
         var questMaxHeight = area.Y / 3;
@@ -277,6 +282,8 @@ public sealed partial class PaletteOverlay {
         }
     }
 
+    private const float RowActionTop = 21;
+
     private void DrawRow(PlaceResult result, int index, MapDrawingConfig config, float scale, float width,
         bool browse = false) {
         ImGui.PushID(result.Place.Id);
@@ -325,18 +332,24 @@ public sealed partial class PaletteOverlay {
         else
             DrawKindIcon(result.Place, list, start + new Vector2(21, 26) * scale, GratisTheme.IconSize * scale);
         var textMin = start + new Vector2(imageWidth > 0 ? imageWidth + 18 * scale : 40 * scale, 9 * scale);
-        var textMax = start + new Vector2(rowWidth - buttonWidth - (buttonWidth == 0 ? 24 : 8) * scale, rowHeight);
+        // Aetheryte rows carry no expansion name or chevron: the status pill alone sits on the action's centre line.
+        var aetheryte = result.Place.Kind == PlaceKind.Aetheryte;
+        var textMax = start + new Vector2(rowWidth - buttonWidth
+            - (buttonWidth == 0 ? aetheryte ? 14 : 24 : 8) * scale, rowHeight);
         var text = rowNames.Text(result, results);
         var textWidth = MathF.Max(0, textMax.X - textMin.X);
         list.PushClipRect(textMin, Vector2.Max(textMin + Vector2.One, textMax), true);
         PaletteRowDrawing.TextPair(list, textMin, textWidth, text.Name,
             text.Distance.Length > 0 ? text.Distance : text.Identifier, scale, rowNames);
         PaletteRowDrawing.TextPair(list, textMin + new Vector2(0, 23 * scale), textWidth,
-            text.Detail == text.Name ? "" : text.Detail, text.Expansion, scale, rowNames, secondary: true);
+            text.Detail == text.Name ? "" : text.Detail, aetheryte ? "" : text.Expansion, scale, rowNames,
+            secondary: true);
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push()) {
             var status = PlaceStatus(result);
             var pillSize = Pill.Measure(status, PillFaces.PaletteRow, scale);
-            var pillMin = new Vector2(MathF.Max(textMin.X, textMax.X - pillSize.X), textMin.Y + 42 * scale);
+            var pillY = aetheryte ? start.Y + (RowActionTop + GratisTheme.ControlHeight / 2) * scale - pillSize.Y / 2
+                : textMin.Y + 42 * scale;
+            var pillMin = new Vector2(MathF.Max(textMin.X, textMax.X - pillSize.X), pillY);
             PaletteRowDrawing.Pill(list, pillMin, status,
                 result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
                     ? GratisTheme.Transport : GratisTheme.Secondary, scale);
@@ -347,14 +360,14 @@ public sealed partial class PaletteOverlay {
         if (hovered)
             placeTooltip.Show(text.Name, text.Detail, result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned
                 ? "Not yet attuned" : text.Coordinates);
-        if (buttonWidth == 0 && rowWidth > 240 * scale) {
+        if (buttonWidth == 0 && !aetheryte && rowWidth > 240 * scale) {
             var chevron = start + new Vector2(rowWidth - 13 * scale, rowHeight / 2);
             var colour = ImGui.GetColorU32(GratisTheme.Secondary);
             list.AddLine(chevron - new Vector2(3, 4) * scale, chevron + new Vector2(1, 0) * scale, colour, scale);
             list.AddLine(chevron + new Vector2(1, 0) * scale, chevron - new Vector2(3, -4) * scale, colour, scale);
         }
         if (buttonWidth > 0) {
-            ImGui.SetCursorScreenPos(start + new Vector2(rowWidth - buttonWidth, 21 * scale));
+            ImGui.SetCursorScreenPos(start + new Vector2(rowWidth - buttonWidth, RowActionTop * scale));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())
                 if (DrawTravelAction(result, canTravel))
                     Teleport(result.Place, false);

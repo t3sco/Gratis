@@ -28,6 +28,13 @@ public sealed partial class MapAssistance {
         var s = GratisTheme.ChromeScale;
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var cursor = ImGui.GetCursorPos();
+        // The surface is drawn on the parent list, like the quest log, so the child's rectangular clip never
+        // trims its rounded corners or stroke.
+        using (new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pivot ?? pos, alpha,
+            UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero,
+            UiMotion.Full ? .97f + .03f * alpha : 1))
+            MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.Radius.Card * s,
+                surfaceOpacity: 1);
         ImGui.SetCursorScreenPos(pos);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12) * s);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, GratisTheme.Radius.Card * s);
@@ -43,11 +50,13 @@ public sealed partial class MapAssistance {
                 | ImGuiWindowFlags.NoScrollWithMouse
                 | (scroll ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoScrollbar)
                 | (interactive ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoInputs);
+            var bar = UiMotion.ScrollbarBegin(id, flags);
 #if GRATIS_PREVIEW
             var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.AlwaysUseWindowPadding, flags);
 #else
             var visible = ImGui.BeginChild(id, size, false, flags | ImGuiWindowFlags.AlwaysUseWindowPadding);
 #endif
+            UiMotion.ScrollbarEnd(bar, visible);
             if (visible) {
                 using var motion = new UiMotion.VisualScope(ImGui.GetWindowDrawList(), pivot ?? pos, alpha,
                     UiMotion.Full ? new Vector2(0, (1 - alpha) * 6 * s) : Vector2.Zero,
@@ -55,8 +64,6 @@ public sealed partial class MapAssistance {
                 if (scroll)
                     UiMotion.Scroll();
                 ImGui.BeginDisabled(!interactive);
-                MapWindowDrawing.DrawSurface(ImGui.GetWindowDrawList(), pos, pos + size, GratisTheme.Radius.Card * s,
-                    surfaceOpacity: 1);
                 content();
                 ImGui.EndDisabled();
                 if (interactive && (ImGui.IsWindowHovered() || ImGui.IsWindowFocused() && ImGui.IsAnyItemActive())) {

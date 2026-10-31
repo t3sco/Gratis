@@ -20,6 +20,9 @@ public interface ILocationMenuSource {
 
 public static class LocationMenuDrawing {
     private const string Popup = "Gratis_Location_Menu";
+    private const float UpSize = 28, UpInset = GratisTheme.Gap;
+    private static string upName = "", upTooltip = "";
+    private static Vector4 upBounds;
     private static readonly Dictionary<string, long> Recent = new();
     private static MapDrawContext? context;
     private static int frame = -2, serial, revision = -1;
@@ -38,6 +41,7 @@ public static class LocationMenuDrawing {
     public static IReadOnlyList<PlaceResult> Results => results;
     public static string Query => query;
     public static Vector4 CardBounds { get; private set; }
+    public static Vector4 UpBounds => Current ? upBounds : Vector4.Zero;
     public static Vector4 PopoverBounds { get; private set; }
     public static Vector4 SearchBounds { get; private set; }
     private static bool Current => ReferenceEquals(context, MapDrawContext.Current)
@@ -69,7 +73,7 @@ public static class LocationMenuDrawing {
         closing = false;
         swallowEscape &= ImGui.IsKeyDown(ImGuiKey.Escape);
         CardBounds = card;
-        PopoverBounds = SearchBounds = Vector4.Zero;
+        PopoverBounds = SearchBounds = upBounds = Vector4.Zero;
         rows.Clear();
         if (!current.Config.IsGratis || current.IsPvP || current.LocationMenu is not { } source) {
             open = false;
@@ -77,6 +81,19 @@ public static class LocationMenuDrawing {
             if (ImGui.IsItemHovered())
                 UiMotion.TooltipText(fullText);
             return;
+        }
+        // Submitted before the card button: ImGui gives hover to the first of two overlapping items, so the
+        // up button wins its own corner and the rest of the card still opens the dropdown.
+        var clickedUp = false;
+        if (TryGetUp(out var up)) {
+            var s = GratisTheme.ChromeScale;
+            var size = new Vector2(UpSize * s);
+            var origin = ImGui.GetCursorScreenPos();
+            var at = origin + new Vector2(card.Z - card.X - (UpInset + UpSize) * s, (card.W - card.Y - size.Y) / 2);
+            ImGui.SetCursorScreenPos(at);
+            clickedUp = ChromeControls.IconButton("##location-up", GratisIcons.ArrowUp, UpTooltip(up.Name), size, s);
+            upBounds = new(at.X, at.Y, at.X + size.X, at.Y + size.Y);
+            ImGui.SetCursorScreenPos(origin);
         }
         var clicked = ChromeControls.Button("##location-card", new(card.Z - card.X, card.W - card.Y));
         ChromeControls.Feedback(ImGui.GetWindowDrawList(), new(card.X, card.Y), new(card.Z, card.W), IsOpen,
@@ -95,8 +112,32 @@ public static class LocationMenuDrawing {
             parentIds.Clear();
             ImGui.OpenPopup(Popup);
         }
-        DrawPopover(source, clicked && !focus);
+        if (clickedUp)
+            up.Open();
+        DrawPopover(source, clicked && !focus || clickedUp);
         PrepareInput();
+    }
+
+    // Space the card reserves on its right for the up button: its inset, size and a gap to the text.
+    public static float UpReserve(float scale) => TryGetUp(out _) ? (UpInset + UpSize + 4) * scale : 0;
+
+    private static bool TryGetUp(out LocationMenuParent up) {
+        var current = MapDrawContext.Current;
+        if (current.Config.IsGratis && !current.IsPvP && current.LocationMenu is { } source
+            && source.Parents is { Count: > 0 } list) {
+            up = list[0];
+            return true;
+        }
+        up = default;
+        return false;
+    }
+
+    internal static string UpTooltip(string name) {
+        if (!string.Equals(name, upName, StringComparison.Ordinal)) {
+            upName = name;
+            upTooltip = "Up to " + name;
+        }
+        return upTooltip;
     }
 
     private static void Search(IPaletteSource source) {
@@ -235,11 +276,13 @@ public static class LocationMenuDrawing {
     }
 
     private static void BeginList(string id, Vector2 size) {
+        var bar = UiMotion.ScrollbarBegin(id);
 #if GRATIS_PREVIEW
-        ImGui.BeginChild(id, size, ImGuiChildFlags.None);
+        var visible = ImGui.BeginChild(id, size, ImGuiChildFlags.None);
 #else
-        ImGui.BeginChild(id, size, false);
+        var visible = ImGui.BeginChild(id, size, false);
 #endif
+        UiMotion.ScrollbarEnd(bar, visible);
     }
 
     private static Vector4 Bounds() {
