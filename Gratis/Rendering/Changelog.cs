@@ -18,6 +18,20 @@ public static class Changelog {
     };
 
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new ChangelogRelease("0.1.0.8", "1 Nov 2026", "Lighter on your frame time (and sorry for the spam)", [
+            new(ChangeKind.New, [
+                "/gratis perf: times Gratis's own drawing while the map is open and tells you the average, the slowest frames, what costs the most and whether a garbage collection hit. The details go to dalamud.log if you want to share them."]),
+            new(ChangeKind.Improved, [
+                "Sorry for the flurry of updates lately. This is the end of a performance pass, so it should be quiet for a while.",
+                "In a busy hub with the map open, the typical frame went from about 0.55 ms to about 0.28 ms and the average from 0.85 ms to 0.36 ms (measured with /gratis perf in Solution Nine). A boss fight sits around 0.19 ms.",
+                "Frame outlines and glass edges now cost roughly a tenth of what they did, and use about a third of the vertices.",
+                "Hovering a marker used to add about 0.9 ms to a frame. It now adds almost nothing, and frames over 1 ms dropped from 5% to about 1.4%.",
+                "Much less garbage is created each frame (marker text, group members and outlines were the worst), so there are fewer small stutters.",
+                "Changing maps no longer stalls for a moment while a big map is put together.",
+                "The player's view cone is drawn from a cached grid instead of being rebuilt every frame."]),
+            new(ChangeKind.Fixed, [
+                "Marker hover cards no longer rebuild their text every frame."]),
+        ]),
         new ChangelogRelease("0.1.0.7", "1 Nov 2026", "Quests you can follow, a map that fits", [
             new(ChangeKind.New, [
                 "Click a quest marker on the map to open that quest in the Quest Log, accepted or not yet picked up.",
