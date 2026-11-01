@@ -3,7 +3,7 @@
     "Author": "t3sco (based on Mappy by MidoriKami, harbingerftw)",
     "Name": "Gratis",
     "InternalName": "Gratis",
-    "AssemblyVersion": "0.1.0.7",
+    "AssemblyVersion": "0.1.0.8",
     "Description": "Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.",
     "Punchline": "A flat, minimal, quality-of-life-packed map.",
     "ApplicableVersion": "any",
@@ -17,13 +17,13 @@
     "DalamudApiLevel": 15,
     "LoadPriority": 0,
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.7/Gratis.zip",
-    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.7/Gratis.zip",
-    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.7/Gratis.zip",
+    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
+    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
+    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793555293,
+    "LastUpdate": 1793571469,
     "IconUrl": "https://raw.githubusercontent.com/t3sco/Gratis/master/docs/images/icon.png",
-    "Changelog": "Click quest markers to open the quest in the Quest Log; instance quests point at the entry NPC or door; separate map size/position in duties; Locate player toolbar button; enemy dots; fog of war removed (it grew memory after reloads); toolbar and settings polish."
+    "Changelog": "Lighter on your frame time, and sorry for the update spam. Typical frame in a busy hub about 0.55 ms to about 0.28 ms, hovering a marker no longer costs extra, much less garbage per frame, no stall when changing big maps, and a new /gratis perf command."
   }
 ]
