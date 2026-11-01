@@ -24,20 +24,20 @@ public partial class MapRenderer {
 
         if (Service.ObjectTable.LocalPlayer is { } localPlayer) {
             var motion = Rendering.MapDrawContext.Current.Motion;
+            // Within a frame the map position, window position and ImGui clock do not change, so read each once.
             var texturePosition = localPlayer.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
                 + DrawHelpers.GetMapCenterOffsetVector();
+            var now = ImGui.GetTime();
+            var windowOrigin = ImGui.GetWindowPos() + DrawPosition;
             if (Rendering.MapMotion.Enabled && System.SystemConfig.Motion.PlayerTrail)
-                motion.Trail.Add(texturePosition, ImGui.GetTime(), System.SystemConfig.Motion.TrailSeconds);
-            motion.DrawTrail(ImGui.GetWindowPos() + DrawPosition, Scale, ImGui.GetTime());
-            var position = ImGui.GetWindowPos() + DrawPosition
-                + (localPlayer.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
-                    + DrawHelpers.GetMapCenterOffsetVector())
-                * Scale;
+                motion.Trail.Add(texturePosition, now, System.SystemConfig.Motion.TrailSeconds);
+            motion.DrawTrail(windowOrigin, Scale, now);
+            var position = windowOrigin + texturePosition * Scale;
 
             var config = Rendering.MapDrawContext.Current.Config;
             var raw = -localPlayer.Rotation + MathF.PI / 2.0f;
             var camera = cameraHeading.Latest;
-            var angle = playerOrientation.Advance(config, localPlayer.Rotation, camera.Yaw, ImGui.GetTime(),
+            var angle = playerOrientation.Advance(config, localPlayer.Rotation, camera.Yaw, now,
                 ImGui.GetFrameCount(), AgentMap.Instance()->CurrentMapId, localPlayer.Position,
                 camera.NativeConeDegrees);
             Rendering.PlayerDrawing.DrawLookLine(position, Scale, config.IsGratis ? angle : GetCameraRotation());
@@ -53,10 +53,14 @@ public partial class MapRenderer {
     private void DrawPlayerIcon(Vector2 position, float angle) {
         if (!System.SystemConfig.ShowPlayerIcon)
             return;
-        var texture = Service.TextureProvider.GetFromGameIcon(60443).GetWrapOrEmpty();
+        // The flat arrow is built from triangles and never samples the icon, so skip the texture lookup for it.
+        var drawTexture = default(Rendering.DrawTexture);
+        if (Rendering.MapDrawContext.Current.Config is not { IsGratis: true, FlatPlayer: true }) {
+            var texture = Service.TextureProvider.GetFromGameIcon(60443).GetWrapOrEmpty();
+            drawTexture = new Rendering.DrawTexture(texture.Handle, texture.Size);
+        }
 
-        Rendering.PlayerDrawing.DrawPlayerIcon(position, new Rendering.DrawTexture(texture.Handle, texture.Size), angle,
-            Scale);
+        Rendering.PlayerDrawing.DrawPlayerIcon(position, drawTexture, angle, Scale);
     }
 
 }

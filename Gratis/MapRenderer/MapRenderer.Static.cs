@@ -7,8 +7,10 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer {
     private unsafe void DrawStaticMapMarkers() {
-        foreach (var index in Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount)) {
-            ref var marker = ref AgentMap.Instance()->MapMarkers[index];
+        var agent = AgentMap.Instance();
+        var count = agent->MapMarkerCount;
+        for (var index = 0; index < count; index++) {
+            ref var marker = ref agent->MapMarkers[index];
 
             if (marker.MapMarker.IconId is 0)
                 continue;
@@ -19,9 +21,11 @@ public partial class MapRenderer {
 
     private unsafe void DrawStaticTextMarkers() {
         var gratis = Rendering.MapDrawContext.Current.Config.IsGratis;
+        var agent = AgentMap.Instance();
+        var count = agent->MapMarkerCount;
         for (var pass = gratis ? 0 : 1; pass < 2; pass++) {
-            foreach (var index in Enumerable.Range(0, AgentMap.Instance()->MapMarkerCount)) {
-                ref var marker = ref AgentMap.Instance()->MapMarkers[index];
+            for (var index = 0; index < count; index++) {
+                ref var marker = ref agent->MapMarkers[index];
 
                 if (marker.MapMarker.IconId is not 0)
                     continue;

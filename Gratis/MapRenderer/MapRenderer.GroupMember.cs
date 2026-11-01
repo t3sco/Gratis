@@ -8,13 +8,16 @@ namespace Gratis.MapRenderer;
 
 public unsafe partial class MapRenderer {
     private void DrawGroupMembers() {
+        // Looked up once: each lookup per member used to allocate, and empty alliance slots were walked in full.
+        var localId = Service.ObjectTable.LocalPlayer?.EntityId;
+        var selectedTerritory = AgentMap.Instance()->SelectedTerritoryId;
         foreach (var partyMember in GroupManager.Instance(
             )->MainGroup.PartyMembers[..GroupManager.Instance()->MainGroup.MemberCount]) {
             if (partyMember.EntityId is 0xE0000000 || Service.ClientState.IsPvP && partyMember.EntityId == 0)
                 continue;
-            if (System.SystemConfig.IsGratis && partyMember.EntityId == Service.ObjectTable.LocalPlayer?.EntityId)
+            if (System.SystemConfig.IsGratis && partyMember.EntityId == localId)
                 continue;
-            if (partyMember.TerritoryType != AgentMap.Instance()->SelectedTerritoryId)
+            if (partyMember.TerritoryType != selectedTerritory)
                 continue;
 
             DrawHelpers.DrawMapMarker(new MarkerInfo {
@@ -35,10 +38,11 @@ public unsafe partial class MapRenderer {
             });
         }
 
-        if (Service.ClientState.IsPvP && !GroupManager.Instance()->MainGroup.IsAlliance)
+        // Alliance slots hold nothing outside an alliance, so they are not walked at all.
+        if (!GroupManager.Instance()->MainGroup.IsAlliance)
             return;
         foreach (var allianceMember in GroupManager.Instance()->MainGroup.AllianceMembers) {
-            if (allianceMember.EntityId is 0xE0000000 || Service.ClientState.IsPvP && allianceMember.EntityId == 0)
+            if (allianceMember.EntityId is 0xE0000000 or 0)
                 continue;
             if (Service.ClientState.IsPvP
                 && ((allianceMember.Flags & 1) == 0
@@ -46,7 +50,7 @@ public unsafe partial class MapRenderer {
                     || GroupManager.Instance()->MainGroup.IsEntityIdInParty(allianceMember.EntityId)))
                 continue;
             if (System.SystemConfig.IsGratis
-                && (allianceMember.EntityId == Service.ObjectTable.LocalPlayer?.EntityId
+                && (allianceMember.EntityId == localId
                     || GroupManager.Instance()->MainGroup.IsEntityIdInParty(allianceMember.EntityId)))
                 continue;
             if (AgentMap.Instance()->SelectedMapId != AgentMap.Instance()->CurrentMapId)

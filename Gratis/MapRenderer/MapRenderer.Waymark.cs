@@ -18,7 +18,7 @@ public partial class MapRenderer {
             return;
         var markerSpan = MarkingController.Instance()->FieldMarkers;
 
-        foreach (var index in Enumerable.Range(0, 8)) {
+        for (var index = 0; index < 8; index++) {
             if (markerSpan[index] is { Active: true } marker) {
                 var markerPosition = new Vector2(marker.X, marker.Z) / 1000.0f * DrawHelpers.GetMapScaleFactor()
                     - DrawHelpers.GetMapOffsetVector()

@@ -37,11 +37,11 @@ public static class MapShape {
         : 0;
 
     public static bool ContainsSymbol(Vector2 center, Vector2 halfSize) {
-        if (FeatherWidth <= 0)
+        var feather = FeatherWidth;
+        if (feather <= 0)
             return true;
         var (min, max) = Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
         var radius = Rounding(max - min);
-        var feather = FeatherWidth;
         return FeatheredMapDrawing.Depth(center - halfSize, min, max, radius) >= feather
             && FeatheredMapDrawing.Depth(center + halfSize, min, max, radius) >= feather
             && FeatheredMapDrawing.Depth(center + new Vector2(halfSize.X, -halfSize.Y), min, max, radius) >= feather
@@ -49,8 +49,13 @@ public static class MapShape {
     }
 
     public static bool Contains(Vector2 screenPoint) {
-        if (FeatherWidth > 0)
-            return ContainsSymbol(screenPoint, Vector2.Zero);
+        var feather = FeatherWidth;
+        if (feather > 0) {
+            // ContainsSymbol(point, zero) tests the same point at all four corners; once is the same answer.
+            var (featherMin, featherMax) = Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            return FeatheredMapDrawing.Depth(screenPoint, featherMin, featherMax, Rounding(featherMax - featherMin))
+                >= feather;
+        }
         if (Current <= 0.0f)
             return true;
 

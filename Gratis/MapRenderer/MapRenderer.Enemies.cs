@@ -23,7 +23,10 @@ public partial class MapRenderer {
     private readonly Dictionary<ushort, string> enemyFates = new();
     private readonly HuntingLogNeeds huntingLog = new();
     private readonly HashSet<uint> enemyHunting = new();
-    private double nextEnemyNeeds;
+    // Object table slots, never the wrapper objects: an enemy that despawns between scans must not be read through a
+    // wrapper whose memory is gone, so every frame re-reads the slot and checks it still holds the same entity.
+    private readonly List<(int Index, uint EntityId)> enemyCandidates = new();
+    private double nextEnemyNeeds, nextEnemyScan;
     private uint enemyNeedsMap;
     private int enemyFrame = -1;
     private IBattleNpc? hoveredEnemy;
@@ -73,13 +76,24 @@ public partial class MapRenderer {
             foreach (var fate in Service.FateTable)
                 enemyFates[(ushort)fate.FateId] = fate.Name.TextValue;
         }
-        var scanned = 0;
+        // Walking the whole object table builds a wrapper per slot, so it runs a few times a second; the frames in
+        // between draw (and re-check) only the hostile NPCs the last walk found.
+        if (ImGui.GetTime() >= nextEnemyScan) {
+            nextEnemyScan = ImGui.GetTime() + .25;
+            enemyCandidates.Clear();
+            var scanned = 0;
+            foreach (var obj in Service.ObjectTable) {
+                if (++scanned > EnemyMarkers.ScanLimit || enemyCandidates.Count >= EnemyMarkers.MarkerLimit * 2) break;
+                if (obj is IBattleNpc found && IsEnemy(found, player.Position))
+                    enemyCandidates.Add((found.ObjectIndex, found.EntityId));
+            }
+        }
         var nearest = 36f * context.GlobalScale * context.GlobalScale;
-        foreach (var obj in Service.ObjectTable) {
-            if (++scanned > EnemyMarkers.ScanLimit || enemies.Shown >= EnemyMarkers.MarkerLimit) break;
-            if (obj is not IBattleNpc npc || !EnemyMarkers.IsVisibleEnemy(npc.IsTargetable,
-                npc.BattleNpcKind == BattleNpcSubKind.Combatant, (npc.StatusFlags & StatusFlags.Hostile) != 0,
-                npc.CurrentHp, Vector3.DistanceSquared(npc.Position, player.Position))) continue;
+        foreach (var (slot, entityId) in enemyCandidates) {
+            if (enemies.Shown >= EnemyMarkers.MarkerLimit) break;
+            if (slot < 0 || slot >= Service.ObjectTable.Length
+                || Service.ObjectTable[slot] is not IBattleNpc npc || npc.EntityId != entityId
+                || !IsEnemy(npc, player.Position)) continue;
             var position = (npc.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
                 + DrawHelpers.GetMapCenterOffsetVector()) * Scale;
             if (position.X < 0 || position.Y < 0 || position.X > 2048 * Scale || position.Y > 2048 * Scale) continue;
@@ -109,6 +123,10 @@ public partial class MapRenderer {
             }
         }
     }
+
+    private static bool IsEnemy(IBattleNpc npc, Vector3 from) => EnemyMarkers.IsVisibleEnemy(npc.IsTargetable,
+        npc.BattleNpcKind == BattleNpcSubKind.Combatant, (npc.StatusFlags & StatusFlags.Hostile) != 0,
+        npc.CurrentHp, Vector3.DistanceSquared(npc.Position, from));
 
     private void DrawEnemyTooltip() {
         var context = MapDrawContext.Current;

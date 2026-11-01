@@ -18,6 +18,13 @@ internal static class DrawBinding {
 #endif
     }
 
+    public static unsafe nint FontId(ImFontPtr font) =>
+#if GRATIS_PREVIEW
+        (nint)font.NativePtr;
+#else
+        (nint)font.Handle;
+#endif
+
     public static unsafe bool ValidTextFont(ImFontPtr font) {
 #if GRATIS_PREVIEW
         if (font.NativePtr == null || font.ContainerAtlas.NativePtr == null

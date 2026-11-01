@@ -80,7 +80,9 @@ public static class ChromeLayout {
         for (var attempt = 0; attempt <= obstacles.Count; attempt++) {
             var bounds = new Vector4(x, y, x + size.X, y + size.Y);
             var hit = false;
-            foreach (var other in obstacles) {
+            // Indexed rather than foreach: enumerating through the interface boxes the list enumerator every call.
+            for (var index = 0; index < obstacles.Count; index++) {
+                var other = obstacles[index];
                 var expanded = other + new Vector4(-gap, -gap, gap, gap);
                 if (!Overlap(bounds, expanded))
                     continue;
@@ -94,13 +96,42 @@ public static class ChromeLayout {
         return Vector4.Zero;
     }
     private static readonly List<Vector4> obstacles = [];
+
+    // The three helpers below replace List.RemoveAll / Exists with capturing lambdas, which allocated a closure and a
+    // delegate on every call (several calls per frame). RemoveOccupied keeps the order of the remaining entries.
+    private static void RemoveOccupied(string id) {
+        var write = 0;
+        for (var read = 0; read < occupied.Count; read++) {
+            var item = occupied[read];
+            if (item.Id == id)
+                continue;
+            occupied[write++] = item;
+        }
+        if (write < occupied.Count)
+            occupied.RemoveRange(write, occupied.Count - write);
+    }
+
+    private static bool OccupiedOverlaps(Vector4 candidate) {
+        for (var index = 0; index < occupied.Count; index++)
+            if (Overlap(candidate, occupied[index].Bounds))
+                return true;
+        return false;
+    }
+
+    private static bool ObstaclesOverlap(Vector4 candidate, float gap) {
+        for (var index = 0; index < obstacles.Count; index++)
+            if (Overlap(candidate, obstacles[index] + new Vector4(-gap, -gap, gap, gap)))
+                return true;
+        return false;
+    }
+
     public static Vector4 Place(string id, Vector2 size, ChromeAnchor anchor) {
         Begin();
         var (min, max) = id == "toolbar" ? ToolbarSafeBounds() : SafeBounds();
         var gap = GratisTheme.Gap * GratisTheme.ChromeScale;
         if (anchor <= ChromeAnchor.TopRight && handleBounds != Vector4.Zero)
             min.Y = MathF.Max(min.Y, MathF.Ceiling(handleBounds.W + gap));
-        occupied.RemoveAll(p => p.Id == id);
+        RemoveOccupied(id);
         obstacles.Clear();
         foreach (var item in occupied)
             obstacles.Add(item.Bounds);
@@ -112,7 +143,7 @@ public static class ChromeLayout {
                 var x = right ? item.Bounds.X - gap - size.X : item.Bounds.Z + gap;
                 var candidate = new Vector4(x, item.Bounds.Y, x + size.X, item.Bounds.Y + size.Y);
                 if (candidate.X >= min.X && candidate.Z <= max.X && candidate.W <= max.Y
-                    && !occupied.Exists(p => Overlap(candidate, p.Bounds))) {
+                    && !OccupiedOverlaps(candidate)) {
                     occupied.Add((id, candidate, anchor));
                     return candidate;
                 }
@@ -125,7 +156,7 @@ public static class ChromeLayout {
             var x = (fullMin.X + fullMax.X - size.X) / 2;
             if (x >= fullMin.X && x + size.X <= max.X) {
                 var centred = new Vector4(x, result.Y, x + size.X, result.W);
-                if (!obstacles.Exists(o => Overlap(centred, o + new Vector4(-gap, -gap, gap, gap))))
+                if (!ObstaclesOverlap(centred, gap))
                     result = centred;
             }
         }
@@ -136,13 +167,13 @@ public static class ChromeLayout {
 
     public static void Release(string id) {
         Begin();
-        occupied.RemoveAll(p => p.Id == id);
+        RemoveOccupied(id);
     }
 
     public static Vector2 Position(Vector4 bounds) => new(bounds.X, bounds.Y);
     public static Vector4 PlacePopover(string id, Vector2 size, Vector2 target) {
         Begin();
-        occupied.RemoveAll(p => p.Id == id);
+        RemoveOccupied(id);
         obstacles.Clear();
         foreach (var item in occupied)
             obstacles.Add(item.Bounds);

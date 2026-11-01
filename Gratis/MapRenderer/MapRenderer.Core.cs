@@ -39,6 +39,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private IDalamudTextureWrap? blendedTexture;
     private string blendedPath = string.Empty;
+    private Task<byte[]?>? blendedWork;
     private readonly MapContentCache mapContents = new(path => LoadMapPixels(path));
     private Rendering.MapContentBounds? contentBounds;
     private bool nativeTextureReady;
@@ -85,21 +86,29 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
     long Rendering.IMapRendererHost.ViewSession => viewSession;
     Vector2 Rendering.IMapRendererHost.CoordinateOffset(Vector2 position) => CoordinateOffset(position);
-    void Rendering.IMapRendererHost.DrawBackgroundTexture() => DrawBackgroundTexture();
+    void Rendering.IMapRendererHost.DrawBackgroundTexture() {
+        using var image = Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.MapImage);
+        DrawBackgroundTexture();
+    }
     void Rendering.IMapRendererHost.DrawFlag() => DrawFlag();
-    void Rendering.IMapRendererHost.DrawPlayer() => DrawPlayer();
+    void Rendering.IMapRendererHost.DrawPlayer() {
+        using var arrow = Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.PlayerArrow);
+        DrawPlayer();
+    }
     void Rendering.IMapRendererHost.DrawTextMarkers() => DrawStaticTextMarkers();
     void Rendering.IMapRendererHost.CollectMarkers() {
         Rendering.MapDrawContext.Current.SynchronizePvp();
-        DrawEnemies();
-        DrawStaticMapMarkers();
-        DrawDynamicMarkers();
-        DrawGameObjects();
-        DrawGroupMembers();
-        DrawTemporaryMarkers();
-        if (!Service.ClientState.IsPvP)
-            DrawGatheringMarkers();
-        DrawFieldMarkers();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.Enemies)) DrawEnemies();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.StaticMarkers)) DrawStaticMapMarkers();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.DynamicMarkers)) DrawDynamicMarkers();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.GameObjects)) DrawGameObjects();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.GroupMembers)) DrawGroupMembers();
+        using (Rendering.BenchmarkProbe.Measure(Rendering.BenchmarkSection.OtherMarkers)) {
+            DrawTemporaryMarkers();
+            if (!Service.ClientState.IsPvP)
+                DrawGatheringMarkers();
+            DrawFieldMarkers();
+        }
         DrawEnemyTooltip();
     }
 
@@ -126,7 +135,18 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
                 blendedTexture = null;
                 // Recorded first: a map that fails to load must not reload, and dispose again, on every frame.
                 blendedPath = source;
-                blendedTexture = LoadTexture();
+                // Two 2048x2048 textures are read and multiplied; that is tens of milliseconds, so it is not done on
+                // the draw thread. The map stays blank until the pixels are ready, like a recolour that is pending.
+                var background = backgroundPath;
+                var foreground = foregroundPath;
+                blendedWork = Task.Run(() => BlendPixels(background, foreground));
+            }
+
+            if (blendedWork is { IsCompleted: true } finished) {
+                blendedWork = null;
+                if (finished.IsCompletedSuccessfully && finished.Result is { } pixels)
+                    blendedTexture = Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(2048, 2048),
+                        pixels);
             }
 
             if (blendedTexture is not null) {
@@ -140,30 +160,33 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     private void DrawMapImage(IDalamudTextureWrap texture) =>
         frame.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size));
 
-    private static IDalamudTextureWrap? LoadTexture() {
-        var vanillaBgPath = $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex";
-        var vanillaFgPath = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
+    private static byte[]? BlendPixels(string vanillaBgPath, string vanillaFgPath) {
+        try {
+            var bgFile = GetTexFile(vanillaBgPath);
+            var fgFile = GetTexFile(vanillaFgPath);
 
-        var bgFile = GetTexFile(vanillaBgPath);
-        var fgFile = GetTexFile(vanillaFgPath);
+            if (bgFile is null || fgFile is null) {
+                Service.Log.Warning("Failed to load map textures");
+                return null;
+            }
 
-        if (bgFile is null || fgFile is null) {
-            Service.Log.Warning("Failed to load map textures");
+            var backgroundBytes = bgFile.GetRgbaImageData();
+            var foregroundBytes = fgFile.GetRgbaImageData();
+
+            Parallel.For(0, 2048 * 2048, i => {
+                var index = i * 4;
+
+                backgroundBytes[index + 0] = (byte)(backgroundBytes[index + 0] * foregroundBytes[index + 0] / 255);
+                backgroundBytes[index + 1] = (byte)(backgroundBytes[index + 1] * foregroundBytes[index + 1] / 255);
+                backgroundBytes[index + 2] = (byte)(backgroundBytes[index + 2] * foregroundBytes[index + 2] / 255);
+            });
+
+            return backgroundBytes;
+        }
+        catch (Exception error) {
+            Service.Log.Warning(error, "Failed to blend map textures");
             return null;
         }
-
-        var backgroundBytes = bgFile.GetRgbaImageData();
-        var foregroundBytes = fgFile.GetRgbaImageData();
-
-        Parallel.For(0, 2048 * 2048, i => {
-            var index = i * 4;
-
-            backgroundBytes[index + 0] = (byte)(backgroundBytes[index + 0] * foregroundBytes[index + 0] / 255);
-            backgroundBytes[index + 1] = (byte)(backgroundBytes[index + 1] * foregroundBytes[index + 1] / 255);
-            backgroundBytes[index + 2] = (byte)(backgroundBytes[index + 2] * foregroundBytes[index + 2] / 255);
-        });
-
-        return Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(2048, 2048), backgroundBytes);
     }
 
     private static TexFile? GetTexFile(string rawPath) {

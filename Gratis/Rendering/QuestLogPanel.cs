@@ -127,9 +127,7 @@ public sealed partial class QuestLogPanel {
         && ImGui.IsMouseHoveringRect(new(b.X, b.Y), new(b.Z, b.W), false);
 
     public void Prepare(IMapWindowHost host, Vector2 position, Vector2 size) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestPrepare);
-#endif
         var context = MapDrawContext.Current;
         if (!initialized)
             OnOpen(host.Config);
@@ -298,9 +296,7 @@ public sealed partial class QuestLogPanel {
     }
 
     private void DrawContent(float s) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestList);
-#endif
         var context = MapDrawContext.Current;
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
@@ -511,9 +507,7 @@ public sealed partial class QuestLogPanel {
     private static float RowHeight(float s) => 52 * s;
 
     private void DrawRow(QuestLogQuest quest, float width, float clipTop, float s) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestRow);
-#endif
         var start = ImGui.GetCursorScreenPos();
         var height = RowHeight(s);
         var size = new Vector2(width, height);

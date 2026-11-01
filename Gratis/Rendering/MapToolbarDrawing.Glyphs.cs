@@ -18,7 +18,7 @@ public static partial class MapToolbarDrawing {
         if (font != null && context.TryIconGlyphBounds(glyph, out var ink)) {
             var pos = center - new Vector2(ink.X + ink.Z, ink.Y + ink.W) / 2;
             DrawBinding.PushFontTexture(list);
-            list.AddText(ImGui.GetFont(), ImGui.GetFont().FontSize, pos, ImGui.GetColorU32(color), glyph.ToString());
+            list.AddText(ImGui.GetFont(), ImGui.GetFont().FontSize, pos, ImGui.GetColorU32(color), GratisIcons.GlyphString(glyph));
             DrawBinding.PopTexture(list);
             GlyphBounds[index] = new(pos.X + ink.X, pos.Y + ink.Y, pos.X + ink.Z, pos.Y + ink.W);
         }

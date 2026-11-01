@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using Gratis.Classes;
 #if GRATIS_PREVIEW
@@ -124,7 +125,8 @@ public static class PlayerDrawing {
             return;
         }
 
-        var vectors = GetRotationVectors(angle, position, texture.Size / 2.0f * scale);
+        Span<Vector2> vectors = stackalloc Vector2[4];
+        GetRotationVectors(vectors, angle, position, texture.Size / 2.0f * scale);
         foreach (var point in vectors)
             if (!MapShape.ContainsSymbol(point, Vector2.Zero))
                 return;
@@ -132,49 +134,74 @@ public static class PlayerDrawing {
         ImGui.GetWindowDrawList().AddImageQuad(texture.Handle, vectors[0], vectors[1], vectors[2], vectors[3]);
     }
 
-    private static Vector2[] GetRotationVectors(float angle, Vector2 center, Vector2 size) {
+    private static void GetRotationVectors(Span<Vector2> vectors, float angle, Vector2 center, Vector2 size) {
         var cosA = MathF.Cos(angle + 0.5f * MathF.PI);
         var sinA = MathF.Sin(angle + 0.5f * MathF.PI);
 
-        Vector2[] vectors = [
-            center + ImRotate(new Vector2(-size.X * 0.5f, -size.Y * 0.5f), cosA, sinA),
-            center + ImRotate(new Vector2(+size.X * 0.5f, -size.Y * 0.5f), cosA, sinA),
-            center + ImRotate(new Vector2(+size.X * 0.5f, +size.Y * 0.5f), cosA, sinA),
-            center + ImRotate(new Vector2(-size.X * 0.5f, +size.Y * 0.5f), cosA, sinA),
-        ];
-        return vectors;
+        vectors[0] = center + ImRotate(new Vector2(-size.X * 0.5f, -size.Y * 0.5f), cosA, sinA);
+        vectors[1] = center + ImRotate(new Vector2(+size.X * 0.5f, -size.Y * 0.5f), cosA, sinA);
+        vectors[2] = center + ImRotate(new Vector2(+size.X * 0.5f, +size.Y * 0.5f), cosA, sinA);
+        vectors[3] = center + ImRotate(new Vector2(-size.X * 0.5f, +size.Y * 0.5f), cosA, sinA);
     }
 
     private static Vector2 ImRotate(Vector2 v, float cosA, float sinA) =>
         new(v.X * cosA - v.Y * sinA, v.X * sinA + v.Y * cosA);
 
+    private const int ConeRings = 32, ConeSectors = 32, ConeStride = ConeSectors + 1;
+    // Grid fractions k / 32, and the two factors of the cone's opacity falloff. The expressions are the ones each quad
+    // used to evaluate for its own corners, so every corner gets the same float it always did.
+    private static readonly float[] ConeFraction = Enumerable.Range(0, ConeStride).Select(k => k / (float)ConeSectors)
+        .ToArray();
+    private static readonly float[] ConeFalloff = ConeFraction.Select(r => 1 - r * r * (3 - 2 * r)).ToArray();
+    private static readonly float[] ConeSine = ConeFraction.Select(a => MathF.Sin(a * MathF.PI)).ToArray();
+    private static readonly uint[] ConeColors = new uint[(ConeRings + 1) * ConeStride];
+    private static Vector4 coneAccent;
+    private static float coneOpacity = float.NaN, coneStyleAlpha;
+
+    // ImGui packs a colour with the style alpha, so the packed grid is reusable until the accent, the opacity or the
+    // style alpha changes. It used to be packed four times per quad, every frame.
+    private static uint[] SoftConeColors(Vector4 accent, float opacity) {
+        var styleAlpha = ImGui.GetStyle().Alpha;
+        if (accent == coneAccent && opacity == coneOpacity && styleAlpha == coneStyleAlpha)
+            return ConeColors;
+        for (var ring = 0; ring <= ConeRings; ring++)
+            for (var sector = 0; sector < ConeStride; sector++)
+                ConeColors[ring * ConeStride + sector] =
+                    ImGui.GetColorU32(accent with { W = opacity * ConeFalloff[ring] * ConeSine[sector] });
+        (coneAccent, coneOpacity, coneStyleAlpha) = (accent, opacity, styleAlpha);
+        return ConeColors;
+    }
+
     private static void DrawSoftCone(Vector2 center, float length, float angle) {
         if (length <= 0)
             return;
-        const int rings = 32, sectors = 32;
+        const int rings = ConeRings, sectors = ConeSectors, stride = ConeStride;
         var config = MapDrawContext.Current.Config;
         var list = ImGui.GetWindowDrawList();
         var uv = ImGui.GetFontTexUvWhitePixel();
+        var colors = SoftConeColors(config.AccentColor, config.SoftConeOpacity);
+        // Neighbouring quads share corners: take each direction and corner position once instead of per quad.
+        Span<Vector2> directions = stackalloc Vector2[stride];
+        for (var sector = 0; sector < stride; sector++) {
+            var theta = angle + (ConeFraction[sector] - .5f) * MathF.PI / 2;
+            directions[sector] = new Vector2(MathF.Cos(theta), MathF.Sin(theta));
+        }
+        Span<Vector2> points = stackalloc Vector2[(rings + 1) * stride];
+        for (var ring = 0; ring <= rings; ring++)
+            for (var sector = 0; sector < stride; sector++)
+                points[ring * stride + sector] = center + length * ConeFraction[ring] * directions[sector];
+        // One reservation for the whole cone; the vertices and indices written are the same as one reserve per quad.
+        list.PrimReserve(rings * sectors * 6, rings * sectors * 4);
+        var first = (int)DrawBinding.VertexIndex(list);
         for (var ring = 0; ring < rings; ring++) {
-            var r0 = ring / (float)rings;
-            var r1 = (ring + 1f) / rings;
             for (var sector = 0; sector < sectors; sector++) {
-                var a0 = sector / (float)sectors;
-                var a1 = (sector + 1f) / sectors;
-                Vector2 Point(float r, float a) => center + length * r
-                    * new Vector2(MathF.Cos(angle + (a - .5f) * MathF.PI / 2),
-                        MathF.Sin(angle + (a - .5f) * MathF.PI / 2));
-                uint Color(float r, float a) =>
-                    ImGui.GetColorU32(config.AccentColor with {
-                        W = config.SoftConeOpacity * (1 - r * r * (3 - 2 * r))
-                        * MathF.Sin(a * MathF.PI)
-                    });
-                list.PrimReserve(6, 4);
-                var index = (ushort)DrawBinding.VertexIndex(list);
-                list.PrimWriteVtx(Point(r0, a0), uv, Color(r0, a0));
-                list.PrimWriteVtx(Point(r1, a0), uv, Color(r1, a0));
-                list.PrimWriteVtx(Point(r1, a1), uv, Color(r1, a1));
-                list.PrimWriteVtx(Point(r0, a1), uv, Color(r0, a1));
+                var index = (ushort)(first + 4 * (ring * sectors + sector));
+                var c00 = ring * stride + sector;
+                var c10 = c00 + stride;
+                list.PrimWriteVtx(points[c00], uv, colors[c00]);
+                list.PrimWriteVtx(points[c10], uv, colors[c10]);
+                list.PrimWriteVtx(points[c10 + 1], uv, colors[c10 + 1]);
+                list.PrimWriteVtx(points[c00 + 1], uv, colors[c00 + 1]);
                 list.PrimWriteIdx(index);
                 list.PrimWriteIdx((ushort)(index + 1));
                 list.PrimWriteIdx((ushort)(index + 2));

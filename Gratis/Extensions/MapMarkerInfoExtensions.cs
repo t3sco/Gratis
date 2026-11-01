@@ -16,8 +16,90 @@ using MarkerInfo = Gratis.Classes.MarkerInfo;
 namespace Gratis.Extensions;
 
 public static class MapMarkerInfoExtensions {
+    // The native subtext was parsed into a SeString for every marker on every frame, which allocated heavily. The
+    // parse is keyed by the text's own bytes, so a marker whose text changes simply parses again.
+    private static readonly global::System.Collections.Generic.Dictionary<(int Hash, int Length), CachedText> Subtexts = [];
+
+    // Everything derived from one subtext: the strings the old code rebuilt every frame (TextValue, ToString) and the
+    // delegate that returns the tooltip, all computed once per distinct text instead of once per marker per frame.
+    private sealed class CachedText {
+        public readonly string Text;
+        public readonly bool IsEmpty;
+        public readonly Func<string?> Tooltip;
+
+        public CachedText(SeString text) {
+            Text = text.ToString();
+            IsEmpty = text.TextValue.IsNullOrEmpty();
+            Tooltip = () => Text;
+        }
+    }
+
+    // The click, hover and fallback-tooltip delegates only read the marker's type, key and icon, so one set per distinct
+    // (type, key, icon) is shared instead of closing over a fresh copy of the marker for every marker every frame.
+    private sealed class NativeCallbacks {
+        public readonly global::System.Action OnClicked;
+        public readonly Func<string?> Secondary;
+        public readonly Func<string?> FallbackPrimary;
+
+        public NativeCallbacks(ushort dataType, ushort dataKey, uint iconId) {
+            var snapshot = new MapMarkerInfo { DataType = dataType, DataKey = dataKey };
+            snapshot.MapMarker.IconId = iconId;
+            OnClicked = () => OnMarkerClicked(ref snapshot);
+            Secondary = () => GetTooltip(ref snapshot);
+            FallbackPrimary = dataType switch {
+                4 => () => Service.DataManager.GetExcelSheet<PlaceName>().GetRow(snapshot.DataKey).Name.ExtractText(),
+                _ => () => System.TooltipCache.GetValue(snapshot.MapMarker.IconId) ?? string.Empty,
+            };
+        }
+    }
+
+    private static readonly global::System.Collections.Generic.Dictionary<(ushort Type, ushort Key, uint Icon), NativeCallbacks>
+        Callbacks = [];
+
+    private static readonly Func<string?> EmptyText = static () => string.Empty;
+
+    private static CachedText CachedSubtext(InteropGenerator.Runtime.CStringPointer text) {
+        var bytes = text.AsSpan();
+        var hash = new HashCode();
+        hash.AddBytes(bytes);
+        var key = (hash.ToHashCode(), bytes.Length);
+        if (Subtexts.TryGetValue(key, out var cached))
+            return cached;
+        if (Subtexts.Count >= 1024)
+            Subtexts.Clear();
+        return Subtexts[key] = new CachedText(text.AsDalamudSeString());
+    }
+
+    private static NativeCallbacks CachedCallbacks(MapMarkerInfo marker) {
+        var key = (Type: marker.DataType, Key: marker.DataKey, Icon: marker.MapMarker.IconId);
+        if (Callbacks.TryGetValue(key, out var cached))
+            return cached;
+        if (Callbacks.Count >= 1024)
+            Callbacks.Clear();
+        return Callbacks[key] = new NativeCallbacks(key.Type, key.Key, key.Icon);
+    }
+
+    private static float TextOpacity(MapMarkerInfo marker) => marker.MapMarker.SubtextStyle is 1
+        ? System.SystemConfig.LargeAreaTextOpacity : System.SystemConfig.SmallAreaTextOpacity;
+
+    // A label that TryDrawText would drop anyway; checked up front so no marker object is built for it.
+    private static bool IsTextHidden(MapMarkerInfo marker) {
+        if (!System.SystemConfig.ShowTextLabels)
+            return true;
+        var opacity = TextOpacity(marker);
+        return Rendering.MapDrawContext.Current.Config.IsGratis && float.IsFinite(opacity) && opacity <= .01f;
+    }
+
     public static void Draw(this MapMarkerInfo marker, Vector2 offset, float scale) {
-        var tooltipText = marker.MapMarker.Subtext.AsDalamudSeString();
+        var isText = marker.MapMarker.IconId is 0 && marker.MapMarker.Index is not 0;
+        // DrawMapMarker ignores icon 0 and TryDrawText drops hidden labels: neither needs a marker object built.
+        if (marker.MapMarker.IconId is 0 && !isText)
+            return;
+        if (isText && IsTextHidden(marker))
+            return;
+
+        var tooltipText = CachedSubtext(marker.MapMarker.Subtext);
+        var callbacks = CachedCallbacks(marker);
 
         var markerInfo = new MarkerInfo {
             // Native marker coordinates use 1/16-pixel units around the map centre.
@@ -43,13 +125,13 @@ public static class MapMarkerInfoExtensions {
                 3 or 4 => Rendering.MarkerCategory.Transport,
                 _ => Rendering.MarkerCategory.Auto,
             },
-            PrimaryText = GetMarkerPrimaryTooltip(marker, tooltipText),
+            PrimaryText = GetMarkerPrimaryTooltip(marker, tooltipText, callbacks),
             OnLeftClicked = Rendering.MapDrawContext.Current.Config.IsGratis && marker.DataType is 3 or 4 ? null
-                : () => OnMarkerClicked(ref marker),
-            SecondaryText = () => GetTooltip(ref marker),
+                : callbacks.OnClicked,
+            SecondaryText = callbacks.Secondary,
         };
 
-        if (marker.MapMarker.IconId is 0 && marker.MapMarker.Index is not 0) {
+        if (isText) {
             TryDrawText(marker, markerInfo, tooltipText);
         }
         else {
@@ -57,7 +139,7 @@ public static class MapMarkerInfoExtensions {
         }
     }
 
-    private static void TryDrawText(MapMarkerInfo marker, MarkerInfo markerInfo, SeString tooltipText) {
+    private static void TryDrawText(MapMarkerInfo marker, MarkerInfo markerInfo, CachedText tooltipText) {
         if (!System.SystemConfig.ShowTextLabels)
             return;
 
@@ -73,14 +155,13 @@ public static class MapMarkerInfoExtensions {
             markerInfo.Scale = textTypeScalar * 0.33f;
         }
 
-        var opacity = marker.MapMarker.SubtextStyle is 1 ? System.SystemConfig.LargeAreaTextOpacity
-            : System.SystemConfig.SmallAreaTextOpacity;
+        var opacity = TextOpacity(marker);
         var fade = Rendering.MapDrawContext.Current.Config.IsGratis && float.IsFinite(opacity);
         if (fade && opacity <= .01f)
             return;
         if (fade)
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * Math.Clamp(opacity, 0, 1));
-        DrawHelpers.DrawText(markerInfo, tooltipText);
+        DrawHelpers.DrawText(markerInfo, tooltipText.Text);
         if (fade)
             ImGui.PopStyleVar();
     }
@@ -202,17 +283,15 @@ public static class MapMarkerInfoExtensions {
     private static string GetAetheryteTeleportCost(uint targetDataKey) =>
         $"({GetAetheryteTeleportGilCost(targetDataKey) ?? 0:n0} {SeIconChar.Gil.ToIconChar()})";
 
-    private static Func<string> GetMarkerPrimaryTooltip(MapMarkerInfo marker, SeString tooltipText) {
+    private static Func<string?> GetMarkerPrimaryTooltip(MapMarkerInfo marker, CachedText tooltipText,
+        NativeCallbacks callbacks) {
         if (DrawHelpers.IsDisallowedIcon(marker.MapMarker.IconId))
-            return () => string.Empty;
+            return EmptyText;
         if (!System.SystemConfig.ShowMiscTooltips)
-            return () => string.Empty;
-        if (!tooltipText.TextValue.IsNullOrEmpty())
-            return tooltipText.ToString;
+            return EmptyText;
+        if (!tooltipText.IsEmpty)
+            return tooltipText.Tooltip;
 
-        return marker.DataType switch {
-            4 => () => Service.DataManager.GetExcelSheet<PlaceName>().GetRow(marker.DataKey).Name.ExtractText(),
-            _ => () => System.TooltipCache.GetValue(marker.MapMarker.IconId) ?? string.Empty,
-        };
+        return callbacks.FallbackPrimary;
     }
 }

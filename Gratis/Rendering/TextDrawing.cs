@@ -27,9 +27,7 @@ public static class TextDrawing {
     public static float NativeSize => ImGui.GetFont().FontSize;
     public static string LastDraw { get; private set; } = "lastDraw=none";
     public static Vector2 Measure(string text, float wrap = 0, float pixels = 0, bool tabularDigits = false) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.TextMeasure);
-#endif
         using var fallback = ContainsGlyphs(text) ? null : MapDrawContext.Current.PushDefaultTextFont();
         return tabularDigits && MapDrawContext.Current.Config.IsGratis
             ? Tabular(default, Vector2.Zero, 0, text, DrawSize(pixels), false)
@@ -41,9 +39,7 @@ public static class TextDrawing {
 
     public static void Draw(ImDrawListPtr list, Vector2 position, uint colour, string text, float wrap = 0,
         float pixels = 0, bool tabularDigits = false) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.TextDraw);
-#endif
         using var fallback = ContainsGlyphs(text) ? null : MapDrawContext.Current.PushDefaultTextFont();
         lastNative = NativeSize;
         lastEffective = ImGui.GetFontSize();
@@ -99,11 +95,26 @@ public static class TextDrawing {
         return new(MathF.Max(width, x), y + size);
     }
 
+    // Outlined labels draw the same string several times in a row, so the last answer is reused for the same font.
+    private static string? checkedText;
+    private static nint checkedFont;
+    private static int checkedFrame = -1;
+    private static bool checkedResult;
     private static bool ContainsGlyphs(string text) {
+        var font = DrawBinding.FontId(ImGui.GetFont());
+        var frame = ImGui.GetFrameCount();
+        if (ReferenceEquals(text, checkedText) && font == checkedFont && frame == checkedFrame)
+            return checkedResult;
+        var result = true;
         foreach (var glyph in text)
-            if (!char.IsControl(glyph) && !DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out _))
-                return false;
-        return true;
+            if (!char.IsControl(glyph) && !DrawBinding.TryGlyphBounds(ImGui.GetFont(), glyph, out _)) {
+                result = false;
+                break;
+            }
+        checkedText = text;
+        checkedFont = font;
+        checkedFrame = frame;
+        return checkedResult = result;
     }
     private static float lastNative, lastEffective, lastDrawSize;
     public static string SampleDiagnostics() =>

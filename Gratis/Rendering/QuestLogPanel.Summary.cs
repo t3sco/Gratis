@@ -16,9 +16,7 @@ public sealed partial class QuestLogPanel {
     public Vector4 RewardMenuBounds => itemTooltip.MenuBounds;
 
     private void DrawDetailContent(QuestLogQuest quest, float s) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.QuestSummary);
-#endif
         rewardBounds.Clear();
         if (DetailOpen) itemTooltip.Prepare(quest.RowId, quest.Rewards, source?.Items);
         var text = presentation.For(quest);

@@ -46,6 +46,9 @@ public static class BottomCardsDrawing {
     private static Vector4 locationBounds, coordinatesBounds;
     private static int frame = -1;
     private static float coordinateWidth;
+    private static readonly float[] glyphWidths = new float[CoordinateGlyphs.Length];
+    private static nint widthsFont;
+    private static float widthsSize = -1;
     private static readonly PlaceTooltip locationTooltip = new();
     private static readonly ActionLabelCache primaryLabel = new(), secondaryLabel = new(), regionLabel = new();
     public static string LocationRegion { get; private set; } = "";
@@ -54,9 +57,7 @@ public static class BottomCardsDrawing {
     public static bool LocationTruncated { get; private set; }
     public static float DigitAdvance { get; private set; }
     public static void Prepare(string title, SubZoneLocation? sub = null, MapLocation? place = null) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.LocationPrepare);
-#endif
         if (!ReferenceEquals(context, MapDrawContext.Current)) {
             context = MapDrawContext.Current;
             frame = -1;
@@ -159,9 +160,7 @@ public static class BottomCardsDrawing {
     }
 
     public static void DrawCoordinates(Vector2? player, Vector2? cursor) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Coordinates);
-#endif
         var c = MapDrawContext.Current;
         var s = GratisTheme.ChromeScale;
         using var alpha = new ChromeVisibility.AlphaScope(true, c.Chrome.ControlsAlpha(c.Config));
@@ -169,9 +168,14 @@ public static class BottomCardsDrawing {
             return;
         using var font = c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         DigitAdvance = 0;
-        foreach (var digit in CoordinateGlyphs)
-            DigitAdvance = MathF.Max(DigitAdvance, ImGui.CalcTextSize(digit).X);
+        for (var index = 0; index < CoordinateGlyphs.Length; index++) {
+            var measured = ImGui.CalcTextSize(CoordinateGlyphs[index]).X;
+            glyphWidths[index] = measured;
+            DigitAdvance = MathF.Max(DigitAdvance, measured);
+        }
         DigitAdvance = MathF.Ceiling(DigitAdvance);
+        widthsFont = DrawBinding.FontId(ImGui.GetFont());
+        widthsSize = ImGui.GetFontSize();
         var mode = Enum.IsDefined(c.Config.CoordinatesShow) ? c.Config.CoordinatesShow : CoordinateContent.Both;
         var both = mode == CoordinateContent.Both;
         var valueWidth = 11 * DigitAdvance;
@@ -234,6 +238,8 @@ public static class BottomCardsDrawing {
     }
 
     public static void DrawFixed(ImDrawListPtr list, Vector2 pos, string text, uint ink) {
+        // The widths measured for DigitAdvance this frame apply while the same font and size are active.
+        var measuredFont = widthsFont == DrawBinding.FontId(ImGui.GetFont()) && widthsSize == ImGui.GetFontSize();
         foreach (var ch in text) {
             var glyph = ch is >= '0' and <= '9' ? Digits[ch - '0'] : ch switch {
                 '-' => "-",
@@ -241,7 +247,8 @@ public static class BottomCardsDrawing {
                 '/' => "/",
                 _ => " "
             };
-            var width = ImGui.CalcTextSize(glyph).X;
+            var cached = ch is >= '0' and <= '9' ? ch - '0' : ch switch { '-' => 10, '.' => 11, '/' => 12, _ => -1 };
+            var width = measuredFont && cached >= 0 ? glyphWidths[cached] : ImGui.CalcTextSize(glyph).X;
             if (ch != ' ')
                 list.AddText(new(MathF.Round(pos.X + (DigitAdvance - width) / 2), MathF.Round(pos.Y)), ink, glyph);
             pos.X += DigitAdvance;

@@ -17,6 +17,7 @@ public sealed class GratisPlugin : IDalamudPlugin {
     private readonly Gratis.Classes.ReportPluginLog reportLogger;
     private readonly Gratis.Classes.ReportCommand reportCommand;
     private readonly Gratis.Classes.PvpDiagnosticCommand pvpDiagnosticCommand;
+    private readonly Gratis.Classes.PerfCommand perfCommand;
     private readonly Gratis.Classes.UpdateWatcher updateWatcher;
     private readonly AddonJournalController journalController;
 
@@ -56,6 +57,7 @@ public sealed class GratisPlugin : IDalamudPlugin {
         System.ZoneSwitchController = new ZoneSwitchController();
         reportCommand = new Gratis.Classes.ReportCommand(screenshotCapture, reportLogs);
         pvpDiagnosticCommand = new Gratis.Classes.PvpDiagnosticCommand();
+        perfCommand = Gratis.Classes.PerfCommand.Register();
 
         Rendering.FeedbackLink.Open = Dalamud.Utility.Util.OpenLink;
 
@@ -110,6 +112,7 @@ public sealed class GratisPlugin : IDalamudPlugin {
         });
         Release("update watcher", updateWatcher.Dispose);
         Release("pvp command", pvpDiagnosticCommand.Dispose);
+        Release("perf command", perfCommand.Dispose);
         Release("report command", reportCommand.Dispose);
         Release("screenshot capture", screenshotCapture.Dispose);
         Release("glass command", glassDiagnosticCommand.Dispose);

@@ -22,9 +22,7 @@ public sealed partial class PaletteOverlay {
     private readonly PlaceTooltip placeTooltip = new();
     private uint selectionMotionKey;
     public void Draw(MapDrawingConfig config) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Palette);
-#endif
         if (!config.IsGratis || !config.Palette)
             return;
         var alpha = UiMotion.Visibility(ImGui.GetID("##palette-motion"), IsOpen);

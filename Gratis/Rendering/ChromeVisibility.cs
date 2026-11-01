@@ -23,9 +23,16 @@ public sealed class ChromeVisibility {
     public float ParentAlpha { get; private set; } = 1;
     public float Progress { get; private set; } = 1;
 
+    // Caller file and member are compile-time constants, so the diagnostic key is built once per call site.
+    private static readonly Dictionary<(string File, string Member), (string Source, string Reason)> revealKeys = [];
+
     public void Reveal(double now, [CallerFilePath] string callerFile = "", [CallerMemberName] string caller = "") {
-        var source = Path.GetFileNameWithoutExtension(callerFile);
-        Count($"external:{source}.{caller}");
+        if (!revealKeys.TryGetValue((callerFile, caller), out var key)) {
+            var name = Path.GetFileNameWithoutExtension(callerFile);
+            revealKeys[(callerFile, caller)] = key = (name, $"external:{name}.{caller}");
+        }
+        var source = key.Source;
+        Count(key.Reason);
         if (source is "MapToolbarDrawing" or "MapContextMenu")
             Count("popup");
         if (source == "HoverCardDrawing")

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
@@ -34,7 +35,12 @@ public partial class MapRenderer {
         }
 
         var targetId = player.TargetObject?.EntityId;
-        foreach (var obj in Service.ObjectTable.Reverse()) {
+        // Same snapshot-then-reverse order as Enumerable.Reverse, into a buffer that is reused between frames.
+        gameObjectBuffer.Clear();
+        foreach (var tableObject in Service.ObjectTable)
+            gameObjectBuffer.Add(tableObject);
+        for (var index = gameObjectBuffer.Count - 1; index >= 0; index--) {
+            var obj = gameObjectBuffer[index];
             if (!obj.IsTargetable)
                 continue;
             if (System.SystemConfig.IsGratis && obj.EntityId == player.EntityId)
@@ -51,49 +57,65 @@ public partial class MapRenderer {
             if (Vector3.Distance(obj.Position, player.Position) >= 150.0f)
                 continue;
 
-            DrawHelpers.DrawMapMarker(new MarkerInfo {
-                Source = Rendering.MapMarkerSource.ObjectTable,
-                Position = (obj.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
-                    + DrawHelpers.GetMapCenterOffsetVector())
-                    * Scale,
-                Offset = DrawPosition,
-                Scale = Scale,
-                IconFamily = obj.ObjectKind switch {
-                    ObjectKind.Pc => Rendering.MarkerIconFamily.Player,
-                    ObjectKind.BattleNpc when obj.SubKind == (int)BattleNpcSubKind.Pet =>
-                        Rendering.MarkerIconFamily.Pet,
-                    ObjectKind.BattleNpc or ObjectKind.EventNpc => Rendering.MarkerIconFamily.Neutral,
-                    ObjectKind.Treasure => Rendering.MarkerIconFamily.Treasure,
-                    _ => Rendering.MarkerIconFamily.Auto,
-                },
-                IsTarget = targetId == obj.EntityId,
-                IsRelevant = targetId == obj.EntityId
-                    || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
-                IconId = obj.ObjectKind switch {
-                    ObjectKind.Pc when GroupManager.Instance()->MainGroup.MemberCount is 0
-                        && System.SystemConfig.ShowPlayers => 60421,
-                    ObjectKind.Pc when System.SystemConfig.ShowPlayers => 60444,
-                    ObjectKind.BattleNpc when IsBoss(obj) && obj.TargetObject is null => 60402,
-                    ObjectKind.BattleNpc when IsBoss(obj) && obj.TargetObject is not null => 60401,
-                    ObjectKind.BattleNpc when obj is {
-                        SubKind: (int)BattleNpcSubKind.Combatant,
-                        TargetObject: not null
-                    } =>
-                        60422,
-                    ObjectKind.BattleNpc when obj is { SubKind: (int)BattleNpcSubKind.Combatant, TargetObject: null } =>
-                        60424,
-                    ObjectKind.BattleNpc when obj.SubKind == (int)BattleNpcSubKind.Pet => 60961,
-                    ObjectKind.Treasure => 60003,
-                    ObjectKind.GatheringPoint => System.GatheringPointIconCache.GetValue(obj.BaseId),
-                    ObjectKind.EventObj when IsAetherCurrent(obj) => 60653,
-                    _ => 0
-                },
-                PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString()
-                    : GetTooltipForGameObject(obj),
-                SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
-                    ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}" : null,
-            });
+            // DrawMapMarker ignores icon 0, so such objects (most NPCs) no longer get a marker and closures built.
+            var iconId = GetGameObjectIconId(obj);
+            if (iconId is 0)
+                continue;
+
+            DrawGameObjectMarker(obj, iconId, targetId, player);
         }
+        gameObjectBuffer.Clear();
+    }
+
+    private readonly List<IGameObject> gameObjectBuffer = [];
+
+    private unsafe uint GetGameObjectIconId(IGameObject obj) => obj.ObjectKind switch {
+        ObjectKind.Pc when GroupManager.Instance()->MainGroup.MemberCount is 0
+            && System.SystemConfig.ShowPlayers => 60421,
+        ObjectKind.Pc when System.SystemConfig.ShowPlayers => 60444,
+        ObjectKind.BattleNpc when IsBoss(obj) && obj.TargetObject is null => 60402,
+        ObjectKind.BattleNpc when IsBoss(obj) && obj.TargetObject is not null => 60401,
+        ObjectKind.BattleNpc when obj is {
+            SubKind: (int)BattleNpcSubKind.Combatant,
+            TargetObject: not null
+        } =>
+            60422,
+        ObjectKind.BattleNpc when obj is { SubKind: (int)BattleNpcSubKind.Combatant, TargetObject: null } =>
+            60424,
+        ObjectKind.BattleNpc when obj.SubKind == (int)BattleNpcSubKind.Pet => 60961,
+        ObjectKind.Treasure => 60003,
+        ObjectKind.GatheringPoint => System.GatheringPointIconCache.GetValue(obj.BaseId),
+        ObjectKind.EventObj when IsAetherCurrent(obj) => 60653,
+        _ => 0
+    };
+
+    // Separate from the loop so the closure over obj is only allocated for objects that are drawn, not for every
+    // entry in the object table.
+    private void DrawGameObjectMarker(IGameObject obj, uint iconId, uint? targetId, IPlayerCharacter player) {
+        DrawHelpers.DrawMapMarker(new MarkerInfo {
+            Source = Rendering.MapMarkerSource.ObjectTable,
+            Position = (obj.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
+                + DrawHelpers.GetMapCenterOffsetVector())
+                * Scale,
+            Offset = DrawPosition,
+            Scale = Scale,
+            IconFamily = obj.ObjectKind switch {
+                ObjectKind.Pc => Rendering.MarkerIconFamily.Player,
+                ObjectKind.BattleNpc when obj.SubKind == (int)BattleNpcSubKind.Pet =>
+                    Rendering.MarkerIconFamily.Pet,
+                ObjectKind.BattleNpc or ObjectKind.EventNpc => Rendering.MarkerIconFamily.Neutral,
+                ObjectKind.Treasure => Rendering.MarkerIconFamily.Treasure,
+                _ => Rendering.MarkerIconFamily.Auto,
+            },
+            IsTarget = targetId == obj.EntityId,
+            IsRelevant = targetId == obj.EntityId
+                || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
+            IconId = iconId,
+            PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString()
+                : GetTooltipForGameObject(obj),
+            SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
+                ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}" : null,
+        });
     }
 
     private void DrawRadar(IPlayerCharacter gameObjectCenter) {

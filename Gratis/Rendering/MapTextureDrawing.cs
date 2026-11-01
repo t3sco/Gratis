@@ -11,9 +11,7 @@ namespace Gratis.Rendering;
 
 public static class MapTextureDrawing {
     public static void DrawMapImage(DrawTexture texture, float scale) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Texture);
-#endif
         var size = texture.Size * scale;
         var rounding = MapShape.Rounding(ImGui.GetWindowSize());
         if (MapShape.FeatherWidth > 0 || MapDrawContext.Current.Config.IsGratis && rounding > 0) {

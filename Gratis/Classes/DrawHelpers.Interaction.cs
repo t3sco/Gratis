@@ -25,29 +25,30 @@ public static partial class DrawHelpers {
     }
 
     private static unsafe void DrawTooltip(MarkerInfo marker) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerTooltip);
-#endif
         if (MapDrawContext.Current.ReportCapture)
             return;
-        using var textFont = MapDrawContext.Current.Config.IsGratis
-            ? MapDrawContext.Current.GetChromeFont(14 * MapDrawContext.Current.GlobalScale, ChromeFontRole.Body)?.Push()
-            : null;
         var isActivatedViaRadius = false;
 
         if (marker is { Radius: { } sameRadius and > 1.0f }) {
             var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
             var radius = sameRadius * marker.Scale * MapDrawContext.Current.MapSizeFactor;
 
-            if ((MapShape.FeatherWidth <= 0
-                || MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale))
-                    && MapShape.Contains(ImGui.GetMousePos()))
-                && MapDrawContext.Current.IsRadiusHovered(center, radius)) {
+            // The distance test goes first: it is the cheapest and false for almost every marker, so the feather
+            // checks (all pure queries, so the order cannot change the result) only run for a mouse inside the circle.
+            if (MapDrawContext.Current.IsRadiusHovered(center, radius)
+                && (MapShape.FeatherWidth <= 0
+                    || MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale))
+                        && MapShape.Contains(ImGui.GetMousePos()))) {
                 isActivatedViaRadius = true;
             }
         }
 
         if (isActivatedViaRadius || ImGui.IsItemHovered()) {
+            // Pushed only for the one hovered marker: every marker used to push and pop the font each frame.
+            using var textFont = MapDrawContext.Current.Config.IsGratis
+                ? MapDrawContext.Current.GetChromeFont(14 * MapDrawContext.Current.GlobalScale, ChromeFontRole.Body)?.Push()
+                : null;
             if (marker.PrimaryText?.Invoke() is { Length: > 0 } primaryText) {
                 if (MapDrawContext.Current.Config.IsGratis && MapDrawContext.Current.Config.HoverCardStyle == 0) {
                     var category = FlatMarkerDrawing.Category(marker);

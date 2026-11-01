@@ -12,15 +12,17 @@ namespace Gratis.Rendering;
 internal static class FrameMaterialDrawing {
     private static readonly List<Vector2> outline = [];
 
-    internal static int ArcSegments(float radius, float sweep) =>
+    internal static int ArcSegments(float radius, float sweep, float maxStep = .04f) =>
         Math.Clamp((int)MathF.Ceiling(MathF.Abs(sweep)
-            / MathF.Min(.04f, 2 * MathF.Acos(Math.Clamp(1 - .05f / MathF.Max(radius, .05f), -1, 1)))),
+            / MathF.Min(maxStep, 2 * MathF.Acos(Math.Clamp(1 - .05f / MathF.Max(radius, .05f), -1, 1)))),
             1, 2048);
 
-    private static void Outline(Vector2 min, Vector2 max, float radius) {
+    // `fine` keeps a point every few pixels along straight edges and a tight arc step, which a gradient that changes
+    // along the edge needs; a plain colour only needs the corners, since the points between them are collinear.
+    private static void Outline(Vector2 min, Vector2 max, float radius, bool fine) {
         outline.Clear();
         radius = Math.Clamp(radius, 0, MathF.Min(max.X - min.X, max.Y - min.Y) / 2);
-        var segments = ArcSegments(radius, MathF.PI / 2);
+        var segments = ArcSegments(radius, MathF.PI / 2, fine ? .04f : .12f);
         for (var corner = 0; corner < 4; corner++) {
             var center = new Vector2(corner is 0 or 3 ? min.X + radius : max.X - radius,
                 corner < 2 ? min.Y + radius : max.Y - radius);
@@ -29,7 +31,7 @@ internal static class FrameMaterialDrawing {
                 var point = center + radius * new Vector2(MathF.Cos(angle), MathF.Sin(angle));
                 if (outline.Count > 0) {
                     var previous = outline[^1];
-                    var pieces = Math.Clamp((int)MathF.Ceiling(Vector2.Distance(previous, point) / 3), 1, 1024);
+                    var pieces = fine ? Math.Clamp((int)MathF.Ceiling(Vector2.Distance(previous, point) / 3), 1, 1024) : 1;
                     for (var piece = 1; piece < pieces; piece++)
                         outline.Add(Vector2.Lerp(previous, point, piece / (float)pieces));
                     if (Vector2.DistanceSquared(previous, point) < .0001f)
@@ -40,7 +42,7 @@ internal static class FrameMaterialDrawing {
         }
         var last = outline[^1];
         var first = outline[0];
-        var closing = Math.Clamp((int)MathF.Ceiling(Vector2.Distance(last, first) / 3), 1, 1024);
+        var closing = fine ? Math.Clamp((int)MathF.Ceiling(Vector2.Distance(last, first) / 3), 1, 1024) : 1;
         for (var piece = 1; piece < closing; piece++)
             outline.Add(Vector2.Lerp(last, first, piece / (float)closing));
         if (Vector2.DistanceSquared(outline[^1], first) < .0001f)
@@ -53,11 +55,42 @@ internal static class FrameMaterialDrawing {
         return new Vector4(alpha > .00001f ? rgb / alpha : Vector3.Zero, alpha);
     }
 
+    // The outline, its offset normals and each point's bearing from the centre depend only on the box, radius and
+    // width, so they are built once and reused until the window changes size; a frame then only writes vertices.
+    private readonly record struct StrokeKey(Vector2 Size, float Radius, float Width, bool Fine);
+    private sealed record StrokeShape(Vector2[] Points, Vector2[] Normals, float[] Bearings);
+    private static readonly Dictionary<StrokeKey, StrokeShape> strokeShapes = [];
+
+    private static StrokeShape StrokeShapeFor(Vector2 min, Vector2 max, float radius, float width, float inset, bool fine) {
+        // Built around the origin, so a window that moves reuses the same shape.
+        var size = max - min;
+        var key = new StrokeKey(size, radius, width, fine);
+        if (strokeShapes.TryGetValue(key, out var cached))
+            return cached;
+        Outline(new Vector2(inset), size - new Vector2(inset), MathF.Max(0, radius - inset), fine);
+        var count = outline.Count;
+        var center = size / 2;
+        var points = new Vector2[count];
+        var normals = new Vector2[count];
+        var bearings = new float[count];
+        for (var index = 0; index < count; index++) {
+            var point = outline[index];
+            var before = Vector2.Normalize(point - outline[(index + count - 1) % count]);
+            var after = Vector2.Normalize(outline[(index + 1) % count] - point);
+            var normal = new Vector2(before.Y + after.Y, -before.X - after.X);
+            normal /= MathF.Max(Vector2.Dot(normal, new Vector2(after.Y, -after.X)), .01f);
+            points[index] = point;
+            normals[index] = normal;
+            bearings[index] = MathF.Atan2(point.Y - center.Y, point.X - center.X);
+        }
+        if (strokeShapes.Count >= 48)
+            strokeShapes.Clear();
+        return strokeShapes[key] = new(points, normals, bearings);
+    }
+
     internal static void DrawStroke(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float width,
         Vector4 color, MapDrawingConfig? conic = null, bool topHighlight = false) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Stroke);
-#endif
         var shortSide = MathF.Min(max.X - min.X, max.Y - min.Y);
         if (shortSide <= 2 || width <= 0)
             return;
@@ -65,8 +98,8 @@ internal static class FrameMaterialDrawing {
         var inset = (width + 1) / 2;
         if (max.X - min.X <= inset * 2 || max.Y - min.Y <= inset * 2)
             return;
-        Outline(min + new Vector2(inset), max - new Vector2(inset), MathF.Max(0, radius - inset));
-        var count = outline.Count;
+        var shape = StrokeShapeFor(min, max, radius, width, inset, conic is not null);
+        var count = shape.Points.Length;
         var center = (min + max) / 2;
         var angle = conic is null ? 0
             : (float)((conic.RingAngle + (conic.RingRotate ? ImGui.GetTime() * conic.RingRotationSpeed : 0)) % 360)
@@ -75,14 +108,11 @@ internal static class FrameMaterialDrawing {
         list.PrimReserve(count * 18, count * 4);
         var firstIndex = DrawBinding.VertexIndex(list);
         for (var index = 0; index < count; index++) {
-            var point = outline[index];
-            var before = Vector2.Normalize(point - outline[(index + count - 1) % count]);
-            var after = Vector2.Normalize(outline[(index + 1) % count] - point);
-            var normal = new Vector2(before.Y + after.Y, -before.X - after.X);
-            normal /= MathF.Max(Vector2.Dot(normal, new Vector2(after.Y, -after.X)), .01f);
+            var point = min + shape.Points[index];
+            var normal = shape.Normals[index];
             var tint = color;
             if (conic is not null) {
-                var turns = (MathF.Atan2(point.Y - center.Y, point.X - center.X) - angle) / MathF.Tau;
+                var turns = (shape.Bearings[index] - angle) / MathF.Tau;
                 turns -= MathF.Floor(turns);
                 tint = Mix(conic.RingColorA, conic.RingColorB, 1 - MathF.Abs(turns * 2 - 1));
                 var distance = MathF.Min(turns, 1 - turns) * 360;
@@ -138,9 +168,7 @@ internal static class FrameMaterialDrawing {
     }
 
     internal static void DrawGlass(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Glass);
-#endif
         var context = MapDrawContext.Current;
         var config = context.Config;
         var scale = context.GlobalScale;

@@ -54,8 +54,9 @@ public static partial class DrawHelpers {
         if (context.Config.IsGratis) {
             var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
             var half = MarkerVisual.HalfSize(marker);
-            marker.IsHovered = !context.QuestLog.InputActive && ImGui.IsWindowHovered()
-                && ImGui.IsMouseHoveringRect(center - half, center + half, false);
+            // The rect test is a plain comparison and false for nearly every marker; IsWindowHovered is not.
+            marker.IsHovered = !context.QuestLog.InputActive
+                && ImGui.IsMouseHoveringRect(center - half, center + half, false) && ImGui.IsWindowHovered();
         }
         context.Motion.Observe(marker);
 
@@ -80,9 +81,7 @@ public static partial class DrawHelpers {
     };
 
     internal static void DrawPreparedMarker(MarkerInfo marker) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerDraw);
-#endif
         if (!PvpMapPolicy.Allows(MapDrawContext.Current.IsPvP, marker))
             return;
         var alpha = MarkerVisual.Alpha(marker);
@@ -107,8 +106,8 @@ public static partial class DrawHelpers {
         var context = MapDrawContext.Current;
 
         var attunementAlpha = AetheryteAttunementDrawing.Opacity(marker);
-        using (var attunement = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * attunementAlpha,
-            attunementAlpha < 1)) {
+        using (var attunement = FrameScopes.PushStyle(ImGuiStyleVar.Alpha,
+            attunementAlpha < 1 ? ImGui.GetStyle().Alpha * attunementAlpha : 1, attunementAlpha < 1)) {
             if (MarkerVisual.UseFlatMarker(marker)) {
                 if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(marker)) {
                     DrawRadiusUnderlay(marker);

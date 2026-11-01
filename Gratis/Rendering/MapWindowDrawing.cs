@@ -32,9 +32,7 @@ public static class MapWindowDrawing {
     }
     public static void DrawSurface(ImDrawListPtr list, Vector2 min, Vector2 max, float radius, float alpha = 1,
         float? surfaceOpacity = null, GlassSurface surface = GlassSurface.Other, string? chromeId = null, bool blur = true) {
-#if GRATIS_PREVIEW
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Surface);
-#endif
         var context = MapDrawContext.Current;
         var config = context.Config;
         context.Blur.BeginFrame(ImGui.GetFrameCount());
@@ -207,6 +205,8 @@ public static class MapWindowDrawing {
         }
     }
 
+    private static string? titleSource, titleTrimmed;
+
     public static void DrawTitleOnMap(string title) {
         var config = MapDrawContext.Current.Config;
         if (!config.ShowTitleOnMap || (!config.IsGratis && !config.HideWindowFrame))
@@ -218,9 +218,13 @@ public static class MapWindowDrawing {
             return;
         uint TitleColor(Vector4 color) => config.IsGratis ? ImGui.GetColorU32(color)
             : ImGui.ColorConvertFloat4ToU32(color);
-        var idIndex = title.IndexOf("###");
-        if (idIndex >= 0)
-            title = title[..idIndex];
+        // The window title always carries a "###id" suffix; trimming it allocated a substring every frame.
+        if (!string.Equals(title, titleSource)) {
+            var idIndex = title.IndexOf("###");
+            titleSource = title;
+            titleTrimmed = idIndex >= 0 ? title[..idIndex] : title;
+        }
+        title = titleTrimmed!;
         if (string.IsNullOrWhiteSpace(title))
             return;
         if (config.IsGratis) {
