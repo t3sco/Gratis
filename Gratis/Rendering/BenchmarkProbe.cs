@@ -9,7 +9,7 @@ internal enum BenchmarkSection {
     QuestPrepare, QuestList, QuestRow, QuestSummary, ItemTooltip, Search, Palette, Settings, Surface, HoverCard,
     Stroke, Glass, Toolbar, Coordinates, LocationPrepare, MarkerDraw, MarkerTooltip, FontPush, FontLookup, Label,
     // Game-side collection, timed by /gratis perf.
-    PaletteFind, PaletteBrowse, PaletteNearby, PaletteRows, Enemies, StaticMarkers, DynamicMarkers, GameObjects, GroupMembers, OtherMarkers, PlayerArrow, MapImage,
+    HoverText, HoverQueue, PaletteFind, PaletteBrowse, PaletteNearby, PaletteRows, Enemies, StaticMarkers, DynamicMarkers, GameObjects, GroupMembers, OtherMarkers, PlayerArrow, MapImage,
 }
 
 internal static class BenchmarkProbe {

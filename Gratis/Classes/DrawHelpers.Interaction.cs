@@ -24,6 +24,9 @@ public static partial class DrawHelpers {
         }
     }
 
+    private static string hoverTextKey = "", hoverTextTitle = "", hoverTextBody = "";
+    private static double hoverTextAt;
+
     private static unsafe void DrawTooltip(MarkerInfo marker) {
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.MarkerTooltip);
         if (MapDrawContext.Current.ReportCapture)
@@ -49,17 +52,35 @@ public static partial class DrawHelpers {
             using var textFont = MapDrawContext.Current.Config.IsGratis
                 ? MapDrawContext.Current.GetChromeFont(14 * MapDrawContext.Current.GlobalScale, ChromeFontRole.Body)?.Push()
                 : null;
-            if (marker.PrimaryText?.Invoke() is { Length: > 0 } primaryText) {
-                if (MapDrawContext.Current.Config.IsGratis && MapDrawContext.Current.Config.HoverCardStyle == 0) {
-                    var category = FlatMarkerDrawing.Category(marker);
-                    var label = FlatMarkerDrawing.Label(marker);
-                    var secondary = marker.SecondaryText?.Invoke();
-                    HoverCardDrawing.Draw(FlatMarkerDrawing.Key(marker), primaryText,
-                        PlayerDrawing.IsPlayerMarker(marker) ? secondary : string.IsNullOrWhiteSpace(secondary) ? label
-                            : $"{label}\n{secondary}",
-                        category, marker);
-                    return;
+            if (MapDrawContext.Current.Config.IsGratis && MapDrawContext.Current.Config.HoverCardStyle == 0) {
+                // The card's text comes from callbacks that look up game sheets and format strings; while the pointer
+                // stays on one marker it is built about four times a second, not every frame.
+                string key, title, body;
+                using (BenchmarkProbe.Measure(BenchmarkSection.HoverText)) {
+                    key = FlatMarkerDrawing.Key(marker);
+                    var now = ImGui.GetTime();
+                    if (key == hoverTextKey && now - hoverTextAt < .25) {
+                        title = hoverTextTitle;
+                        body = hoverTextBody;
+                    }
+                    else {
+                        title = marker.PrimaryText?.Invoke() ?? "";
+                        var label = FlatMarkerDrawing.Label(marker);
+                        var secondary = marker.SecondaryText?.Invoke();
+                        body = PlayerDrawing.IsPlayerMarker(marker) ? secondary ?? ""
+                            : string.IsNullOrWhiteSpace(secondary) ? label : $"{label}\n{secondary}";
+                        hoverTextKey = key;
+                        hoverTextAt = now;
+                        hoverTextTitle = title;
+                        hoverTextBody = body;
+                    }
                 }
+                if (title.Length > 0)
+                    using (BenchmarkProbe.Measure(BenchmarkSection.HoverQueue))
+                        HoverCardDrawing.Draw(key, title, body, FlatMarkerDrawing.Category(marker), marker);
+                return;
+            }
+            if (marker.PrimaryText?.Invoke() is { Length: > 0 } primaryText) {
                 using var popupStyle = MapDrawContext.Current.Config.IsGratis ? PopupSurface.Push(PopupFaces.Chrome) : (PopupSurface.Scope?)null;
                 ImGui.SetNextWindowViewport(ImGui.GetWindowViewport().ID);
                 ImGui.BeginTooltip();
