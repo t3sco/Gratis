@@ -112,9 +112,9 @@ public static partial class ChromeControls {
         var padding = ImGui.GetStyle().WindowPadding;
         var wrap = MathF.Max(1, MathF.Min(360 * s, regionMax.X - regionMin.X - padding.X * 2));
         var card = meta != null || rows != null;
-        // A little slack on the measured size: a tooltip a pixel narrower than its text clips the last glyph.
+        // A hair of slack on the measured size: a tooltip a pixel narrower than its text clips the last glyph, but more shows as a gap on the right.
         var size = (card ? HintCard.Measure(label, meta, rows, wrap, s) : ImGui.CalcTextSize(text, false, wrap))
-            + padding * 2 + new Vector2(10, 2) * s;
+            + padding * 2 + new Vector2(2, 2) * s;
         LastTooltipBounds = ChromePopoverMath.Place(bounds, size, regionMin, regionMax, 4 * s);
         LastTooltipAnchor = bounds;
         LastTooltipTime = now;

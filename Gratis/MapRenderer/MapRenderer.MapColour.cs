@@ -8,10 +8,20 @@ namespace Gratis.MapRenderer;
 public unsafe partial class MapRenderer {
     private readonly MapColourTextureCache mapColours = new();
 
+    public string MemoryDiagnostics() {
+        var info = GC.GetGCMemoryInfo();
+        using var process = global::System.Diagnostics.Process.GetCurrentProcess();
+        return $"memory privateMB={process.PrivateMemorySize64 / 1048576} workingMB={process.WorkingSet64 / 1048576} "
+            + $"managedMB={GC.GetTotalMemory(false) / 1048576} heapMB={info.HeapSizeBytes / 1048576} "
+            + $"gcCommittedMB={info.TotalCommittedBytes / 1048576} gcFragmentedMB={info.FragmentedBytes / 1048576} "
+            + $"gc0/1/2={GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} " + mapColours.Diagnostics();
+    }
+
     private void DrawColouredMapImage(IDalamudTextureWrap original, string source, Func<MapColourPixels> load) {
         var settings = System.SystemConfig.MapColour ??= new MapColourSettings();
-        var coloured = mapColours.Get(source, original.Handle, settings.Parameters, load);
-        DrawMapImage(coloured ?? original);
+        var coloured = mapColours.Get(source, original.Handle, settings.Parameters, load, out var pending);
+        if (!pending)
+            DrawMapImage(coloured ?? original);
     }
 
     private static MapColourPixels LoadMapPixels(string foregroundPath, string? backgroundPath = null) {

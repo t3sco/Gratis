@@ -83,6 +83,8 @@ public sealed partial class SettingsLayout {
             ImGui.GetWindowDrawList().AddRect(cardStart,
                 new Vector2(cardStart.X + ImGui.GetContentRegionAvail().X, bottom),
                 ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Card * scale);
+            if (card.Id == "window" && ChromeControls.TextButton("Different size or position in duties", scale: scale))
+                SelectTab(ControlsTab, Sub.Window);
             ImGui.Spacing();
         }
         ImGui.Spacing();
@@ -123,9 +125,16 @@ public sealed partial class SettingsLayout {
     }
 
     /// <summary>One line under a label, cut to the label column; the full text is the row's tooltip.</summary>
-    private void DrawHelperLine(string key, string text, float width) {
+    // One height for every settings row, so a toggle, a swatch and a slider space the same; a caption adds one line.
+    private const float SettingsRowHeight = 44, SettingsCaptionHeight = 12;
+    private static float RowHeight(bool captioned, float s) =>
+        (SettingsRowHeight + (captioned ? SettingsCaptionHeight : 0)) * s;
+
+    private void DrawHelperLine(string key, string text, float width, float rowTop, float s) {
         if (!helperLabels.TryGetValue(key, out var cache))
             helperLabels.Add(key, cache = new());
+        // The label sits centred in a frame-height line; the caption hangs just under it at a fixed offset.
+        ImGui.SetCursorPosY(rowTop + ImGui.GetStyle().FramePadding.Y + ImGui.GetTextLineHeight() + 2 * s);
         using var font = SettingsTheme.Font(12);
         ImGui.TextColored(GratisTheme.Secondary, cache.Fit(text, MathF.Max(1, width)));
     }

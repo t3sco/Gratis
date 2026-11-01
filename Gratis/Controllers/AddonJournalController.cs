@@ -127,7 +127,6 @@ public sealed unsafe class AddonJournalController : IDisposable {
         };
         System.CommandManager.RegisterCommand(debugCommand);
         System.CommandManager.RegisterCommand(logCommand);
-        Refresh();
     }
 
     private static AtkUnitBase* Native() => Service.GameGui.GetAddonByName<AtkUnitBase>(AddonName);

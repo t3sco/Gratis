@@ -199,7 +199,7 @@ public sealed partial class SettingsLayout {
         Add("EdgePointerDistance", "Show distances on arrows");
         Add("EdgePointerParty", "Include party members",
             tip: "Quest and objective targets always get arrows.");
-        Group("Map", "Map labels and fog");
+        Group("Map", "Map labels");
         Add("ShowTextLabels", "Text labels");
         Add("ScaleTextWithZoom", "Resize labels when zooming", when: c => c.ShowTextLabels);
         Add("LargeAreaTextScale", "Large label size", 1, 4, "%.2fx", when: c => c.ShowTextLabels);
@@ -209,7 +209,6 @@ public sealed partial class SettingsLayout {
         Add("SmallAreaTextOpacity", "Small label opacity", .05f, 1, "%.2f", when: c => c.ShowTextLabels && c.IsGratis);
         Add("HideOverlappingLabels", "Hide overlapping labels", when: c => c.ShowTextLabels && c.IsGratis,
             tip: "When two labels would overlap, only the larger one is shown.");
-        Add("ShowFogOfWar", "Fog of war");
 
         Group("Filters", "Categories in the list", Gratis);
         foreach (var category in Enum.GetValues<MarkerGroup>())
@@ -231,6 +230,7 @@ public sealed partial class SettingsLayout {
         Add("PinMaxPerMap", "Maximum pins per map", 1, 200, "%.0f");
         Group("Markers", "Visibility and interaction");
         Add("ShowPlayers", "Other players");
+        Add("ShowEnemies", "Enemy markers", tip: "Nearby living hostile enemies. Ones you need for a quest, FATE or hunting log glow gold. Hidden in PvP.");
         Add("ShowMiscTooltips", "Extra marker tooltips");
         Add("Markers.Opacity", "Marker opacity", .2f, 1, "%.2f", when: c => c.IsGratis,
             tip: "How solid map markers look. A marker you point at is always fully solid.");
@@ -451,7 +451,7 @@ public sealed partial class SettingsLayout {
     private static readonly string[] GroupPriority = [
         "Appearance/Profiles", "Appearance/Quick setup", "Appearance/Style", "Appearance/Gratis style", "Appearance/Classic frame", "Appearance/Map recolour",
         "Appearance/Frame effects", "Appearance/Glass surfaces", "Appearance/Edge feather", "Appearance/Conic ring",
-        "Map/Viewport", "Map/Zoom", "Map/Map labels and fog", "Map/Zone changes", "Map/On open", "Map/Place search",
+        "Map/Viewport", "Map/Zoom", "Map/Map labels", "Map/Zone changes", "Map/On open", "Map/Place search",
         "Map/Travel", "Map/Map links", "Map/Window", "Map/Spotlight", "Map/Edge pointers", "Map/Measure",
         "Markers/Visibility and interaction", "Markers/Game icon scale", "Markers/Marker colours and size",
         "Markers/Legacy zoom scale", "Markers/Player", "Markers/Gratis player", "Markers/Pins and notes",

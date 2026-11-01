@@ -7,18 +7,20 @@ namespace Gratis.Rendering;
 
 public enum QuestMapAccess { Reachable, Duty, Instanced }
 
-public enum QuestDestinationSource { None, Marker, DutyEntrance, QuestGiver }
+public enum QuestDestinationSource { None, Marker, DutyEntrance, EntryNpc, QuestGiver, InstanceMap, Door }
 
 public sealed record QuestDestination(IReadOnlyList<PlaceEntry> Targets, QuestDestinationSource Source, string Note = "");
 
 // The game puts quest markers on the map of the objective, even when that map is a duty arena or a quest-only
 // instance. Show on map must land where the player can walk, so such targets are swapped for the duty's overworld
-// entrance, then the quest giver, and otherwise reported as having no destination.
+// entrance, then the quest giver, and otherwise left on the instance's own map with a note.
 public static class QuestTargetSelection {
-    public const string InstanceOnly = "Instance only: no map destination";
+    public const string InstanceMapNote = "The objective is inside an instance; showing its map.";
+    public const string ThroughDoor = "This quest is through a door";
 
     public static QuestDestination Resolve(IReadOnlyList<PlaceEntry> targets, Func<PlaceEntry, QuestMapAccess> access,
-        Func<PlaceEntry, PlaceEntry?> entrance, Func<PlaceEntry?> giver) {
+        Func<PlaceEntry, PlaceEntry?> entrance, Func<PlaceEntry?> giver, Func<PlaceEntry?>? entryNpc = null,
+        Func<PlaceEntry?>? door = null) {
         if (targets.Count == 0)
             return new(targets, QuestDestinationSource.None);
         var reachable = targets.Where(t => access(t) == QuestMapAccess.Reachable).ToArray();
@@ -28,10 +30,18 @@ public static class QuestTargetSelection {
             .DistinctBy(t => (t.MapId, t.World)).ToArray();
         if (entrances.Length > 0)
             return new(entrances, QuestDestinationSource.DutyEntrance, "Showing the entrance to " + (entrances[0].Subtitle.Length > 0 ? entrances[0].Subtitle : "the duty"));
+        // Quest-only instances have no marker on the overworld; the NPC who takes the player in is where to go.
+        if (entryNpc?.Invoke() is { } entry)
+            return new([entry], QuestDestinationSource.EntryNpc,
+                "The objective is inside an instance; showing the NPC who takes you in.");
+        // Some quest-only interiors are entered through an object (a door) rather than an NPC.
+        if (door?.Invoke() is { } doorway)
+            return new([doorway], QuestDestinationSource.Door, "The objective is through a door; showing the door.");
         if (giver() is { } start)
             return new([start], QuestDestinationSource.QuestGiver,
                 "The objective is inside an instance; showing where the quest started.");
-        return new([], QuestDestinationSource.None, InstanceOnly);
+        // Nothing outside leads in (a door the game has no marker for), so the objective's own map is the best answer.
+        return new(targets, QuestDestinationSource.InstanceMap, InstanceMapNote);
     }
 
     // Prefer the open map's target so Show on map does not switch maps when it does not have to.

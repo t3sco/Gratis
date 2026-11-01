@@ -10,6 +10,9 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 internal static class SpotlightDrawing {
+    private static int distanceYalms;
+    private static string distanceLabel = "";
+
     private static bool Fits(Vector2 center, Vector2 half) => MapShape.ContainsSymbol(center, half)
         && MapShape.Contains(center - half) && MapShape.Contains(center + half)
         && MapShape.Contains(center + new Vector2(half.X, -half.Y))
@@ -135,7 +138,12 @@ internal static class SpotlightDrawing {
             return;
         var scale = GratisTheme.ChromeScale;
         using var font = context.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Chip)?.Push();
-        var label = $"{spotlight.Distance:0} yalms";
+        var yalms = (int)MathF.Round(spotlight.Distance, MidpointRounding.AwayFromZero);
+        if (yalms != distanceYalms || distanceLabel.Length == 0) {
+            distanceYalms = yalms;
+            distanceLabel = $"{spotlight.Distance:0} yalms";
+        }
+        var label = distanceLabel;
         var half = new Vector2(ImGui.CalcTextSize(label).X + 24 * scale, GratisTheme.ControlHeight * scale) / 2;
         var center = origin + (spotlight.TargetTexture + spotlight.PlayerTexture) * .5f * zoom + new Vector2(0, 25)
             * scale;

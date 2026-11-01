@@ -65,6 +65,7 @@ public abstract class MapDrawContext {
     public MarkerRendering MarkerRendering { get; } = new();
     public MarkerVisibility Visibility { get; } = new();
     public virtual bool LensInDuty => false;
+    public virtual bool InDuty => false;
     public virtual bool LensGatheringClass => false;
     public virtual bool LensNearNode => false;
     public virtual void SaveConfig() {

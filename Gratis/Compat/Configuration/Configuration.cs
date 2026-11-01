@@ -35,17 +35,25 @@ public static partial class Configuration {
         var fileInfo = new FileInfo(filePath);
         if (fileInfo is { Exists: true }) {
             try {
-                var fileText = File.ReadAllText(fileInfo.FullName);
+                var fileText = ReadAllTextRetry(fileInfo.FullName);
                 var dataObject = JsonSerializer.Deserialize<T>(fileText, SerializerOptions);
 
                 if (dataObject is null) {
+                    BackupBadFile(fileInfo.FullName);
                     dataObject = new T();
                     SaveFile(pluginInterface, filePath, dataObject);
                 }
 
                 return dataObject;
             }
+            catch (IOException e) {
+                // Locked or unreadable, not corrupt: run on defaults in memory and leave the file alone.
+                var localLog = pluginInterface.Create<LogWrapper>();
+                localLog?.Log.Error(e, $"Could not read file {filePath}, using defaults without overwriting it.");
+                return new T();
+            }
             catch (Exception e) {
+                BackupBadFile(fileInfo.FullName);
                 var localLog = pluginInterface.Create<LogWrapper>();
                 localLog?.Log.Error(e, $"Error trying to load file {filePath}, creating a new one instead.");
             }
@@ -55,6 +63,26 @@ public static partial class Configuration {
         SaveFile(pluginInterface, filePath, newFile);
 
         return newFile;
+    }
+
+    private static string ReadAllTextRetry(string path) {
+        for (var attempt = 0; ; attempt++) {
+            try {
+                return File.ReadAllText(path);
+            }
+            catch (IOException) when (attempt < 3) {
+                global::System.Threading.Thread.Sleep(50);
+            }
+        }
+    }
+
+    private static void BackupBadFile(string path) {
+        try {
+            File.Copy(path, $"{path}.bad-{DateTime.Now:yyyyMMdd-HHmmss}", true);
+        }
+        catch {
+            // best effort; the caller carries on with defaults either way
+        }
     }
 
     private static void SaveFile<T>(IDalamudPluginInterface pluginInterface, string filePath, T file) {

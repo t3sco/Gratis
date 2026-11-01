@@ -76,30 +76,6 @@ public static class MapColour {
 
     private static Vector3 Rgb(int r, int g, int b) => new Vector3(r, g, b) / 255;
 
-    public static byte[] Crossfade(byte[] original, byte[] target, float amount,
-        CancellationToken cancellationToken = default) {
-        if (original.Length != target.Length || original.Length % 4 != 0)
-            throw new ArgumentException("Crossfade needs matching RGBA buffers.");
-        if (amount <= 0)
-            return original;
-        if (amount >= 1)
-            return target;
-        var result = GC.AllocateUninitializedArray<byte>(original.Length);
-        Parallel.For(0, (original.Length + 65535) / 65536, new ParallelOptions {
-            CancellationToken = cancellationToken,
-            MaxDegreeOfParallelism = Math.Min(8, Environment.ProcessorCount)
-        }, chunk => {
-            var end = Math.Min(original.Length, (chunk + 1) * 65536);
-            for (var i = chunk * 65536; i < end; i += 4) {
-                result[i] = (byte)(original[i] + (target[i] - original[i]) * amount + .5f);
-                result[i + 1] = (byte)(original[i + 1] + (target[i + 1] - original[i + 1]) * amount + .5f);
-                result[i + 2] = (byte)(original[i + 2] + (target[i + 2] - original[i + 2]) * amount + .5f);
-                result[i + 3] = original[i + 3];
-            }
-        });
-        return result;
-    }
-
     public static byte[] Apply(byte[] rgba, MapColourParameters parameters, bool premultiplied = false,
         CancellationToken cancellationToken = default) {
         if (rgba.Length % 4 != 0)

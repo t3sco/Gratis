@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Dalamud.Utility;
 using Gratis.Extensions;
 
 namespace Gratis.MapRenderer;
@@ -34,5 +35,19 @@ public partial class MapRenderer {
                 marker.Draw(DrawPosition, Scale);
             }
         }
+    }
+
+    // Link markers (door, map and instance links) with the ids the game stores, to see what ties a door to its interior.
+    public unsafe string LinkDiagnostics() {
+        var agent = AgentMap.Instance();
+        var rows = new global::System.Collections.Generic.List<string>();
+        for (var index = 0; index < agent->MapMarkerCount && rows.Count < 12; index++) {
+            ref var marker = ref agent->MapMarkers[index];
+            if (marker.MapMarker.IconId is 0 || marker.DataType is not (1 or 2))
+                continue;
+            rows.Add($"#{index} type={marker.DataType} key={marker.DataKey} icon={marker.MapMarker.IconId} "
+                + $"\"{marker.MapMarker.Subtext.AsDalamudSeString().TextValue}\" at {marker.MapMarker.X / 16f:0},{marker.MapMarker.Y / 16f:0}");
+        }
+        return $"links map={agent->SelectedMapId} markers={agent->MapMarkerCount} " + string.Join(" | ", rows);
     }
 }

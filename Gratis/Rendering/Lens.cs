@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Gratis.Rendering;
@@ -70,6 +71,13 @@ public static class Lenses {
                     return lens;
         return BuiltIn[0];
     }
+
+    // Open-area content the game flags as a duty: the Diadem, Eureka, Bozja/Zadnor and the Occult Crescent. The map is
+    // a field to explore, so the auto filter must not strip it down to the Minimal preset.
+    private static readonly HashSet<uint> OpenDutyTerritories = [939, 732, 763, 795, 827, 920, 975, 1252];
+
+    public static bool FixedDuty(bool boundByDuty, uint territory) => boundByDuty
+        && !OpenDutyTerritories.Contains(territory);
 
     public static string Suggest(bool inDuty, bool gatheringClass, bool nearNode) => inDuty ? "Minimal"
         : gatheringClass && nearNode ? "Gather" : "Explore";

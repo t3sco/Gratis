@@ -19,6 +19,8 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public bool Repeatable { get; init; }
     public string ObjectiveProgress { get; init; } = "";
     public string DestinationNote { get; init; } = "";
+    // Where the player enters a quest instance: the game marks only the instance map, so Gratis marks this itself.
+    public PlaceEntry? EntryMarker { get; init; }
     public string StartNpc { get; init; } = "";
     public string StartArea { get; init; } = "";
     public string Jobs { get; init; } = "";

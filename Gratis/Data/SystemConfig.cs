@@ -106,7 +106,6 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public float LargeAreaTextOpacity = 0.30f;
     public float SmallAreaTextOpacity = 1.0f;
     public bool ShowTextLabels = true;
-    public bool ShowFogOfWar = false;
     public bool ScaleTextWithZoom = false;
     public float AutoZoomScaleFactor = 0.38f;
 

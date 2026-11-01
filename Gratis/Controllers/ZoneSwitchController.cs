@@ -176,8 +176,11 @@ public sealed unsafe class ZoneSwitchController : IDisposable {
                 }
                 if (agent->SelectedMapId != input.CurrentMapId
                     || agent->SelectedTerritoryId != input.CurrentTerritoryId) {
-                    if (now - retryStarted >= ReadyTimeout)
+                    if (now - retryStarted >= ReadyTimeout) {
                         Finish("skipped: native selection did not update");
+                        // Without this the "current-map" check re-arms the same switch, ten calls a second, forever.
+                        Remember(input);
+                    }
                     return;
                 }
                 System.SystemConfig.FollowPlayer = true;

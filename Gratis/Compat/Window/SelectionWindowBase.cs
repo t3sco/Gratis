@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
@@ -47,7 +46,10 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
                 ImGui.SetTooltip("Select All");
             },
             Icon = FontAwesomeIcon.Plus,
-            Click = _ => { },
+            Click = _ => {
+                selected.Clear();
+                selected.AddRange(filteredResults ?? SelectionOptions);
+            },
             IconOffset = new Vector2(2.5f, 1.0f),
         });
 
@@ -197,12 +199,11 @@ public abstract class SelectionWindowBase<T> : Window where T : notnull {
     }
 
     private void RefreshSearchResults() {
-        Task.Run(() => {
-            filteredResults = SelectionOptions.Where(option =>
-                GetFilterStrings(option).Any(stringOption =>
-                    stringOption.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
-                || selected.Contains(option)).ToList();
-        });
+        // Runs on the draw thread: `selected` is mutated there, so a pool task would race it.
+        filteredResults = SelectionOptions.Where(option =>
+            GetFilterStrings(option).Any(stringOption =>
+                stringOption.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
+            || selected.Contains(option)).ToList();
     }
 
     private void ConfirmSelection() {

@@ -30,8 +30,11 @@ public sealed partial class SettingsLayout {
     /// <summary>A preset as a row of the settings table: its label, a Custom note when no choice matches, then the control.</summary>
     private bool DrawPresetRow(SystemConfig config, SettingsPreset preset, float s, bool stacked, bool essentials) {
         ImGui.PushID(preset.Id);
-        ImGui.TableNextRow(0, GratisTheme.ControlHeight * s);
+        ImGui.TableNextRow(0, RowHeight(essentials, s));
         ImGui.TableNextColumn();
+        // Chips are shorter than the row, so the label and chips share one inset instead of hugging the card's top edge.
+        var rowTop = ImGui.GetCursorPosY() + MathF.Max(0, (RowHeight(false, s) - ChipFaces.Compact.Height * s) / 2);
+        ImGui.SetCursorPosY(rowTop);
         ImGui.AlignTextToFramePadding();
         var cellStart = ImGui.GetCursorScreenPos();
         var cellWidth = ImGui.GetContentRegionAvail().X;
@@ -43,16 +46,19 @@ public sealed partial class SettingsLayout {
             ImGui.TextColored(GratisTheme.Secondary, CustomLabel);
             ImGui.SetCursorScreenPos(cellStart);
         }
+        // The Custom note above uses up the alignment, so without this a Custom row's label sits higher than its neighbours'.
+        ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(preset.Label);
 #if GRATIS_PREVIEW
         var labelMin = ImGui.GetItemRectMin(); var labelMax = ImGui.GetItemRectMax();
 #endif
         ChromeControls.Tooltip(preset.Tooltip, scale: s);
         if (essentials)
-            DrawHelperLine("preset-" + preset.Id, preset.Tooltip, cellWidth);
+            DrawHelperLine("preset-" + preset.Id, preset.Tooltip, cellWidth, rowTop, s);
         if (!stacked)
             ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
+        ImGui.SetCursorPosY(rowTop);
         ImGui.BeginGroup();
         var changed = DrawPresetChoices(config, preset, current, s);
         ImGui.EndGroup();

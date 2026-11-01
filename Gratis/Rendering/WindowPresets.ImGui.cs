@@ -26,6 +26,11 @@ public sealed partial class WindowPresetController {
             window.SaveWindowPosition();
         }
         var settings = config.WindowPresetOptions;
+        if (ObserveDuty(config, settings, MapDrawContext.Current.InDuty)) {
+            ImGui.SetNextWindowPos(config.WindowPosition);
+            ImGui.SetNextWindowSize(config.WindowSize);
+            window.SaveWindowPosition();
+        }
         if (settings.Presets.Count == 0 && Pending == 0)
             return;
         var scale = MapDrawContext.Current.GlobalScale;
@@ -51,6 +56,50 @@ public sealed partial class WindowPresetController {
             lastArea = area;
             lastScale = scale;
         }
+    }
+
+    private bool? dutyObserved;
+    private WindowGeometry? beforeDuty;
+
+    /// <summary>
+    /// Switches geometry when the player enters or leaves a duty while the map is open. Entering queues the duty
+    /// preset; leaving queues the open-at preset, or puts the window back where it was before the duty. Returns true
+    /// when it restored geometry directly this frame.
+    /// </summary>
+    private bool ObserveDuty(SystemConfig config, WindowPresetSettings settings, bool inDuty) {
+        if (dutyObserved is not { } was) {
+            dutyObserved = inDuty;
+            return false;
+        }
+        if (was == inDuty)
+            return false;
+        dutyObserved = inDuty;
+        settings.Normalize();
+        var outside = settings.ForContext(false);
+        var inside = settings.ForContext(true);
+        if (inDuty) {
+            if (inside != 0 && inside != outside) {
+                beforeDuty = new(config.WindowPosition, config.WindowSize);
+                Pending = inside;
+                Decision = "duty-entered";
+            }
+            return false;
+        }
+        var restore = beforeDuty;
+        beforeDuty = null;
+        if (outside != 0) {
+            if (inside != outside) {
+                Pending = outside;
+                Decision = "duty-left";
+            }
+            return false;
+        }
+        if (restore is not { } before)
+            return false;
+        config.WindowPosition = before.Position;
+        config.WindowSize = before.Size;
+        Decision = "duty-left-restored";
+        return true;
     }
 
     /// <summary>Resets the window to its default geometry on the game's main screen, where it can always be seen.</summary>

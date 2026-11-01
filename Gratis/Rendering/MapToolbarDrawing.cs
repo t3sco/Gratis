@@ -31,7 +31,7 @@ public static partial class MapToolbarDrawing {
 
     public static Vector4[] GlyphBounds { get; } = new Vector4[FullButtonCount];
 
-    public static Vector4[] DividerBounds { get; } = new Vector4[4];
+    public static Vector4[] DividerBounds { get; } = new Vector4[5];
 
     public const float DividerSpace = 8;
 
@@ -64,7 +64,7 @@ public static partial class MapToolbarDrawing {
         DrawClassic(context, activate, drawLayersContextMenu);
     }
 
-    public const int FullButtonCount = 6;
+    public const int FullButtonCount = 7;
 
     private const string MapMenu = "Gratis_Map_Controls";
 
@@ -73,12 +73,14 @@ public static partial class MapToolbarDrawing {
         "##gratis-Lens",
         "##gratis-Filters",
         "##gratis-Follow",
+        "##gratis-Locate",
         "##gratis-Settings",
         "##gratis-Close"];
 
     private static readonly (string Id, ToolbarAction Action, string Tooltip)[] Buttons = [
         ("Search", ToolbarAction.Search, "Search places"), ("Lens", ToolbarAction.Layers, "Lenses & map layers"),
         ("Filters", ToolbarAction.CenterMap, "Filters"), ("Follow", ToolbarAction.Follow, "Follow player"),
+        ("Locate", ToolbarAction.CenterPlayer, "Locate player"),
         ("Settings", ToolbarAction.Settings, "Settings"), ("Close", ToolbarAction.Close, "Close map"),
     ];
 }

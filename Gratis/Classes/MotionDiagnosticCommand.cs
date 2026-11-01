@@ -11,6 +11,26 @@ internal sealed class MotionDiagnosticCommand {
         var diagnostics = new MotionDiagnosticCommand();
         Service.PluginInterface.Inject(diagnostics);
         System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/enemies",
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.EnemyDiagnostics()),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/links",
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.LinkDiagnostics()),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/door",
+            // /gratis door [map id]: the door lookup for an interior map; no id checks the Main Hall.
+            Delegate = args => diagnostics.ChatGui.Print("[Gratis] "
+                + (Rendering.MapDrawContext.Current.QuestLogSource is Controllers.QuestLogGame game
+                    ? game.DoorDiagnostics(args.Length > 0 && uint.TryParse(args[0], out var map) ? map : 742)
+                    : "door lookup unavailable")),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/memory",
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.MemoryDiagnostics()),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/window",
             Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapWindow.WindowPresetDiagnostics()),
         });

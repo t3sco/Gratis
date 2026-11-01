@@ -14,6 +14,9 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout {
     public bool ModifiedTweaksOnly;
+    private static readonly string TweakCountLabel = $"{TweakCatalog.All.Count} small quality-of-life tweaks";
+    private (int Shown, int Modified) tweakSummaryKey = (-1, -1);
+    private string tweakSummary = "";
 #if GRATIS_PREVIEW
     public readonly global::System.Collections.Generic.Dictionary<string, Vector2> TestTweakActions = [];
     private void RecordTweakAction(string id) =>
@@ -27,7 +30,7 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
         TestTweakActions.Clear();
 #endif
-        ImGui.TextUnformatted($"{TweakCatalog.All.Count} small quality-of-life tweaks");
+        ImGui.TextUnformatted(TweakCountLabel);
         var modified = ModifiedTweaksOnly;
         if (SettingsTheme.Toggle("##modified-tweaks", ref modified, "Modified only"))
             ModifiedTweaksOnly = modified;
@@ -36,7 +39,15 @@ public sealed partial class SettingsLayout {
 #endif
         ImGui.Spacing();
         var results = TweakCatalog.Find(config, Search, ModifiedTweaksOnly);
-        ImGui.TextDisabled($"{results.Length} shown / {TweakCatalog.All.Count(t => t.IsModified(config))} modified");
+        var modifiedCount = 0;
+        for (var i = 0; i < TweakCatalog.All.Count; i++)
+            if (TweakCatalog.All[i].IsModified(config))
+                modifiedCount++;
+        if (tweakSummaryKey != (results.Length, modifiedCount)) {
+            tweakSummaryKey = (results.Length, modifiedCount);
+            tweakSummary = $"{results.Length} shown / {modifiedCount} modified";
+        }
+        ImGui.TextDisabled(tweakSummary);
         if (results.Length == 0)
             SettingsTheme.Helper("No tweaks match. Try another name or turn off Modified only.");
         foreach (var group in results.GroupBy(t => t.Group)) {

@@ -83,6 +83,10 @@ public static class BottomCardsDrawing {
         var (min, max) = ChromeLayout.SafeBounds();
         var available = max.X - min.X;
         locationBounds = coordinatesBounds = Vector4.Zero;
+        // A second layout in the same frame (new coordinate width) must not collide with the first one's placements.
+        ChromeLayout.Release("bottom-cards");
+        ChromeLayout.Release("coordinates");
+        ChromeLayout.Release("location");
         var safeLocation = new MapLocation(location.Region ?? "", location.Zone ?? "", location.Area ?? "");
         (LocationSecondary, LocationPrimary) = safeLocation.Lines(c.LocationCardShows);
         LocationRegion = safeLocation.Overline(c.LocationCardShows);

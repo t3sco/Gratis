@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -10,6 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Rendering;
 using Lumina.Excel.Sheets;
 using GameMap = FFXIVClientStructs.FFXIV.Client.Game.UI.Map;
+using SheetMap = Lumina.Excel.Sheets.Map;
 
 namespace Gratis.Controllers;
 
@@ -17,8 +19,9 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
     private sealed record Metadata(Quest Row, string Name, ushort Level, QuestBucket Bucket, uint Category,
         uint Expansion, string ExpansionName, uint Crest, uint Icon, string Duty);
     private Dictionary<uint, Metadata>? metadata;
+    private Task<Prepared>? loading;
     private QuestLogSnapshot snapshot = QuestLogSnapshot.Loading;
-    private long nextRead, nextProgress;
+    private long nextRead, nextProgress, nextPrepare;
     private ulong character;
     private string acceptance = "";
     private uint? progressExpansion;
@@ -72,7 +75,27 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
                 Clear();
                 character = currentCharacter;
             }
-            metadata ??= BuildMetadata();
+            if (metadata == null) {
+                // The one-time sheet scans run off the framework thread; the snapshot stays Loading until they land.
+                if (loading is null && now < nextPrepare)
+                    return;
+                var task = loading ??= Task.Run(Prepare);
+                if (!task.IsCompleted) {
+                    if (Snapshot.Status != QuestLogStatus.Loading)
+                        Publish(QuestLogStatus.Loading);
+                    return;
+                }
+                loading = null;
+                // A failed scan rereads every sheet, so it waits a minute instead of restarting on the next tick.
+                nextPrepare = now + 60000;
+                var prepared = task.GetAwaiter().GetResult();
+                historyRows = prepared.History;
+                levelsByObject = prepared.Levels;
+                entranceObjects = prepared.Objects;
+                entranceMarkers = prepared.Markers;
+                mapsByRange = prepared.Ranges;
+                metadata = prepared.Metadata;
+            }
             ReadHistory(now);
             var accepted = new Dictionary<uint, byte>();
             foreach (var work in manager->NormalQuests)
@@ -97,6 +120,9 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
                     QuestLogText.PreferTracked(tracked.Text, details.Objective),
                     data?.Duty ?? "", destination.Targets) {
                     DestinationNote = destination.Note,
+                    EntryMarker = destination.Source is QuestDestinationSource.EntryNpc or QuestDestinationSource.Door
+                        && !string.IsNullOrWhiteSpace(tracked.Text)
+                        ? destination.Targets[0] : null,
                     ObjectiveProgress = string.IsNullOrWhiteSpace(tracked.Text) ? "" : tracked.Progress,
                     Expansion = data?.Expansion ?? 0, ExpansionIcon = data?.Crest ?? 0,
                     Description = details.Description ?? "", Rewards = details.Rewards,
@@ -141,6 +167,17 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
                 Service.Log.Warning(error, "[QuestLog] Snapshot unavailable; retrying on the framework thread");
             loggedFailure = true;
         }
+    }
+
+    private sealed record Prepared(Dictionary<uint, Metadata> Metadata, Metadata[] History, ILookup<uint, Level> Levels,
+        ILookup<string, uint> Objects, Dictionary<uint, List<(uint Range, Vector2 Texture, uint Icon)>> Markers,
+        Dictionary<uint, SheetMap[]> Ranges);
+
+    private static Prepared Prepare() {
+        var data = BuildMetadata();
+        var history = data.Values.Where(m => m.Name.Length > 0).OrderBy(m => m.Name,
+            StringComparer.CurrentCultureIgnoreCase).ToArray();
+        return new(data, history, LevelsByObject(), EntranceObjects(), EntranceMarkers(), MapsByRange());
     }
 
     private static Dictionary<uint, Metadata> BuildMetadata() => Service.DataManager.GetExcelSheet<Quest>()

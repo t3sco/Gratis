@@ -12,6 +12,9 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     [JsonIgnore]
     public bool ViewportSmallMap { get; set; }
 
+    // Opt in in both styles: preserve Classic and avoid crowding field maps.
+    public bool ShowEnemies = false;
+
     public bool Palette = true;
     public bool PaletteTeleportButton = true;
     public bool PaletteShowUnattuned = true;

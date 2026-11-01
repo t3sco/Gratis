@@ -33,10 +33,23 @@ internal sealed class TravelIntegration {
         var hop = pi.GetIpcSubscriber<uint, bool>("Lifestream.AethernetTeleportById");
         var teleport = pi.GetIpcSubscriber<uint, byte, bool>("Lifestream.Teleport");
         var abort = pi.GetIpcSubscriber<object>("Lifestream.Abort");
-        var provider = new LifestreamTravelProvider(() => !Service.ClientState.IsPvP && busy.HasFunction
-            && hop.HasFunction && teleport.HasFunction && abort.HasAction
-            ? pi.InstalledPlugins.FirstOrDefault(p => p.InternalName == "Lifestream" && p.IsLoaded)?.Version.ToString()
-            : null,
+        global::System.Version? seenVersion = null;
+        string? seenText = null;
+        var provider = new LifestreamTravelProvider(() => {
+            if (Service.ClientState.IsPvP || !busy.HasFunction || !hop.HasFunction || !teleport.HasFunction
+                || !abort.HasAction)
+                return null;
+            foreach (var plugin in pi.InstalledPlugins)
+                if (plugin.InternalName == "Lifestream" && plugin.IsLoaded) {
+                    // Polled every frame, so only format the version again when it changes.
+                    if (seenText == null || seenVersion != plugin.Version) {
+                        seenVersion = plugin.Version;
+                        seenText = plugin.Version.ToString();
+                    }
+                    return seenText;
+                }
+            return null;
+        },
             () => !Service.ClientState.IsPvP && busy.InvokeFunc(),
             () => Service.ClientState.IsPvP ? 0 : active.InvokeFunc(),
             id => !Service.ClientState.IsPvP && hop.InvokeFunc(id),
@@ -44,7 +57,7 @@ internal sealed class TravelIntegration {
             () => { if (!Service.ClientState.IsPvP) abort.InvokeAction(); });
         Ui = new MapAssistance(provider, new TravelPlacesAdapter(), GameTeleportService.CanTeleport, SystemConfig.Save,
             GameTeleportService.BlockedReason);
-        Ui.PinLayer = new PinOverlay(new PinStore(System.SystemConfig, () => {
+        Ui.PinLayer = new PinOverlay(new PinStore(() => System.SystemConfig, () => {
             SystemConfig.Save();
             System.MapWindow.PlacePalette.Invalidate();
         }, id => Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Map>().GetRowOrDefault(id) != null),

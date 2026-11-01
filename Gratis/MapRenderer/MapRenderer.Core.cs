@@ -53,13 +53,11 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     }
 
     public void Dispose() {
-        UnloadFogHooks();
         Service.ClientState.TerritoryChanged -= OnViewTerritoryChanged;
         cameraHeading.Dispose();
         mapColours.Dispose();
         mapContents.Dispose();
         blendedTexture?.Dispose();
-        fogTexture?.Dispose();
     }
 
     public void CenterOnGameObject(IGameObject obj) =>
@@ -77,7 +75,8 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     double Rendering.IMapRendererHost.Now => ImGui.GetTime();
     int Rendering.IMapRendererHost.FrameId => ImGui.GetFrameCount();
     uint Rendering.IMapRendererHost.MapId => AgentMap.Instance()->SelectedMapId;
-    ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->CurrentTerritoryId << 32)
+    // Keyed on the selected map's own territory so a remote map keeps one stable key wherever the player stands.
+    ulong Rendering.IMapRendererHost.MapKey => ((ulong)AgentMap.Instance()->SelectedTerritoryId << 32)
         | AgentMap.Instance()->SelectedMapId;
     Rendering.MapContentBounds? Rendering.IMapRendererHost.ContentBounds => contentBounds;
     bool Rendering.IMapRendererHost.SmallMapHint => DrawHelpers.GetMapScaleFactor() >= 2;
@@ -87,12 +86,12 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
     long Rendering.IMapRendererHost.ViewSession => viewSession;
     Vector2 Rendering.IMapRendererHost.CoordinateOffset(Vector2 position) => CoordinateOffset(position);
     void Rendering.IMapRendererHost.DrawBackgroundTexture() => DrawBackgroundTexture();
-    void Rendering.IMapRendererHost.DrawFogOfWar() => DrawFogOfWar();
     void Rendering.IMapRendererHost.DrawFlag() => DrawFlag();
     void Rendering.IMapRendererHost.DrawPlayer() => DrawPlayer();
     void Rendering.IMapRendererHost.DrawTextMarkers() => DrawStaticTextMarkers();
     void Rendering.IMapRendererHost.CollectMarkers() {
         Rendering.MapDrawContext.Current.SynchronizePvp();
+        DrawEnemies();
         DrawStaticMapMarkers();
         DrawDynamicMarkers();
         DrawGameObjects();
@@ -101,6 +100,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
         if (!Service.ClientState.IsPvP)
             DrawGatheringMarkers();
         DrawFieldMarkers();
+        DrawEnemyTooltip();
     }
 
     private void DrawBackgroundTexture() {
@@ -122,10 +122,11 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
             var backgroundPath = $"{AgentMap.Instance()->SelectedMapBgPath.ToString()}.tex";
             var source = backgroundPath + "|" + foregroundPath;
             if (blendedPath != source) {
-                ResetFogTexture();
                 blendedTexture?.Dispose();
-                blendedTexture = LoadTexture();
+                blendedTexture = null;
+                // Recorded first: a map that fails to load must not reload, and dispose again, on every frame.
                 blendedPath = source;
+                blendedTexture = LoadTexture();
             }
 
             if (blendedTexture is not null) {

@@ -29,6 +29,9 @@ public sealed partial class MapAssistance {
         ChipBounds = Vector4.Zero;
         var request = ContextTarget(host) ?? StoryTarget(host)
             ?? (host.Renderer.Spotlight.Active ? host.Renderer.Spotlight.Request : null);
+        // Requests are value-equal, so a dismissal must not outlive its target or the same place never gets a chip again.
+        if (request is null)
+            dismissedTarget = chipTarget = null;
         if (!TravelReady || hovered != null || !host.Config.AetheryteChips || request is not { } target
             || target == dismissedTarget
             || !host.Config.TravelActions && (IsContextTarget(target) || target.Source == SpotlightSource.Quest)

@@ -86,7 +86,7 @@ public static class SettingsPresets {
                 ("GlassBlurRadius", 12f))),
         ]),
 
-        new("map-labels", "Map", "Map labels and fog", "Map labels", "How loud the map's place names are.", [
+        new("map-labels", "Map", "Map labels", "Map labels", "How loud the map's place names are.", [
             new("Off", new() { ["ShowTextLabels"] = false }),
             new("Quiet", new() {
                 ["ShowTextLabels"] = true, ["LargeAreaTextOpacity"] = .15f, ["SmallAreaTextOpacity"] = .7f,

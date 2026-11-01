@@ -91,7 +91,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
     }
 
     public bool Import(string? code) {
-        if (!PinShareCode.TryDecode(code, out var pin) || pin == null) {
+        if (!PinShareCode.TryDecode(code?.Trim(), out var pin) || pin == null) {
             Notify("Invalid pin share code");
             return false;
         }
@@ -212,7 +212,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
         var editorWasOpen = Draft != null;
         if (Draft == null && ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows)
             && !ImGui.GetIO().WantTextInput && ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.V, false)) {
-            var clipboard = ImGui.GetClipboardText();
+            var clipboard = ImGui.GetClipboardText()?.Trim() ?? "";
             if (clipboard.StartsWith(PinShareCode.Prefix, StringComparison.Ordinal))
                 Import(clipboard);
         }
@@ -329,6 +329,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             var noteId = "##pin-note-" + editorSerial;
             var noteBar = UiMotion.ScrollbarBegin(noteId);
             var typed = ImGui.InputTextMultiline(noteId, ref note, 280, new Vector2(-1, 78 * s));
+            var noteActive = interactive && ImGui.IsItemActive();
             UiMotion.ScrollbarEndItem(noteBar, typed);
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
@@ -364,7 +365,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
                 ImGui.TextColored(GratisTheme.Objective, editorMessage);
             if (interactive && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
                 CancelEditor();
-            else if (interactive && ImGui.IsKeyPressed(ImGuiKey.Enter, false))
+            else if (interactive && ImGui.IsKeyPressed(ImGuiKey.Enter, false) && (!noteActive || ImGui.GetIO().KeyCtrl))
                 SaveEditor();
         }, scroll: true, interactive: interactive);
     }

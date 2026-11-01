@@ -110,8 +110,10 @@ public static partial class DrawHelpers {
         using (var attunement = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * attunementAlpha,
             attunementAlpha < 1)) {
             if (MarkerVisual.UseFlatMarker(marker)) {
-                if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(marker))
+                if (MapShape.FeatherWidth > 0 && !FlatMarkerDrawing.FitsFeather(marker)) {
+                    DrawRadiusUnderlay(marker);
                     return;
+                }
                 DrawRadiusUnderlay(marker);
                 if (!FlatMarkerDrawing.Draw(marker))
                     return;
@@ -134,8 +136,24 @@ public static partial class DrawHelpers {
 
         var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
         var radius = markerRadius * marker.Scale * MapDrawContext.Current.MapSizeFactor;
-        if (!MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale)))
-            return;
+        // Near the feathered edge, clip the circle to the map instead of dropping it.
+        var clipped = !MapShape.ContainsSymbol(center, new Vector2(radius + MapDrawContext.Current.GlobalScale));
+        var list = ImGui.GetWindowDrawList();
+        if (clipped) {
+            var (min, max) = MapShape.Bounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            var inset = new Vector2(MapShape.FeatherWidth);
+            list.PushClipRect(min + inset, max - inset, true);
+        }
+        try {
+            DrawRadiusCircle(marker, center, radius);
+        }
+        finally {
+            if (clipped)
+                list.PopClipRect();
+        }
+    }
+
+    private static void DrawRadiusCircle(MarkerInfo marker, Vector2 center, float radius) {
         var fillColor = ImGui.GetColorU32(marker.RadiusColor with { W = MapDrawContext.Current.Config.AreaColor.W });
         var radiusColor = ImGui.GetColorU32(
             marker.RadiusOutlineColor with { W = MapDrawContext.Current.Config.AreaOutlineColor.W });
@@ -181,8 +199,10 @@ public static partial class DrawHelpers {
             - texture.Size * iconScale / 2.0f * scale);
         var cursorScreenPos = ImGui.GetCursorScreenPos();
         var iconSize = texture.Size * scale * iconScale;
-        if (!MapShape.ContainsSymbol(cursorScreenPos + iconSize / 2, iconSize / 2))
+        if (!MapShape.ContainsSymbol(cursorScreenPos + iconSize / 2, iconSize / 2)) {
+            DrawRadiusUnderlay(marker);
             return false;
+        }
 
         DrawRadiusUnderlay(marker);
         if (MapDrawContext.Current.Config.IsGratis) {

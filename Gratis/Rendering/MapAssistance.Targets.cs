@@ -14,6 +14,9 @@ public sealed partial class MapAssistance {
 
     private SpotlightRequest? pressedObjective;
 
+    // A quest marker opens that quest in the Gratis quest log; only markers the log cannot place fall back to travel.
+    private uint pressedQuest;
+
     private Vector2 pressPosition, pressedWorld;
 
     private bool markerDragged;
@@ -28,6 +31,7 @@ public sealed partial class MapAssistance {
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) {
             pressedPlace = null;
             pressedObjective = null;
+            pressedQuest = 0;
             markerDragged = false;
             pressPosition = ImGui.GetMousePos();
             if (InputActive || context.WindowMoveInputBlocked || context.Measure.InputActive
@@ -51,6 +55,8 @@ public sealed partial class MapAssistance {
                     pressedObjective = new(world, host.Renderer.ViewedMapId, SpotlightSource.Quest,
                         Icon: marker.IconId);
                     pressedWorld = world;
+                    pressedQuest = MarkerIcon.Family(marker) is MarkerIconFamily.Quest && marker.ObjectiveId is { } quest
+                        && quest != 0 ? quest + 65536u : 0;
                     break;
                 }
             }
@@ -64,6 +70,8 @@ public sealed partial class MapAssistance {
                 HoverPlace(place, pressPosition);
                 anchorWorld = pressedWorld;
             }
+            else if (pressedQuest != 0 && context.QuestLog.OpenQuest(pressedQuest))
+                hovered = null;
             else if (pressedObjective is { } objective) {
                 hovered = null;
                 OfferContextTarget(objective, host.Now);

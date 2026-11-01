@@ -33,7 +33,8 @@ internal sealed partial class DalamudMapDrawContext {
         }
     }
 
-    private sealed class TextFont(DalamudMapDrawContext owner, IFontHandle handle) : IDrawFont {
+    private sealed class TextFont(DalamudMapDrawContext owner, IFontHandle handle, int pixels) : IDrawFont {
+        public readonly int Pixels = pixels;
         public string Validity = "not-checked";
         public int Fallbacks;
         public unsafe IDisposable Push() {
@@ -59,15 +60,22 @@ internal sealed partial class DalamudMapDrawContext {
                 owner.LogFontFailure(error);
             }
             Fallbacks++;
-            return owner.DefaultText.Push();
+            // While this size builds, the nearest size already working keeps the face and spacing close, where the
+            // Dalamud UI font is far larger and makes the layout jump when the real size arrives.
+            TextFont? nearest = null;
+            foreach (var other in owner.textDrawFonts.Values)
+                if (!ReferenceEquals(other, this) && other.Validity == "valid"
+                    && (nearest is null || Math.Abs(other.Pixels - Pixels) < Math.Abs(nearest.Pixels - Pixels)))
+                    nearest = other;
+            return (nearest is null ? owner.DefaultText : nearest).Push();
         }
     }
 
-    private IDrawFont GuardText(IFontHandle? handle) {
+    private IDrawFont GuardText(IFontHandle? handle, int pixels = 0) {
         if (handle is null)
             return DefaultText;
         if (!textDrawFonts.TryGetValue(handle, out var cached))
-            textDrawFonts[handle] = cached = new TextFont(this, handle);
+            textDrawFonts[handle] = cached = new TextFont(this, handle, pixels);
         return cached;
     }
 
@@ -106,12 +114,21 @@ internal sealed partial class DalamudMapDrawContext {
         var pixels = TextDrawing.PixelSize(size);
         var key = (10, pixels);
         if (!titleFonts.TryGetValue(key, out var handle)) {
-            if (!geistBudget.Reserve(key.Item1, pixels, FontAtlasBudget.TextGlyphs))
-                return DefaultText;
+            if (!geistBudget.Reserve(key.Item1, pixels, FontAtlasBudget.TextGlyphs)) {
+                // Out of handles: the nearest size already built keeps the Geist face; the Dalamud UI font is far larger.
+                IFontHandle? nearest = null;
+                var gap = int.MaxValue;
+                foreach (var pair in titleFonts)
+                    if (pair.Key.Item1 == key.Item1 && Math.Abs(pair.Key.Item2 - pixels) < gap) {
+                        gap = Math.Abs(pair.Key.Item2 - pixels);
+                        nearest = pair.Value;
+                    }
+                return nearest is null ? DefaultText : GuardText(nearest, gap == int.MaxValue ? 0 : pixels);
+            }
             handle = CreateTextFont(pixels);
             titleFonts[key] = handle;
         }
-        return GuardText(handle);
+        return GuardText(handle, pixels);
     }
 
     private IFontHandle CreateTextFont(int pixels) {

@@ -27,6 +27,7 @@ public sealed class ScreenshotCapture : IDisposable {
     private bool mapOnly;
     private Rect? mapBounds;
     private volatile bool disposed;
+    private Task? captureTask;
     private string? reportOutput;
     private Action<bool>? reportCompletion;
     private Rendering.MapDrawContext? privacyContext;
@@ -42,6 +43,11 @@ public sealed class ScreenshotCapture : IDisposable {
         disposed = true;
         Service.PluginInterface.UiBuilder.Draw -= OnDraw;
         System.CommandManager.RemoveCommand(command);
+        // Let an in-flight pool capture finish so it never touches the plugin after unload.
+        try {
+            captureTask?.Wait(TimeSpan.FromSeconds(2));
+        }
+        catch (Exception error) { Service.Log.Debug(error, "[Gratis] Screenshot capture ended with an error during unload."); }
         CompleteReport(false);
     }
 
@@ -129,7 +135,7 @@ public sealed class ScreenshotCapture : IDisposable {
 
             Volatile.Write(ref pendingDraw, 0);
             var bounds = mapBounds;
-            _ = Task.Run(() => Capture(bounds));
+            captureTask = Task.Run(() => Capture(bounds));
         }
         catch (Exception exception) {
             Volatile.Write(ref pendingDraw, 0);

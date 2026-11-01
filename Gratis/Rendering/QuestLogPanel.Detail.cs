@@ -36,6 +36,8 @@ public sealed partial class QuestLogPanel {
     private void ShowOnMap(QuestLogQuest quest) {
         if (source?.Show(quest) != true)
             return;
+        if (quest.DestinationNote == QuestTargetSelection.InstanceMapNote)
+            MapDrawContext.Current.ContextMenu.Notify(QuestTargetSelection.ThroughDoor);
         CloseDetail();
         if (!MapDrawContext.Current.Config.QuestLogPinned) {
             // The map the log opened is the one the quest is being shown on, so closing the log must not close it.

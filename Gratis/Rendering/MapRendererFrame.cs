@@ -22,7 +22,6 @@ public interface IMapRendererHost {
     Vector2? ViewportOverride => null;
     Vector2 CoordinateOffset(Vector2 position);
     void DrawBackgroundTexture();
-    void DrawFogOfWar();
     void CollectMarkers();
     void DrawFlag();
     void DrawPlayer();
@@ -292,7 +291,6 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
             return;
         var motion = MapDrawContext.Current.Motion;
         using var alpha = new MapMotion.AlphaScope(motion.ZoneProgress(host.Now));
-        host.DrawFogOfWar();
         SpotlightDrawing.DrawMapOverlay(Spotlight, ImGui.GetWindowPos() + DrawPosition, Scale);
         DrawMapMarkers();
         SpotlightDrawing.DrawDistance(Spotlight, ImGui.GetWindowPos() + DrawPosition, Scale);

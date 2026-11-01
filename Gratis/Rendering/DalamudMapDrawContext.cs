@@ -73,8 +73,11 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     public override bool QuickSetupBlocked => Service.Condition.IsBoundByDuty() || Service.Condition.IsBetweenAreas()
         || !Service.ClientState.IsLoggedIn;
 
-    public override bool LensInDuty =>
-        Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty];
+    public override bool InDuty => Service.Condition.IsBoundByDuty();
+
+    public override bool LensInDuty => Lenses.FixedDuty(
+        Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BoundByDuty],
+        Service.ClientState.TerritoryType);
 
     public override bool LensGatheringClass => Service.ObjectTable.LocalPlayer?.ClassJob.RowId is 16 or 17 or 18;
 

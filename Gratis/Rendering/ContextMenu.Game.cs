@@ -49,7 +49,7 @@ internal sealed unsafe class GameContextMenuActions : IContextMenuActions {
         var name = flag.GetMap().PlaceName.ValueNullable?.Name.ExtractText();
         var coordinates = CoordinateShare.WorldToMap(flag.GetCoordinate(),
             new Vector2(flag.GetMap().OffsetX, flag.GetMap().OffsetY), flag.GetMap().SizeFactor / 100f);
-        return new ContextMenuItem(name + " · " + CoordinateShare.Text(coordinates), GratisIcons.Flag,
+        return new ContextMenuItem(name + " Â· " + CoordinateShare.Text(coordinates), GratisIcons.Flag,
             flag.PlaceFlag);
     }).ToArray();
     public IReadOnlyList<ContextMenuItem> Layers {

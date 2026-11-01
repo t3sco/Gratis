@@ -14,6 +14,8 @@ internal sealed class PaletteRowNames {
 
     public string Fit(string text, float width, bool secondary = false) {
         if (!fitted.TryGetValue((text, secondary, width), out var cache)) {
+            if (fitted.Count >= 2048)
+                fitted.Clear();
             cache = new();
             fitted.Add((text, secondary, width), cache);
         }

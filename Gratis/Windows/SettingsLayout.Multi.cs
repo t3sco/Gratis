@@ -21,8 +21,9 @@ public sealed partial class SettingsLayout {
     /// <summary>A multi-select as a row of the settings table: its label, then a dropdown of checkboxes.</summary>
     private bool DrawMultiSelectRow(SystemConfig config, SettingsMultiSelect multi, float s, bool stacked, bool essentials) {
         ImGui.PushID(multi.Id);
-        ImGui.TableNextRow(0, GratisTheme.ControlHeight * s);
+        ImGui.TableNextRow(0, RowHeight(essentials, s));
         ImGui.TableNextColumn();
+        var rowTop = ImGui.GetCursorPosY();
         ImGui.AlignTextToFramePadding();
         var cellWidth = ImGui.GetContentRegionAvail().X;
         ImGui.TextUnformatted(multi.Label);
@@ -31,7 +32,7 @@ public sealed partial class SettingsLayout {
 #endif
         ChromeControls.Tooltip(multi.Tooltip, scale: s);
         if (essentials)
-            DrawHelperLine("multi-" + multi.Id, multi.Tooltip, cellWidth);
+            DrawHelperLine("multi-" + multi.Id, multi.Tooltip, cellWidth, rowTop, s);
         if (!stacked)
             ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);

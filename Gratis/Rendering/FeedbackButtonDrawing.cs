@@ -51,7 +51,7 @@ public static class FeedbackButtonDrawing {
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s);
         ImGui.SetCursorScreenPos(pos);
-        if (ChromeControls.IconButton("##feedback", GratisIcons.MessageSquare, "Send feedback or report a bug", size,
+        if (ChromeControls.IconButton("##feedback", GratisIcons.MessageSquare, "Send feedback / bug reports", size,
                 windowBounds: MapToolbarDrawing.WindowBounds, radius: GratisTheme.Radius.Card * s)) {
             FeedbackSender.Reset();
             sentHandled = false;
@@ -97,7 +97,7 @@ public static class FeedbackButtonDrawing {
             ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 5) * s);
             using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
-                ImGui.TextUnformatted("Send feedback");
+                ImGui.TextUnformatted("Send feedback / bug reports");
             // The note stays visible while typing: it says why nobody can write back.
             ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
             ImGui.PushTextWrapPos(ImGui.GetWindowWidth() - padding.X);

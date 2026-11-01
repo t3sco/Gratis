@@ -88,9 +88,15 @@ public sealed partial class SettingsLayout {
                 changed |= DrawMultiSelectRow(config, multi, s, stacked, essentials);
         foreach (var entry in entries) {
             ImGui.PushID(entry.Path);
-            ImGui.TableNextRow(0, GratisTheme.ControlHeight * s);
+            ImGui.TableNextRow(0, RowHeight(essentials && entry.Tooltip is not null, s));
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
+            var rowTop = ImGui.GetCursorPosY();
+            if (essentials && entry.Path == "VisualStyle") {
+                // The look chips are shorter than the row; label and chips share one inset below the card's top edge.
+                rowTop += MathF.Max(0, (RowHeight(false, s) - (GratisTheme.ControlHeight - 4) * s) / 2);
+                ImGui.SetCursorPosY(rowTop);
+            }
             var cellStart = ImGui.GetCursorScreenPos();
             var cellWidth = ImGui.GetContentRegionAvail().X;
             var inlineToggle = stacked && entry.Value(config) is bool;
@@ -112,8 +118,9 @@ public sealed partial class SettingsLayout {
 #endif
             if (entry.Tooltip is { } tip) {
                 ChromeControls.Tooltip(tip, scale: s);
-                if (essentials)
-                    DrawHelperLine(entry.Path, tip, cellWidth - (inlineToggle ? 52 * s : 0));
+                if (essentials) {
+                    DrawHelperLine(entry.Path, tip, cellWidth - (inlineToggle ? 52 * s : 0), rowTop, s);
+                }
             }
             if (!stacked)
                 ImGui.TableNextColumn();
@@ -123,6 +130,8 @@ public sealed partial class SettingsLayout {
             }
             ImGui.SetNextItemWidth(-1);
             using (var disabled = UiMotion.Disabled("##setting-enabled", entry.Enabled(config))) {
+                if (essentials && entry.Path == "VisualStyle")
+                    ImGui.SetCursorPosY(rowTop);
                 ImGui.BeginGroup();
                 changed |= essentials && entry.Path == "VisualStyle" ? DrawLookChips(config, s) : entry.Draw(config);
                 ImGui.EndGroup();

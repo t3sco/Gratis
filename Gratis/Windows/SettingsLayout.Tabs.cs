@@ -74,7 +74,7 @@ public sealed partial class SettingsLayout {
         ["Map/On open"] = (MapTab, Sub.View),
         ["Map/Zone changes"] = (MapTab, Sub.View),
         ["Map/Map links"] = (MapTab, Sub.View),
-        ["Map/Map labels and fog"] = (MapTab, Sub.View),
+        ["Map/Map labels"] = (MapTab, Sub.View),
         ["Map/Travel"] = (MapTab, Sub.Places),
         ["Map/Place search"] = (MapTab, Sub.Places),
         ["Map/Spotlight"] = (MapTab, Sub.Places),
@@ -227,6 +227,9 @@ public sealed partial class SettingsLayout {
         var defaults = new SystemConfig();
         foreach (var entry in Entries) {
             if (!entry.Visible(config))
+                continue;
+            // User-authored collections are not page settings: resetting the page must not delete them.
+            if (entry.Path is "WindowPresets" or "CustomLenses")
                 continue;
             var home = Home(entry.Section, entry.Group);
             if (home.Tab == tab && (sub < 0 || home.Sub == sub))

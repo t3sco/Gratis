@@ -90,10 +90,18 @@ public static class LocationMenuDrawing {
             var size = new Vector2(UpSize * s);
             var origin = ImGui.GetCursorScreenPos();
             var at = origin + new Vector2(card.Z - card.X - (UpInset + UpSize) * s, (card.W - card.Y - size.Y) / 2);
-            ImGui.SetCursorScreenPos(at);
-            clickedUp = ChromeControls.IconButton("##location-up", GratisIcons.ArrowUp, UpTooltip(up.Name), size, s);
-            upBounds = new(at.X, at.Y, at.X + size.X, at.Y + size.Y);
-            ImGui.SetCursorScreenPos(origin);
+            // The up button fades in while the pointer is over the card (or the dropdown is open) and is not submitted
+            // once hidden, so it cannot swallow clicks meant for the card.
+            var reveal = UiMotion.Visibility(ImGui.GetID("##location-up-reveal"),
+                open || ImGui.IsMouseHoveringRect(new(card.X, card.Y), new(card.Z, card.W), false));
+            if (reveal > .01f) {
+                ImGui.SetCursorScreenPos(at);
+                ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * reveal);
+                clickedUp = ChromeControls.IconButton("##location-up", GratisIcons.ArrowUp, UpTooltip(up.Name), size, s);
+                ImGui.PopStyleVar();
+                upBounds = new(at.X, at.Y, at.X + size.X, at.Y + size.Y);
+                ImGui.SetCursorScreenPos(origin);
+            }
         }
         var clicked = ChromeControls.Button("##location-card", new(card.Z - card.X, card.W - card.Y));
         ChromeControls.Feedback(ImGui.GetWindowDrawList(), new(card.X, card.Y), new(card.Z, card.W), IsOpen,

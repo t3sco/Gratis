@@ -14,6 +14,8 @@ internal sealed unsafe class FlagArrivalGame : IFlagArrivalSource, IDisposable {
     [PluginService] private IChatGui Chat { get; set; } = null!;
     public long Revision { get; private set; }
     private long zoneRevision;
+    private uint placeMap;
+    private string? placeName;
     public FlagArrivalGame() {
         Service.PluginInterface.Inject(this);
         MapDrawContext.Current.FlagArrival.Source = this;
@@ -47,9 +49,13 @@ internal sealed unsafe class FlagArrivalGame : IFlagArrivalSource, IDisposable {
             ref var marker = ref agent->FlagMapMarkers[0];
             flag = new(marker.TerritoryId, marker.MapId, new(marker.XFloat, marker.YFloat), Revision);
         }
-        var place = Service.DataManager.GetExcelSheet<Map>().GetRowOrDefault(
-            agent->CurrentMapId)?.PlaceName.ValueNullable?.Name.ExtractText()
-            ?? "flag";
+        if (placeName == null || placeMap != agent->CurrentMapId) {
+            placeMap = agent->CurrentMapId;
+            placeName = Service.DataManager.GetExcelSheet<Map>().GetRowOrDefault(
+                agent->CurrentMapId)?.PlaceName.ValueNullable?.Name.ExtractText()
+                ?? "flag";
+        }
+        var place = placeName;
         var loading = Service.ClientState.IsPvP || Service.Condition[ConditionFlag.BetweenAreas]
             || Service.Condition[ConditionFlag.BetweenAreas51];
         return new(agent->CurrentTerritoryId, agent->CurrentMapId, new Vector2(player.Position.X, player.Position.Z),

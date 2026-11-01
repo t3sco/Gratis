@@ -91,7 +91,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             ImGui.SetKeyboardFocusHere();
             focusSearch = false;
         }
-        var wasEmpty = query.Length == 0;
+        var wasEmpty = queryEmptyBeforeInput = query.Length == 0;
         var field = TextField.Draw(queryInputId, ref query, new(FieldFaces.Palette, size, s));
         ClearBounds = field.ClearBounds;
         // Clear on an empty search has nothing left to clear, so it closes the search.
@@ -133,6 +133,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
     public IReadOnlyList<PaletteExpansion> Expansions => expansions;
     public Vector2 FirstResultCenter { get; private set; }
     public Vector2 ConfirmationCenter { get; private set; }
+    // Backspace that empties the field this frame must not also step back out of an expansion.
+    private bool queryEmptyBeforeInput = true;
     private bool Home => string.IsNullOrWhiteSpace(query);
     public void BrowseExpansion(uint? id) {
         RememberView();

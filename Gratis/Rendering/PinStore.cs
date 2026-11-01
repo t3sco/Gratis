@@ -26,15 +26,33 @@ public enum PinChange {
 }
 
 public sealed class PinStore {
-    private readonly MapDrawingConfig config;
+    private readonly Func<MapDrawingConfig> source;
     private readonly Action save;
     private readonly Func<uint, bool> validMap;
+    private MapDrawingConfig bound = null!;
+    // Follows the live config so a reload that swaps the instance keeps pins saving to the current one.
+    private MapDrawingConfig config {
+        get {
+            var current = source();
+            if (!ReferenceEquals(current, bound))
+                Bind(current);
+            return bound;
+        }
+    }
     public int Revision { get; private set; }
     public int Limit => Math.Clamp(config.PinMaxPerMap, 1, 200);
-    public PinStore(MapDrawingConfig config, Action save, Func<uint, bool>? validMap = null) {
-        this.config = config;
+    public PinStore(MapDrawingConfig config, Action save, Func<uint, bool>? validMap = null)
+        : this(() => config, save, validMap) { }
+    public PinStore(Func<MapDrawingConfig> source, Action save, Func<uint, bool>? validMap = null) {
+        this.source = source;
         this.save = save;
         this.validMap = validMap ?? (id => id is > 0 and <= 100000);
+        Bind(source());
+    }
+
+    private void Bind(MapDrawingConfig config) {
+        var rebind = bound != null;
+        bound = config;
         var clean = new Dictionary<uint, List<UserPin>>();
         var ids = new HashSet<Guid>();
         if (config.PinData != null)
@@ -58,6 +76,8 @@ public sealed class PinStore {
         config.PinData = clean;
         if (!Enum.IsDefined(config.PinLabels))
             config.PinLabels = PinLabelMode.OnHover;
+        if (rebind)
+            Revision++;
     }
 
     public IReadOnlyList<UserPin> ForMap(uint mapId) => config.PinData.TryGetValue(mapId, out var list) ? list

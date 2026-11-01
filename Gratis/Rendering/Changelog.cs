@@ -18,6 +18,25 @@ public static class Changelog {
     };
 
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new ChangelogRelease("0.1.0.7", "1 Nov 2026", "Quests you can follow, a map that fits", [
+            new(ChangeKind.New, [
+                "Click a quest marker on the map to open that quest in the Quest Log, accepted or not yet picked up.",
+                "Quests inside instances now point at the way in: the NPC or the door you click, with a \"This quest is through a door\" note when the door can't be marked.",
+                "A different map size and position inside duties: pick one in Settings, and the map switches as you enter and leave.",
+                "A Locate player button on the toolbar.",
+                "Enemy dots: nearby hostiles on the map, with a gold glow for quest, FATE and hunting log targets (off by default)."]),
+            new(ChangeKind.Improved, [
+                "The toolbar only condenses when it runs out of width, not when the window gets short.",
+                "The up-one-level arrow on the location card appears when you point at the card.",
+                "Settings rows are evenly spaced, captions sit under their labels and chips have room to breathe.",
+                "Map recolours no longer flash the original map first, and the Quest Log loads in the background.",
+                "FATE markers are calmer when you zoom out, and tooltips no longer have a gap on the right."]),
+            new(ChangeKind.Fixed, [
+                "Pointing at the Quest Log no longer stops WASD from reaching the game.",
+                "Fog of war has been removed: it made the game use more and more memory, especially after reloading the plugin.",
+                "Settings are kept as a backup if the file ever fails to load, and your pins survive a reload.",
+                "Feedback button reads Send feedback / bug reports."]),
+        ]),
         new ChangelogRelease("0.1.0.6", "31 Oct 2026", "Everything where you'd look for it", [
             new(ChangeKind.New, [
                 "Essentials: a new first tab in Settings with the handful of choices most people actually want, from your look to how the map behaves.",

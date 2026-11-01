@@ -39,6 +39,20 @@ public sealed partial class QuestLogPanel {
         requestedOpen = true;
         IsOpen = true;
     }
+    /// <summary>Opens the log on one quest's detail, from a map marker. False when the log does not know the quest.</summary>
+    public bool OpenQuest(uint rowId) {
+        if (presentation.Find(rowId) is not { } quest || !MapDrawContext.Current.Config.IsGratis || suspended)
+            return false;
+        OpenFromJournal();
+        HideSearch();
+        Tab = snapshot.Quests.Any(q => q.RowId == rowId) ? QuestLogTab.Accepted
+            : quest.Completed ? QuestLogTab.Completed : QuestLogTab.Unaccepted;
+        selected = rowId;
+        source?.RequestDetail(rowId);
+        detailQuest = quest;
+        DetailOpen = true;
+        return true;
+    }
     public void CloseFromJournal() {
         if (!MapDrawContext.Current.Config.QuestLogPinned) CloseLog(false);
     }
@@ -53,8 +67,10 @@ public sealed partial class QuestLogPanel {
     public bool IsOpen { get; private set; }
     public bool PointerOver { get; private set; }
     public bool InputActive { get; private set; }
+    // Row and detail focus latch until the next click elsewhere, so without the pointer test a quest clicked once
+    // would keep WASD from reaching the game; the search field is typing, so it keeps the keyboard wherever the pointer is.
     public bool CapturesKeyboard => MapDrawContext.Current.Config.IsGratis
-        && !MapDrawContext.Current.IsPvP && (keyboard || swallowEscape);
+        && !MapDrawContext.Current.IsPvP && (keyboard && (PointerOver || searchOpen) || swallowEscape);
     public QuestLogLayout Layout { get; private set; }
     public Vector4 Bounds => suspended ? Vector4.Zero : Layout.Panel;
     public bool ReservesSpace => !suspended && (IsOpen || Opacity > .001f);

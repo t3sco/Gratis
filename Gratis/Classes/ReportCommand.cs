@@ -95,7 +95,8 @@ internal sealed class ReportCommand : IDisposable {
                 var states = $"active={SafeLensName(Settings.ActiveLens)} "
                     + $"effective={SafeLensName(visibility.EffectiveLens)} auto={Settings.LensAuto} "
                     + $"tint={Settings.LensTintsMap} peek={visibility.Peek} "
-                    + $"cycleKey={Settings.LensCycleKey} custom={Settings.CustomLenses?.Count ?? 0}; ";
+                    + $"cycleKey={Settings.LensCycleKey} custom={Settings.CustomLenses?.Count ?? 0} "
+                    + Rendering.LensCommand.DutyDiagnostics() + "; ";
                 for (var i = 0; i < MarkerVisibility.GroupCount; i++)
                     states += $"{(MarkerGroup)i}={visibility.State((MarkerGroup)i)} count={visibility.Counts[i]} "
                         + $"filter={visibility.Overrides[i]?.ToString() ?? "lens"}; ";

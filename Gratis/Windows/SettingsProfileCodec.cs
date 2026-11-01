@@ -30,10 +30,26 @@ public static class ProfileCodec {
 
     private static SettingsEntry[] Build() {
         var defaults = new SystemConfig();
-        return SettingsLayout.Entries.Where(e => !Excluded.Contains(e.Path) && !e.Path.StartsWith("Filters.", StringComparison.Ordinal)).GroupBy(e => e.Path)
+        var entries = SettingsLayout.Entries.Where(e => !Excluded.Contains(e.Path) && !e.Path.StartsWith("Filters.", StringComparison.Ordinal)).GroupBy(e => e.Path)
             .Select(g => g.First()).Where(e => e.Value(defaults) is bool or int or float or string or Enum or Vector2
-                or Vector3 or Vector4).ToArray();
+                or Vector3 or Vector4).ToList();
+        // The marker options are drawn by the classic tab, not the catalog; they still travel with a profile.
+        foreach (var extra in MarkerOptions)
+            if (entries.All(e => e.Path != extra.Path))
+                entries.Add(extra);
+        return entries.ToArray();
     }
+
+    private static readonly SettingsEntry[] MarkerOptions = [
+        new("Markers", "Marker options", "Markers.IconStyle", "Marker icons", 0, 2),
+        new("Markers", "Marker options", "Markers.Declutter", "Cluster ambient markers"),
+        new("Markers", "Marker options", "Markers.ScaleWithZoom", "Zoom-aware marker size"),
+        new("Markers", "Marker options", "Markers.MinimumScale", "Minimum marker scale", .3f, 1),
+        new("Markers", "Marker options", "Markers.MaximumScale", "Maximum marker scale", 1, 3),
+        new("Markers", "Marker options", "Markers.ClusterDistance", "Cluster distance", 8, 64),
+        new("Markers", "Marker options", "Markers.DimIrrelevant", "Dim irrelevant markers"),
+        new("Markers", "Marker options", "Markers.IrrelevantAlpha", "Irrelevant opacity", 0, 1),
+    ];
 
     public static Dictionary<string, JsonElement> Capture(SystemConfig config) {
         var defaults = new SystemConfig();

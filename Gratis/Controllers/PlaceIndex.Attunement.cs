@@ -9,7 +9,7 @@ public sealed partial class PlaceIndexGame {
     private int unresolvedAttunement;
     public bool? MarkerAttunement(uint dataKey, MarkerIconFamily family) {
         if (dataKey == 0 || family is not (MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet)
-            || !Service.ClientState.IsLoggedIn)
+            || !Service.ClientState.IsLoggedIn || Service.ClientState.IsPvP)
             return null;
         Refresh();
         if (attunementRevision != index.Revision) {

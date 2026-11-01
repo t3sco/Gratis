@@ -25,7 +25,7 @@ public sealed class MapMotion {
     }
 
     private readonly record struct Ping(Vector2 Position, double Started);
-    private readonly record struct Observation(uint Icon, uint Revision, double Seen);
+    private readonly record struct Observation(uint Icon, uint Revision, double Seen, double Pinged);
     private readonly Ping[] pings = new Ping[16];
     private readonly Dictionary<ulong, Observation> observations = new(4096);
     private readonly List<ulong> expired = new(4096);
@@ -90,17 +90,24 @@ public sealed class MapMotion {
                 || marker.IsFlag))
             return;
         var position = marker.Position / marker.Scale;
-        var key = ((ulong)(marker.ObjectiveId ?? marker.DataId ?? 0) << 32) ^
-            ((ulong)(uint)MathF.Round(position.X) << 16) ^ (uint)MathF.Round(position.Y) ^ (
-                (ulong)marker.MarkerType << 56);
+        // A marker with an id is the same marker wherever it moves; only id-less ones (the flag) key on position.
+        var id = marker.ObjectiveId ?? marker.DataId;
+        var key = ((ulong)(id ?? 0) << 32) ^ ((ulong)marker.MarkerType << 56);
+        if (id is null)
+            key ^= ((ulong)(uint)MathF.Round(position.X) << 16) ^ (uint)MathF.Round(position.Y);
         var now = ImGui.GetTime();
         var found = observations.TryGetValue(key, out var previous);
-        if (found ? previous.Icon != marker.IconId || previous.Revision != marker.MotionRevision
-            : ImGui.GetFrameCount() > firstFrame)
+        var pinged = found ? previous.Pinged : double.NegativeInfinity;
+        // One ping per marker per ping length: a marker whose state keeps changing must not stack rings every frame.
+        if ((found ? previous.Icon != marker.IconId || previous.Revision != marker.MotionRevision
+                : ImGui.GetFrameCount() > firstFrame)
+            && now - pinged >= MapDrawContext.Current.Config.Motion.PingSeconds) {
             PingAt(position, now);
+            pinged = now;
+        }
         if (observations.Count >= 4096)
             observations.Clear();
-        observations[key] = new Observation(marker.IconId, marker.MotionRevision, now);
+        observations[key] = new Observation(marker.IconId, marker.MotionRevision, now, pinged);
         if (now - lastPrune <= 1)
             return;
         expired.Clear();

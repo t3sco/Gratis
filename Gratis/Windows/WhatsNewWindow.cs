@@ -24,7 +24,7 @@ public sealed class WhatsNewWindow : Window {
     }
 
     public void ShowNow() {
-        focusOnOpen = true;
+        focusOnOpen = !IsOpen;
         Open();
     }
 

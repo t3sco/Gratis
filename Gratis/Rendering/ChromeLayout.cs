@@ -111,7 +111,7 @@ public static class ChromeLayout {
                 var right = (int)anchor % 3 == 2;
                 var x = right ? item.Bounds.X - gap - size.X : item.Bounds.Z + gap;
                 var candidate = new Vector4(x, item.Bounds.Y, x + size.X, item.Bounds.Y + size.Y);
-                if (candidate.X >= min.X && candidate.Z <= max.X
+                if (candidate.X >= min.X && candidate.Z <= max.X && candidate.W <= max.Y
                     && !occupied.Exists(p => Overlap(candidate, p.Bounds))) {
                     occupied.Add((id, candidate, anchor));
                     return candidate;
@@ -132,6 +132,11 @@ public static class ChromeLayout {
         if (result != Vector4.Zero)
             occupied.Add((id, result, anchor));
         return result;
+    }
+
+    public static void Release(string id) {
+        Begin();
+        occupied.RemoveAll(p => p.Id == id);
     }
 
     public static Vector2 Position(Vector4 bounds) => new(bounds.X, bounds.Y);

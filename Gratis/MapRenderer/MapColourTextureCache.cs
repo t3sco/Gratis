@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,30 +19,31 @@ internal sealed class MapColourTextureCache : IDisposable {
     private readonly object gate = new();
     private readonly record struct Key(string Source, ImTextureID TextureId, MapColourParameters Parameters);
     private readonly Dictionary<Key, Entry> entries = [];
-    private readonly HashSet<Task<Prepared>> retired = [];
-    private readonly List<Task<Prepared>> completedRetired = [];
+    private readonly HashSet<Task<MapColourPixels>> retired = [];
+    private readonly List<Task<MapColourPixels>> completedRetired = [];
     private readonly List<Entry> ordered = [];
     private MapColourParameters parameters = MapColourParameters.Identity;
     private long sequence;
     private bool disposed, failureLogged;
-    private sealed record Prepared(MapColourPixels Pixels, MapColourPixels? Original = null, float Progress = 1);
+    private long entriesCreated, texturesBuilt;
 
     private sealed class Entry {
         public Func<MapColourPixels>? Load;
         public required MapColourParameters Parameters;
         public readonly CancellationTokenSource Cancellation = new();
-        public Task<Prepared>? Work;
-        public MapColourPixels? Original, Target;
+        public Task<MapColourPixels>? Work;
         public IDalamudTextureWrap? Texture;
-        public long Used, TransitionStart, Bytes;
-        public float Progress;
+        public long Used, Bytes;
         public bool Failed;
     }
 
     public MapColourTextureCache() => Service.Framework.Update += Update;
 
-    public IDalamudTextureWrap
-        ? Get(string source, ImTextureID textureId, MapColourParameters requested, Func<MapColourPixels> load) {
+    // `pending` means a recolour is still being built and nothing is held for this map: draw nothing for those
+    // frames, because the original artwork would flash up in the wrong colours before the recolour replaces it.
+    public IDalamudTextureWrap? Get(string source, ImTextureID textureId, MapColourParameters requested,
+        Func<MapColourPixels> load, out bool pending) {
+        pending = false;
         lock (gate) {
             if (disposed)
                 return null;
@@ -53,16 +53,34 @@ internal sealed class MapColourTextureCache : IDisposable {
             }
             if (requested.IsIdentity)
                 return null;
+            // The game map texture can be released while the window is closed or between frames of a reopen, and
+            // comes back under a new handle. Nothing is built for an empty handle, and the recoloured map keeps
+            // showing until its replacement is ready, so the original artwork never flashes through.
+            if (textureId == default)
+                return Held(source, null);
             var key = new Key(source, textureId, requested);
             if (!entries.TryGetValue(key, out var entry)) {
                 entry = new Entry { Load = load, Parameters = requested };
                 entries.Add(key, entry);
+                entriesCreated++;
             }
             entry.Used = ++sequence;
-            if (entry.Texture is null)
-                return null;
-            return entry.Texture;
+            var texture = entry.Texture ?? Held(source, entry);
+            pending = texture is null && !entry.Failed;
+            return texture;
         }
+    }
+
+    private IDalamudTextureWrap? Held(string source, Entry? except) {
+        Entry? best = null;
+        foreach (var pair in entries)
+            if (pair.Key.Source == source && pair.Value != except && pair.Value.Texture is not null
+                && (best is null || pair.Value.Used > best.Used))
+                best = pair.Value;
+        if (best is null)
+            return null;
+        best.Used = Math.Max(best.Used, sequence);
+        return best.Texture;
     }
 
     private void Update(IFramework framework) {
@@ -71,7 +89,7 @@ internal sealed class MapColourTextureCache : IDisposable {
                 return;
             var active = entries.Count > Capacity;
             foreach (var entry in entries.Values)
-                active |= entry.Work is not null || !entry.Failed && entry.Progress < 1;
+                active |= entry.Work is not null || entry.Load is not null && !entry.Failed;
             if (!active && retired.Count == 0 && TextureBytes() <= ByteLimit)
                 return;
             foreach (var task in retired)
@@ -87,14 +105,7 @@ internal sealed class MapColourTextureCache : IDisposable {
                     continue;
                 entry.Work = null;
                 try {
-                    var prepared = work.GetAwaiter().GetResult();
-                    var pixels = prepared.Pixels;
-                    if (prepared.Original is not null) {
-                        entry.Original = prepared.Original;
-                        entry.Target = pixels;
-                        entry.TransitionStart = Stopwatch.GetTimestamp();
-                        continue;
-                    }
+                    var pixels = work.GetAwaiter().GetResult();
                     entry.Bytes = checked((long)pixels.Width * pixels.Height * 4);
                     if (entry.Bytes > ByteLimit)
                         throw new InvalidOperationException("Map exceeds the colour cache byte limit.");
@@ -103,19 +114,13 @@ internal sealed class MapColourTextureCache : IDisposable {
                         pixels.Rgba);
                     entry.Texture?.Dispose();
                     entry.Texture = texture;
-                    entry.Progress = prepared.Progress;
-                    if (entry.Progress >= 1) {
-                        entry.Original = null;
-                        entry.Target = null;
-                    }
+                    texturesBuilt++;
                 }
                 catch (OperationCanceledException) { entry.Failed = true; }
                 catch (Exception exception) {
                     entry.Failed = true;
                     entry.Texture?.Dispose();
                     entry.Texture = null;
-                    entry.Original = null;
-                    entry.Target = null;
                     if (!failureLogged) {
                         Service.Log.Warning(exception, "[Map Colour] Recolour failed; using original artwork.");
                         failureLogged = true;
@@ -145,37 +150,30 @@ internal sealed class MapColourTextureCache : IDisposable {
             foreach (var entry in ordered) {
                 if (running >= 2)
                     break;
-                if (entry.Work is not null || entry.Progress >= 1 || entry.Failed)
+                if (entry.Work is not null || entry.Load is null || entry.Failed)
                     continue;
                 var token = entry.Cancellation.Token;
-                if (entry.Original is { } original && entry.Target is { } target) {
-                    var progress = Math.Clamp((float)Stopwatch.GetElapsedTime(entry.TransitionStart).TotalMilliseconds
-                        / 150 + 1f / 6,
-                        0, 1);
-                    if (progress <= entry.Progress)
-                        continue;
-                    entry.Work = Task.Run(() => new Prepared(target with {
-                        Rgba = MapColour.Crossfade(original.Rgba, target.Rgba, progress, token),
-                    }, Progress: progress), token);
-                    running++;
-                    continue;
-                }
                 var load = entry.Load!;
                 entry.Load = null;
                 entry.Work = Task.Run(() => {
                     token.ThrowIfCancellationRequested();
                     var pixels = load();
                     token.ThrowIfCancellationRequested();
-                    var result = pixels with {
-                        Rgba = MapColour.Apply(pixels.Rgba, entry.Parameters,
-                        cancellationToken: token)
+                    return pixels with {
+                        Rgba = MapColour.Apply(pixels.Rgba, entry.Parameters, cancellationToken: token)
                     };
-                    return new Prepared(result, pixels);
                 }, token);
                 running++;
             }
             ordered.Clear();
         }
+    }
+
+    // Counts that climb steadily while the map sits still mean the cache is rebuilding recolours it should be reusing.
+    public string Diagnostics() {
+        lock (gate)
+            return $"colourCache entries={entries.Count} texMB={TextureBytes() / 1048576} retired={retired.Count} "
+                + $"created={entriesCreated} built={texturesBuilt}";
     }
 
     private long TextureBytes() {

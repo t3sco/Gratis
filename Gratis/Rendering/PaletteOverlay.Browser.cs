@@ -80,7 +80,7 @@ public sealed partial class PaletteOverlay {
         var keyboardMoved = previous != browserSelection;
         if (keyboardMoved)
             scrollSelection = true;
-        if (expansion != null && IsOpen && ImGui.IsKeyPressed(ImGuiKey.Backspace, false)) {
+        if (expansion != null && IsOpen && queryEmptyBeforeInput && ImGui.IsKeyPressed(ImGuiKey.Backspace, false)) {
             BrowseExpansion(null);
             return;
         }

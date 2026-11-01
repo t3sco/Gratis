@@ -339,7 +339,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
 
     public void CaptureGameKeys() {
         if (!Overlay.CapturesInput && !LocationMenuDrawing.CapturesKeyboard
-            && !MapDrawContext.Current.QuestLog.CapturesKeyboard && !MapDrawContext.Current.QuestLog.PointerOver)
+            && !MapDrawContext.Current.QuestLog.CapturesKeyboard)
             return;
         foreach (var key in Service.KeyState.GetValidVirtualKeys())
             Service.KeyState[key] = false;

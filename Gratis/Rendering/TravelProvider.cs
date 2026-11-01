@@ -29,8 +29,14 @@ public sealed class NullTravelProvider : ITravelProvider {
 
 public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> busy, Func<uint> active, Func<uint,
     bool> aethernet, Func<uint, byte, bool> teleport, Action abort) : ITravelProvider {
+    private const long RetryAfterMs = 30_000;
     private bool failed;
+    private long failedAt;
     private string? detectedVersion;
+    private void Fail() {
+        failed = true;
+        failedAt = Environment.TickCount64;
+    }
     public bool Available {
         get {
             try {
@@ -39,12 +45,15 @@ public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> bu
                     failed = false;
                     detectedVersion = current;
                 }
+                // A failed IPC call disables the provider only for a while, not for the whole session.
+                if (failed && Environment.TickCount64 - failedAt >= RetryAfterMs)
+                    failed = false;
                 if (current == null || failed)
                     return false;
                 _ = busy();
                 return true;
             }
-            catch { failed = true; return false; }
+            catch { Fail(); return false; }
         }
     }
 
@@ -55,7 +64,7 @@ public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> bu
             try {
                 return Available && busy();
             }
-            catch { failed = true; return false; }
+            catch { Fail(); return false; }
         }
     }
     public uint ActiveAetheryte {
@@ -63,7 +72,7 @@ public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> bu
             try {
                 return Available ? active() : 0;
             }
-            catch { failed = true; return 0; }
+            catch { Fail(); return 0; }
         }
     }
 
@@ -75,7 +84,7 @@ public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> bu
             LastAction = (accepted ? "requested: " : "refused: ") + destination.Route;
             return accepted;
         }
-        catch { failed = true; LastAction = "IPC unavailable"; return false; }
+        catch { Fail(); LastAction = "IPC unavailable"; return false; }
     }
 
     public void Abort() {
@@ -85,6 +94,6 @@ public sealed class LifestreamTravelProvider(Func<string?> detect, Func<bool> bu
             abort();
             LastAction = "cancelled";
         }
-        catch { failed = true; LastAction = "cancel unavailable"; }
+        catch { Fail(); LastAction = "cancel unavailable"; }
     }
 }

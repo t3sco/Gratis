@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.SubKinds;
@@ -33,12 +33,16 @@ public partial class MapRenderer {
             }
         }
 
+        var targetId = player.TargetObject?.EntityId;
         foreach (var obj in Service.ObjectTable.Reverse()) {
             if (!obj.IsTargetable)
                 continue;
             if (System.SystemConfig.IsGratis && obj.EntityId == player.EntityId)
                 continue;
-            if (System.SystemConfig.IsGratis && obj.ObjectKind == ObjectKind.BattleNpc)
+            if (obj.ObjectKind == ObjectKind.BattleNpc && (System.SystemConfig.IsGratis
+                || System.SystemConfig.ShowEnemies && obj is IBattleNpc enemy
+                    && enemy.BattleNpcKind == BattleNpcSubKind.Combatant
+                    && (enemy.StatusFlags & Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile) != 0))
                 continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInParty(obj.EntityId))
                 continue;
@@ -62,8 +66,8 @@ public partial class MapRenderer {
                     ObjectKind.Treasure => Rendering.MarkerIconFamily.Treasure,
                     _ => Rendering.MarkerIconFamily.Auto,
                 },
-                IsTarget = player.TargetObject?.EntityId == obj.EntityId,
-                IsRelevant = player.TargetObject?.EntityId == obj.EntityId
+                IsTarget = targetId == obj.EntityId,
+                IsRelevant = targetId == obj.EntityId
                     || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
                 IconId = obj.ObjectKind switch {
                     ObjectKind.Pc when GroupManager.Instance()->MainGroup.MemberCount is 0

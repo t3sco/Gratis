@@ -14,8 +14,6 @@ public static partial class MapToolbarDrawing {
         PaletteOverlay? palette) {
         var context = MapDrawContext.Current;
         var scale = GratisTheme.ChromeScale;
-        var (areaMin, areaMax) = MapShape.Bounds(Vector2.Zero, ImGui.GetWindowSize());
-        var area = areaMax - areaMin;
         var (safeMin, safeMax) = ChromeLayout.ToolbarSafeBounds();
         var available = safeMax.X - safeMin.X;
         var fullCount = context.Config.UseCustomWindowChrome ? FullButtonCount : FullButtonCount - 1;
@@ -24,11 +22,11 @@ public static partial class MapToolbarDrawing {
         var searching = palette?.IsOpen == true;
         var targetSearchWidth = searching ? 240 * scale : searchWidth;
         var centerAllowance = 2 * (GratisTheme.ToolbarCenterMargin - GratisTheme.Inset) * scale;
-        var collapsedCompact = available < fullWidth || area.Y < 280 * scale;
+        var collapsedCompact = available < fullWidth;
         var collapsedCount = collapsedCompact ? (context.Config.UseCustomWindowChrome ? 3 : 2) : fullCount;
         if (available < CollapsedWidth(collapsedCount) * scale)
             collapsedCount = 2;
-        var compact = available < fullWidth + targetSearchWidth || area.Y < 280 * scale;
+        var compact = available < fullWidth + targetSearchWidth;
         if (!ReferenceEquals(searchContext, context)) {
             searchContext = context;
             compactDuringSearch = compact;
@@ -72,10 +70,10 @@ public static partial class MapToolbarDrawing {
             var x = 4 * scale;
             var divider = 0;
             for (var index = 0; index < count; index++) {
-                var buttonIndex = compact || count == 2 ? index == 0 ? 0 : index + 3 : index;
+                var buttonIndex = compact || count == 2 ? index == 0 ? 0 : index + 4 : index;
                 var (id, action, tooltip) = Buttons[buttonIndex];
                 var separated = index > 0 && !(buttonIndex == 2 && !compact);
-                if (!context.Config.SegmentedToolbar && buttonIndex == 4)
+                if (!context.Config.SegmentedToolbar && buttonIndex == 5)
                     x = MathF.Max(x, width - 4 * scale - (count - index) * GratisTheme.ControlHeight * scale
                         - (count - index - 1) * DividerSpace * scale - (separated ? DividerSpace * scale : 0));
                 if (separated) {
