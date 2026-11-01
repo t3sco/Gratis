@@ -27,6 +27,10 @@ internal sealed class PerfCommand : IDisposable {
     private int lastGc0, lastGc1, lastGc2;
     private double worstMs;
     private string gcNoTimers = "";
+    // Frames over this are 'slow'; each part's average in slow frames is compared with its average in the rest.
+    private const double SlowMs = 1.0;
+    private readonly double[] slowSelf = new double[SectionCount], fastSelf = new double[SectionCount];
+    private int slowFrames, fastFrames;
     private (int Gen0, int Gen1, int Gen2, double PauseMs) gcAtStart, gcAtSwitch;
     private string worstParts = "";
     private string worstGc = "";
@@ -53,6 +57,9 @@ internal sealed class PerfCommand : IDisposable {
         detailFrameMs.Clear();
         worstMs = 0;
         worstParts = worstGc = "";
+        Array.Clear(slowSelf);
+        Array.Clear(fastSelf);
+        slowFrames = fastFrames = 0;
         ResetDeltas();
         gcAtStart = GcNow();
         BenchmarkProbe.Reset();
@@ -108,6 +115,13 @@ internal sealed class PerfCommand : IDisposable {
         if (drawn != 1)
             return;
         (phase == Phase.Total ? totalFrameMs : detailFrameMs).Add(ms);
+        if (phase == Phase.Detail) {
+            var bucket = ms > SlowMs ? slowSelf : fastSelf;
+            for (var i = 0; i < SectionCount; i++)
+                bucket[i] += deltas[i].Self;
+            if (ms > SlowMs) slowFrames++;
+            else fastFrames++;
+        }
         if (phase != Phase.Detail || ms <= worstMs)
             return;
         worstMs = ms;
@@ -175,13 +189,20 @@ internal sealed class PerfCommand : IDisposable {
             + $"timers); with section timers {window.Ticks * scale / frames:0.000} ms/frame (the timers add some). "
             + "Top: " + string.Join(", ", rows.Take(6).Select(row => $"{row.Name} {row.Self:0.000}"))
             + $", window itself {windowSelf:0.000}.";
+        var slowParts = slowFrames == 0 || fastFrames == 0 ? "" : $" Slow frames (over {SlowMs:0} ms): {slowFrames} of "
+            + $"{slowFrames + fastFrames}. What is bigger in them than in other frames: "
+            + string.Join(", ", Enumerable.Range(0, SectionCount)
+                .Select(i => (Name: i == (int)BenchmarkSection.Window ? "window itself" : ((BenchmarkSection)i).ToString(),
+                    Extra: slowSelf[i] / slowFrames - fastSelf[i] / fastFrames))
+                .OrderByDescending(part => part.Extra)
+                .Take(5).Select(part => $"{part.Name} +{part.Extra:0.000} ms")) + ".";
         var worst = worstMs > 0
             ? $" Slowest timed frame {worstMs:0.00} ms{(worstGc.Length > 0 ? $" (a {worstGc} GC ran in it)" : "")}: {worstParts}."
             : "";
         var spread = $" Frames without section timers: {Spread(totalFrameMs)}. With: {Spread(detailFrameMs)}."
             + $" GC while sampling, first phase: {gcNoTimers}; second phase: {GcSince(gcAtSwitch)}.";
-        Service.Log.Information("[Gratis] " + summary + spread + worst + " Context: " + context + detail);
-        ChatGui.Print("[Gratis] " + summary + spread + worst + " Full breakdown is in dalamud.log.");
+        Service.Log.Information("[Gratis] " + summary + spread + slowParts + worst + " Context: " + context + detail);
+        ChatGui.Print("[Gratis] " + summary + spread + slowParts + worst + " Full breakdown is in dalamud.log.");
     }
 
     public void Dispose() {
