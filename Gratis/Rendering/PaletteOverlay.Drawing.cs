@@ -149,7 +149,8 @@ public sealed partial class PaletteOverlay {
                     }
                     ImGui.PushID(shown);
                     if (outgoing ? previousHome : Home)
-                        DrawBrowser(config, scale);
+                        using (BenchmarkProbe.Measure(BenchmarkSection.PaletteRows))
+                            DrawBrowser(config, scale);
                     else {
                         if (IsOpen)
                             NavigateResults(config, size, scale);

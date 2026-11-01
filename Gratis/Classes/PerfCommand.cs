@@ -26,6 +26,8 @@ internal sealed class PerfCommand : IDisposable {
     private long lastWindowTicks, lastWindowCalls;
     private int lastGc0, lastGc1, lastGc2;
     private double worstMs;
+    private string gcNoTimers = "";
+    private (int Gen0, int Gen1, int Gen2, double PauseMs) gcAtStart, gcAtSwitch;
     private string worstParts = "";
     private string worstGc = "";
 
@@ -52,6 +54,7 @@ internal sealed class PerfCommand : IDisposable {
         worstMs = 0;
         worstParts = worstGc = "";
         ResetDeltas();
+        gcAtStart = GcNow();
         BenchmarkProbe.Reset();
         BenchmarkProbe.Mask = 1UL << (int)BenchmarkSection.Window;
         BenchmarkProbe.Enabled = true;
@@ -59,6 +62,15 @@ internal sealed class PerfCommand : IDisposable {
         phaseEnds = Environment.TickCount64 + totalSeconds * 1000L;
         Service.Framework.Update += OnUpdate;
         ChatGui.Print($"[Gratis] perf: sampling for {seconds}s. Keep the map open and use it as you normally would.");
+    }
+
+    private static (int, int, int, double) GcNow() => (GC.CollectionCount(0), GC.CollectionCount(1),
+        GC.CollectionCount(2), GC.GetTotalPauseDuration().TotalMilliseconds);
+
+    private static string GcSince((int Gen0, int Gen1, int Gen2, double PauseMs) from) {
+        var now = GcNow();
+        return $"{now.Item1 - from.Gen0} gen0 / {now.Item2 - from.Gen1} gen1 / {now.Item3 - from.Gen2} gen2, "
+            + $"{now.Item4 - from.PauseMs:0.0} ms paused";
     }
 
     private void ResetDeltas() {
@@ -122,6 +134,8 @@ internal sealed class PerfCommand : IDisposable {
         if (phase == Phase.Total) {
             totalFrames = window.Calls;
             totalMs = window.Calls == 0 ? 0 : window.Ticks * 1000.0 / Stopwatch.Frequency / window.Calls;
+            gcNoTimers = GcSince(gcAtStart);
+            gcAtSwitch = GcNow();
             BenchmarkProbe.Reset();
             ResetDeltas();
             BenchmarkProbe.Mask = ulong.MaxValue;
@@ -164,7 +178,8 @@ internal sealed class PerfCommand : IDisposable {
         var worst = worstMs > 0
             ? $" Slowest timed frame {worstMs:0.00} ms{(worstGc.Length > 0 ? $" (a {worstGc} GC ran in it)" : "")}: {worstParts}."
             : "";
-        var spread = $" Frames without section timers: {Spread(totalFrameMs)}. With: {Spread(detailFrameMs)}.";
+        var spread = $" Frames without section timers: {Spread(totalFrameMs)}. With: {Spread(detailFrameMs)}."
+            + $" GC while sampling, first phase: {gcNoTimers}; second phase: {GcSince(gcAtSwitch)}.";
         Service.Log.Information("[Gratis] " + summary + spread + worst + " Context: " + context + detail);
         ChatGui.Print("[Gratis] " + summary + spread + worst + " Full breakdown is in dalamud.log.");
     }

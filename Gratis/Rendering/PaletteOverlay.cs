@@ -280,8 +280,9 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             ? snapshot.Where(p => p.Kind is PlaceKind.Zone or PlaceKind.Aetheryte) : snapshot;
         if (PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest)
             searchable = searchable.Where(p => p.Kind == PlaceKind.Quest);
-        results = PaletteBrowser.Distinct(PlaceSearch.Find(searchable, query, scopes[scope], context, recent,
-            source.Access, showUnattuned, currentMapMarkersOnly: !Home));
+        using (BenchmarkProbe.Measure(BenchmarkSection.PaletteFind))
+            results = PaletteBrowser.Distinct(PlaceSearch.Find(searchable, query, scopes[scope], context, recent,
+                source.Access, showUnattuned, currentMapMarkersOnly: !Home));
         Array.Clear(questCounts);
         if (PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest) {
             foreach (var result in results) {
@@ -292,12 +293,15 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             if (questFilters[questFilter] is { } bucket)
                 results = results.Where(r => r.Place.QuestBucket == bucket).ToArray();
         }
-        expansions = PaletteBrowser.Expansions(snapshot, Home ? results.Select(r => r.Place) : null);
-        if (Home && expansion is { } ex)
-            results = results.Where(r => r.Place.Expansion == ex).ToArray();
-        browserZones = Home && expansion != null ? PaletteBrowser.Zones(results, snapshot) : [];
+        using (BenchmarkProbe.Measure(BenchmarkSection.PaletteBrowse)) {
+            expansions = PaletteBrowser.Expansions(snapshot, Home ? results.Select(r => r.Place) : null);
+            if (Home && expansion is { } ex)
+                results = results.Where(r => r.Place.Expansion == ex).ToArray();
+            browserZones = Home && expansion != null ? PaletteBrowser.Zones(results, snapshot) : [];
+        }
         if (Home && expansion == null && scope == 0)
-            nearby = FindNearby();
+            using (BenchmarkProbe.Measure(BenchmarkSection.PaletteNearby))
+                nearby = FindNearby();
         if (NearestPlaces.Parse(query, out _) && context.Player == null)
             message = "Player position is unavailable on the selected map.";
         selected = Math.Clamp(selected, 0, Math.Max(0, results.Length - 1));
