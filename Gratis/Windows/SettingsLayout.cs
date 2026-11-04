@@ -69,7 +69,7 @@ public sealed partial class SettingsLayout {
 
     public bool Draw(SystemConfig config, Func<string, string, bool>? drawExtension = null,
         Action<string>? resetExtension = null) {
-        var changed = LookUndo.Draw(config, ImGui.GetFontSize() / 18);
+        var changed = UndoToast.Draw(config, ImGui.GetFontSize() / 18);
         if (config.IsGratis)
             return DrawGratis(config, drawExtension, resetExtension) | changed;
         return DrawClassic(config, drawExtension, resetExtension) | changed;

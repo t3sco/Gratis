@@ -16,7 +16,7 @@ public sealed class MarkerBatch {
         public MarkerInfo Marker;
         public Vector2 Center, HalfSize;
         public MarkerCategory Category;
-        public bool Protected;
+        public bool Protected, Clusterable;
         public int Root, Count, Next, Tail, CellNext;
     }
     private Entry[] entries = new Entry[4096];
@@ -57,16 +57,15 @@ public sealed class MarkerBatch {
         protectedCells.Clear();
         maximumProtectedHalfSize = Vector2.Zero;
         protectedSpacing = 64 * MapDrawContext.Current.GlobalScale;
-        Enabled = MapDrawContext.Current.Config is { IsGratis: true, Markers.Declutter: true };
+        Enabled = MapDrawContext.Current.Config.IsGratis;
         collecting = Enabled;
     }
 
     public bool Enqueue(MarkerInfo marker) {
         if (!collecting)
             return false;
-        if (MapDrawContext.Current.Visibility.State(MarkerVisibility.Group(marker),
-            MarkerVisibility.IsPriority(marker)) != MarkerVisibilityState.Normal)
-            return false;
+        if (MapDrawContext.Current.Visibility.Visual(marker).X <= .001f)
+            return true;
         if (count == entries.Length)
             Array.Resize(ref entries, count * 2);
         var keep = MarkerRelevance.IsProtected(marker) || MapDrawContext.Current.Spotlight?.Matches(marker) == true;
@@ -74,6 +73,9 @@ public sealed class MarkerBatch {
             Marker = marker, Center = marker.Position + marker.Offset,
             HalfSize = keep ? MarkerVisual.HalfSize(marker) : Vector2.Zero,
             Category = FlatMarkerDrawing.Category(marker), Protected = keep,
+            Clusterable = !keep && MapDrawContext.Current.Config.Markers.Declutter
+                && MapDrawContext.Current.Visibility.State(MarkerVisibility.Group(marker),
+                    MarkerVisibility.IsPriority(marker)) == MarkerVisibilityState.Normal,
             Root = count, Count = 1, Next = -1, Tail = count, CellNext = -1,
         };
         if (keep)
@@ -99,8 +101,10 @@ public sealed class MarkerBatch {
         }
         for (var i = 0; i < count; i++) {
             ref var entry = ref entries[i];
-            if (entry.Protected)
+            if (!entry.Clusterable) {
+                if (!entry.Protected) Representatives++;
                 continue;
+            }
             var x = (int)MathF.Floor(entry.Center.X / spacing);
             var y = (int)MathF.Floor(entry.Center.Y / spacing);
             var nearest = -1;
@@ -177,17 +181,16 @@ public sealed class MarkerBatch {
         if (!Enabled)
             return;
         Resolve();
-        for (var i = 0; i < count; i++) {
-            if (entries[i].Protected || entries[i].Root != i)
-                continue;
-            if (entries[i].Count == 1)
-                DrawHelpers.DrawPreparedMarker(entries[i].Marker);
-            else
-                DrawCluster(i);
-        }
-        for (var i = 0; i < count; i++)
-            if (entries[i].Protected)
-                DrawHelpers.DrawPreparedMarker(entries[i].Marker);
+        // Stable submission order within each tier; clustering protection is independent.
+        for (var tier = 0; tier <= 3; tier++)
+            for (var i = 0; i < count; i++) {
+                if (MarkerOrder.Tier(entries[i].Marker) != tier || entries[i].Root != i)
+                    continue;
+                if (entries[i].Count == 1)
+                    DrawHelpers.DrawPreparedMarker(entries[i].Marker);
+                else
+                    DrawCluster(i);
+            }
     }
 
     private void DrawCluster(int index) {

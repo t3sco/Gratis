@@ -73,15 +73,13 @@ public static class SettingsWindowPresets {
             }
             ImGui.SameLine();
             if (ChromeControls.TextButton("Delete", new Vector2(half, 0), scale: SettingsTheme.Scale)) {
-                changed |= settings.Delete(editing.Slot);
+                changed |= SettingsUndo.DeletePreset(config, editing.Slot, ImGui.GetTime(), controller);
                 editing = null;
             }
         }
         if (ChromeControls.TextButton("Reset window presets", new Vector2(width, 0), scale: SettingsTheme.Scale)) {
-            config.WindowPresets = new();
+            changed |= SettingsUndo.ResetPresets(config, ImGui.GetTime(), controller);
             editing = null;
-            controller.Cancel();
-            changed = true;
         }
         if (changed)
             controller.Changed();

@@ -312,6 +312,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
         var markers = MapDrawContext.Current.Markers;
         MapDrawContext.Current.EdgePointers.Begin(this);
         MapDrawContext.Current.MarkerTargets.Begin(this);
+        LabelLayout.Begin();
         markers.Begin();
         host.CollectMarkers();
         if (markers.Enabled)

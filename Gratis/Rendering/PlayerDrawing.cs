@@ -103,6 +103,7 @@ public static class PlayerDrawing {
             scale *= MapDrawContext.Current.GlobalScale;
             if (!MapShape.ContainsSymbol(position, new Vector2(13 * scale)))
                 return;
+            LabelLayout.Reserve(position - new Vector2(13 * scale), position + new Vector2(13 * scale));
             var forward = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
             var side = new Vector2(-forward.Y, forward.X);
             var tip = position + forward * 11 * scale;
@@ -131,6 +132,15 @@ public static class PlayerDrawing {
             if (!MapShape.ContainsSymbol(point, Vector2.Zero))
                 return;
 
+        if (MapDrawContext.Current.Config.IsGratis) {
+            var min = vectors[0];
+            var max = min;
+            foreach (var point in vectors) {
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+            }
+            LabelLayout.Reserve(min - Vector2.One, max + Vector2.One);
+        }
         ImGui.GetWindowDrawList().AddImageQuad(texture.Handle, vectors[0], vectors[1], vectors[2], vectors[3]);
     }
 

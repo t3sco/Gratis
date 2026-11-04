@@ -122,6 +122,11 @@ public static partial class DrawHelpers {
         }
         AetheryteAttunementDrawing.Ring(marker);
         FateProgress.Draw(marker);
+        if (context.Config.IsGratis && MarkerOrder.Tier(marker) > 0) {
+            var center = marker.Position + marker.Offset + ImGui.GetWindowPos();
+            var half = MarkerVisual.HalfSize(marker) + new Vector2(context.GlobalScale);
+            LabelLayout.Reserve(center - half, center + half);
+        }
         context.Pvp.RecordDrawn(marker);
         context.Trace?.DrawnMarkers.Add(marker);
         if (!context.WindowMoveInputBlocked) {

@@ -28,9 +28,7 @@ public partial class MapFunctionsTab {
         changed |= ImGui.Checkbox("Dim irrelevant ambient markers", ref settings.DimIrrelevant);
         changed |= ImGui.SliderFloat("Irrelevant opacity", ref settings.IrrelevantAlpha, .1f, 1, "%.2f");
         if (ImGui.Button("Reset Markers")) {
-            System.SystemConfig.ResetMarkers();
-            System.SystemConfig.MarkerStyle = 1;
-            changed = true;
+            changed |= SettingsUndo.ResetMarkers(System.SystemConfig, ImGui.GetTime());
         }
         return changed;
     }
