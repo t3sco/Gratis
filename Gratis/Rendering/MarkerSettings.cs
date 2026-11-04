@@ -6,6 +6,9 @@ public enum MarkerIconStyle {
 
 public sealed class MarkerSettings {
     public MarkerIconStyle IconStyle = MarkerIconStyle.Game;
+    public bool ShowFateProgress = false;
+    public bool ShowAetherCurrents = false;
+    public bool ShowGatherWindows = false;
     public bool Declutter = true;
     public bool ScaleWithZoom = true;
     public float MinimumScale = 1;

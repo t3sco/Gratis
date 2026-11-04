@@ -7,6 +7,7 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer {
     private unsafe void DrawStaticMapMarkers() {
+        DrawTripleTriadMarkers();
         var agent = AgentMap.Instance();
         var count = agent->MapMarkerCount;
         for (var index = 0; index < count; index++) {

@@ -130,6 +130,8 @@ public sealed class GratisPlugin : IDalamudPlugin {
         Release("integrations", System.IntegrationsController.Dispose);
         Release("area map", System.AreaMapController.Dispose);
         Release("flag", System.FlagController.Dispose);
+        Release("triad index", TripleTriadGame.Dispose);
+        Release("aether index", AetherCurrentsGame.Dispose);
         Release("renderer", System.MapRenderer.Dispose);
         Release("draw context", () => (Rendering.MapDrawContext.Current as global::System.IDisposable)?.Dispose());
         Release("commands", System.CommandManager.Dispose);

@@ -121,6 +121,7 @@ public static partial class DrawHelpers {
                 return;
         }
         AetheryteAttunementDrawing.Ring(marker);
+        FateProgress.Draw(marker);
         context.Pvp.RecordDrawn(marker);
         context.Trace?.DrawnMarkers.Add(marker);
         if (!context.WindowMoveInputBlocked) {

@@ -145,6 +145,8 @@ public sealed partial class SettingsLayout {
         Add("PaletteTeleportButton", "Allow teleports from search",
             tip: "Enter shows a place. Alt+Enter teleports, only to aetherytes you have attuned to.");
         Add("PaletteShowUnattuned", "Show unattuned aetherytes");
+        Add("SightseeingLog", "Uncompleted sightseeing in search", when: Gratis);
+        Add("TripleTriadOpponents", "Unbeaten Triple Triad opponents on map and in search", when: Gratis);
         Add("PaletteImagery", "Location artwork",
             tip: "Show artwork from the game on search results. A simple placeholder appears "
                 + "while it loads.");
@@ -227,6 +229,9 @@ public sealed partial class SettingsLayout {
         Group("Markers", "Visibility and interaction");
         Add("ShowPlayers", "Other players");
         Add("ShowEnemies", "Enemy markers", tip: "Nearby living hostile enemies. Ones you need for a quest, FATE or hunting log glow gold. Hidden in PvP.");
+        Add("Markers.ShowFateProgress", "Show FATE progress on markers", when: Gratis);
+        Add("Markers.ShowAetherCurrents", "Show uncollected aether currents", when: Gratis);
+        Add("Markers.ShowGatherWindows", "Show timed gathering windows on hover", when: Gratis);
         Add("ShowMiscTooltips", "Extra marker tooltips");
         Add("Markers.Opacity", "Marker opacity", .2f, 1, "%.2f", when: c => c.IsGratis,
             tip: "How solid map markers look. A marker you point at is always fully solid.");
@@ -347,6 +352,7 @@ public sealed partial class SettingsLayout {
         Add("CoordinatesShow", "Coordinates show", choices: "Player|Cursor|Both", when: c => c.ShowCoordinateBar);
         Add("ShowEorzeaTime", "Eorzean time in coordinates", when: c => c.ShowCoordinateBar,
             tip: "Use the coordinate card to show ET beside map coordinates.");
+        Add("ShowWeather", "Weather on zone hover");
         Group("Chrome & motion", "Classic coordinates", Classic);
         Add("CoordinateTextColor", "Coordinate text colour", when: c => c.ShowCoordinateBar);
         Add("CoordinateBarFade", "Coordinate bar opacity", when: c => c.ShowCoordinateBar);

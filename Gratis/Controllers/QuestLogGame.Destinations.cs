@@ -24,7 +24,8 @@ public sealed partial class QuestLogGame {
         // Standing inside the instance, its map is exactly where the objective is.
         QuestMapAccess Access(PlaceEntry t) => t.MapId == current ? QuestMapAccess.Reachable : AccessOf(t.MapId);
         return QuestTargetSelection.Resolve(raw, Access, t => Entrance(id, t), () => Giver(id, data, raw[0]),
-            () => EntryNpc(id, data, raw[0]), () => Door(id, raw[0]));
+            () => TrackedObjective(id, raw[0]),
+            () => raw.Select(t => Door(id, t)).FirstOrDefault(t => t != null) ?? ScriptEntryNpc(id, data, raw[0]));
     }
 
     private QuestMapAccess AccessOf(uint mapId) {
@@ -79,14 +80,7 @@ public sealed partial class QuestLogGame {
 
     private ILookup<uint, Level>? levelsByObject;
     private ILookup<string, uint>? entranceObjects;
-    private readonly Dictionary<uint, Level?> doors = [];
-
-    // The quest script declares its actors in order of appearance, and the instance's territory is declared
-    // after the NPC who leads into it (In Fate's Footsteps: Krile, Shale, lift attendant, TERRITORYTYPE0, ...).
-    // So the last actor before the first duty or instance territory that stands on a walkable map is the entry NPC.
-    // A heuristic over script order, so it needs checking in game against quests that end up in instances.
-    private PlaceEntry? EntryNpc(uint id, Metadata? data, PlaceEntry sample) =>
-        TrackedObjective(id, sample) ?? ScriptEntryNpc(id, data, sample);
+    private readonly Dictionary<uint, Level?> namedDoors = [];
 
     // What the game's own quest tracker holds (FFXIVClientStructs TrackedQuest.Objectives): each objective carries
     // the map and level positions it points at, so a walkable one is the place the game itself sends the player.
@@ -111,7 +105,8 @@ public sealed partial class QuestLogGame {
                 if (entry.LevelId == 0 || !float.IsFinite(entry.X) || !float.IsFinite(entry.Z))
                     continue;
                 var map = Service.DataManager.GetExcelSheet<SheetMap>().GetRowOrDefault(objective.MapId);
-                return new($"quest-log:{id}:tracked", PlaceKind.Quest, sample.Name, "", objective.MapId,
+                return new($"quest-log:{id}:tracked", PlaceKind.Quest, sample.Name,
+                    EntryName(Service.DataManager.GetExcelSheet<Level>().GetRowOrDefault(entry.LevelId)?.Object.RowId ?? 0, "instance"), objective.MapId,
                     map?.TerritoryType.RowId ?? objective.TerritoryTypeId, new Vector2(entry.X, entry.Z)) {
                     QuestRowId = id, Icon = sample.Icon,
                 };
@@ -120,7 +115,7 @@ public sealed partial class QuestLogGame {
         return null;
     }
 
-    private readonly Dictionary<(uint Quest, uint Instance), (uint Territory, Vector2 World, uint Map)?> scriptEntries = [];
+    private readonly Dictionary<(uint Quest, uint Instance), (uint Territory, Vector2 World, uint Map, string Name)?> scriptEntries = [];
 
     // The script is static, so it is walked once per quest and instance rather than on every refresh.
     private PlaceEntry? ScriptEntryNpc(uint id, Metadata? data, PlaceEntry sample) {
@@ -128,7 +123,7 @@ public sealed partial class QuestLogGame {
         if (!scriptEntries.TryGetValue(key, out var found))
             scriptEntries[key] = found = data?.Row is { } quest ? FindScriptEntry(quest, sample.TerritoryId) : null;
         return found is not { } entry ? null
-            : new($"quest-log:{id}:entry", PlaceKind.Quest, sample.Name, "", entry.Map, entry.Territory, entry.World) {
+            : new($"quest-log:{id}:entry", PlaceKind.Quest, sample.Name, entry.Name, entry.Map, entry.Territory, entry.World) {
                 QuestRowId = id, Icon = sample.Icon,
             };
     }
@@ -136,7 +131,7 @@ public sealed partial class QuestLogGame {
     // A quest can enter several instances over its steps (In Fate's Footsteps: a lift in Resolution, later a door in
     // Old Sharlayan), so the entry is the NPC declared before the instance the current objective is in. An
     // objective in an instance the script never names (the door's interior has no TERRITORYTYPE) has no entry NPC.
-    private (uint Territory, Vector2 World, uint Map)? FindScriptEntry(Quest quest, uint instance) {
+    private (uint Territory, Vector2 World, uint Map, string Name)? FindScriptEntry(Quest quest, uint instance) {
         levelsByObject ??= LevelsByObject();
         var issuer = quest.IssuerLocation.RowId;
         Level? best = null;
@@ -156,7 +151,7 @@ public sealed partial class QuestLogGame {
                 // Only an NPC declared since the previous instance is the way in; without one there is no entry.
                 if (param.ScriptArg == instance)
                     return best is { } npc && npc.Map.ValueNullable is { } entryMap
-                        ? (entryMap.TerritoryType.RowId, new Vector2(npc.X, npc.Z), entryMap.RowId) : null;
+                        ? (entryMap.TerritoryType.RowId, new Vector2(npc.X, npc.Z), entryMap.RowId, EntryName(npc.Object.RowId, "instance")) : null;
                 best = null;
             }
         }
@@ -166,19 +161,39 @@ public sealed partial class QuestLogGame {
     private static ILookup<uint, Level> LevelsByObject() => Service.DataManager.GetExcelSheet<Level>()
         .Where(l => l.Object.RowId != 0).ToLookup(l => l.Object.RowId);
 
-    // Quest-only interiors can be entered through an event object named after the area ("Main Hall Entrance" leads
-    // into the Main Hall), which no map icon or script NPC points at. Only an unambiguous, walkable door is used.
+    // Warp links are authoritative; name matching is only a fallback for interiors without one.
+    // Cache static lookup data, never a choice that depends on the player's current position.
     private PlaceEntry? Door(uint id, PlaceEntry target) {
-        if (Service.DataManager.GetExcelSheet<SheetMap>().GetRowOrDefault(target.MapId) is not { } interior
-            || interior.PlaceName.ValueNullable?.Name.ExtractText() is not { Length: > 0 } area)
+        if (Service.DataManager.GetExcelSheet<SheetMap>().GetRowOrDefault(target.MapId) is not { } interior)
             return null;
-        if (!doors.TryGetValue(target.MapId, out var door))
-            doors[target.MapId] = door = WarpDoor(interior.TerritoryType.RowId)
-                ?? FindDoor(area, interior.PlaceNameRegion.RowId);
-        return door is not { } level || level.Map.ValueNullable is not { } map ? null
-            : new($"quest-log:{id}:door", PlaceKind.Quest, target.Name, area, map.RowId, map.TerritoryType.RowId,
-                new Vector2(level.X, level.Z)) { QuestRowId = id, Icon = target.Icon };
+        var area = interior.PlaceName.ValueNullable?.Name.ExtractText() ?? "instance";
+        warpDoors ??= WarpDoorsByTerritory();
+        var candidates = warpDoors[interior.TerritoryType.RowId].OrderBy(l => l.RowId)
+            .Where(l => l.Map.ValueNullable is { SizeFactor: > 0 })
+            .Select(l => new QuestEntryPoint(interior.TerritoryType.RowId, EntryPlace(id, target, l, area),
+                AccessOf(l.Map.RowId))).ToArray();
+        var position = Service.ObjectTable.LocalPlayer?.Position;
+        var chosen = QuestTargetSelection.ChooseEntry(target with { TerritoryId = interior.TerritoryType.RowId }, candidates,
+            Service.ClientState.TerritoryType, position is { } at ? new Vector2(at.X, at.Z) : null);
+        if (chosen != null)
+            return chosen;
+        if (!namedDoors.TryGetValue(target.MapId, out var door))
+            namedDoors[target.MapId] = door = FindDoor(area, interior.PlaceNameRegion.RowId);
+        return door is { } level ? EntryPlace(id, target, level, area) : null;
     }
+
+    private static string EntryName(uint obj, string fallback) {
+        var name = obj is >= 1000000 and < 2000000
+            ? Service.DataManager.GetExcelSheet<ENpcResident>().GetRowOrDefault(obj)?.Singular.ExtractText()
+            : Service.DataManager.GetExcelSheet<EObjName>().GetRowOrDefault(obj)?.Singular.ExtractText();
+        return string.IsNullOrWhiteSpace(name) ? fallback : name;
+    }
+
+    private static PlaceEntry EntryPlace(uint id, PlaceEntry target, Level level, string area) =>
+        new($"quest-log:{id}:door:{level.RowId}", PlaceKind.Quest, target.Name, EntryName(level.Object.RowId, area),
+            level.Map.RowId, level.Map.Value.TerritoryType.RowId, new Vector2(level.X, level.Z)) {
+            QuestRowId = id, Icon = target.Icon,
+        };
 
     private const string EntranceSuffix = " entrance";
 
@@ -244,21 +259,6 @@ public sealed partial class QuestLogGame {
             }
         }
         return found.ToLookup(f => f.Territory, f => f.Level);
-    }
-
-    // A territory can have several doors (the Rising Stones from two fields); the one in the player's territory wins,
-    // otherwise the only reachable door. Anything still ambiguous returns null so the older lookups can try.
-    private Level? WarpDoor(uint territory) {
-        warpDoors ??= WarpDoorsByTerritory();
-        var candidates = warpDoors[territory].Where(l => l.Map.ValueNullable is { } map && float.IsFinite(l.X)
-            && float.IsFinite(l.Z) && AccessOf(map.RowId) == QuestMapAccess.Reachable).ToArray();
-        if (candidates.Length == 0)
-            return null;
-        var here = Service.ClientState.TerritoryType;
-        var local = candidates.Where(l => l.Territory.RowId == here).ToArray();
-        if (local.Length == 1)
-            return local[0];
-        return candidates.Length == 1 ? candidates[0] : null;
     }
 
     private Level? FindDoor(string area, uint region) {

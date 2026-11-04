@@ -108,6 +108,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
             if (!Service.ClientState.IsPvP)
                 DrawGatheringMarkers();
             DrawFieldMarkers();
+            DrawAetherCurrentMarkers();
         }
         DrawEnemyTooltip();
     }

@@ -73,7 +73,7 @@ public static partial class DrawHelpers {
                     else {
                         title = marker.PrimaryText?.Invoke() ?? "";
                         var label = FlatMarkerDrawing.Label(marker);
-                        var secondary = marker.SecondaryText?.Invoke();
+                        var secondary = marker.FateProgress?.Text ?? marker.SecondaryText?.Invoke();
                         body = PlayerDrawing.IsPlayerMarker(marker) ? secondary ?? ""
                             : string.IsNullOrWhiteSpace(secondary) ? label
                             : NamesCategory(secondary, label) ? secondary : $"{label}\n{secondary}";
@@ -105,7 +105,8 @@ public static partial class DrawHelpers {
                 var cursorPosition = ImGui.GetCursorPos();
                 ImGui.Text(primaryText);
 
-                if (marker.SecondaryText?.Invoke() is { Length: > 0 } secondaryText) {
+                if ((MapDrawContext.Current.Config.IsGratis ? marker.FateProgress?.Text ?? marker.SecondaryText?.Invoke()
+                    : marker.SecondaryText?.Invoke()) is { Length: > 0 } secondaryText) {
                     ImGui.SameLine();
                     ImGui.SetCursorPos(cursorPosition);
                     ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(128 / 255.0f, 128 / 255.0f, 128 / 255.0f, 1));

@@ -31,5 +31,6 @@ public class MarkerInfo {
     public bool IsObjective { get; set; }
     public bool IsHovered { get; internal set; }
     public bool IsSpotlighted { get; internal set; }
+    public FateDisplay? FateProgress { get; set; }
     public uint MotionRevision { get; set; }
 }

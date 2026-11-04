@@ -19,6 +19,7 @@ namespace Gratis.MapRenderer;
 
 public partial class MapRenderer {
     private unsafe void DrawGameObjects() {
+        aetherMarkers.BeginFrame();
         if (Service.ClientState.IsPvP)
             return;
         if (AgentMap.Instance()->SelectedMapId != AgentMap.Instance()->CurrentMapId)
@@ -63,6 +64,8 @@ public partial class MapRenderer {
                 continue;
 
             DrawGameObjectMarker(obj, iconId, targetId, player);
+            if (obj.ObjectKind == ObjectKind.EventObj && IsAetherCurrent(obj))
+                aetherMarkers.Submitted(obj.BaseId);
         }
         gameObjectBuffer.Clear();
     }
@@ -114,7 +117,8 @@ public partial class MapRenderer {
             PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString()
                 : GetTooltipForGameObject(obj),
             SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
-                ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}" : null,
+                ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}"
+                : GatherWindowText(obj),
         });
     }
 
@@ -129,6 +133,12 @@ public partial class MapRenderer {
         ImGui.GetWindowDrawList().AddCircle(position, 150.0f * Scale,
             ImGui.GetColorU32(System.SystemConfig.RadarOutlineColor));
     }
+
+    // Timed-window line for gathering nodes: Gratis only, off by default, cached per node and rebuilt at 1 Hz.
+    private static string? GatherWindowText(IGameObject obj) =>
+        System.SystemConfig.IsGratis && System.SystemConfig.Markers.ShowGatherWindows
+        && obj.ObjectKind is ObjectKind.GatheringPoint
+            ? System.GatherWindowCache.Text(obj.BaseId, global::System.DateTimeOffset.UtcNow.ToUnixTimeSeconds()) : null;
 
     private string GetTooltipForGameObject(IGameObject obj) {
         return obj switch {

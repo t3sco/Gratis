@@ -37,6 +37,7 @@ public static class System {
     public static CardRewardCache CardRewardCache { get; set; } = new();
     public static GatheringPointNameCache GatheringPointNameCache { get; set; } = new();
     public static GatheringPointIconCache GatheringPointIconCache { get; set; } = new();
+    public static Gratis.Rendering.GatherWindowCache GatherWindowCache { get; set; } = new(Gratis.Controllers.GatherWindowsGame.Load);
     public static TripleTriadCache TripleTriadCache { get; set; } = new();
     public static AetheryteAethernetCache AetheryteAethernetCache { get; set; } = new();
 

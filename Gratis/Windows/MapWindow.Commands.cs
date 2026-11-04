@@ -9,6 +9,7 @@ public partial class MapWindow {
     private void RegisterCommands() {
         ChromeDiagnosticCommand.Register();
         MotionDiagnosticCommand.Register();
+        AetherDiagnosticCommand.Register();
         System.CommandManager.RegisterCommand(new ToggleCommandHandler {
             UseShowHideText = true,
             BaseActivationPath = "/map",

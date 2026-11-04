@@ -61,6 +61,9 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/find", Delegate = Find });
         RegisterStoryAction();
         System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/triad", Delegate = _ => Chat.Print("[Gratis triad] " + TripleTriadGame.Diagnostics())
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/nearest", Delegate = _ => {
                 Refresh();
                 Chat.Print($"[Gratis] nearest map={Context.MapId} "
@@ -263,6 +266,9 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
             live.Add(new PlaceEntry("flag:" + flag.GetIdString(), PlaceKind.Flag, name,
                 "Flag history > " + name, flag.Map, flag.Territory, flag.GetCoordinate()));
         }
+        live.AddRange(SightseeingEntries());
+        foreach (var point in TripleTriadGame.Visible())
+            live.Add(point.Entry);
         if (Pins != null)
             live.AddRange(Pins());
         if (Service.ObjectTable.LocalPlayer != null && agent->CurrentMapId != 0)
@@ -368,6 +374,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         index.Dispose();
         System.CommandManager.RemoveCommand("/find");
         System.CommandManager.RemoveCommand("/nearest");
+        System.CommandManager.RemoveCommand("/triad");
         System.CommandManager.RemoveCommand("/msq");
     }
 }

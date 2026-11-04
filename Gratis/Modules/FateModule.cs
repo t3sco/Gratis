@@ -11,6 +11,9 @@ public class FateModule : ModuleBase {
         if (markerInfo.MarkerType is not MarkerType.Fate)
             return false;
 
+        if (System.SystemConfig.IsGratis)
+            return System.MapRenderer.PrepareFateProgress(markerInfo);
+
         var fateData = FateManager.Instance()->Fates.FirstOrNull(fate => fate.Value->FateId == markerInfo.DataId);
         if (fateData is null)
             return false;

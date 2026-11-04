@@ -16,6 +16,8 @@ public readonly record struct LocationMenuParent(string Name, Action Open);
 public interface ILocationMenuSource {
     IPaletteSource Places { get; }
     IReadOnlyList<LocationMenuParent> Parents { get; }
+    string WeatherHint => "";
+    string AetherHint => "";
 }
 
 public static class LocationMenuDrawing {
@@ -107,10 +109,12 @@ public static class LocationMenuDrawing {
         var clicked = ChromeControls.Button("##location-card", new(card.Z - card.X, card.W - card.Y));
         ChromeControls.Feedback(ImGui.GetWindowDrawList(), new(card.X, card.Y), new(card.Z, card.W), IsOpen,
             radius: GratisTheme.Radius.Card * GratisTheme.ChromeScale);
-        // The card already shows the place, its region and its area, so the tooltip appears only when one is cut off.
-        if (!open && textCut)
+        // Weather adds information absent from the card; full place text is otherwise only needed when cut off.
+        var weather = current.Config.ShowWeather ? source.WeatherHint : "";
+        var aether = AetherProgress.Hint(source);
+        if (!open && (textCut || weather.Length > 0 || aether.Length > 0))
             ChromeControls.Tooltip(fullText, meta: string.Join("\n",
-                new[] { overline, detail }.Where(line => line.Length > 0)));
+                new[] { textCut ? overline : "", textCut ? detail : "", weather, aether }.Where(line => line.Length > 0)));
         if (clicked && !open) {
             query = searched = "";
             revision = -1;
