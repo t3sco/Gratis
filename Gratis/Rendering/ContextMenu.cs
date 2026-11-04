@@ -158,6 +158,7 @@ public sealed partial class ContextMenu {
                 if (navigating && i == selected)
                     UiMotion.ScrollToItem();
                 row.Draw(item.Label, i == selected);
+                if (!enabled) UnavailableDrawing.Control(UnavailableReason.Action(item.Unavailable), s);
                 if (enter && selected == i || row.Clicked) {
                     Activate(item);
                     break;

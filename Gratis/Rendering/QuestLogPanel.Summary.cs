@@ -94,6 +94,8 @@ public sealed partial class QuestLogPanel {
                 Size: new(width - (canAbandon ? abandonWidth + gap : 0), GratisTheme.ControlHeight * s)));
         if (clicked || ImGui.IsItemClicked(ImGuiMouseButton.Right)) ShowOnMap(quest);
         DetailMapBounds = ItemBounds();
+        if (quest.Targets.Count == 0)
+            UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.NoQuestDestination), s);
         if (canAbandon) {
             ImGui.SameLine(0, gap);
             DrawAbandon(quest, abandonWidth, s);

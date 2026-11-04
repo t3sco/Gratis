@@ -112,11 +112,12 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         var match = FindTransport(marker, title);
         if (match == null)
             return false;
-        if (hovered?.Id == match.Id && TravelReady)
+        if (hovered?.Id == match.Id && CanOffer(match))
             return true;
-        var reason = !places.Access(match).Attuned ? "Not yet attuned" : UnavailableReason;
-        if (reason.Length == 0 && match.IsShard && !available)
-            reason = "Lifestream unavailable";
+        var reason = UnavailableReason;
+        if (reason.Length == 0)
+            reason = global::Gratis.Rendering.UnavailableReason.Travel(places.Access(match).Attuned,
+                match.IsShard, available, places.Access(match).Cost);
         transportTooltip.Show(match.Name, reason);
         return true;
     }
@@ -142,6 +143,9 @@ public sealed partial class MapAssistance(ITravelProvider provider, ITravelPlace
         places.Refresh();
         if (!CanOffer(place))
             return Message = "Travel is unavailable now.";
+        var unavailable = global::Gratis.Rendering.UnavailableReason.Travel(places.Access(place).Attuned,
+            place.IsShard, provider.Available, places.Access(place).Cost);
+        if (unavailable.Length > 0) return Message = unavailable;
         if (!provider.Available && !place.IsShard) {
             Message = places.Teleport(place, confirmed && pending?.Id == place.Id);
             pending = Message.StartsWith("Confirm ", StringComparison.Ordinal) ? place : null;

@@ -22,6 +22,7 @@ public class MapDrawableOption : DrawableOption {
                 new Vector2(0.85f, 0.85f));
         }
         else {
+            Rendering.UnavailableDrawing.Map(Rendering.MapAvailability.PreviewUnavailable);
             ImGuiHelpers.ScaledDummy(Width, Height);
         }
     }

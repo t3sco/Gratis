@@ -39,7 +39,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private IDalamudTextureWrap? blendedTexture;
     private string blendedPath = string.Empty;
-    private Task<byte[]?>? blendedWork;
+    private Task<Rendering.MapLayerPixels?>? blendedWork;
     private readonly MapContentCache mapContents = new(path => LoadMapPixels(path));
     private Rendering.MapContentBounds? contentBounds;
     private bool nativeTextureReady;
@@ -115,17 +115,39 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
     private void DrawBackgroundTexture() {
         nativeTextureReady = false;
+        var agent = AgentMap.Instance();
+        var changing = !Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer == null
+            || Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BetweenAreas]
+            || Service.Condition[global::Dalamud.Game.ClientState.Conditions.ConditionFlag.BetweenAreas51];
+        var hasMap = agent->SelectedMapId != 0;
+        var hasPath = agent->SelectedMapPath.Length > 0;
+        if (!hasMap || !hasPath) {
+            // A zero selection during startup is not proof that the area has no map.
+            var territory = Service.DataManager.GetExcelSheet<global::Lumina.Excel.Sheets.TerritoryType>()
+                .GetRowOrDefault(agent->SelectedTerritoryId);
+            var map = Service.DataManager.GetExcelSheet<global::Lumina.Excel.Sheets.Map>()
+                .GetRowOrDefault(agent->SelectedMapId);
+            changing |= agent->SelectedTerritoryId == 0 || (!hasMap
+                ? territory == null || territory.Value.Map.RowId != 0
+                : map is { } selected && selected.Id.ToString().Length > 0);
+            contentBounds = null;
+            Rendering.UnavailableDrawing.Map(Rendering.UnavailableReason.MapState(false, changing,
+                hasMap, hasPath, false));
+            return;
+        }
+        var failed = false;
         contentBounds = System.SystemConfig.IsGratis && System.SystemConfig.FitSmallRoomsToContent
             ? mapContents.Get(AgentMap.Instance()->SelectedMapId,
                 $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex")
             : null;
         if (AgentMap.Instance()->SelectedMapBgPath.Length is 0) {
-            var texture = Service.TextureProvider.GetFromGame(
-                $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex").GetWrapOrEmpty();
-
-            nativeTextureReady = texture.Handle != default && texture.Width >= 16 && texture.Height >= 16;
-            var path = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
-            DrawColouredMapImage(texture, path, () => LoadMapPixels(path));
+            var path = $"{agent->SelectedMapPath.ToString()}.tex";
+            var shared = Service.TextureProvider.GetFromGame(path);
+            if (shared.TryGetWrap(out var texture, out var error)) {
+                nativeTextureReady = texture.Handle != default && texture.Width >= 16 && texture.Height >= 16;
+                if (nativeTextureReady) DrawColouredMapImage(texture, path, () => LoadMapPixels(path));
+            }
+            failed = error != null || texture != null && !nativeTextureReady;
         }
         else {
             var foregroundPath = $"{AgentMap.Instance()->SelectedMapPath.ToString()}.tex";
@@ -136,7 +158,7 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
                 blendedTexture = null;
                 // Recorded first: a map that fails to load must not reload, and dispose again, on every frame.
                 blendedPath = source;
-                // Two 2048x2048 textures are read and multiplied; that is tens of milliseconds, so it is not done on
+                // Two map textures are read and multiplied; that is tens of milliseconds, so it is not done on
                 // the draw thread. The map stays blank until the pixels are ready, like a recolour that is pending.
                 var background = backgroundPath;
                 var foreground = foregroundPath;
@@ -145,23 +167,33 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
 
             if (blendedWork is { IsCompleted: true } finished) {
                 blendedWork = null;
-                if (finished.IsCompletedSuccessfully && finished.Result is { } pixels)
-                    blendedTexture = Service.TextureProvider.CreateFromRaw(RawImageSpecification.Rgba32(2048, 2048),
-                        pixels);
+                if (finished.IsCompletedSuccessfully && finished.Result is { } pixels) {
+                    try {
+                        blendedTexture = Service.TextureProvider.CreateFromRaw(
+                            RawImageSpecification.Rgba32(pixels.Width, pixels.Height), pixels.Rgba);
+                    }
+                    catch (Exception error) { Service.Log.Warning(error, "Failed to upload map texture"); }
+                }
             }
 
+            failed = blendedWork == null && blendedTexture == null;
             if (blendedTexture is not null) {
                 nativeTextureReady = blendedTexture.Handle != default && blendedTexture.Width >= 16
                     && blendedTexture.Height >= 16;
-                DrawColouredMapImage(blendedTexture, source, () => LoadMapPixels(foregroundPath, backgroundPath));
+                if (nativeTextureReady)
+                    DrawColouredMapImage(blendedTexture, source, () => LoadMapPixels(foregroundPath, backgroundPath));
+                else
+                    failed = true;
             }
         }
+        Rendering.UnavailableDrawing.Map(Rendering.UnavailableReason.MapState(nativeTextureReady, changing,
+            hasMap, hasPath, failed));
     }
 
     private void DrawMapImage(IDalamudTextureWrap texture) =>
         frame.DrawMapImage(new Rendering.DrawTexture(texture.Handle, texture.Size));
 
-    private static byte[]? BlendPixels(string vanillaBgPath, string vanillaFgPath) {
+    private static Rendering.MapLayerPixels? BlendPixels(string vanillaBgPath, string vanillaFgPath) {
         try {
             var bgFile = GetTexFile(vanillaBgPath);
             var fgFile = GetTexFile(vanillaFgPath);
@@ -171,18 +203,9 @@ public unsafe partial class MapRenderer : Rendering.IMapRendererHost, IDisposabl
                 return null;
             }
 
-            var backgroundBytes = bgFile.GetRgbaImageData();
-            var foregroundBytes = fgFile.GetRgbaImageData();
-
-            Parallel.For(0, 2048 * 2048, i => {
-                var index = i * 4;
-
-                backgroundBytes[index + 0] = (byte)(backgroundBytes[index + 0] * foregroundBytes[index + 0] / 255);
-                backgroundBytes[index + 1] = (byte)(backgroundBytes[index + 1] * foregroundBytes[index + 1] / 255);
-                backgroundBytes[index + 2] = (byte)(backgroundBytes[index + 2] * foregroundBytes[index + 2] / 255);
-            });
-
-            return backgroundBytes;
+            return Rendering.MapLayerBlend.BlendOrForeground(
+                new(bgFile.Header.Width, bgFile.Header.Height, bgFile.GetRgbaImageData()),
+                new(fgFile.Header.Width, fgFile.Header.Height, fgFile.GetRgbaImageData()));
         }
         catch (Exception error) {
             Service.Log.Warning(error, "Failed to blend map textures");

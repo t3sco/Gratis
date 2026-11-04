@@ -44,9 +44,10 @@ public unsafe partial class MapRenderer {
         foreach (var allianceMember in GroupManager.Instance()->MainGroup.AllianceMembers) {
             if (allianceMember.EntityId is 0xE0000000 or 0)
                 continue;
+            if (!Rendering.GroupTerritory.Matches(allianceMember.TerritoryType, selectedTerritory))
+                continue;
             if (Service.ClientState.IsPvP
                 && ((allianceMember.Flags & 1) == 0
-                    || allianceMember.TerritoryType != AgentMap.Instance()->SelectedTerritoryId
                     || GroupManager.Instance()->MainGroup.IsEntityIdInParty(allianceMember.EntityId)))
                 continue;
             if (System.SystemConfig.IsGratis

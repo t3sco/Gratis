@@ -198,7 +198,7 @@ public sealed partial class MapWindowFrame {
             HoveredFlags |= HoverFlags.WindowInnerFrame;
         }
 
-        ProcessInputs(host);
+        ProcessInputs(host, questInput);
     }
 
     private void DrawMapElements(IMapWindowHost host) {
@@ -258,8 +258,10 @@ public sealed partial class MapWindowFrame {
         return false;
     }
 
-    private void ProcessInputs(IMapWindowHost host) {
-        if (host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive) {
+    private void ProcessInputs(IMapWindowHost host, bool panelInput) {
+        // Keep capture even if a panel button closed it during this frame's draw.
+        if (panelInput || MapDrawContext.Current.QuickSetup.InputActive
+            || host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive) {
             isDragStarted = false;
             host.Flags |= ImGuiWindowFlags.NoMove;
             return;

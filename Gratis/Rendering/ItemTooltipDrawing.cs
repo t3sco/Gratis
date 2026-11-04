@@ -99,6 +99,7 @@ public sealed class ItemTooltipDrawing {
                 var row = new MenuRow(cached, new(RowFaces.Reward, s, Width: size.X - 24 * s, Enabled: enabled));
                 row.Draw(entry);
                 ImGui.EndDisabled();
+                if (!enabled) UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.TryOn), s);
                 if (!row.Clicked) continue;
                 if (entry == ItemTooltipModel.TryOnEntry) source?.TryOn(reward.Id);
                 else if (entry == ItemTooltipModel.LinkEntry) source?.Link(reward.Id);

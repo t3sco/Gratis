@@ -92,7 +92,9 @@ public readonly record struct WindowGeometry(Vector2 Position, Vector2 Size);
 public static class WindowPresetMath {
     public static bool Finite(Vector2 v) => float.IsFinite(v.X) && float.IsFinite(v.Y);
     public static WindowGeometry Clamp(WindowGeometry geometry, MoveWorkArea area, Vector2 minimum) {
-        var available = Vector2.Max(Vector2.One, area.Max - area.Min);
+        area = DisplayGeometry.SafeArea(area);
+        var available = area.Max - area.Min;
+        minimum = DisplayGeometry.Minimum(minimum);
         var size = Finite(geometry.Size) ? geometry.Size : minimum;
         size = Vector2.Clamp(size, Vector2.Min(minimum, available), available);
         var position = Finite(geometry.Position) ? geometry.Position : area.Min;
@@ -106,8 +108,9 @@ public static class WindowPresetMath {
     }
 
     public static WindowPreset Capture(int slot, string name, WindowGeometry geometry, MoveWorkArea area) {
+        area = DisplayGeometry.SafeArea(area);
         geometry = Clamp(geometry, area, Vector2.One);
-        var available = Vector2.Max(Vector2.One, area.Max - area.Min);
+        var available = area.Max - area.Min;
         return new() {
             Slot = slot, Name = WindowPresetSettings.CleanName(name, slot),
             Position = (geometry.Position - area.Min) / available, Size = geometry.Size / available,
@@ -115,9 +118,11 @@ public static class WindowPresetMath {
         };
     }
 
-    public static WindowGeometry Restore(WindowPreset preset, MoveWorkArea area, Vector2 minimum) =>
-        Clamp(new(area.Min + preset.Position * (area.Max - area.Min), preset.Size * (area.Max - area.Min)), area,
+    public static WindowGeometry Restore(WindowPreset preset, MoveWorkArea area, Vector2 minimum) {
+        area = DisplayGeometry.SafeArea(area);
+        return Clamp(new(area.Min + preset.Position * (area.Max - area.Min), preset.Size * (area.Max - area.Min)), area,
             minimum);
+    }
 }
 
 public sealed partial class WindowPresetController {

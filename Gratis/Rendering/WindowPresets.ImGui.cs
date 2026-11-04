@@ -18,6 +18,8 @@ public sealed partial class WindowPresetController {
     private bool observed;
     public void PrepareWindow(IMapWindowHost window, bool moving) {
         host = window;
+        if (!DisplayGeometry.ValidSize(ImGui.GetIO().DisplaySize))
+            return;
         var config = window.Config;
         if (resetPending) {
             resetPending = false;
@@ -31,19 +33,22 @@ public sealed partial class WindowPresetController {
             ImGui.SetNextWindowSize(config.WindowSize);
             window.SaveWindowPosition();
         }
-        if (settings.Presets.Count == 0 && Pending == 0)
-            return;
         var scale = MapDrawContext.Current.GlobalScale;
         var preset = settings.Find(Pending);
         var area = window.MoveWorkAreaAt(preset?.ScreenCenter ?? config.WindowPosition + config.WindowSize / 2);
+        // A minimized game can briefly report no drawable area. Do not overwrite saved geometry.
+        if (!DisplayGeometry.ValidArea(area))
+            return;
         var busy = moving || ImGui.IsAnyMouseDown() || ImGui.IsAnyItemActive();
         var applied = ApplyPending(config, area, window.MinimumWindowSize, busy);
         if (!busy && !applied && (!observed || area != lastArea || scale != lastScale)) {
-            var geometry = WindowPresetMath.Clamp(new(config.WindowPosition, config.WindowSize), area,
-                window.MinimumWindowSize);
+            // Existing saved windows may intentionally be narrower than the interactive resize minimum.
+            // Preserve them on first observation; enforce the DPI minimum on subsequent transitions.
+            var minimum = observed || settings.Presets.Count > 0 ? window.MinimumWindowSize : Vector2.One;
+            var geometry = WindowPresetMath.Clamp(new(config.WindowPosition, config.WindowSize), area, minimum);
+            applied = geometry.Position != config.WindowPosition || geometry.Size != config.WindowSize;
             config.WindowPosition = geometry.Position;
             config.WindowSize = geometry.Size;
-            applied = true;
             Decision = "display-clamp";
         }
         if (applied) {

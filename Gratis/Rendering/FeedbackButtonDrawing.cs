@@ -136,6 +136,9 @@ public static class FeedbackButtonDrawing {
             }
             var ready = draft.Trim().Length > 0 && FeedbackSender.CanSend;
             var send = ActionButton.Draw("Send", "Send", new(ActionFaces.Send, Icon: GratisIcons.Check, Enabled: ready));
+            if (!ready && state != FeedbackState.Sending)
+                UnavailableDrawing.Control(UnavailableReason.Action(draft.Trim().Length == 0
+                    ? UnavailableAction.EmptyFeedback : UnavailableAction.FeedbackCooldown));
             if (send && ready)
                 FeedbackSender.Send(draft, includeReport ? FeedbackLink.BuildReport?.Invoke() : null);
             ImGui.SameLine();

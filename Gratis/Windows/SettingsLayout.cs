@@ -170,6 +170,7 @@ public sealed partial class SettingsLayout {
                                 ImGui.BeginDisabled(!enabled);
                                 changed |= entry.Draw(config);
                                 ImGui.EndDisabled();
+                                if (!enabled) UnavailableDrawing.Control(UnavailableReason.Setting(entry.Path));
                                 ImGui.PopID();
                             }
                             ImGui.EndTable();
@@ -228,6 +229,7 @@ public sealed partial class SettingsLayout {
                 ImGui.GetWindowDrawList().AddText(pos + new Vector2(36 * s, (size.Y - ImGui.GetFontSize()) / 2),
                     ImGui.GetColorU32(GratisTheme.Primary), label);
                 ImGui.EndDisabled();
+                if (activate is null) UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.ToolUnavailable));
             }
             if (!NamesMatch(search, "Flag history limit"))
                 return false;
@@ -247,6 +249,7 @@ public sealed partial class SettingsLayout {
             if (ImGui.Button($"Open {tool}", new Vector2(210, 0)))
                 activate?.Invoke(tool);
             ImGui.EndDisabled();
+            if (activate is null) UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.ToolUnavailable));
         }
         if (!NamesMatch(search, "Flag history limit"))
             return false;

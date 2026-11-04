@@ -126,6 +126,8 @@ public static class SettingsProfilesDrawing {
             changed = true;
         }
         ImGui.EndDisabled();
+        if (set.Undo.Length == 0)
+            UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.NoUndo), scale);
         if (revertArmed && !ProfileManager.HasUnsavedChanges(config))
             revertArmed = false;
         // The rarely used actions share one quiet row. Import and revert open their own block under it, so the
@@ -214,6 +216,8 @@ public static class SettingsProfilesDrawing {
                 changed = true;
             }
             ImGui.EndDisabled();
+            if (set.FreeSlot() == 0)
+                UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.ProfilesFull), scale);
             if (ChromeControls.TextButton("Revert anyway", new Vector2(half, 0), scale: scale)) {
                 var count = ProfileManager.RevertToDefaults(config);
                 Say($"Reverted {count} settings to the defaults.");

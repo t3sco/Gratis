@@ -122,6 +122,14 @@ public static class ViewportMath {
         return Vector2.Clamp(center, half, texture - half);
     }
 
+    public static Vector2 ZoomOffset(MapDrawingConfig config, Vector2 frame, Vector2 texture, Vector2 offset,
+        Vector2 cursorFromCenter, float oldScale, float newScale) {
+        var center = ZoomAtCursor(new Vector2(1024) - offset, cursorFromCenter, oldScale, newScale);
+        if (config.ClampToMap)
+            center = ClampCenter(center, frame, texture, newScale, config.MapCircle && config.IsGratis);
+        return new Vector2(1024) - center;
+    }
+
     public static Vector2 ZoomAtCursor(Vector2 center, Vector2 cursorFromCenter, float oldScale, float newScale) =>
         center
         + cursorFromCenter / oldScale - cursorFromCenter / newScale;

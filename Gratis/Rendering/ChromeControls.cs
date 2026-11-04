@@ -76,11 +76,11 @@ public static partial class ChromeControls {
     }
 
     public static void Tooltip(string label, string? shortcut = null, float? scale = null,
-        Vector4? windowBounds = null, string? meta = null, HintRow[]? rows = null) {
+        Vector4? windowBounds = null, string? meta = null, HintRow[]? rows = null, bool allowDisabled = false) {
         if (label.Length == 0 && meta == null && rows == null)
             return;
         var focused = ImGui.IsItemFocused() && ImGui.GetIO().NavVisible;
-        if (!ImGui.IsItemHovered() && !focused)
+        if (!ImGui.IsItemHovered(allowDisabled ? ImGuiHoveredFlags.AllowWhenDisabled : ImGuiHoveredFlags.None) && !focused)
             return;
         var min = ImGui.GetItemRectMin();
         var max = ImGui.GetItemRectMax();

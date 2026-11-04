@@ -145,6 +145,7 @@ public sealed partial class SettingsLayout {
             TestRows.Add((entry.Path, new(labelMin.X, labelMin.Y, labelMax.X, labelMax.Y),
                 new(controlMin.X, controlMin.Y, controlMax.X, controlMax.Y)));
 #endif
+            if (!entry.Enabled(config)) UnavailableDrawing.Control(UnavailableReason.Setting(entry.Path), s);
             ImGui.PopID();
         }
         ImGui.EndTable();

@@ -375,6 +375,14 @@ public sealed partial class PaletteOverlay {
 
     private bool DrawTravelAction(PlaceResult result, bool canTravel) {
         var label = canTravel ? "Travel here" : rowNames.ActionLabel(result, results);
-        return ActionButton.Draw(label, label, new(ActionFaces.Action, Icon: GratisIcons.Compass));
+        var assistance = MapDrawContext.Current.Assistance;
+        var reason = assistance?.UnavailableReason ?? "";
+        if (reason.Length == 0)
+            reason = UnavailableReason.Travel(result.Access.Attuned, result.Place.IsShard,
+                assistance?.Provider.Available == true, result.Access.Cost);
+        var clicked = ActionButton.Draw(label, label,
+            new(ActionFaces.Action, Icon: GratisIcons.Compass, Enabled: reason.Length == 0));
+        if (reason.Length > 0) UnavailableDrawing.Control(reason);
+        return clicked && reason.Length == 0;
     }
 }

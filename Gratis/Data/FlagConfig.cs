@@ -59,9 +59,20 @@ public unsafe record Flag(uint Territory, uint Map, float X, float Y, uint IconI
 public class FlagConfig {
     public LinkedList<Flag> FlagHistory = [];
 
-    public int HistoryLimit = 10;
+    private int historyLimit = 10;
+    public int HistoryLimit {
+        get => historyLimit;
+        set {
+            historyLimit = global::System.Math.Max(0, value);
+            Rendering.FlagHistoryRetention.Trim(FlagHistory, historyLimit);
+        }
+    }
 
-    public static FlagConfig Load() => Service.PluginInterface.LoadConfigFile<FlagConfig>("Flags.data.json");
+    public static FlagConfig Load() {
+        var config = Service.PluginInterface.LoadConfigFile<FlagConfig>("Flags.data.json");
+        Rendering.FlagHistoryRetention.Trim(config.FlagHistory, config.HistoryLimit);
+        return config;
+    }
 
     public void Save() => Service.PluginInterface.SaveConfigFile("Flags.data.json", System.FlagConfig);
 }

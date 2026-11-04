@@ -58,6 +58,8 @@ public static class SettingsWindowPresets {
         if (ChromeControls.TextButton("Save current as preset", new Vector2(width, 0), scale: SettingsTheme.Scale))
             changed |= controller.SaveCurrent(config);
         ImGui.EndDisabled();
+        if (settings.Presets.Count >= WindowPresetSettings.Limit)
+            UnavailableDrawing.Control(UnavailableReason.Action(UnavailableAction.PresetsFull), SettingsTheme.Scale);
         if (editing != null && settings.Find(editing.Slot) == editing) {
             ImGui.SetNextItemWidth(width);
             ImGui.InputText("##window-preset-name", ref name, 80);

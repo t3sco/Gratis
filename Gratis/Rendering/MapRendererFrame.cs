@@ -151,14 +151,13 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
             WriteScale(requestedScale);
             return;
         }
-        var circle = config.MapCircle && config.IsGratis;
         var minimum = ViewportMath.Limits(config, viewportSize, viewportTextureSize).Minimum;
         var scale = Constrain(viewportZoom.Resolve(viewportSize, requestedScale, config.ScaleWithFrame, minimum),
             DrawOffset).Scale;
-        var center = ViewportMath.ZoomAtCursor(new Vector2(1024) - DrawOffset, cursorFromCenter, Scale, scale);
+        var offset = ViewportMath.ZoomOffset(config, viewportSize, viewportTextureSize, DrawOffset,
+            cursorFromCenter, Scale, scale);
         WriteScale(scale);
-        WriteOffset(new Vector2(1024)
-            - ViewportMath.ClampCenter(center, viewportSize, viewportTextureSize, scale, circle));
+        WriteOffset(offset);
         if (config.FollowPlayer)
             followZoomOffset = DrawOffset - followTargetOffset;
     }

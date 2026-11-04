@@ -30,6 +30,8 @@ public sealed class MoveHandleInput {
     }
 
     public void PrepareWindow(IMapWindowHost host) {
+        if (!DisplayGeometry.ValidSize(ImGui.GetIO().DisplaySize) || !DisplayGeometry.ValidArea(host.MoveWorkArea))
+            return;
         var config = host.Config;
         if (!Dragging || config.LockWindow || altGesture && !ImGui.GetIO().KeyAlt
             || shiftGesture && !ImGui.GetIO().KeyShift)
@@ -53,6 +55,8 @@ public sealed class MoveHandleInput {
     }
 
     public void Update(IMapWindowHost host, bool mapDragging) {
+        if (!DisplayGeometry.ValidSize(ImGui.GetIO().DisplaySize) || !DisplayGeometry.ValidArea(host.MoveWorkArea))
+            return;
         var config = host.Config;
         var context = MapDrawContext.Current;
         var scale = context.GlobalScale;
@@ -187,12 +191,18 @@ public sealed class MoveHandleInput {
 
 public static class MoveHandleScreen {
     public static MoveWorkArea At(Vector2 point) {
+        var viewport = ImGui.GetMainViewport();
+        var main = new MoveWorkArea(viewport.WorkPos, viewport.WorkPos + viewport.WorkSize);
+        if ((ImGui.GetIO().ConfigFlags & ImGuiConfigFlags.ViewportsEnable) == 0)
+            return main;
         var monitors = ImGui.GetPlatformIO().Monitors;
         var nearest = float.PositiveInfinity;
         MoveWorkArea result = default;
         for (var index = 0; index < monitors.Size; index++) {
             var monitor = monitors[index];
             var area = new MoveWorkArea(monitor.WorkPos, monitor.WorkPos + monitor.WorkSize);
+            if (!DisplayGeometry.ValidArea(area))
+                continue;
             var distance = Vector2.DistanceSquared(point, Vector2.Clamp(point, area.Min, area.Max));
             if (distance >= nearest)
                 continue;
@@ -201,7 +211,6 @@ public static class MoveHandleScreen {
         }
         if (float.IsFinite(nearest))
             return result;
-        var viewport = ImGui.GetMainViewport();
-        return new(viewport.WorkPos, viewport.WorkPos + viewport.WorkSize);
+        return main;
     }
 }

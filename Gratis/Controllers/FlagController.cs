@@ -41,9 +41,7 @@ public unsafe class FlagController : IDisposable {
                 dataFile.FlagHistory.Remove(newFlagData);
                 dataFile.FlagHistory.AddFirst(newFlagData);
 
-                if (dataFile.FlagHistory.Count > dataFile.HistoryLimit) {
-                    dataFile.FlagHistory.RemoveLast();
-                }
+                Rendering.FlagHistoryRetention.Trim(dataFile.FlagHistory, dataFile.HistoryLimit);
 
                 dataFile.Save();
             }

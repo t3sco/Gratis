@@ -106,9 +106,13 @@ public sealed partial class MapAssistance {
             travelCostLabel = CostLabel(card);
             travelConfirmLabel = $"Pay {card.Cost ?? 0:N0} gil and teleport";
         }
-        return global::Gratis.Rendering.ActionButton.Draw("##travel-action", card.Armed ? travelConfirmLabel : "Teleport",
+        var reason = global::Gratis.Rendering.UnavailableReason.Travel(true, card.Free, available, card.Cost);
+        var enabled = card.Enabled && reason.Length == 0;
+        var clicked = global::Gratis.Rendering.ActionButton.Draw("##travel-action", card.Armed ? travelConfirmLabel : "Teleport",
             new(card.Armed ? ActionFaces.ConfirmTravel : ActionFaces.Travel,
-                TrailingText: card.Armed ? "" : travelCostLabel, Enabled: card.Enabled,
+                TrailingText: card.Armed ? "" : travelCostLabel, Enabled: enabled,
                 Size: new(width, GratisTheme.ControlHeight * GratisTheme.ChromeScale), LabelCache: travelLabel));
+        if (reason.Length > 0) UnavailableDrawing.Control(reason);
+        return clicked && enabled;
     }
 }

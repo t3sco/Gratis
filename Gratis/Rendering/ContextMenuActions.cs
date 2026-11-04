@@ -6,7 +6,7 @@ using Gratis.Classes;
 namespace Gratis.Rendering;
 
 public sealed record ContextMenuItem(string Label, char Icon, Action? Invoke = null,
-    IReadOnlyList<ContextMenuItem>? Children = null, bool KeepOpen = false);
+    IReadOnlyList<ContextMenuItem>? Children = null, bool KeepOpen = false, UnavailableAction Unavailable = UnavailableAction.None);
 
 public interface IContextMenuActions {
     string MapName { get; }
@@ -93,9 +93,13 @@ public sealed partial class ContextMenu {
             if (actions?.Layers is { Count: > 0 } layers)
                 items.Add(new("Layers", GratisIcons.Layers, Children: layers));
         }
-        if (Marker == null)
-            items.Add(new("Window presets", GratisIcons.LayoutGrid,
-                Children: MapDrawContext.Current.WindowPresets.Menu(host.Config)));
+        if (Marker == null) {
+            var presets = new List<ContextMenuItem>();
+            foreach (var item in MapDrawContext.Current.WindowPresets.Menu(host.Config))
+                presets.Add(item.Invoke == null && item.Children == null
+                    ? item with { Unavailable = UnavailableAction.PresetsFull } : item);
+            items.Add(new("Window presets", GratisIcons.LayoutGrid, Children: presets));
+        }
         current = items;
         selected = -1;
     }

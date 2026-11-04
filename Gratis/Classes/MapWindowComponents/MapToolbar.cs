@@ -95,8 +95,10 @@ public unsafe class MapToolbar {
             return;
 
         var currentMap = Service.DataManager.GetExcelSheet<Map>().GetRow(AgentMap.Instance()->SelectedMapId);
-        if (currentMap.RowId is 0)
+        if (currentMap.RowId is 0) {
+            ImGui.TextUnformatted(UnavailableReason.Map(MapAvailability.NoFloor));
             return;
+        }
 
         if (currentMap.MapType.RowId == 3) {
             foreach (var marker in AgentMap.Instance()->MapMarkers) {

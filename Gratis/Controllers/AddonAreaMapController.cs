@@ -11,11 +11,15 @@ using Gratis.Windows;
 namespace Gratis.Controllers;
 
 public unsafe class AddonAreaMapController : IDisposable {
+    private readonly Rendering.NativeMapSound sound = new();
+    private nint soundAddon;
+
     public AddonAreaMapController() {
         Service.Log.Debug("Beginning Listening for AddonAreaMap");
         Service.Framework.Update += AddonAreaMapListener;
 
         Service.AddonLifecycle.RegisterListener(AddonEvent.PreDraw, "AreaMap", OnAreaMapDraw);
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "AreaMap", OnAreaMapFinalize);
 
         Service.AddonLifecycle.RegisterListener(AddonEvent.PreShow, "AreaMap", OnAreaMapPreShow);
         Service.AddonLifecycle.RegisterListener(AddonEvent.PreHide, "AreaMap", OnAreaMapPreHide);
@@ -38,16 +42,30 @@ public unsafe class AddonAreaMapController : IDisposable {
         if (addonAreaMap is null)
             return;
 
-        if (System.SystemConfig.SuppressNativeMapOpenSound) {
-            addonAreaMap->ShowSoundEffectId = 0;
-            addonAreaMap->DisableShowHideSoundEffects = true;
-        }
+        ApplySound(addonAreaMap, System.SystemConfig.SuppressNativeMapOpenSound);
+    }
 
-        Service.Framework.Update -= AddonAreaMapListener;
+    private void ApplySound(AddonAreaMap* addon, bool suppress) {
+        if (soundAddon != (nint)addon) {
+            sound.Forget();
+            soundAddon = (nint)addon;
+        }
+        var state = sound.Apply(suppress, addon->ShowSoundEffectId, addon->DisableShowHideSoundEffects);
+        if (addon->ShowSoundEffectId != state.Id)
+            addon->ShowSoundEffectId = state.Id;
+        if (addon->DisableShowHideSoundEffects != state.Disabled)
+            addon->DisableShowHideSoundEffects = state.Disabled;
+    }
+
+    private void OnAreaMapFinalize(AddonEvent type, AddonArgs args) {
+        ApplySound((AddonAreaMap*)args.Addon.Address, false);
+        sound.Forget();
+        soundAddon = 0;
     }
 
     public void Dispose() {
         Service.AddonLifecycle.UnregisterListener(OnAreaMapDraw);
+        Service.AddonLifecycle.UnregisterListener(OnAreaMapFinalize);
         Service.AddonLifecycle.UnregisterListener(AddonEvent.PreShow, "AreaMap");
         Service.AddonLifecycle.UnregisterListener(AddonEvent.PreHide, "AreaMap");
         Service.Framework.Update -= AddonAreaMapListener;
@@ -57,14 +75,12 @@ public unsafe class AddonAreaMapController : IDisposable {
             if (addonAreaMap->RootNode is not null)
                 addonAreaMap->RootNode->SetPositionFloat(addonAreaMap->X, addonAreaMap->Y);
 
-            if (System.SystemConfig.SuppressNativeMapOpenSound) {
-                addonAreaMap->ShowSoundEffectId = 23;
-                addonAreaMap->DisableShowHideSoundEffects = false;
-            }
+            ApplySound(addonAreaMap, false);
         }
     }
 
     private void OnAreaMapPreShow(AddonEvent type, AddonArgs args) {
+        ApplySound((AddonAreaMap*)args.Addon.Address, System.SystemConfig.SuppressNativeMapOpenSound);
         if (System.ZoneSwitchController is { IsApplying: true })
             return;
         System.MapWindow.WakeGhost();
