@@ -3,7 +3,7 @@
     "Author": "t3sco (based on Mappy by MidoriKami, harbingerftw)",
     "Name": "Gratis",
     "InternalName": "Gratis",
-    "AssemblyVersion": "0.1.0.8",
+    "AssemblyVersion": "0.1.0.9",
     "Description": "Replaces the in-game map with a flat, minimal ImGui map: search, lenses, filters, travel offers, window presets and dozens of small QoL tweaks. Based on Mappy by MidoriKami and harbingerftw. Open with /gratis.",
     "Punchline": "A flat, minimal, quality-of-life-packed map.",
     "ApplicableVersion": "any",
@@ -17,13 +17,13 @@
     "DalamudApiLevel": 15,
     "LoadPriority": 0,
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
-    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
-    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.8/Gratis.zip",
+    "DownloadLinkInstall": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.9/Gratis.zip",
+    "DownloadLinkTesting": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.9/Gratis.zip",
+    "DownloadLinkUpdate": "https://github.com/t3sco/Gratis/releases/download/v0.1.0.9/Gratis.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793571469,
+    "LastUpdate": 1793792796,
     "IconUrl": "https://raw.githubusercontent.com/t3sco/Gratis/master/docs/images/icon.png",
-    "Changelog": "Lighter on your frame time, and sorry for the update spam. Typical frame in a busy hub about 0.55 ms to about 0.28 ms, hovering a marker no longer costs extra, much less garbage per frame, no stall when changing big maps, and a new /gratis perf command."
+    "Changelog": "New: abandon an accepted quest from the Quest Log (with a confirm step), import your settings from Mappy, FATE progress and time left on hover, instance-bound quests point at the entrance that leads in, weather and Sightseeing in the search palette, aether-current hints, gathering windows and Triple Triad opponents (new map hints are off by default). Quests and FATEs now draw above ambient markers and area labels keep off your icons. Undo toasts for deleting or resetting window presets and Reset Markers. Windows left offscreen after a monitor change are pulled back, and blank maps and disabled buttons now say why. Fixes: hover cards showing one player's name, zoom snapping back with Keep view inside map off, Quick Setup clicks moving the map, alliance members from other zones, flag history limit, map-sound mute, and blended maps at other texture sizes. Cleaner settings, tooltips and menus; the spoiler warning and Auto zoom are gone; the diagnostic report is on by default (you can turn it off)."
   }
 ]
