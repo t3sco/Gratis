@@ -85,8 +85,10 @@ public class WindowManager : IDisposable {
 
         window.TitleBarButtons.Add(new TitleBarButton {
             Icon = FontAwesomeIcon.Question,
-            ShowTooltip = () => ImGui.SetTooltip($"Window by {pluginInterface.InternalName}"
-                + $"{(window.AdditionalInfoTooltip is not null ? "\n\n" : "")}{window.AdditionalInfoTooltip}"),
+            ShowTooltip = () => {
+                if (window.AdditionalInfoTooltip is { } info)
+                    ImGui.SetTooltip(info);
+            },
             IconOffset = new Vector2(3.0f, 1.0f),
             Priority = -1,
         });

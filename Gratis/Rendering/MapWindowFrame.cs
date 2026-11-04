@@ -111,13 +111,8 @@ public sealed partial class MapWindowFrame {
 
         MapDrawOffset = ImGui.GetCursorScreenPos();
         var ghostEnabled = host.Config.IsGratis && host.Config.GhostMode;
-        var restoreHover = host.Config.IsGratis && host.Config.RestoreOpacityOnHover
-            && ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
-        var fadedTarget = host.ShouldFade && !restoreHover ? host.Config.FadePercent : 1;
-        var opacity = ghostEnabled ? Ghost.Opacity : host.Config.IsGratis && host.Config.RestoreOpacityOnHover
-            ? UiMotion.Value(ImGui.GetID("##hover-unfade"), 9, fadedTarget,
-                restoreHover ? InterfaceMotionTokens.HoverEnter : InterfaceMotionTokens.HoverExit, opacity: true)
-            : host.ShouldFade ? host.Config.FadePercent : 1;
+        // Hover restoration belongs solely to GhostMode; the retired Full opacity switch is ignored.
+        var opacity = ghostEnabled ? Ghost.Opacity : host.ShouldFade ? host.Config.FadePercent : 1;
         using var fade = FrameScopes.PushStyle(ImGuiStyleVar.Alpha, opacity, host.Config.IsGratis || host.ShouldFade);
         using (var renderChild = FrameScopes.Child("render_child", ImGui.GetContentRegionAvail(),
             ImGuiWindowFlags.NoScrollWithMouse

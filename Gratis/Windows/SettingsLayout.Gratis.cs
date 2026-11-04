@@ -259,8 +259,16 @@ public sealed partial class SettingsLayout {
             return false;
         if (searching)
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
-        var open = SectionHeader.Settings(group.HeaderId, GroupLabel(group.Key), GroupIcon(group.Key),
-            ExpandedByDefault(group.Key), scale);
+        var quiet = rows.Count + group.VisiblePresets.Count + group.VisibleMultis.Count <= 3;
+        var open = true;
+        if (quiet) {
+            ImGui.Spacing();
+            using var font = SettingsTheme.Font(GratisTheme.SmallTextSize);
+            ImGui.TextColored(GratisTheme.Secondary, GroupLabel(group.Key));
+        }
+        else
+            open = SectionHeader.Settings(group.HeaderId, GroupLabel(group.Key), GroupIcon(group.Key),
+                ExpandedByDefault(group.Key), scale);
 #if GRATIS_PREVIEW
         TestGroups.Add(group.Key);
 #endif
@@ -270,7 +278,8 @@ public sealed partial class SettingsLayout {
         var changed = DrawEntryRows(config, rows, group.PrimaryId, presets: group.VisiblePresets,
             multiSelects: group.VisibleMultis);
         var bottom = ImGui.GetCursorScreenPos().Y - ImGui.GetStyle().ItemSpacing.Y;
-        ImGui.GetWindowDrawList().AddRect(cardStart,
+        if (!quiet)
+            ImGui.GetWindowDrawList().AddRect(cardStart,
             new Vector2(cardStart.X + ImGui.GetContentRegionAvail().X, bottom),
             ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Card * scale);
         ImGui.Spacing();

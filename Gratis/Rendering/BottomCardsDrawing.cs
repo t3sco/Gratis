@@ -209,6 +209,11 @@ public static class BottomCardsDrawing {
         void Card(Vector2? value, bool isPlayer, float x, bool trailing) {
             var cardPos = new Vector2(x, pos.Y);
             var cardSize = new Vector2(cardWidth + (trailing ? timeWidth : 0), size.Y);
+            // Keep layout geometry reserved; CoordinateCopy ignores a missing value, so there is no hidden control.
+            if (!isPlayer && !value.HasValue && c.Config.IsGratis) {
+                cursorBounds = new(cardPos.X, cardPos.Y, cardPos.X + cardWidth, cardPos.Y + cardSize.Y);
+                return;
+            }
             MapWindowDrawing.DrawSurface(list, cardPos, cardPos + cardSize, GratisTheme.Radius.Card * s,
                 surface: GlassSurface.Coordinates, chromeId: isPlayer ? "Coordinates.Player" : "Coordinates.Cursor");
             var start = cardPos + new Vector2(12 * s, (size.Y - ImGui.GetFontSize()) / 2);

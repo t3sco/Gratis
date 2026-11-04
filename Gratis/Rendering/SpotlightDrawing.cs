@@ -117,7 +117,7 @@ internal static class SpotlightDrawing {
                 48, 3 * scale);
             list.AddCircle(center, staticRadius, ImGui.GetColorU32(accent with { W = .8f * s.Opacity }), 48, scale);
         }
-        if (!s.Pulse || context.Config.ReduceMotion)
+        if (!s.Pulse || (context.Config.InterfaceAnimations == InterfaceAnimationMode.Off))
             return;
         for (var ring = 0; ring < 2; ring++) {
             var (radius, alpha) = MotionMath.Ring(s.Age % 1.6f, ring, 1.6f);

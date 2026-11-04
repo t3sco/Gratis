@@ -27,7 +27,9 @@ public static class FeedbackButtonDrawing {
     public const string ReportLabel = "Include a diagnostic report";
     private const string Idle = "Settings and technical details only, no character name or chat.";
     private static string draft = "";
-    private static bool includeReport, sentHandled;
+    // On by default: a report without the technical details is rarely enough to find a bug. The note under the box
+    // says what it holds, and the player can untick it.
+    private static bool includeReport = true, sentHandled;
     private static double closeAt;
     public static Vector4 LastBounds { get; private set; }
     public static bool PopupOpen { get; private set; }

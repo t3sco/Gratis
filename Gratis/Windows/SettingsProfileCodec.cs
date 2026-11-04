@@ -146,6 +146,7 @@ public static class ProfileCodec {
                 }
                 values[property.Name] = property.Value.Clone();
             }
+            MigrateRetired(values);
             var name = root.TryGetProperty("n", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "";
             data = new(SettingsProfileSet.CleanName(name, "Imported profile"), values);
             error = "";
@@ -156,6 +157,17 @@ public static class ProfileCodec {
             error = "That profile is damaged.";
             return false;
         }
+    }
+
+    /// <summary>
+    /// Profiles saved before the Reduce motion and Full opacity settings were retired still carry their keys. Reduce
+    /// motion on means Animations Off (the same mapping as a saved config); both retired keys are then dropped.
+    /// </summary>
+    private static void MigrateRetired(Dictionary<string, JsonElement> values) {
+        if (values.TryGetValue("ReduceMotion", out var reduce) && reduce.ValueKind == JsonValueKind.True)
+            values["InterfaceAnimations"] = JsonSerializer.SerializeToElement((int)InterfaceAnimationMode.Off);
+        values.Remove("ReduceMotion");
+        values.Remove("RestoreOpacityOnHover");
     }
 
     /// <summary>Reads one value as the setting's own type, or fails. Numbers are clamped to the slider range.</summary>

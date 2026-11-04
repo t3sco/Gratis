@@ -5,6 +5,8 @@ namespace Gratis.Rendering;
 public partial class MapDrawingConfig {
     public bool QuestLogOpenWithMap = false;
     public bool QuestLogPinned = false;
+    public bool QuestLogKeepOpenOnShow = false;
+    public bool QuestLogRememberSearch = false;
     public float QuestLogWidth = 320;
     public bool QuestLogReplaceJournal = false;
     public bool QuestLogShowLocked = false;
@@ -12,6 +14,8 @@ public partial class MapDrawingConfig {
     public void ResetQuestLog() {
         QuestLogOpenWithMap = false;
         QuestLogPinned = false;
+        QuestLogKeepOpenOnShow = false;
+        QuestLogRememberSearch = false;
         QuestLogWidth = 320;
         QuestLogReplaceJournal = false;
         QuestLogShowLocked = false;

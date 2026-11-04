@@ -5,5 +5,5 @@ public partial class MapDrawingConfig {
     public float AnimationSpeed = 1;
     public InterfaceAnimationMode EffectiveInterfaceMotion => !IsGratis
         || InterfaceAnimations == InterfaceAnimationMode.Off
-        ? InterfaceAnimationMode.Off : ReduceMotion ? InterfaceAnimationMode.Reduced : InterfaceAnimations;
+        ? InterfaceAnimationMode.Off : InterfaceAnimations;
 }

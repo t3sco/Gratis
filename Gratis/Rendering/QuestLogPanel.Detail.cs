@@ -25,7 +25,8 @@ public sealed partial class QuestLogPanel {
 
     private void HideSearch() {
         searchOpen = focusSearch = false;
-        query = "";
+        if (!MapDrawContext.Current.Config.QuestLogRememberSearch)
+            query = "";
     }
 
     private void CloseDetail() {
@@ -39,7 +40,7 @@ public sealed partial class QuestLogPanel {
         if (quest.DestinationNote == QuestTargetSelection.InstanceMapNote)
             MapDrawContext.Current.ContextMenu.Notify(QuestTargetSelection.ThroughDoor);
         CloseDetail();
-        if (!MapDrawContext.Current.Config.QuestLogPinned) {
+        if (!MapDrawContext.Current.Config.QuestLogPinned && !MapDrawContext.Current.Config.QuestLogKeepOpenOnShow) {
             // The map the log opened is the one the quest is being shown on, so closing the log must not close it.
             KeepMapOnClose = true;
             CloseLog();

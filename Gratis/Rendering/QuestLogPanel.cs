@@ -79,6 +79,7 @@ public sealed partial class QuestLogPanel {
     public IReadOnlyList<(uint Id, Vector4 Bounds)> Rows => rows;
     public IReadOnlyDictionary<QuestBucket, Vector4> Sections => sections;
     public string Query => query;
+    private string ActiveQuery => searchOpen ? query : "";
     public IReadOnlyList<QuestLogQuest> Results => filtered;
     public float Opacity { get; private set; }
     public uint HoveredQuestId { get; private set; }
@@ -93,7 +94,8 @@ public sealed partial class QuestLogPanel {
         requestedOpen = false;
         keyboard = gesture = swallowEscape = focusSearch = false;
         searchOpen = false;
-        query = "";
+        if (!config.QuestLogRememberSearch)
+            query = "";
         CloseDetail();
     }
 
@@ -107,8 +109,7 @@ public sealed partial class QuestLogPanel {
         detailOpacity = 0;
         detailQuest = null;
         CloseDetail();
-        searchOpen = false;
-        query = "";
+        HideSearch();
         HoveredQuestId = 0;
         Layout = default;
         rows.Clear();
@@ -350,7 +351,7 @@ public sealed partial class QuestLogPanel {
             list.PopClipRect();
             ImGui.SetCursorScreenPos(searchStart + new Vector2(0, searchHeight * searchReveal));
         }
-        presentation.Filter(query, Tab, context.Config.QuestLogShowLocked);
+        presentation.Filter(ActiveQuery, Tab, context.Config.QuestLogShowLocked);
         filtered = presentation.Filtered;
         if (Tab == QuestLogTab.Completed && snapshot.HistoryLoading)
             EmptyState.Draw("Checking completion history...", EmptyFaces.QuestHelper);
@@ -377,7 +378,7 @@ public sealed partial class QuestLogPanel {
                 return;
             }
             if (filtered.Length == 0) {
-                EmptyState.Draw(query.Length > 0 ? "No quests match your search." : QuestLogText.EmptyTab(Tab), EmptyFaces.Quest);
+                EmptyState.Draw(ActiveQuery.Length > 0 ? "No quests match your search." : QuestLogText.EmptyTab(Tab), EmptyFaces.Quest);
                 return;
             }
             var top = ImGui.GetCursorScreenPos().Y + ImGui.GetScrollY();
@@ -462,7 +463,7 @@ public sealed partial class QuestLogPanel {
         var width = MathF.Max(1, ImGui.GetContentRegionAvail().X - 6 * s);
         var headerHeight = 32 * s;
         var gap = GratisTheme.Gap * s;
-        var expanded = query.Length > 0 || !collapsed.Contains(bucket);
+        var expanded = ActiveQuery.Length > 0 || !collapsed.Contains(bucket);
         var height = headerHeight + gap + (expanded ? quests.Length * (RowHeight(s) + gap) : 0);
         var headerY = MathF.Max(start.Y, MathF.Min(top, start.Y + height - headerHeight - gap));
         var header = new Vector2(start.X, headerY);
@@ -470,7 +471,7 @@ public sealed partial class QuestLogPanel {
         if (!sectionHeaders.TryGetValue(bucket, out var headingCache))
             sectionHeaders.Add(bucket, headingCache = new());
         if (SectionHeader.Sticky("##section", QuestBuckets.Label(bucket), headingCache.Count(quests.Length),
-            header, width, s, expanded) && query.Length == 0) {
+            header, width, s, expanded) && ActiveQuery.Length == 0) {
             if (!collapsed.Add(bucket))
                 collapsed.Remove(bucket);
         }

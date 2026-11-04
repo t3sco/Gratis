@@ -22,7 +22,7 @@ public sealed partial class SettingsLayout {
         [],
         ["Look", "Frame & glass", "Map colour", "Classic"],
         ["View", "Places", "Markers", "Filters", "Quest log & tools"],
-        ["Visibility", "Layout", "Cards", "Motion", "Window"],
+        ["Layout & visibility", "Cards & motion", "Window"],
         [], [], []];
     internal const int MaxSubTabs = 5;
 
@@ -30,7 +30,7 @@ public sealed partial class SettingsLayout {
     internal static class Sub {
         public const int Look = 0, FrameGlass = 1, MapColour = 2, Classic = 3;
         public const int View = 0, Places = 1, Markers = 2, Filters = 3, QuestTools = 4;
-        public const int Visibility = 0, Layout = 1, Cards = 2, Motion = 3, Window = 4;
+        public const int Visibility = 0, Layout = 0, Cards = 1, Motion = 1, Window = 2;
     }
 
     /// <summary>Catalog sections each tab draws groups from, in the order their groups appear on the page.</summary>
@@ -220,7 +220,7 @@ public sealed partial class SettingsLayout {
         _ = config.FilterOptions;
         var defaults = new SystemConfig();
         foreach (var entry in Entries) {
-            if (!entry.Visible(config))
+            if (!entry.Visible(config) && entry.Path is not ("CenterOnFlag" or "CenterOnGathering" or "CenterOnQuest"))
                 continue;
             // User-authored collections are not page settings: resetting the page must not delete them.
             if (entry.Path is "WindowPresets" or "CustomLenses")

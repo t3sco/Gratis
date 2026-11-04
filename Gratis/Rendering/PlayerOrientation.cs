@@ -37,14 +37,14 @@ public sealed class PlayerOrientation {
         ulong map, Vector3 position, float? nativeConeDegrees = null) {
         if (frame >= 0 && LastFrame == frame) {
             Smoothing.Advance(Selection.Raw, now, config.PlayerArrowSmoothing, map, position,
-                config.ReduceMotion || !config.IsGratis, frame);
+                (config.InterfaceAnimations == InterfaceAnimationMode.Off) || !config.IsGratis, frame);
             return Angle;
         }
         Preference = config.IsGratis ? config.ArrowPoints : PlayerArrowDirection.Character;
         Selection = Select(Preference, characterRotation, cameraYaw, nativeConeDegrees);
         LastFrame = frame;
         Angle = Smoothing.Advance(Selection.Raw, now, config.PlayerArrowSmoothing, map, position,
-            config.ReduceMotion || !config.IsGratis, frame);
+            (config.InterfaceAnimations == InterfaceAnimationMode.Off) || !config.IsGratis, frame);
         return Angle;
     }
 
@@ -65,11 +65,11 @@ public sealed class PlayerOrientation {
 
     public string MotionDiagnostics(MapDrawingConfig config, string clock = "host") => Smoothing.Diagnostics()
         + $" source={Selection.Source} fallback={Selection.Fallback} "
-        + $"reduceMotion={config.ReduceMotion} classicBypass={!config.IsGratis} bypass={SmoothingBypass(config)} "
+        + $"reduceMotion={(config.InterfaceAnimations == InterfaceAnimationMode.Off)} classicBypass={!config.IsGratis} bypass={SmoothingBypass(config)} "
         + $"clock={clock}";
     private static string SmoothingBypass(MapDrawingConfig config) {
         if (!config.IsGratis) return "Classic";
-        if (config.ReduceMotion) return "ReduceMotion";
+        if (config.InterfaceAnimations == InterfaceAnimationMode.Off) return "ReduceMotion";
         return config.PlayerArrowSmoothing == PlayerArrowSmoothing.Off ? "Off" : "none";
     }
 

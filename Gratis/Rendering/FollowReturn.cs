@@ -73,7 +73,7 @@ public sealed class FollowReturn {
             elapsed = 0;
         }
         if (State == FollowState.Returning) {
-            var duration = config.ReduceMotion ? 0 : Math.Clamp(config.FollowReturnEaseMs, 0, 1500) / 1000;
+            var duration = (config.InterfaceAnimations == InterfaceAnimationMode.Off) ? 0 : Math.Clamp(config.FollowReturnEaseMs, 0, 1500) / 1000;
             if (duration == 0) {
                 State = FollowState.Following;
                 return target;

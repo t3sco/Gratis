@@ -18,7 +18,7 @@ public static class SettingsPresets {
     }
 
     private static readonly Dictionary<string, object> MotionFull = new() {
-        ["InterfaceAnimations"] = InterfaceAnimationMode.Full, ["AnimationSpeed"] = 1f, ["ReduceMotion"] = false,
+        ["InterfaceAnimations"] = InterfaceAnimationMode.Full, ["AnimationSpeed"] = 1f,
         ["Motion.Pings"] = true, ["Motion.PingSeconds"] = .9f, ["Motion.PlayerTrail"] = true,
         ["Motion.TrailSeconds"] = 8.3f, ["Motion.TrailOpacity"] = .33f, ["Motion.EaseFollow"] = true,
         ["Motion.EaseZoom"] = true, ["Motion.PanInertia"] = true, ["Motion.PanInertiaStrength"] = .35f,
@@ -39,7 +39,7 @@ public static class SettingsPresets {
     public static readonly SettingsPresetDefinition[] Definitions = [
         new("motion", "Chrome & motion", "Motion", "Motion", "How much the map and controls animate.", [
             new("Off", new() {
-                ["ReduceMotion"] = true, ["InterfaceAnimations"] = InterfaceAnimationMode.Off,
+                ["InterfaceAnimations"] = InterfaceAnimationMode.Off,
                 ["PlayerArrowSmoothing"] = PlayerArrowSmoothing.Off }),
             new("Calm", With(MotionFull, ("AnimationSpeed", .75f), ("Motion.PlayerTrail", false),
                 ("Motion.PanInertia", false), ("Motion.ZoneSlidePixels", 0f), ("Motion.PingSeconds", .6f))),
@@ -59,8 +59,7 @@ public static class SettingsPresets {
                 ["FadeMode"] = FadeMode.WhenUnFocused, ["FadePercent"] = .81f, ["GhostMode"] = false },
                 "Dim when unfocused"),
             new("Click-through", new() {
-                ["GhostMode"] = true, ["GhostOpacity"] = .13f, ["GhostRestoreDelay"] = 1.6f,
-                ["RestoreOpacityOnHover"] = true }, "Click-through while moving"),
+                ["GhostMode"] = true, ["GhostOpacity"] = .13f, ["GhostRestoreDelay"] = 1.6f }, "Click-through while moving"),
         ], Keep: ["FadeMode"]),
 
         new("frame-effects", "Appearance", "Frame effects", "Frame effects", "Frame and corner looks in one click.", [

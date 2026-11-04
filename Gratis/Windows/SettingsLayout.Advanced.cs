@@ -33,7 +33,7 @@ public sealed partial class SettingsLayout {
             "RadarColor", "RadarOutlineColor", "AreaColor", "AreaOutlineColor",
             // Chrome & motion
             "ChromeTitleMinAlpha", "ChromeControlsMinAlpha", "ChromeIdleDelay", "ChromeFadeDurationMs",
-            "GhostRestoreDelay", "RestoreOpacityOnHover", "ToolbarAnchor", "LocationAnchor", "CoordinateAnchor",
+            "GhostRestoreDelay", "ToolbarAnchor", "LocationAnchor", "CoordinateAnchor",
             "TravelCardAnchor", "SegmentedToolbar", "IconSize", "ToolbarFade", "TitleCorner", "TitleOffset",
             "TitleBelowToolbar", "TitleScale", "TitleSeparator", "TitleFont", "TitleBold", "TitleStacked",
             "TitleSecondaryAbove", "TitleSecondaryScale", "TitleLineSpacing", "TitleSecondaryColor", "TitleColor",

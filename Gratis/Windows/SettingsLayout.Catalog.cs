@@ -25,11 +25,15 @@ public sealed partial class SettingsLayout {
             string? choices = null, Func<SystemConfig, bool>? when = null, string? tip = null) {
             var isAdvanced = advanced.Contains(path);
             advancedSeen += isAdvanced ? 1 : 0;
-            entries.Add(new SettingsEntry(section, group, path, label, min, max, format, choices, visible, when, tip,
+            // The Centre on multi-select owns these flags, even during search or with advanced rows shown.
+            var rowVisible = path is "CenterOnFlag" or "CenterOnGathering" or "CenterOnQuest"
+                ? (Func<SystemConfig, bool>)(c => !c.IsGratis) : visible;
+            entries.Add(new SettingsEntry(section, group, path, label, min, max, format, choices, rowVisible, when, tip,
                 isAdvanced));
         }
         bool Gratis(SystemConfig c) => c.IsGratis;
-        bool Classic(SystemConfig c) => !c.IsGratis;
+        // Retired UI only: keep these bindings for saved profile/rendering values, never draw them.
+        bool Classic(SystemConfig c) => false;
         bool ConicRing(SystemConfig c) => c.IsGratis && !c.NeutralFrame && c.FramePreset == FramePreset.Hairline;
         bool FlatMarkers(SystemConfig c) => c.IsGratis && c.MarkerStyle == 1
             && c.Markers.IconStyle != MarkerIconStyle.Game;
@@ -130,7 +134,7 @@ public sealed partial class SettingsLayout {
         Add("FollowReturnIdleSeconds", "Return after idle for", .5f, 20, "%.1f s",
             when: c => c.IsGratis && c.FollowReturnToPlayer && c.FollowReturnTrigger == FollowReturnTrigger.AfterIdle);
         Add("FollowReturnEaseMs", "Return glide time", 0, 1500, "%.0f ms",
-            when: c => c.IsGratis && c.FollowReturnToPlayer && !c.ReduceMotion);
+            when: c => c.IsGratis && c.FollowReturnToPlayer && c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("LockCenterOnMap", "Lock map centre");
         Add("ZoomLocked", "Lock zoom");
         Group("Map", "Zoom");
@@ -149,6 +153,9 @@ public sealed partial class SettingsLayout {
         Add("QuestLogShowLocked", "Show quests you have not unlocked");
         Add("QuestLogOpenWithMap", "Open quest log with the map");
         Add("QuestLogPinned", "Keep quest log pinned");
+        Add("QuestLogKeepOpenOnShow", "Keep the Quest Log open after Show on map",
+            when: c => !c.QuestLogPinned);
+        Add("QuestLogRememberSearch", "Remember my search text");
         Add("QuestLogWidth", "Quest log panel width", 240, 440, "%.0f px");
         Group("Map", "Journal replacement", Gratis);
         Add("QuestLogReplaceJournal", "Use the Gratis Quest Log instead of the game's Journal");
@@ -243,7 +250,7 @@ public sealed partial class SettingsLayout {
         Group("Markers", "Gratis player", Gratis);
         Add("FlatPlayer", "Arrow and soft view cone");
         Add("PlayerArrowSmoothing", "Arrow smoothing", choices: "Off|Low|Medium|High",
-            tip: "Smooths how the arrow and cone turn. Off, or Reduce motion, turns them instantly.");
+            tip: "Smooths how the arrow and cone turn. Turning animations off turns them instantly.");
         Add("ArrowPoints", "Arrow points", choices: "Camera|Character",
             tip: "Whether your arrow follows the camera or your character. Uses the character if the camera is unavailable.");
         Add("PlayerInnerHighlight", "Arrow highlight", when: c => c.FlatPlayer && c.ShowPlayerIcon);
@@ -278,8 +285,6 @@ public sealed partial class SettingsLayout {
         Add("GhostOpacity", "Opacity while moving", .05f, 1, "%.2f", when: c => c.GhostMode);
         Add("GhostRestoreDelay", "Click-through delay after stopping", 0, 5, "%.1f s", when: c => c.GhostMode,
             tip: "How long clicks keep passing through after you stop. Hovering restores them at once.");
-        Add("RestoreOpacityOnHover", "Full opacity on hover",
-            tip: "Show the map at normal opacity while hovered. Click-through already does this.");
         Group("Chrome & motion", "Chrome layout", Gratis);
         Add("ChromeScale", "Control size", .8f, 1.6f, "%.2fx");
         const string anchors = "Top left|Top centre|Top right|Bottom left|Bottom centre|Bottom right";
@@ -352,26 +357,25 @@ public sealed partial class SettingsLayout {
         Add("InterfaceAnimations", "Animations", choices: "Full|Reduced|Off");
         Add("AnimationSpeed", "Animation speed", .5f, 1.5f, "%.2fx",
             when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
-        Add("ReduceMotion", "Reduce motion");
-        Add("Motion.Pings", "Flag, quest and FATE pings", when: c => !c.ReduceMotion);
-        Add("Motion.PingSeconds", "Ping duration", .3f, 1.5f, "%.2f s", when: c => !c.ReduceMotion && c.Motion.Pings);
-        Add("Motion.PlayerTrail", "Player trail", when: c => !c.ReduceMotion);
+        Add("Motion.Pings", "Flag, quest and FATE pings", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
+        Add("Motion.PingSeconds", "Ping duration", .3f, 1.5f, "%.2f s", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.Pings);
+        Add("Motion.PlayerTrail", "Player trail", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("Motion.TrailSeconds", "Trail duration", 0, 10, "%.1f s",
-            when: c => !c.ReduceMotion && c.Motion.PlayerTrail);
-        Add("Motion.TrailOpacity", "Trail opacity", .05f, .5f, when: c => !c.ReduceMotion && c.Motion.PlayerTrail);
-        Add("Motion.EaseFollow", "Ease player follow", when: c => !c.ReduceMotion);
-        Add("Motion.EaseZoom", "Ease wheel zoom", when: c => !c.ReduceMotion);
-        Add("Motion.PanInertia", "Drag pan inertia", when: c => !c.ReduceMotion);
+            when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.PlayerTrail);
+        Add("Motion.TrailOpacity", "Trail opacity", .05f, .5f, when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.PlayerTrail);
+        Add("Motion.EaseFollow", "Ease player follow", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
+        Add("Motion.EaseZoom", "Ease wheel zoom", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
+        Add("Motion.PanInertia", "Drag pan inertia", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("Motion.PanInertiaStrength", "Drag glide time", .1f, 1, "%.2f s",
-            when: c => !c.ReduceMotion && c.Motion.PanInertia,
+            when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.PanInertia,
             tip: "How long the glide lasts. Clicking or zooming stops it.");
         Add("Motion.SettleSeconds", "Pan and zoom smoothing", .05f, .3f, "%.2f s",
-            when: c => !c.ReduceMotion && (c.Motion.EaseFollow || c.Motion.EaseZoom));
-        Add("Motion.ZoneTransition", "Zone fade and slide", when: c => !c.ReduceMotion);
+            when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && (c.Motion.EaseFollow || c.Motion.EaseZoom));
+        Add("Motion.ZoneTransition", "Zone fade and slide", when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off);
         Add("Motion.ZoneSeconds", "Zone transition duration", .08f, .4f, "%.2f s",
-            when: c => !c.ReduceMotion && c.Motion.ZoneTransition);
+            when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.ZoneTransition);
         Add("Motion.ZoneSlidePixels", "Zone slide distance", 0, 16, "%.0f px",
-            when: c => !c.ReduceMotion && c.Motion.ZoneTransition);
+            when: c => c.InterfaceAnimations != InterfaceAnimationMode.Off && c.Motion.ZoneTransition);
         Group("Chrome & motion", "Map opacity");
         Add("FadeMode", "Fade map");
         Add("FadePercent", "Map opacity when faded", .05f, 1, when: c => (int)c.FadeMode != 0);

@@ -76,7 +76,7 @@ public sealed class ChromeVisibility {
         var duration = Finite(config.ChromeFadeDurationMs, 180, 0, 2000) / 1000;
         if (config.IsGratis) {
             duration /= Finite(config.AnimationSpeed, 1, .5f, 1.5f);
-            if (config.ReduceMotion || config.EffectiveInterfaceMotion == InterfaceAnimationMode.Off)
+            if ((config.InterfaceAnimations == InterfaceAnimationMode.Off) || config.EffectiveInterfaceMotion == InterfaceAnimationMode.Off)
                 duration = 0;
             else if (config.EffectiveInterfaceMotion == InterfaceAnimationMode.Reduced)
                 duration = MathF.Min(duration, .06f);

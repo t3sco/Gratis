@@ -124,7 +124,7 @@ public sealed class MarkerVisibility {
                 var target = Presentation(Resolve(states[i], Overrides[i], p != 0, peek));
                 values[index] = Vector2.Lerp(starts[index], targets[index],
                     (float)Math.Clamp((now - changed[index]) / .15, 0, 1));
-                if (!initialized || config.ReduceMotion)
+                if (!initialized || (config.InterfaceAnimations == InterfaceAnimationMode.Off))
                     values[index] = starts[index] = targets[index] = target;
                 else if (targets[index] != target) {
                     starts[index] = values[index];

@@ -20,6 +20,6 @@ public sealed partial class Spotlight {
     private float HideAmount => Math.Clamp(1 - (Age - HideSeconds) / HideEase, 0, 1);
 
     public float MarkerBreath(MarkerInfo marker) => Matches(marker) && Pulse
-        && !MapDrawContext.Current.Config.ReduceMotion
+        && !(MapDrawContext.Current.Config.InterfaceAnimations == InterfaceAnimationMode.Off)
         ? 1 + .055f * Opacity * MathF.Sin(Age * MathF.Tau / 1.6f) : 1;
 }

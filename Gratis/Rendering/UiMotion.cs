@@ -66,7 +66,7 @@ public static partial class UiMotion {
         var mode = PolicyConfig.EffectiveInterfaceMotion;
         if (mode == InterfaceAnimationMode.Off)
             return target;
-        var instant = mode == InterfaceAnimationMode.Off || PolicyConfig.ReduceMotion
+        var instant = mode == InterfaceAnimationMode.Off || (PolicyConfig.InterfaceAnimations == InterfaceAnimationMode.Off)
             || mode == InterfaceAnimationMode.Reduced && !opacity;
         if (mode == InterfaceAnimationMode.Reduced)
             seconds = MathF.Min(seconds, .06f);

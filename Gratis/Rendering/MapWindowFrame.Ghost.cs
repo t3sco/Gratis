@@ -45,7 +45,7 @@ public sealed partial class MapWindowFrame {
         var alpha = UiMotion.Visibility(ImGui.GetID("##ghost-coach"), host.Config.GhostMode && host.Now < hintUntil);
         if (alpha <= .001f)
             return;
-        const string text = "Ghost mode: hover the map to restore input";
+        const string text = "Hover the map to take control";
         var scale = GratisTheme.ChromeScale;
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale,
             ChromeFontRole.Chip)?.Push();

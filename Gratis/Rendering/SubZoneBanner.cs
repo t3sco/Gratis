@@ -39,7 +39,7 @@ public sealed class SubZoneBanner {
         var age = now - began;
         var speed = Math.Clamp(float.IsFinite(config.AnimationSpeed) ? config.AnimationSpeed : 1, .5f, 1.5f);
         var duration = InterfaceMotionTokens.Standard / speed;
-        var instant = config.ReduceMotion || config.EffectiveInterfaceMotion != InterfaceAnimationMode.Full;
+        var instant = (config.InterfaceAnimations == InterfaceAnimationMode.Off) || config.EffectiveInterfaceMotion != InterfaceAnimationMode.Full;
         Opacity = Text.Length == 0 || age >= Hold ? 0 : instant ? 1
             : InterfaceMotionTokens.Ease((float)Math.Clamp(age / duration, 0, 1), InterfaceCurve.Enter)
                 * (1 - InterfaceMotionTokens.Ease((float)Math.Clamp((age - (Hold - duration)) / duration, 0, 1),

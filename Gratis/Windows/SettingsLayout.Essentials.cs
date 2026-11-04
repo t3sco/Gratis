@@ -115,7 +115,7 @@ public sealed partial class SettingsLayout {
 #endif
             ImGui.PopID();
             if (clicked && i != current)
-                changed |= QuickSetupLooks.Apply(config, i) > 0;
+                changed |= LookUndo.Apply(config, i, ImGui.GetTime());
         }
         return changed;
     }

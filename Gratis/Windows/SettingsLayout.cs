@@ -49,7 +49,8 @@ public sealed partial class SettingsLayout {
                 tweak.Reset(config);
             return;
         }
-        var entries = Find(config, section, "");
+        var entries = Entries.Where(entry => entry.Section == section && (entry.Visible(config)
+            || entry.Path is "CenterOnFlag" or "CenterOnGathering" or "CenterOnQuest"));
         var defaults = new SystemConfig();
         foreach (var entry in entries)
             entry.Reset(config, defaults);
@@ -68,9 +69,10 @@ public sealed partial class SettingsLayout {
 
     public bool Draw(SystemConfig config, Func<string, string, bool>? drawExtension = null,
         Action<string>? resetExtension = null) {
+        var changed = LookUndo.Draw(config, ImGui.GetFontSize() / 18);
         if (config.IsGratis)
-            return DrawGratis(config, drawExtension, resetExtension);
-        return DrawClassic(config, drawExtension, resetExtension);
+            return DrawGratis(config, drawExtension, resetExtension) | changed;
+        return DrawClassic(config, drawExtension, resetExtension) | changed;
     }
 
     private bool DrawClassic(SystemConfig config, Func<string, string, bool>? drawExtension,

@@ -38,7 +38,7 @@ public sealed class MapMotion {
     private int firstFrame;
     private bool wasEnabled;
 
-    public static bool IsEnabled(MapDrawingConfig config) => config is { IsGratis: true, ReduceMotion: false };
+    public static bool IsEnabled(MapDrawingConfig config) => config is { IsGratis: true, InterfaceAnimations: not InterfaceAnimationMode.Off };
     public static bool Enabled => IsEnabled(MapDrawContext.Current.Config);
 
     public void BeginMap(uint id, double now) {

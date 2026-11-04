@@ -54,7 +54,7 @@ public sealed class GhostMode {
         var speed = Math.Clamp(float.IsFinite(config.AnimationSpeed) ? config.AnimationSpeed : 1, .5f, 1.5f);
         var duration = next > Opacity ? InterfaceMotionTokens.HoverEnter : InterfaceMotionTokens.HoverExit;
         Opacity = motion.Value(new(1), next, duration / speed,
-            instant: !enabled || config.ReduceMotion || config.EffectiveInterfaceMotion != InterfaceAnimationMode.Full,
+            instant: !enabled || (config.InterfaceAnimations == InterfaceAnimationMode.Off) || config.EffectiveInterfaceMotion != InterfaceAnimationMode.Full,
             initial: 1);
 
     }

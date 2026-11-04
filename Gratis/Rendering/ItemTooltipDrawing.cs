@@ -77,7 +77,10 @@ public sealed class ItemTooltipDrawing {
         using var font = MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push();
         var entries = ItemTooltipModel.MenuEntries(source?.CanLink == true, source?.CanSearch == true,
             source?.CanTryOn(reward.Id) == true);
-        var size = new Vector2(208, 24 + entries.Count * 36 + (entries.Count - 1) * 4) * s;
+        var widest = 0f;
+        foreach (var entry in entries)
+            widest = MathF.Max(widest, TextDrawing.Measure(entry).X);
+        var size = new Vector2(MathF.Max(widest + 60 * s, 132 * s), (24 + entries.Count * 36 + (entries.Count - 1) * 4) * s);
         var viewport = ImGui.GetWindowViewport();
         var min = Vector2.Clamp(menuAnchor, viewport.Pos,
             Vector2.Max(viewport.Pos, viewport.Pos + viewport.Size - size));

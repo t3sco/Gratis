@@ -103,7 +103,7 @@ public sealed class EdgePointers {
                 continue;
             obstacles.Add(new(point - half - new Vector2(4 * s), point + half + new Vector2(4 * s)));
             Drawn.Add((target, point, distance));
-            var pulse = host.Config.ReduceMotion ? 1 : .87f + .13f * MathF.Sin((float)host.Now * MathF.Tau / 1.8f);
+            var pulse = (host.Config.InterfaceAnimations == InterfaceAnimationMode.Off) ? 1 : .87f + .13f * MathF.Sin((float)host.Now * MathF.Tau / 1.8f);
             var alpha = Math.Clamp(outside / (20 * s), 0, 1) * pulse;
             var list = ImGui.GetWindowDrawList();
             MapWindowDrawing.DrawSurface(list, point - half, point + half, GratisTheme.Radius.Control * s, surfaceOpacity: alpha);

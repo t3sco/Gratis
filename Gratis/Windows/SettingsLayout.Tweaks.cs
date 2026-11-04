@@ -89,6 +89,12 @@ public sealed partial class SettingsLayout {
                         RecordTweakAction(tweak.Id + "/configure");
 #endif
                     }
+                    // Catalogue-owned settings are edited only at their Configure destination.
+                    if (Array.Exists(Entries, entry => entry.Path == tweak.ConfigPath)) {
+                        ImGui.EndTable();
+                        ImGui.PopID();
+                        continue;
+                    }
                     ImGui.TableNextColumn();
                     var value = tweak.Get(config);
 #if GRATIS_PREVIEW
@@ -105,8 +111,6 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
                     RecordTweakAction(tweak.Id + "/toggle");
 #endif
-                    if (ImGui.IsItemHovered())
-                        UiMotion.TooltipText($"Default: {(tweak.Default ? "on" : "off")}.", scale: SettingsTheme.Scale);
                     ImGui.TableNextColumn();
                     // Only a changed tweak has something to reset; the column keeps its width so the toggles stay put.
                     if (tweak.IsModified(config)) {
@@ -147,6 +151,8 @@ public sealed partial class SettingsLayout {
         SelectTab(home.Tab, home.Sub);
         // A locked tweak's row is never drawn outside a search, so it keeps its group search.
         Search = tweak.Locked ? group : "";
+        if (entry is { Advanced: true } && config is not null)
+            config.ShowAdvancedSettings = true;
     }
 
     private static string TweakEllipsis(string text, float width) {

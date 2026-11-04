@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Gratis.Data;
+using Gratis.Windows;
 
 namespace Gratis.Rendering;
 
@@ -31,8 +32,12 @@ public static class TweakCatalog {
     private static TweakDefinition[] Create() {
         var items = new List<TweakDefinition>();
         void Add(string id, string group, char icon, string name, string description, string path,
-            string? section = null, string? configureGroup = null, string? integration = null) =>
-            items.Add(new(id, group, icon, name, description, path, section, configureGroup, integration));
+            string? section = null, string? configureGroup = null, string? integration = null)
+        {
+            var owner = Array.Find(SettingsLayout.Entries, entry => entry.Path == path);
+            items.Add(new(id, group, icon, owner?.Label ?? name, description, path,
+                owner?.Section ?? section, owner?.Group ?? configureGroup, integration));
+        }
         Add("pvp-map-only", "Markers", GratisIcons.Flag, "PvP: show only what the game map shows",
             "Shows your party and alliance, not enemies or nearby players.", "PvpMapOnly",
             integration: "Always on. The game's own map still works in PvP.");
@@ -102,15 +107,11 @@ public static class TweakCatalog {
         Add("auto-hide", "Display", GratisIcons.Eye, "Auto-hide controls",
             "Fade the toolbar, location and coordinates when idle. Hover to bring them back.", "AutoHideChrome", section: "Chrome & motion",
             configureGroup: "Chrome visibility");
-        Add("hover-unfade", "Display", GratisIcons.Eye, "Full opacity on hover",
-            "Show the map at normal opacity while hovered.", "RestoreOpacityOnHover");
         Add("context-menu", "Display", GratisIcons.LayoutGrid, "Right-click menu", "Right-click the map for actions like setting a flag.",
             "GratisContextMenu");
         Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag pan inertia",
             "Let the map keep gliding a moment after you let go.", "Motion.PanInertia", section: "Chrome & motion",
             configureGroup: "Motion");
-        Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion",
-            "Skip animations and move things instantly.", "ReduceMotion");
         Add("interface-motion", "Display", GratisIcons.Sparkles, "Animations",
             "Smooth the toolbar, menus and list scrolling. Choose how much and how fast.", "InterfaceAnimations",
             section: "Chrome & motion", configureGroup: "Motion");

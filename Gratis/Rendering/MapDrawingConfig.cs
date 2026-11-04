@@ -42,6 +42,14 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public bool QuickFilterBar = true;
     public void ResetMarkers() => Markers = new MarkerSettings();
 
+    // Retired save fields: ReduceMotion=true migrates once to Animations Off; false keeps the selection.
+    // RestoreOpacityOnHover is ignored: only the click-through policy restores opacity on hover.
+    private void MigrateRetiredSettings() {
+        if (ReduceMotion)
+            InterfaceAnimations = InterfaceAnimationMode.Off;
+        ReduceMotion = false;
+    }
+
     public bool ReduceMotion = false;
     public MotionSettings Motion = new();
     public void ResetMotion() {
