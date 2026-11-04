@@ -13,7 +13,7 @@ namespace Gratis.Rendering;
 
 public sealed partial class PaletteOverlay {
     public Vector2 FirstCardCenter { get; private set; }
-    private const int ZonePageSize = 4;
+    private const int ZonePageSize = 10;
     internal const float NearbyCardHeight = 154, ExpansionCardHeight = 216;
     private readonly HashSet<uint> openZones = [];
     private readonly Dictionary<uint, int> zoneLimits = [];
@@ -106,25 +106,27 @@ public sealed partial class PaletteOverlay {
 
         if (expansion == null) {
             if (scope == 0) {
-                Section("Nearby", scale, GratisIcons.LocateFixed);
-                if (DrawNearby(config, scale, columns, width))
-                    return;
-                if (recent.Count > 0)
+                // Each block appears only when it has something in it, always in this order.
+                if (nearby.Any(found => found.HasValue)) {
+                    Section("Nearby", scale, GratisIcons.LocateFixed);
+                    if (DrawNearby(config, scale, columns, width))
+                        return;
+                }
+                if (recent.Count > 0 || recentQueries.Count > 0)
                     DrawRecent(config, scale);
             }
             Section("Explore the realms", scale, GratisIcons.Compass);
         }
         else {
-            if (ImGui.SmallButton("< All expansions")) {
+            if (DrawBackHeader(expansions.FirstOrDefault(e => e.Id == expansion)?.Name ?? "Places", scale)) {
                 BrowseExpansion(null);
                 return;
             }
-            Section(expansions.FirstOrDefault(e => e.Id == expansion)?.Name ?? "Places", scale, GratisIcons.Compass);
         }
 
         if (count == 0) {
-            EmptyState.Draw(source.Building ? "Charting the realm..." : scope == 3
-                ? "No tracked quests to browse." : "No charted places to browse.", EmptyFaces.PaletteBrowser);
+            EmptyState.Draw(source.Building ? "Loading places..." : scope == 3
+                ? "No quests to show." : "No places to show.", EmptyFaces.PaletteBrowser);
             return;
         }
         if (expansion != null) {
@@ -152,9 +154,8 @@ public sealed partial class PaletteOverlay {
                 using var entrance = UiMotion.Surface("##card-enter", position, IsOpen, i < 8 ? i * .02f : 0);
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
                 var subtitle = rowNames.Count(expansions[i].Places, scopes[scope]);
-                var zones = scope == 2 ? "" : rowNames.Count(expansions[i].Zones, PlaceKind.Zone);
                 DrawCard(cover, expansions[i].Name, "", ExpansionAccent(cover.Expansion), subtitle, position,
-                    cardSize, i == browserSelection, config, scale, expansionCard: true, trailing: zones);
+                    cardSize, i == browserSelection, config, scale, expansionCard: true);
             }
             ImGui.PopID();
             if (clicked) {
@@ -164,9 +165,27 @@ public sealed partial class PaletteOverlay {
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, (count + columns - 1) / columns * (cardSize.Y + gap)));
         ImGui.Dummy(Vector2.Zero);
+    }
 
-        if (scope == 0 && recent.Count == 0)
-            DrawRecent(config, scale);
+    // The expansion's heading is also the way back: an arrow, the name, and where it leads.
+    private bool DrawBackHeader(string name, float scale) {
+        var position = ImGui.GetCursorScreenPos();
+        var size = new Vector2(ImGui.GetContentRegionAvail().X, GratisTheme.ControlHeight * scale);
+        ImGui.PushID("browser-back");
+        var clicked = ChromeControls.Button("##back", size);
+        var list = ImGui.GetWindowDrawList();
+        ChromeControls.Feedback(list, position, position + size, scale: scale);
+        GratisIcons.Draw(list, position + new Vector2(18 * scale, size.Y / 2), GratisIcons.ArrowLeft,
+            GratisTheme.WarmAccent with { W = .75f }, 14 * scale);
+        float lineHeight;
+        using (MapDrawContext.Current.GetChromeFont(GratisTheme.TextSize * scale, ChromeFontRole.Body)?.Push())
+            lineHeight = ImGui.GetTextLineHeight();
+        list.PushClipRect(position, position + size, true);
+        PaletteRowDrawing.TextPair(list, position + new Vector2(40 * scale, (size.Y - lineHeight) / 2),
+            size.X - 52 * scale, name, "All expansions", scale, rowNames);
+        list.PopClipRect();
+        ImGui.PopID();
+        return clicked;
     }
 
     private void DrawBrowserZones(BrowserItem[] items, bool keyboardMoved, MapDrawingConfig config, float scale,
@@ -192,13 +211,13 @@ public sealed partial class PaletteOverlay {
                 i == browserSelection, ImGui.IsItemHovered(), scale);
             ChromeControls.Feedback(list, position, position + new Vector2(width, 42 * scale),
                 fill: false, scale: scale);
-            var label = item.More ? rowNames.Count(Math.Min(ZonePageSize, item.Zone.Places.Length
-                - zoneLimits.GetValueOrDefault(item.Zone.MapId, ZonePageSize)), scopes[scope]) : item.Zone.Name;
+            var label = item.More ? "Show " + Math.Min(ZonePageSize, item.Zone.Places.Length
+                - zoneLimits.GetValueOrDefault(item.Zone.MapId, ZonePageSize)) + " more" : item.Zone.Name;
             GratisIcons.Draw(list, position + new Vector2(16, 21) * scale,
                 !item.More && expanded ? GratisIcons.Minus : GratisIcons.Plus,
                 GratisTheme.Secondary, 12 * scale);
             PaletteRowDrawing.TextPair(list, position + new Vector2(32, 13) * scale, width - 44 * scale,
-                label, item.More ? "Show more" : rowNames.Count(item.Zone.Places.Length, scopes[scope]), scale, rowNames);
+                label, item.More ? "" : rowNames.Count(item.Zone.Places.Length, scopes[scope]), scale, rowNames);
             if (ImGui.IsItemHovered() && !keyboardMoved && ImGui.GetIO().MouseDelta.LengthSquared() > 0)
                 browserSelection = i;
             if (keyboardMoved && i == browserSelection)
@@ -257,9 +276,14 @@ public sealed partial class PaletteOverlay {
     private bool DrawNearby(MapDrawingConfig config, float scale, int columns, float width) {
         var start = ImGui.GetCursorScreenPos();
         var gap = GratisTheme.Gap * scale;
+        // A card with nothing to go to is not drawn; the others close up and share the row.
+        var shown = Enumerable.Range(0, NearbyCards.Length).Where(i => nearby[i].HasValue).ToArray();
+        columns = Math.Max(1, Math.Min(columns, shown.Length));
         var cardSize = new Vector2((width - (columns - 1) * gap) / columns, NearbyCardHeight * scale);
-        for (var i = 0; i < NearbyCards.Length; i++) {
-            var position = start + new Vector2(i % columns * (cardSize.X + gap), i / columns * (cardSize.Y + gap));
+        for (var slot = 0; slot < shown.Length; slot++) {
+            var i = shown[slot];
+            var position = start + new Vector2(slot % columns * (cardSize.X + gap),
+                slot / columns * (cardSize.Y + gap));
             ImGui.SetCursorScreenPos(position);
             ImGui.PushID("nearby-" + i);
             var clicked = ImGui.InvisibleButton("##card", cardSize);
@@ -270,29 +294,25 @@ public sealed partial class PaletteOverlay {
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
                 var text = found is { } result ? rowNames.Text(result, results) : default;
                 DrawCard(found?.Place, nearbyTitles[i] ?? found?.Place.Name ?? NearbyCards[i].Title,
-                    found.HasValue ? NearbyCards[i].Title : "", GratisTheme.Transport,
-                    found.HasValue ? text.Detail : "None in this zone", position, cardSize, hovered && found.HasValue, config, scale,
-                    trailing: found.HasValue ? text.Distance : "", iconId: NearbyCards[i].Icon, slide: false);
+                    NearbyCards[i].Title, GratisTheme.Transport, text.Detail, position, cardSize, hovered, config, scale,
+                    trailing: text.Distance, iconId: NearbyCards[i].Icon, slide: false);
             }
             ImGui.PopID();
-            // A card with nothing to go to does nothing: searching for it would only show an empty list.
             if (!clicked || found is not { } target)
                 continue;
             Activate(target.Place);
             return true;
         }
-        ImGui.SetCursorScreenPos(start + new Vector2(0, (NearbyCards.Length + columns - 1) / columns * (cardSize.Y + gap)));
+        ImGui.SetCursorScreenPos(start + new Vector2(0, (shown.Length + columns - 1) / columns * (cardSize.Y + gap)));
         ImGui.Dummy(Vector2.Zero);
         return false;
     }
 
     private void DrawRecent(MapDrawingConfig config, float scale) {
-        Section("Recently visited", scale, GratisIcons.Repeat);
         var visited = source.Entries.Where(p => recent.ContainsKey(p.Id)).OrderByDescending(p =>
             recent[p.Id]).Take(2).ToArray();
-        if (visited.Length == 0) {
-            EmptyState.Draw("Your next destination starts a new journey.", EmptyFaces.PaletteRecent, scale);
-        }
+        if (visited.Length > 0)
+            Section("Recently visited", scale, GratisIcons.Repeat);
         foreach (var place in visited)
             DrawQuickPlace(new(place, 0, source.Access(place),
                 place.MapId == context.MapId && context.Player is { } player && place.World is { } world
@@ -336,7 +356,7 @@ public sealed partial class PaletteOverlay {
         var list = ImGui.GetWindowDrawList();
         var max = min + size;
         if (place != null && (iconId == 0 || config.PaletteImagery && source.Image(place).Ready))
-            DrawArt(place, min, size, config, scale, GratisTheme.Radius.Card * scale);
+            DrawArt(place, min, size, config, scale, GratisTheme.Radius.Card * scale, !expansionCard);
         else {
             var top = ImGui.GetColorU32(accent with { X = accent.X * .25f, Y = accent.Y * .25f, Z = accent.Z * .25f });
             var bottom = ImGui.GetColorU32(Vector4.Lerp(GratisTheme.Surface with { W = 1 }, accent, .4f));
@@ -406,7 +426,8 @@ public sealed partial class PaletteOverlay {
         _ => GratisTheme.Transport,
     };
 
-    private void DrawArt(PlaceEntry place, Vector2 min, Vector2 size, MapDrawingConfig config, float scale, float radius) {
+    private void DrawArt(PlaceEntry place, Vector2 min, Vector2 size, MapDrawingConfig config, float scale, float radius,
+        bool kindIcon = true) {
         var list = ImGui.GetWindowDrawList();
         var image = config.PaletteImagery ? source.Image(place) : default;
         if (image.Ready) {
@@ -439,7 +460,8 @@ public sealed partial class PaletteOverlay {
                 list.PopClipRect();
             }
         }
-        DrawKindIcon(place, list, min + new Vector2(size.X - 18 * scale, 19 * scale), 15 * scale);
+        if (kindIcon)
+            DrawKindIcon(place, list, min + new Vector2(size.X - 18 * scale, 19 * scale), 15 * scale);
     }
 
     private static char KindIcon(PlaceEntry place) => place.Kind switch {

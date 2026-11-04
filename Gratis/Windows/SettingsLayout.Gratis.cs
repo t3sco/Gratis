@@ -28,6 +28,7 @@ public sealed partial class SettingsLayout {
         var compactNav = width < 640 * scale;
         var navWidth = (compactNav ? 44 : 168) * scale;
         var navStart = ImGui.GetCursorScreenPos();
+        var searchingNav = !string.IsNullOrWhiteSpace(Search);
 #if GRATIS_PREVIEW
         TestRows.Clear(); TestPresetChips.Clear(); TestPresetRows.Clear(); TestMultiRows.Clear(); TestMultiItems.Clear(); TestNavigation = new(navStart.X, navStart.Y, navStart.X + navWidth, navStart.Y + available.Y);
         TestSubTabs.Clear(); TestGroups.Clear(); TestShownTab = TestShownSubTab = -1; TestSearchResults = false;
@@ -43,8 +44,10 @@ public sealed partial class SettingsLayout {
             for (var index = 0; index < Tabs.Length; index++) {
                 if (index == ChangelogTab)
                     ImGui.Separator();
+                // A search spans every tab, so no nav item claims the page while one is typed.
+                var current = !searchingNav && SelectedTab == index;
                 var tab = new TabStrip(NavigationIds[index],
-                    compactNav ? TabFaces.SettingsCompact : TabFaces.Settings, navWidth, scale, SelectedTab == index);
+                    compactNav ? TabFaces.SettingsCompact : TabFaces.Settings, navWidth, scale, current);
                 if (tab.Clicked) {
                     SelectedTab = index;
                     Search = "";
@@ -52,7 +55,7 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
                 TestTabs[index] = new(tab.Min.X, tab.Min.Y, tab.Min.X + tab.Size.X, tab.Min.Y + tab.Size.Y);
 #endif
-                tab.Draw(Tabs[index], SelectedTab == index, TabIcons[index]);
+                tab.Draw(Tabs[index], current, TabIcons[index]);
             }
         }
         ImGui.EndChild();
@@ -119,8 +122,8 @@ public sealed partial class SettingsLayout {
                 continue;
             found = true;
             ImGui.PushID(section);
-            changed |= DrawPageHeader(config, SectionLabel(section), SectionHelper(section), scale, false,
-                "Reset section to defaults", out var reset);
+            changed |= DrawPageHeader(config, SectionLabel(section), scale, false,
+                $"Reset all of {SectionLabel(section)} to defaults", out var reset);
             if (reset) {
                 Reset(config, section);
                 resetExtension?.Invoke(section);
@@ -150,7 +153,7 @@ public sealed partial class SettingsLayout {
         var changed = false;
         var hasSubTabs = SubTabs[tab].Length > 0;
         ImGui.PushID(tab);
-        changed |= DrawPageHeader(config, Tabs[tab], TabHelpers[tab], scale, true,
+        changed |= DrawPageHeader(config, Tabs[tab], scale, true,
             hasSubTabs ? "Reset this page to defaults" : "Reset section to defaults", out var reset);
         var sub = EffectiveSubTab(tab);
         if (hasSubTabs) {
@@ -171,13 +174,19 @@ public sealed partial class SettingsLayout {
             DrawFiltersIntro(config, scale);
         if (tab == MapTab && sub == Sub.Markers && ExtensionMatches(config, "Markers", "") && drawExtension is not null)
             changed |= drawExtension("Marker options", "");
+        // Profiles and Quick setup are housekeeping for the whole plugin, so they close the Look page instead of
+        // opening it ahead of the look settings the page is named for.
         foreach (var section in TabSections[tab]) {
             foreach (var group in catalogue[section].Visible)
-                if (group.Tab == tab && group.Sub == sub)
+                if (group.Tab == tab && group.Sub == sub && !IsHousekeeping(tab, group))
                     changed |= DrawGroup(config, group, false, scale);
             if (tab == AdvancedTab && section == "Advanced")
                 changed |= DrawWindowGeometry(config, false, scale);
         }
+        foreach (var section in TabSections[tab])
+            foreach (var group in catalogue[section].Visible)
+                if (group.Tab == tab && group.Sub == sub && IsHousekeeping(tab, group))
+                    changed |= DrawGroup(config, group, false, scale);
         if (tab == MapTab && sub == Sub.View && ChromeControls.TextButton("Marker declutter settings", scale: scale))
             SelectTab(MapTab, Sub.Markers);
         if (tab == MapTab && sub == Sub.QuestTools && ExtensionMatches(config, "Modules / tools", "")
@@ -188,8 +197,13 @@ public sealed partial class SettingsLayout {
         return changed;
     }
 
-    /// <summary>The page title with its helper line; Show advanced and the page reset sit on the right.</summary>
-    private bool DrawPageHeader(SystemConfig config, string title, string helper, float scale, bool advancedToggle,
+    private static bool IsHousekeeping(int tab, EntryGroup group) =>
+        tab == AppearanceTab && group.Key is "Profiles" or "Quick setup";
+
+    private static readonly ArmedConfirm resetConfirm = new();
+
+    /// <summary>The page title; Show advanced and the page reset sit on the right. The nav item already says where you are.</summary>
+    private bool DrawPageHeader(SystemConfig config, string title, float scale, bool advancedToggle,
         string resetTip, out bool reset) {
         var changed = false;
         using (SettingsTheme.Font(14, ChromeFontRole.Title)) {
@@ -201,29 +215,22 @@ public sealed partial class SettingsLayout {
             changed |= DrawAdvancedToggle(config, resetX,
                 ImGui.GetItemRectMax().X - ImGui.GetWindowPos().X + ImGui.GetScrollX(), scale);
         ImGui.SameLine(resetX);
-        reset = ChromeControls.IconButton("##reset-section", GratisIcons.Repeat, resetTip, new Vector2(36) * scale, scale);
-        SettingsTheme.Helper(helper);
+        // Wiping a page cannot be undone, so the icon arms first: it turns into a tick and says what a second click does.
+        var resetKey = "reset:" + title;
+        var armed = resetConfirm.IsArmed(resetKey);
+        var resetClicked = ChromeControls.IconButton("##reset-section", armed ? GratisIcons.Check : GratisIcons.Repeat,
+            armed ? "Click again to confirm: " + resetTip : resetTip, new Vector2(36) * scale, scale);
+        reset = resetClicked && resetConfirm.Click(resetKey);
         return changed;
     }
 
-    /// <summary>Title and helper only: Essentials has no Show advanced switch and nothing to reset.</summary>
-    private static void DrawPageTitle(string title, string helper) {
+    /// <summary>Title only: Essentials has no Show advanced switch and nothing to reset.</summary>
+    private static void DrawPageTitle(string title) {
         using (SettingsTheme.Font(14, ChromeFontRole.Title)) {
             ImGui.AlignTextToFramePadding();
             ImGui.TextUnformatted(title);
         }
-        SettingsTheme.Helper(helper);
     }
-
-    private static string SectionHelper(string section) => section switch {
-        "Appearance" => "Make the map feel at home.",
-        "Map" => "Find your way around Eorzea.",
-        "Markers" => "Choose what stands out on your map.",
-        "Filters" => "Choose the icons in your filter drawer.",
-        "Chrome & motion" => "Keep the controls close and the map clear.",
-        "Modules / tools" => "Your map's companion tools.",
-        _ => "Window behaviour and diagnostics.",
-    };
 
     private static void DrawFiltersIntro(SystemConfig config, float scale) {
         if (ImGui.TreeNode("How filters work")) {
@@ -326,7 +333,9 @@ public sealed partial class SettingsLayout {
         var shown = config.ShowAdvancedSettings;
         ImGui.SameLine(resetX - 8 * scale - width);
         var changed = SettingsTheme.Toggle("##show-advanced", ref shown, labelled ? AdvancedLabel : null);
-        ChromeControls.Tooltip(AdvancedTip, scale: scale);
+        // With its label showing, the toggle explains itself; the tip is for when the label has dropped out.
+        if (!labelled)
+            ChromeControls.Tooltip(AdvancedTip, scale: scale);
 #if GRATIS_PREVIEW
         var min = ImGui.GetItemRectMin(); var max = ImGui.GetItemRectMax();
         TestAdvancedToggle = new(min.X, min.Y, max.X, max.Y);

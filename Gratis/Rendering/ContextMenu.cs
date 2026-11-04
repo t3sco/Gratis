@@ -14,7 +14,7 @@ public sealed partial class ContextMenu {
     private const string Popup = "##gratis-glass-context";
     private Vector2 anchor;
     private MarkerInfo? candidate;
-    private int candidateFrame = -1, selected;
+    private int candidateFrame = -1, selected = -1;
     private uint map;
     private bool swallowEscape;
     private readonly List<MenuRowCache> rowCache = [];
@@ -137,7 +137,7 @@ public sealed partial class ContextMenu {
             if (popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.DownArrow))
                 selected = (selected + 1) % current.Count;
             if (popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.UpArrow))
-                selected = (selected + current.Count - 1) % current.Count;
+                selected = selected < 0 ? current.Count - 1 : (selected + current.Count - 1) % current.Count;
             var enter = popup.Interactive && ImGui.IsKeyPressed(ImGuiKey.Enter, false);
             var navigating = popup.Interactive
                 && (ImGui.IsKeyPressed(ImGuiKey.UpArrow) || ImGui.IsKeyPressed(ImGuiKey.DownArrow));
@@ -166,25 +166,22 @@ public sealed partial class ContextMenu {
             ImGui.EndChild();
         }
         finally { ImGui.PopStyleColor(); ImGui.PopStyleVar(6); }
-        if (details.Length > 0) {
-            UiMotion.TooltipText(details);
-        }
     }
 
     private void Activate(ContextMenuItem item) {
         if (item.Children is { } children) {
-            var sub = new List<ContextMenuItem> { new("Back", GratisIcons.ArrowUp,
-                () => { current = items; selected = 0; }) };
+            var sub = new List<ContextMenuItem> { new("Back", GratisIcons.ArrowLeft,
+                () => { current = items; selected = -1; }, KeepOpen: true) };
             sub.AddRange(children);
             current = sub;
-            selected = 0;
+            selected = -1;
             return;
         }
         if (item.Invoke == null)
             return;
         LastAction = item.Label;
         item.Invoke();
-        if (item.Label is not ("Show hover details" or "Back"))
+        if (!item.KeepOpen)
             Close();
     }
 

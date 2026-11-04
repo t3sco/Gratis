@@ -131,11 +131,6 @@ public unsafe partial class IntegrationsController : IDisposable {
                 Service.Log.Debug($"[OpenMap] Ignoring MapType: {mapInfo->Type}");
                 break;
         }
-
-        if (System.SystemConfig.AutoZoom && !System.MapRenderer.Frame.Spotlight.OwnsViewport) {
-            MapRenderer.MapRenderer.Scale = DrawHelpers.GetMapScaleFactor()
-                * System.SystemConfig.AutoZoomScaleFactor;
-        }
     }, Service.Log, "Exception during OpenMap");
 
     public void OpenMap(uint mapId) {

@@ -59,7 +59,7 @@ public sealed partial class QuestLogPanel {
 
     private void DrawDetail(IMapWindowHost host, float s, ImDrawListPtr parent) {
         detailKeyboard = false;
-        DetailMapBounds = DetailCloseBounds = Vector4.Zero;
+        DetailMapBounds = DetailCloseBounds = DetailAbandonBounds = Vector4.Zero;
         detailOpacity = detailQuest == null ? 0
             : UiMotion.Visibility(ImGui.GetID("##quest-detail-visibility-" + motionEpoch), IsOpen && DetailOpen);
         if (detailQuest == null || detailOpacity <= .001f)

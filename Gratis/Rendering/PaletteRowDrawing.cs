@@ -9,7 +9,8 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public static class PaletteRowDrawing {
-    internal static void TextPair(ImDrawListPtr list, Vector2 min, float width, string primary, string trailing,
+    // Returns true when the primary text had to be cut short to fit.
+    internal static bool TextPair(ImDrawListPtr list, Vector2 min, float width, string primary, string trailing,
         float scale, PaletteRowNames labels, bool secondary = false, bool keepTrailing = false) {
         var context = MapDrawContext.Current;
         width = MathF.Max(0, width);
@@ -23,9 +24,13 @@ public static class PaletteRowDrawing {
                     ImGui.GetColorU32(GratisTheme.Secondary), trailing);
         }
         using (context.GetChromeFont((secondary ? GratisTheme.SmallTextSize : GratisTheme.TextSize) * scale,
-            ChromeFontRole.Body)?.Push())
+            ChromeFontRole.Body)?.Push()) {
+            var shown = labels.Fit(primary, MathF.Max(0, width - (trailingWidth > 0 ? trailingWidth + 12 * scale : 0)),
+                secondary);
             TextDrawing.Draw(list, min, ImGui.GetColorU32(secondary ? GratisTheme.Secondary : GratisTheme.Primary),
-                labels.Fit(primary, MathF.Max(0, width - (trailingWidth > 0 ? trailingWidth + 12 * scale : 0)), secondary));
+                shown);
+            return shown != primary;
+        }
     }
 
     public static void Background(ImDrawListPtr list, Vector2 min, Vector2 size, Vector4 accent,

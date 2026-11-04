@@ -75,7 +75,8 @@ public static partial class DrawHelpers {
                         var label = FlatMarkerDrawing.Label(marker);
                         var secondary = marker.SecondaryText?.Invoke();
                         body = PlayerDrawing.IsPlayerMarker(marker) ? secondary ?? ""
-                            : string.IsNullOrWhiteSpace(secondary) ? label : $"{label}\n{secondary}";
+                            : string.IsNullOrWhiteSpace(secondary) ? label
+                            : NamesCategory(secondary, label) ? secondary : $"{label}\n{secondary}";
                         hoverTextKey = cacheKey;
                         hoverTextAt = now;
                         hoverTextTitle = title;
@@ -114,5 +115,13 @@ public static partial class DrawHelpers {
                 ImGui.EndTooltip();
             }
         }
+    }
+
+    // The generic category line ("Quest / objective") is dropped when the detail text already says it.
+    private static bool NamesCategory(string secondary, string label) {
+        foreach (var part in label.Split(" / "))
+            if (secondary.Contains(part, global::System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
     }
 }

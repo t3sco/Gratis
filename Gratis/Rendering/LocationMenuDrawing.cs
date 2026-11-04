@@ -61,7 +61,8 @@ public static class LocationMenuDrawing {
             ImGui.SetNextFrameWantCaptureKeyboard(true);
     }
 
-    public static void Draw(Vector4 card, string fullText, string overline = "", string detail = "") {
+    public static void Draw(Vector4 card, string fullText, string overline = "", string detail = "",
+        bool textCut = true) {
         var current = MapDrawContext.Current;
         if (!ReferenceEquals(context, current)) {
             context = current;
@@ -78,7 +79,7 @@ public static class LocationMenuDrawing {
         if (!current.Config.IsGratis || current.IsPvP || current.LocationMenu is not { } source) {
             open = false;
             ImGui.Dummy(new(card.Z - card.X, card.W - card.Y));
-            if (ImGui.IsItemHovered())
+            if (textCut && ImGui.IsItemHovered())
                 UiMotion.TooltipText(fullText);
             return;
         }
@@ -106,9 +107,10 @@ public static class LocationMenuDrawing {
         var clicked = ChromeControls.Button("##location-card", new(card.Z - card.X, card.W - card.Y));
         ChromeControls.Feedback(ImGui.GetWindowDrawList(), new(card.X, card.Y), new(card.Z, card.W), IsOpen,
             radius: GratisTheme.Radius.Card * GratisTheme.ChromeScale);
-        if (!open)
+        // The card already shows the place, its region and its area, so the tooltip appears only when one is cut off.
+        if (!open && textCut)
             ChromeControls.Tooltip(fullText, meta: string.Join("\n",
-                new[] { overline, detail, "Browse this region" }.Where(line => line.Length > 0)));
+                new[] { overline, detail }.Where(line => line.Length > 0)));
         if (clicked && !open) {
             query = searched = "";
             revision = -1;

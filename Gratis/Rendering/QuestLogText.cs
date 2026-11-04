@@ -6,13 +6,10 @@ using System.Linq;
 namespace Gratis.Rendering;
 
 public static class QuestLogText {
-    public const string NearbySubtitle = "Quests available nearby";
     public const string Available = "Available";
     public static string TabLabel(QuestLogTab tab) => tab == QuestLogTab.Unaccepted ? Available : tab.ToString();
-    private static readonly string[] captions = [.. Enum.GetValues<QuestLogTab>()
-        .Select(t => t == QuestLogTab.Accepted ? "In progress" : TabLabel(t) + " quests")];
-    public static string Caption(QuestLogTab tab) => captions[(int)tab];
-    public static string EmptyTab(QuestLogTab tab) => $"No {TabLabel(tab).ToLowerInvariant()} quests.";
+    public static string EmptyTab(QuestLogTab tab) => tab == QuestLogTab.Unaccepted
+        ? "Nothing available nearby." : $"No {TabLabel(tab).ToLowerInvariant()} quests.";
 
     // Expansion access is not a quest prerequisite worth showing; only entries that exactly equal an expansion name go.
     public static string FilterPrerequisites(string prerequisites) {

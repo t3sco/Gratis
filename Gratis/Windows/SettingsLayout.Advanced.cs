@@ -20,8 +20,8 @@ public sealed partial class SettingsLayout {
             "MapGlowColor", "MapGlowSize", "MapGlowPulse", "MapGlowSpeed", "MapVignette",
             // Map
             "TravelConfirmGil", "RememberMapLens", "FollowReturnIdleSeconds", "FollowReturnEaseMs",
-            "LockCenterOnMap", "ZoomLocked", "UseLinearZoom", "ZoomSpeed", "AutoZoomScaleFactor", "PaletteImagery",
-            "PaletteMaxResults", "QuestLogWidth", "OnlyIfViewingCurrentZone", "SwitchInDuties", "EdgePointerMax",
+            "LockCenterOnMap", "ZoomLocked", "UseLinearZoom", "ZoomSpeed", "PaletteImagery",
+            "PaletteMaxResults", "QuestLogWidth", "SwitchInDuties", "EdgePointerMax",
             "EdgePointerDistance", "ScaleTextWithZoom", "HideOverlappingLabels", "SpotlightDim", "SpotlightPulse",
             "SpotlightSeconds",
             // Filters
@@ -46,7 +46,6 @@ public sealed partial class SettingsLayout {
             "Motion.ZoneSeconds", "Motion.ZoneSlidePixels",
             // Advanced
             "ClassicMoveHandle", "HideWindowFrame", "HideWindowBackground", "BlurBackground", "BlurStrength", "DebugMode",
-            "TextPixelSnap", "TextOversampleH",
         ];
         return [.. advanced, .. Enum.GetValues<MarkerGroup>().Select(group => "Filters." + group)];
     }

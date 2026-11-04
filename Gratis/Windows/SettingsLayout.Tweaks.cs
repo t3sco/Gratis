@@ -14,7 +14,6 @@ namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout {
     public bool ModifiedTweaksOnly;
-    private static readonly string TweakCountLabel = $"{TweakCatalog.All.Count} small quality-of-life tweaks";
     private (int Shown, int Modified) tweakSummaryKey = (-1, -1);
     private string tweakSummary = "";
 #if GRATIS_PREVIEW
@@ -30,7 +29,6 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
         TestTweakActions.Clear();
 #endif
-        ImGui.TextUnformatted(TweakCountLabel);
         var modified = ModifiedTweaksOnly;
         if (SettingsTheme.Toggle("##modified-tweaks", ref modified, "Modified only"))
             ModifiedTweaksOnly = modified;
@@ -45,7 +43,7 @@ public sealed partial class SettingsLayout {
                 modifiedCount++;
         if (tweakSummaryKey != (results.Length, modifiedCount)) {
             tweakSummaryKey = (results.Length, modifiedCount);
-            tweakSummary = $"{results.Length} shown / {modifiedCount} modified";
+            tweakSummary = $"{results.Length} tweaks, {modifiedCount} modified";
         }
         ImGui.TextDisabled(tweakSummary);
         if (results.Length == 0)
@@ -67,21 +65,25 @@ public sealed partial class SettingsLayout {
                     var list = ImGui.GetWindowDrawList();
                     GratisIcons.Draw(list, pos + new Vector2(8, 10) * s, tweak.Icon, GratisTheme.Secondary, 14 * s);
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 24 * s);
-                    ImGui.TextUnformatted(TweakEllipsis(tweak.Name, width - 24 * s));
-                    if (ImGui.IsItemHovered())
+                    // A line only gets a tooltip when it was cut short; otherwise the screen already shows it all.
+                    var shownName = TweakEllipsis(tweak.Name, width - 24 * s);
+                    ImGui.TextUnformatted(shownName);
+                    if (shownName != tweak.Name && ImGui.IsItemHovered())
                         UiMotion.TooltipText(tweak.Name, scale: SettingsTheme.Scale);
                     using (SettingsTheme.Font(12)) {
-                        ImGui.TextColored(GratisTheme.Secondary, TweakEllipsis(tweak.Description, width));
-                        if (ImGui.IsItemHovered())
+                        var shownDescription = TweakEllipsis(tweak.Description, width);
+                        ImGui.TextColored(GratisTheme.Secondary, shownDescription);
+                        if (shownDescription != tweak.Description && ImGui.IsItemHovered())
                             UiMotion.TooltipText(tweak.Description, scale: SettingsTheme.Scale);
                         if (tweak.IntegrationNote is { } note) {
-                            ImGui.TextColored(GratisTheme.Secondary, TweakEllipsis(note, width));
-                            if (ImGui.IsItemHovered())
+                            var shownNote = TweakEllipsis(note, width);
+                            ImGui.TextColored(GratisTheme.Secondary, shownNote);
+                            if (shownNote != note && ImGui.IsItemHovered())
                                 UiMotion.TooltipText(note, scale: SettingsTheme.Scale);
                         }
                     }
                     if (tweak.ConfigureSection is not null) {
-                        if (ImGui.SmallButton("Configure  >"))
+                        if (ChromeControls.TextButton("Configure  >", scale: config.IsGratis ? s : null))
                             ConfigureTweak(tweak, config);
 #if GRATIS_PREVIEW
                         RecordTweakAction(tweak.Id + "/configure");
@@ -104,18 +106,21 @@ public sealed partial class SettingsLayout {
                     RecordTweakAction(tweak.Id + "/toggle");
 #endif
                     if (ImGui.IsItemHovered())
-                        UiMotion.TooltipText($"{tweak.Name}. Default: {(tweak.Default ? "on" : "off")}.", scale: SettingsTheme.Scale);
+                        UiMotion.TooltipText($"Default: {(tweak.Default ? "on" : "off")}.", scale: SettingsTheme.Scale);
                     ImGui.TableNextColumn();
-                    ImGui.BeginDisabled(!tweak.IsModified(config));
-                    if (ChromeControls.IconButton("##reset", GratisIcons.Repeat, "Reset " + tweak.Name,
-                        new Vector2(36) * s, s)) {
-                        tweak.Reset(config);
-                        changed = true;
+                    // Only a changed tweak has something to reset; the column keeps its width so the toggles stay put.
+                    if (tweak.IsModified(config)) {
+                        if (ChromeControls.IconButton("##reset", GratisIcons.Repeat, "Reset " + tweak.Name,
+                            new Vector2(36) * s, s)) {
+                            tweak.Reset(config);
+                            changed = true;
+                        }
                     }
+                    else
+                        ImGui.Dummy(new Vector2(36) * s);
 #if GRATIS_PREVIEW
                     RecordTweakAction(tweak.Id + "/reset");
 #endif
-                    ImGui.EndDisabled();
                     ImGui.EndTable();
                 }
                 ImGui.PopID();

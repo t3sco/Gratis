@@ -34,23 +34,23 @@ public static class TweakCatalog {
             string? section = null, string? configureGroup = null, string? integration = null) =>
             items.Add(new(id, group, icon, name, description, path, section, configureGroup, integration));
         Add("pvp-map-only", "Markers", GratisIcons.Flag, "PvP: show only what the game map shows",
-            "Always on. Shows your party and alliance, not enemies or nearby players.", "PvpMapOnly",
+            "Shows your party and alliance, not enemies or nearby players.", "PvpMapOnly",
             integration: "Always on. The game's own map still works in PvP.");
-        Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival",
+        Add("flag-arrival", "Navigation", GratisIcons.Flag, "Flag arrival notification",
             "Show a quiet notification when you reach your flag.", "FlagArrival", section: "Chrome & motion",
             configureGroup: "Arrival notices");
         Add("map-memory", "Navigation", GratisIcons.BookOpen, "Remember map views",
             "Reopen each map at the zoom and position you left it.", "RememberMapView", section: "Map", configureGroup: "Viewport");
-        Add("zone-switch", "Navigation", GratisIcons.Compass, "Automatic zone switch",
+        Add("zone-switch", "Navigation", GratisIcons.Compass, "Switch map when changing zone",
             "Switch to your new zone's map, unless you opened a different map yourself.", "AutoSwitchOnZoneChange",
             section: "Map", configureGroup: "Zone changes");
         Add("measure", "Navigation", GratisIcons.Crosshair, "Measure tool",
             "Ctrl-drag to measure a straight distance in yalms.", "MeasureTool");
-        Add("spotlight", "Navigation", GratisIcons.LocateFixed, "Quest spotlight",
+        Add("spotlight", "Navigation", GratisIcons.LocateFixed, "Highlight quest targets",
             "Briefly highlight the quest target when you open a quest's map link.", "QuestSpotlight", section: "Map",
             configureGroup: "Spotlight");
-        Add("follow-return", "Navigation", GratisIcons.Repeat, "Follow return",
-            "Go back to following you after you drag the map.", "FollowReturnToPlayer", section: "Map",
+        Add("follow-return", "Navigation", GratisIcons.Repeat, "Return to player after dragging",
+            "Start following you again after you drag the map.", "FollowReturnToPlayer", section: "Map",
             configureGroup: "Viewport");
         Add("frame-scale", "Navigation", GratisIcons.LayoutGrid, "Zoom with window size",
             "Keep what you see the same when you resize the map window.", "ScaleWithFrame");
@@ -66,9 +66,9 @@ public static class TweakCatalog {
         Add("edge-pointers", "Markers", GratisIcons.Compass, "Arrows to off-screen targets",
             "Point toward important targets outside the visible map.", "EdgePointers", section: "Map",
             configureGroup: "Edge pointers");
-        Add("attunement", "Markers", GratisIcons.Landmark, "Unattuned aetheryte styling",
+        Add("attunement", "Markers", GratisIcons.Landmark, "Style unattuned map markers",
             "Dim aetherytes you have not attuned to, without hiding them.", "AetheryteAttunementStyle");
-        Add("pins", "Markers", GratisIcons.MapPin, "Pins and notes",
+        Add("pins", "Markers", GratisIcons.MapPin, "User pins",
             "Add personal map pins with notes and share codes.", "Pins", section: "Markers",
             configureGroup: "Pins and notes");
         Add("marker-tooltips", "Markers", GratisIcons.Info, "Extra marker tooltips",
@@ -79,7 +79,7 @@ public static class TweakCatalog {
         Add("aetheryte-chips", "Travel", GratisIcons.Landmark, "Nearest aetheryte buttons",
             "Offer the nearest attuned aetheryte for distant targets.", "AetheryteChips", section: "Map",
             configureGroup: "Travel");
-        Add("travel-actions", "Travel", GratisIcons.Compass, "Teleport actions",
+        Add("travel-actions", "Travel", GratisIcons.Compass, "Travel actions",
             "Offer teleport buttons for quests and objectives.", "TravelActions", section: "Map",
             configureGroup: "Travel", integration: "Uses the game's Teleport. Aethernet needs Lifestream.");
         Add("fate-flag", "Travel", GratisIcons.Flag, "Flag FATE clicks",
@@ -87,12 +87,12 @@ public static class TweakCatalog {
         Add("ghost", "Window", GratisIcons.EyeOff, "Click-through while moving",
             "Fade the map and let clicks reach the game while you move.", "GhostMode", section: "Chrome & motion",
             configureGroup: "Chrome visibility");
-        Add("move-handle", "Window", GratisIcons.Anchor, "Move handle",
+        Add("move-handle", "Window", GratisIcons.Anchor, "Top-edge move handle",
             "Drag the thin bar at the top edge to move the window.", "MoveHandle", section: "Advanced",
             configureGroup: "Window behaviour");
         Add("alt-drag", "Window", GratisIcons.Unlock, "Alt-drag move", "Hold Alt and drag to move the map window.",
             "AltDragMovesWindow");
-        Add("move-snap", "Window", GratisIcons.LayoutGrid, "Window snapping",
+        Add("move-snap", "Window", GratisIcons.LayoutGrid, "Snap window while moving",
             "Double-click the move handle to snap or restore. Hold Shift to align to screen edges.", "MoveHandleSnap", section: "Advanced",
             configureGroup: "Window behaviour");
         Add("keep-open", "Window", GratisIcons.Lock, "Keep map open", "Keep the map open after you close the game's map.",
@@ -106,7 +106,7 @@ public static class TweakCatalog {
             "Show the map at normal opacity while hovered.", "RestoreOpacityOnHover");
         Add("context-menu", "Display", GratisIcons.LayoutGrid, "Right-click menu", "Right-click the map for actions like setting a flag.",
             "GratisContextMenu");
-        Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag glide",
+        Add("drag-inertia", "Display", GratisIcons.Footprints, "Drag pan inertia",
             "Let the map keep gliding a moment after you let go.", "Motion.PanInertia", section: "Chrome & motion",
             configureGroup: "Motion");
         Add("reduce-motion", "Display", GratisIcons.Shield, "Reduce motion",
@@ -120,10 +120,10 @@ public static class TweakCatalog {
         Add("coordinates-card", "Display", GratisIcons.Crosshair, "Player and cursor coordinates",
             "Show your position and the cursor position together in a small card.", "ShowCoordinateBar",
             section: "Chrome & motion", configureGroup: "coordinates");
-        Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzea time",
+        Add("eorzea-time", "Time and info", GratisIcons.Compass, "Eorzean time in coordinates",
             "Show Eorzea time beside the map coordinates.", "ShowEorzeaTime", section: "Chrome & motion",
             configureGroup: "coordinates");
-        Add("sub-zone", "Time and info", GratisIcons.MapPin, "Sub-zone banner",
+        Add("sub-zone", "Time and info", GratisIcons.MapPin, "Sub-zone arrival banner",
             "Briefly announce the area you have just entered.", "SubZoneBanner");
         Add("mute-map-sound", "Time and info", GratisIcons.Bell, "Mute the game's map sound",
             "Silence the sound the game plays when the map opens.", "SuppressNativeMapOpenSound");

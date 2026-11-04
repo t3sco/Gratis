@@ -236,7 +236,7 @@ public sealed partial class QuestLogPanel {
             ChromeControls.Feedback(parent, min, min + size, IsOpen, radius: GratisTheme.Radius.Card * s);
             GratisIcons.Draw(parent, min + size / 2, GratisIcons.BookOpen,
                 IsOpen ? GratisTheme.WarmAccent : GratisTheme.Secondary, GratisTheme.IconSize * s);
-            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Quest Log\nPinned open" : "Quest Log");
+            ChromeControls.Tooltip("Quest Log");
             min = new(Layout.Pin.X, Layout.Pin.Y);
             MapWindowDrawing.DrawSurface(parent, min, min + size, GratisTheme.Radius.Card * s);
             ImGui.SetCursorScreenPos(min);
@@ -249,7 +249,7 @@ public sealed partial class QuestLogPanel {
                 radius: GratisTheme.Radius.Card * s);
             GratisIcons.Draw(parent, min + size / 2, GratisIcons.Pin,
                 host.Config.QuestLogPinned ? GratisTheme.WarmAccent : GratisTheme.Secondary, GratisTheme.IconSize * s);
-            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Unpin Quest Log" : "Pin Quest Log open");
+            ChromeControls.Tooltip(host.Config.QuestLogPinned ? "Unpin" : "Pin open");
         }
         Opacity = UiMotion.Visibility(ImGui.GetID("##quest-log-visibility-" + motionEpoch), IsOpen);
         DrawDetail(host, s, parent);
@@ -311,12 +311,15 @@ public sealed partial class QuestLogPanel {
         SearchToggleBounds = ItemBounds();
         ChromeControls.Feedback(list, searchButtonStart, searchButtonStart + new Vector2(30 * s), searchOpen);
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 30 * s), 0));
-        var close = ChromeControls.IconButton("##quest-log-close", GratisIcons.X,
-            context.Config.QuestLogPinned ? "Unpin to close Quest Log" : "Close Quest Log", new(30 * s));
-        CloseBounds = ItemBounds();
-        if (close && !context.Config.QuestLogPinned) {
-            CloseLog();
-            gesture = ImGui.IsAnyMouseDown();
+        // A pinned log can only be closed by unpinning, so the X is not drawn rather than drawn dead.
+        CloseBounds = Vector4.Zero;
+        if (!context.Config.QuestLogPinned) {
+            var close = ChromeControls.IconButton("##quest-log-close", GratisIcons.X, "", new(30 * s));
+            CloseBounds = ItemBounds();
+            if (close) {
+                CloseLog();
+                gesture = ImGui.IsAnyMouseDown();
+            }
         }
         ImGui.SetCursorScreenPos(start + new Vector2(0, 38 * s));
         if (ImGui.GetContentRegionAvail().Y < 56 * s) {
@@ -349,18 +352,6 @@ public sealed partial class QuestLogPanel {
         }
         presentation.Filter(query, Tab, context.Config.QuestLogShowLocked);
         filtered = presentation.Filtered;
-        if (!shortPanel) {
-            using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Chip)?.Push()) {
-                var count = captionCount.Count(filtered.Length);
-                var captionStart = ImGui.GetCursorScreenPos();
-                TextDrawing.Draw(list, captionStart, ImGui.GetColorU32(GratisTheme.Secondary), QuestLogText.Caption(Tab));
-                TextDrawing.Draw(list, captionStart + new Vector2(width - TextDrawing.Measure(count).X, 0),
-                    ImGui.GetColorU32(GratisTheme.Primary), count);
-                ImGui.Dummy(new(width, ImGui.GetTextLineHeight()));
-            }
-        }
-        if (Tab == QuestLogTab.Unaccepted)
-            EmptyState.Draw(QuestLogText.NearbySubtitle, EmptyFaces.QuestHelper);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryLoading)
             EmptyState.Draw("Checking completion history...", EmptyFaces.QuestHelper);
         if (Tab == QuestLogTab.Completed && snapshot.HistoryCapped || Tab == QuestLogTab.Unaccepted && snapshot.UnacceptedCapped)
@@ -461,11 +452,9 @@ public sealed partial class QuestLogPanel {
         ImGui.Dummy(new(width, 42 * s));
         ProgressBounds = ItemBounds();
         if (ImGui.IsItemHovered())
-            UiMotion.TooltipText($"{progress.Name}: {progress.Completed}/{progress.Total} catalogued MSQ quests completed."
-                + "\nIncludes base story and patches; alternate starting paths count separately.");
+            UiMotion.TooltipText($"{progress.Completed}/{progress.Total}. Includes patches; alternate starts count separately.");
     }
 
-    private readonly SectionHeaderCache captionCount = new();
     private readonly Dictionary<QuestBucket, SectionHeaderCache> sectionHeaders = [];
 
     private void DrawSection(QuestBucket bucket, QuestLogQuest[] quests, float top, float s) {
@@ -570,17 +559,24 @@ public sealed partial class QuestLogPanel {
                 PaletteRowDrawing.Pill(list, start + new Vector2(width - levelWidth - 8 * s, 8 * s),
                     level, muted, s);
             }
-            TextDrawing.Draw(list, text, ImGui.GetColorU32(GratisTheme.Primary),
-                ChromeControls.FitLabel(quest.Name, MathF.Max(1, textWidth - levelWidth - 8 * s)));
+            var shownName = ChromeControls.FitLabel(quest.Name, MathF.Max(1, textWidth - levelWidth - 8 * s));
+            var rowCut = shownName != quest.Name;
+            TextDrawing.Draw(list, text, ImGui.GetColorU32(GratisTheme.Primary), shownName);
             using (context.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
                 var dutyWidth = quest.Duty.Length > 0 ? TextDrawing.Measure("Duty").X + 12 * s : 0;
                 var progress = Tab == QuestLogTab.Unaccepted ? "" : quest.ObjectiveProgress;
                 var progressWidth = progress.Length > 0 ? TextDrawing.Measure(progress).X : 0;
                 var dutyInset = dutyWidth > 0 ? dutyWidth + 8 * s : 0;
-                var objective = Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : quest.Objective.Length > 0 ? quest.Objective
+                // Available rows show where the quest starts and Completed rows have nothing left to do, so neither
+                // repeats a constant status on every row.
+                var objective = Tab == QuestLogTab.Unaccepted ? QuestLogTitleCase.Of(quest.StartNpc)
+                    : Tab == QuestLogTab.Completed ? ""
+                    : quest.Objective.Length > 0 ? quest.Objective
                     : quest.Targets.Count == 0 ? "No map destination" : "Objective unavailable";
-                TextDrawing.Draw(list, text + new Vector2(0, 20 * s), ImGui.GetColorU32(muted),
-                    ChromeControls.FitLabel(objective, MathF.Max(1, textWidth - dutyInset - (progressWidth > 0 ? progressWidth + 8 * s : 0))));
+                var shownObjective = ChromeControls.FitLabel(objective,
+                    MathF.Max(1, textWidth - dutyInset - (progressWidth > 0 ? progressWidth + 8 * s : 0)));
+                rowCut |= shownObjective != objective;
+                TextDrawing.Draw(list, text + new Vector2(0, 20 * s), ImGui.GetColorU32(muted), shownObjective);
                 if (progressWidth > 0)
                     TextDrawing.Draw(list, text + new Vector2(textWidth - progressWidth - dutyInset, 20 * s),
                         ImGui.GetColorU32(GratisTheme.Primary), progress);
@@ -588,7 +584,8 @@ public sealed partial class QuestLogPanel {
                     PaletteRowDrawing.Pill(list, start + new Vector2(width - dutyWidth - 8 * s, 28 * s),
                         "Duty", GratisTheme.Crystal, s);
             }
-            if (hovered)
+            // The row already shows its name and objective, so the tooltip appears only when one of them is cut off.
+            if (hovered && rowCut)
                 ChromeControls.Tooltip(quest.Name + (quest.Objective.Length > 0 ? "\n" + quest.Objective : "")
                     + (quest.ObjectiveProgress.Length > 0 ? "\n" + quest.ObjectiveProgress : "")
                     + (quest.Duty.Length > 0 ? "\n" + quest.Duty : "")

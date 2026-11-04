@@ -131,13 +131,13 @@ public sealed partial class SettingsLayout {
                     ImGui.TextUnformatted(SectionLabel(section));
                     ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X
                         - ImGui.CalcTextSize("Reset section").X - ImGui.GetStyle().FramePadding.X * 2);
-                    if (ImGui.SmallButton("Reset section")) {
+                    var sectionResetKey = "reset-section:" + section;
+                    if (ImGui.SmallButton(resetConfirm.IsArmed(sectionResetKey) ? "Confirm reset" : "Reset section")
+                        && resetConfirm.Click(sectionResetKey)) {
                         Reset(config, section);
                         resetExtension?.Invoke(section);
                         changed = true;
                     }
-                    if (ImGui.IsItemHovered())
-                        UiMotion.TooltipText("Restore this section for the current style. Per-icon overrides have individual resets.");
                     ImGui.Separator();
                     if (section == "Markers" && config.IsGratis && MarkerOptionsMatch(Search)
                         && drawExtension is not null)
@@ -168,8 +168,6 @@ public sealed partial class SettingsLayout {
                                 ImGui.BeginDisabled(!enabled);
                                 changed |= entry.Draw(config);
                                 ImGui.EndDisabled();
-                                if (entry.Tooltip is { } valueTip && ImGui.IsItemHovered())
-                                    UiMotion.TooltipText(valueTip);
                                 ImGui.PopID();
                             }
                             ImGui.EndTable();

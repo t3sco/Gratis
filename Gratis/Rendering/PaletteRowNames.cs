@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Gratis.Controllers;
 
@@ -32,6 +33,7 @@ internal sealed class PaletteRowNames {
 
     private sealed class Names {
         public CultureInfo? Culture;
+        public bool? Shared;
         public readonly Dictionary<PlaceResult, PaletteRowText> Rows = [];
         public readonly Dictionary<uint, string> Costs = [];
     }
@@ -49,11 +51,21 @@ internal sealed class PaletteRowNames {
         return names;
     }
 
+    // True when every row in the list sits in one expansion, so printing it on each row says nothing.
+    public bool SharedExpansion(PlaceResult[] results) {
+        var names = For(results);
+        if (names.Shared is not { } shared) {
+            shared = results.Length > 0 && results.All(r => r.Place.Expansion == results[0].Place.Expansion);
+            names.Shared = shared;
+        }
+        return shared;
+    }
+
     public string ActionLabel(PlaceResult result, PlaceResult[] results) {
         if (result.Access.Cost is not { } cost) return "Teleport";
         var names = For(results);
         if (!names.Costs.TryGetValue(cost, out var label)) {
-            label = $"{cost:N0} gil";
+            label = $"Teleport · {cost:N0} gil";
             names.Costs.Add(cost, label);
         }
         return label;

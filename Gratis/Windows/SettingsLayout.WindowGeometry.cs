@@ -16,7 +16,6 @@ namespace Gratis.Windows;
 /// </summary>
 public sealed partial class SettingsLayout {
     private const string GeometryLabel = "Window size and position", ResetGeometryLabel = "Reset window position and size";
-    private const string ResetGeometryTip = "Put the map window back at its default size and position on your main screen.";
 #if GRATIS_PREVIEW
     public Vector4 TestResetWindow;
 #endif
@@ -57,7 +56,6 @@ public sealed partial class SettingsLayout {
         TestResetWindow = new(ImGui.GetItemRectMin().X, ImGui.GetItemRectMin().Y, ImGui.GetItemRectMax().X,
             ImGui.GetItemRectMax().Y);
 #endif
-        ChromeControls.Tooltip(ResetGeometryTip, scale: scale);
         if (clicked)
             MapDrawContext.Current.WindowPresets.ResetCurrent(config);
         return clicked;
@@ -71,8 +69,6 @@ public sealed partial class SettingsLayout {
         TestResetWindow = new(ImGui.GetItemRectMin().X, ImGui.GetItemRectMin().Y, ImGui.GetItemRectMax().X,
             ImGui.GetItemRectMax().Y);
 #endif
-        if (ImGui.IsItemHovered())
-            UiMotion.TooltipText(ResetGeometryTip);
         if (clicked)
             MapDrawContext.Current.WindowPresets.ResetCurrent(config);
         ImGui.Spacing();

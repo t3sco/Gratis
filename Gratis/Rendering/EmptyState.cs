@@ -12,8 +12,7 @@ public readonly record struct EmptyProfile(EmptyText Text, float FontSize = 0,
     ChromeFontRole FontRole = ChromeFontRole.Body, bool Spacing = false, string? Helper = null, Vector4 Ink = default);
 
 public static class EmptyFaces {
-    public static readonly EmptyProfile PaletteSearch = new(EmptyText.SecondaryWrapped, Spacing: true, Ink: GratisTheme.Secondary,
-        Helper: "Try a zone name or choose another filter.");
+    public static readonly EmptyProfile PaletteSearch = new(EmptyText.SecondaryWrapped, Spacing: true, Ink: GratisTheme.Secondary);
     public static readonly EmptyProfile PaletteRecent = new(EmptyText.SecondaryWrapped, 12, Ink: GratisTheme.Secondary);
     public static readonly EmptyProfile PaletteBrowser = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);
     public static readonly EmptyProfile Location = new(EmptyText.SecondaryWrapped, Ink: GratisTheme.Secondary);

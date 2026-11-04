@@ -91,13 +91,11 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
             ImGui.SetKeyboardFocusHere();
             focusSearch = false;
         }
-        var wasEmpty = queryEmptyBeforeInput = query.Length == 0;
+        queryEmptyBeforeInput = query.Length == 0;
         var field = TextField.Draw(queryInputId, ref query, new(FieldFaces.Palette, size, s));
         ClearBounds = field.ClearBounds;
-        // Clear on an empty search has nothing left to clear, so it closes the search.
-        if (field.Cleared && wasEmpty)
-            Close();
-        else if (field.Cleared)
+        // The clear button only exists while there is text, so closing is left to the toolbar button and Esc.
+        if (field.Cleared)
             SetQuery("");
         Search(MapDrawContext.Current.Config);
         ImGui.EndDisabled();

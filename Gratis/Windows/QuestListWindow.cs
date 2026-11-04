@@ -22,7 +22,7 @@ public class QuestListWindow : Window {
     ]);
 
     public QuestListWindow() : base("Gratis Quest List Window", new Vector2(300.0f, 500.0f)) {
-        AdditionalInfoTooltip = "Shows Quests for the zone you are currently in";
+        AdditionalInfoTooltip = "Current zone only";
     }
 
     protected override void DrawContents() {

@@ -27,6 +27,8 @@ public readonly record struct ActionProfile {
     public Vector4 HoverFill { get; init; }
     public Vector4 Border { get; init; }
     public Vector4 Ink { get; init; }
+    // The label colour while hovered; transparent (the default) keeps Ink.
+    public Vector4 HoverInk { get; init; }
     public Vector4 IconInk { get; init; }
     public Vector4 TrailingInk { get; init; }
     public ActionFeedback Feedback { get; init; }
@@ -76,12 +78,21 @@ public static class ActionFaces {
         Radius = GratisTheme.Radius.Card, RadiusInset = 4, TextInset = 12,
         Fill = GratisTheme.Crystal with { W = .20f }, HoverFill = GratisTheme.Crystal with { W = .30f },
         Border = GratisTheme.Crystal with { W = .45f }, Ink = GratisTheme.Primary,
-        Tooltip = "Opens the plugin installer so you can update Gratis", WindowTooltip = true,
     };
+    // The quest summary's footer buttons rest as quiet grey; each takes the colour of what it does on hover.
     public static readonly ActionProfile QuestMap = new() {
         Height = GratisTheme.ControlHeight, Radius = GratisTheme.Radius.Control,
-        Ink = GratisTheme.WarmAccent, Feedback = ActionFeedback.Selected, Label = ActionLabel.Center,
-        DisabledScope = true, Tooltip = "Show on map  M / Shift+Enter",
+        Fill = new Vector4(1, 1, 1, .07f), HoverFill = GratisTheme.WarmAccent with { W = .24f },
+        Ink = GratisTheme.WarmAccent, Feedback = ActionFeedback.Outline, Label = ActionLabel.Center,
+        Control = true, DisabledScope = true,
+    };
+    public static readonly ActionProfile QuestAbandon = QuestMap with {
+        HoverFill = GratisTheme.Danger with { W = .24f }, Ink = GratisTheme.Secondary,
+        HoverInk = GratisTheme.Danger,
+    };
+    public static readonly ActionProfile QuestAbandonConfirm = QuestAbandon with {
+        Fill = GratisTheme.Danger with { W = .16f }, HoverFill = GratisTheme.Danger with { W = .32f },
+        Border = GratisTheme.Danger with { W = .6f }, Ink = GratisTheme.Danger,
     };
     public static readonly ActionProfile NativeText = new() {
         Radius = GratisTheme.Radius.Control, Label = ActionLabel.Native,
@@ -154,9 +165,10 @@ public static class ActionButton {
                 ChromeControls.Feedback(list, pos, pos + size, face.Feedback == ActionFeedback.Selected,
                     face.Feedback is ActionFeedback.Fill or ActionFeedback.Selected);
             if (!face.IconBeforeFeedback) DrawIcon(list, pos, size, s, face, options.Icon);
+            var ink = face.HoverInk.W != 0 && ImGui.IsItemHovered() ? face.HoverInk : face.Ink;
             if (face.Label == ActionLabel.Center)
                 TextDrawing.Draw(list, pos + (size - TextDrawing.Measure(label)) / 2,
-                    ImGui.GetColorU32(face.Ink), label);
+                    ImGui.GetColorU32(ink), label);
             else {
                 var trailing = options.TrailingText;
                 var costWidth = trailing.Length > 0 ? ImGui.CalcTextSize(trailing).X + face.TrailingGap * s : 0;
@@ -164,7 +176,7 @@ public static class ActionButton {
                     ? (options.LabelCache ?? throw new ArgumentException("Travel faces need a fitted-label cache."))
                         .Fit(label, size.X - 2 * face.TextInset * s - costWidth) : label;
                 var y = (size.Y - ImGui.GetFontSize()) / 2;
-                list.AddText(pos + new Vector2(face.TextInset * s, y), ImGui.GetColorU32(face.Ink), displayed);
+                list.AddText(pos + new Vector2(face.TextInset * s, y), ImGui.GetColorU32(ink), displayed);
                 if (trailing.Length > 0)
                     list.AddText(pos + new Vector2(size.X - face.TrailingInset * s - ImGui.CalcTextSize(trailing).X, y),
                         ImGui.GetColorU32(face.TrailingInk), trailing);

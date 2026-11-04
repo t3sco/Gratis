@@ -24,6 +24,8 @@ public readonly record struct FieldProfile {
     public FieldClear Clear { get; init; }
     public float ClearSize { get; init; }
     public float ClearWidthDivisor { get; init; }
+    // The clear button is drawn only while the field holds text.
+    public bool ClearOnlyWhenFilled { get; init; }
 }
 
 public static class FieldFaces {
@@ -31,7 +33,7 @@ public static class FieldFaces {
         Hint = "Search places...", Capacity = 256, Padding = new(8, 0), CenterPadding = true,
         Radius = GratisTheme.Radius.Inner(GratisTheme.Radius.Card, 4),
         Fill = new(1, 1, 1, .055f), Ink = GratisTheme.Primary,
-        Clear = FieldClear.Adjacent, ClearWidthDivisor = 3,
+        Clear = FieldClear.Adjacent, ClearWidthDivisor = 3, ClearOnlyWhenFilled = true,
     };
     public static readonly FieldProfile Quest = new() { Hint = "Search quests...", Capacity = 256 };
     public static readonly FieldProfile Location = new() {
@@ -59,6 +61,7 @@ public static class TextField {
         var width = options.Size == default ? ImGui.GetContentRegionAvail().X : options.Size.X;
         var clearSize = face.Clear == FieldClear.Adjacent
             ? MathF.Min(options.Size.Y, width / face.ClearWidthDivisor) : face.ClearSize * s;
+        var showClear = !face.ClearOnlyWhenFilled || text.Length > 0;
         var vars = 0;
         var colors = 0;
         var radius = face.Radius * s;
@@ -76,7 +79,8 @@ public static class TextField {
         if (face.Ink is { } ink) { ImGui.PushStyleColor(ImGuiCol.Text, ink); colors++; }
         bool changed;
         try {
-            ImGui.SetNextItemWidth(face.Clear == FieldClear.Adjacent ? MathF.Max(1, width - clearSize) : -1);
+            ImGui.SetNextItemWidth(face.Clear == FieldClear.Adjacent && showClear
+                ? MathF.Max(1, width - clearSize) : -1);
 #if GRATIS_PREVIEW
             changed = ImGui.InputTextWithHint(id, face.Hint, ref text, (uint)face.Capacity, face.Flags);
             PreviewAfterInput?.Invoke(id);
@@ -93,7 +97,7 @@ public static class TextField {
                 GratisIcons.Search, GratisTheme.Secondary, face.IconSize * s);
         var cleared = false;
         var clearBounds = Vector4.Zero;
-        if (face.Clear == FieldClear.Adjacent || face.Clear == FieldClear.Overlay && text.Length > 0) {
+        if (face.Clear == FieldClear.Adjacent && showClear || face.Clear == FieldClear.Overlay && text.Length > 0) {
             var next = ImGui.GetCursorPos();
             var clearPos = start + new Vector2(width - clearSize, 0);
             var size = new Vector2(clearSize, face.Clear == FieldClear.Adjacent ? options.Size.Y : clearSize);

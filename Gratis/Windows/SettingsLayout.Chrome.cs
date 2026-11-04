@@ -88,7 +88,10 @@ public sealed partial class SettingsLayout {
                 changed |= DrawMultiSelectRow(config, multi, s, stacked, essentials);
         foreach (var entry in entries) {
             ImGui.PushID(entry.Path);
-            ImGui.TableNextRow(0, RowHeight(essentials && entry.Tooltip is not null, s));
+            // On Essentials the Look row explains the selected look; every other row prints its own description.
+            var caption = essentials && entry.Path == "VisualStyle"
+                ? QuickSetupLooks.All[QuickSetupLooks.Current(config)].Blurb : entry.Tooltip;
+            ImGui.TableNextRow(0, RowHeight(essentials && caption is not null, s));
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             var rowTop = ImGui.GetCursorPosY();
@@ -116,11 +119,12 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
             var labelMin = ImGui.GetItemRectMin(); var labelMax = ImGui.GetItemRectMax();
 #endif
-            if (entry.Tooltip is { } tip) {
-                ChromeControls.Tooltip(tip, scale: s);
-                if (essentials) {
+            if (caption is { } tip) {
+                // Essentials rows print the description under the label, so a tooltip would only repeat it.
+                if (essentials)
                     DrawHelperLine(entry.Path, tip, cellWidth - (inlineToggle ? 52 * s : 0), rowTop, s);
-                }
+                else
+                    ChromeControls.Tooltip(tip, scale: s);
             }
             if (!stacked)
                 ImGui.TableNextColumn();
@@ -136,8 +140,6 @@ public sealed partial class SettingsLayout {
                 changed |= essentials && entry.Path == "VisualStyle" ? DrawLookChips(config, s) : entry.Draw(config);
                 ImGui.EndGroup();
             }
-            if (entry.Tooltip is { } valueTip)
-                ChromeControls.Tooltip(valueTip, scale: s);
 #if GRATIS_PREVIEW
             var controlMin = ImGui.GetItemRectMin(); var controlMax = ImGui.GetItemRectMax();
             TestRows.Add((entry.Path, new(labelMin.X, labelMin.Y, labelMax.X, labelMax.Y),

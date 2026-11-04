@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -10,6 +11,7 @@ namespace Gratis.Rendering;
 
 public static class LensDrawing {
     private static string customName = "My lens";
+    private static readonly ArmedConfirm lensConfirm = new();
     private static bool recordingKey;
     private static string[] lensNames = [];
     private static readonly string[] StateNames = ["Loud", "Normal", "Quiet", "Hidden"];
@@ -66,7 +68,8 @@ public static class LensDrawing {
         if (!compact)
             list.AddText(pos + new Vector2(29 * GratisTheme.ChromeScale, (size.Y - ImGui.GetFontSize()) / 2),
                 ImGui.GetColorU32(GratisTheme.Primary), context.Visibility.EffectiveLens);
-        if (ImGui.IsItemHovered())
+        // The full chip already shows the lens name; only the icon-only variant needs the tooltip.
+        if (compact && ImGui.IsItemHovered())
             UiMotion.TooltipText("Lens: " + context.Visibility.EffectiveLens);
     }
 
@@ -91,8 +94,13 @@ public static class LensDrawing {
     public static bool DrawEditor(MapDrawingConfig config) {
         var changed = false;
         ImGui.InputTextWithHint("##lens-name", "Custom lens name", ref customName, 40);
-        if (ImGui.Button("Save current as custom lens") && !string.IsNullOrWhiteSpace(customName)) {
-            var name = customName.Trim();
+        var trimmedName = customName.Trim();
+        var replacing = trimmedName.Length > 0 && config.CustomLenses?.Any(lens => lens?.Name == trimmedName) == true;
+        var replaceKey = "replace-lens:" + trimmedName;
+        var saveLabel = !replacing ? "Save current as custom lens"
+            : lensConfirm.IsArmed(replaceKey) ? $"Confirm replace \"{trimmedName}\"" : $"Replace \"{trimmedName}\"";
+        if (ImGui.Button(saveLabel) && !string.IsNullOrWhiteSpace(customName) && (!replacing || lensConfirm.Click(replaceKey))) {
+            var name = trimmedName;
             var reserved = false;
             foreach (var preset in Lenses.BuiltIn)
                 reserved |= string.Equals(preset.Name, name, StringComparison.OrdinalIgnoreCase);
@@ -120,7 +128,9 @@ public static class LensDrawing {
                 ImGui.TextUnformatted(MarkerVisibility.Names[i]);
                 ImGui.PopID();
             }
-            if (ImGui.Button("Delete custom lens")) {
+            var deleteKey = "delete-lens:" + selected.Name;
+            if (ImGui.Button(lensConfirm.IsArmed(deleteKey) ? "Confirm delete lens" : "Delete custom lens")
+                && lensConfirm.Click(deleteKey)) {
                 config.CustomLenses.Remove(selected);
                 config.ActiveLens = "Explore";
                 changed = true;

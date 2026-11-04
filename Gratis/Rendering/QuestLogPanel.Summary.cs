@@ -25,7 +25,7 @@ public sealed partial class QuestLogPanel {
         var width = ImGui.GetContentRegionAvail().X;
         ImGui.SetCursorScreenPos(start + new Vector2(MathF.Max(0, width - 30 * s), 0));
         if (ChromeControls.IconButton("##quest-detail-close", GratisIcons.X,
-            Layout.DetailOverlay ? "Back to Quest Log\nEsc" : "Close summary\nEsc", new(30 * s)))
+            Layout.DetailOverlay ? "Back to Quest Log\nEsc" : "", new(30 * s)))
             CloseDetail();
         DetailCloseBounds = ItemBounds();
         // The title shares the close button's row, wrapping within the width left of it; chips sit directly beneath.
@@ -61,13 +61,15 @@ public sealed partial class QuestLogPanel {
                     ImGui.PopStyleColor();
                 }
             }
-            DetailHeading("REQUIREMENTS", s);
-            DetailRow("Level", text.LevelNumber, s);
-            if (quest.Jobs.Length > 0) DetailRow("Class", quest.Jobs, s);
-            if (quest.RequiredClass.Length > 0) DetailRow("Job", quest.RequiredClass, s);
-            if (quest.Prerequisites.Length > 0) {
+            // An accepted quest is already unlocked, so what to do next comes first and the requirements go.
+            var accepted = Tab == QuestLogTab.Accepted && !quest.Completed;
+            if (accepted)
+                DrawObjectives(quest, context, s);
+            else if (quest.Jobs.Length > 0 || quest.RequiredClass.Length > 0 || quest.Prerequisites.Length > 0) {
                 DetailHeading("REQUIRES", s);
-                ImGui.TextWrapped(quest.Prerequisites);
+                if (quest.Jobs.Length > 0) DetailRow("Class", quest.Jobs, s);
+                if (quest.RequiredClass.Length > 0) DetailRow("Job", quest.RequiredClass, s);
+                if (quest.Prerequisites.Length > 0) ImGui.TextWrapped(quest.Prerequisites);
             }
             DrawRewards(quest.Rewards, text, s);
             if (DetailOpen) itemTooltip.Finish(source?.Items, s);
@@ -75,19 +77,8 @@ public sealed partial class QuestLogPanel {
                 DetailHeading("DESCRIPTION", s);
                 ImGui.TextWrapped(quest.Description);
             }
-            if (quest.Objective.Length > 0) {
-                DetailHeading("OBJECTIVES", s);
-                using var objectiveFont = context.GetChromeFont(16 * s, ChromeFontRole.Chip)?.Push();
-                ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.WarmAccent);
-                ImGui.TextWrapped(quest.Objective);
-                ImGui.PopStyleColor();
-            }
-            if (quest.Duty.Length > 0) {
-                DetailHeading("DUTY", s);
-                ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Crystal);
-                ImGui.TextWrapped(quest.Duty);
-                ImGui.PopStyleColor();
-            }
+            if (!accepted)
+                DrawObjectives(quest, context, s);
             ImGui.Dummy(new(0, 8 * s));
         }
         finally { ImGui.EndChild(); }
@@ -95,11 +86,53 @@ public sealed partial class QuestLogPanel {
         DetailDivider(s);
         var label = quest.Targets.Count > 0 ? "Show on map"
             : quest.DestinationNote.Length > 0 ? quest.DestinationNote : "No map destination";
+        var canAbandon = quest.CanAbandon && source != null;
+        var gap = 8 * s;
+        var abandonWidth = canAbandon ? MathF.Round(MathF.Min(width * .42f, 150 * s)) : 0;
         var clicked = ActionButton.Draw("##quest-detail-map", label,
-            new(ActionFaces.QuestMap, Enabled: quest.Targets.Count > 0, Size: new(width, GratisTheme.ControlHeight * s)));
-        if (quest.DestinationNote.Length > 0 && ImGui.IsItemHovered()) ChromeControls.Tooltip(quest.DestinationNote);
+            new(ActionFaces.QuestMap, Enabled: quest.Targets.Count > 0,
+                Size: new(width - (canAbandon ? abandonWidth + gap : 0), GratisTheme.ControlHeight * s)));
         if (clicked || ImGui.IsItemClicked(ImGuiMouseButton.Right)) ShowOnMap(quest);
         DetailMapBounds = ItemBounds();
+        if (canAbandon) {
+            ImGui.SameLine(0, gap);
+            DrawAbandon(quest, abandonWidth, s);
+        }
+    }
+
+    private static void DrawObjectives(QuestLogQuest quest, MapDrawContext context, float s) {
+        if (quest.Objective.Length > 0) {
+            DetailHeading("OBJECTIVES", s);
+            using var objectiveFont = context.GetChromeFont(16 * s, ChromeFontRole.Chip)?.Push();
+            ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.WarmAccent);
+            ImGui.TextWrapped(quest.Objective);
+            ImGui.PopStyleColor();
+        }
+        if (quest.Duty.Length > 0) {
+            DetailHeading("DUTY", s);
+            ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Crystal);
+            ImGui.TextWrapped(quest.Duty);
+            ImGui.PopStyleColor();
+        }
+    }
+
+    private readonly ArmedConfirm abandonConfirm = new();
+    public Vector4 DetailAbandonBounds { get; private set; }
+
+    // Abandoning cannot be undone, so the first click only arms the button; a second click within a few seconds
+    // on the same quest does it.
+    private void DrawAbandon(QuestLogQuest quest, float width, float s) {
+        var key = "abandon:" + quest.RowId;
+        var confirming = abandonConfirm.IsArmed(key);
+        // The labels carry the meaning, so neither button needs a tooltip.
+        var clicked = ActionButton.Draw("##quest-detail-abandon", confirming ? "Confirm abandon" : "Abandon",
+            new(confirming ? ActionFaces.QuestAbandonConfirm : ActionFaces.QuestAbandon,
+                Size: new(width, GratisTheme.ControlHeight * s)));
+        DetailAbandonBounds = ItemBounds();
+        if (!clicked)
+            return;
+        if (abandonConfirm.Click(key) && source?.Abandon(quest) == true)
+            CloseDetail();
     }
 
     private static void DetailDivider(float s) {

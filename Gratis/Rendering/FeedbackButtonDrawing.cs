@@ -23,9 +23,9 @@ public static class FeedbackLink {
 
 public static class FeedbackButtonDrawing {
     private const string Popup = "Gratis_Feedback";
-    public const string Prompt = "Please add as much detail as possible. I have no method of replying to ask for more detail since this report is anonymous. If you need to add more detail, please contact me on discord, username: tesco";
-    public const string ReportLabel = "Include a diagnostic report (recommended)";
-    private const string Idle = "Settings and technical details only, no character name or chat. Nothing is sent until you press Send.";
+    public const string Prompt = "Reports are anonymous, so I can't reply. Add as much detail as you can, or find me on Discord: tesco";
+    public const string ReportLabel = "Include a diagnostic report";
+    private const string Idle = "Settings and technical details only, no character name or chat.";
     private static string draft = "";
     private static bool includeReport, sentHandled;
     private static double closeAt;
@@ -97,7 +97,7 @@ public static class FeedbackButtonDrawing {
             ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .055f));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 5) * s);
             using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
-                ImGui.TextUnformatted("Send feedback / bug reports");
+                ImGui.TextUnformatted("Feedback");
             // The note stays visible while typing: it says why nobody can write back.
             ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
             ImGui.PushTextWrapPos(ImGui.GetWindowWidth() - padding.X);

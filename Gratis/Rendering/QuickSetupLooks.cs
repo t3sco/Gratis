@@ -46,11 +46,11 @@ public static class QuickSetupLooks {
             ["MapColour.Mid"] = Element(new[] { .284698f, .284698f, .284698f }),
         };
         return [
-            Make("Vanilla+", "The defaults: lightly rounded corners, quiet frosted panels and the map's original colours.", new(),
+            Make("Default", "Light rounding and the map's original colours.", new(),
                 defaults.FlatCornerRadius, defaults.GlassEnabled, false),
-            Make("Gratis glass", "Rounder corners, frosted glass panels and a dark, high-contrast map recolour.", glass, 48, true,
+            Make("Gratis glass", "Rounder, frosted panels and a dark map.", glass, 48, true,
                 false),
-            Make("Classic", "Mappy's layout: plain window and toolbar, with no map recolour. Gratis features are not available.",
+            Make("Classic", "Mappy's layout. Place search, teleports and the quest log are not available.",
                 new() { ["VisualStyle"] = Element(1) }, defaults.MapRounding, false, true),
         ];
     }
@@ -65,7 +65,7 @@ public static class QuickSetupLooks {
             : throw new InvalidOperationException("Built-in look " + name + " does not decode.");
     }
 
-    /// <summary>Which look the current settings match. A custom corner radius counts as Vanilla+.</summary>
+    /// <summary>Which look the current settings match. A custom corner radius counts as Default.</summary>
     public static int Current(SystemConfig config) => !config.IsGratis ? Classic
         : MathF.Abs(config.FlatCornerRadius - 48) < 1 ? Glass : Vanilla;
 

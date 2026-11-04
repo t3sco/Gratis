@@ -24,10 +24,9 @@ public sealed partial class SettingsLayout {
     private static readonly EssentialCard[] EssentialDefinitions = [
         new("look", "Look", GratisIcons.Eye, ["VisualStyle", "AccentColor", "MapCircle", "FlatCornerRadius"]),
         new("controls", "Controls and motion", GratisIcons.Layers, ["FollowPlayer"],
-            ["controls-visibility", "map-fade", "motion"]),
+            ["controls-visibility", "map-fade", "motion"], ["hide-map"]),
         new("features", "Features", GratisIcons.Compass, ["TravelActions", "QuestLogReplaceJournal"],
             ["quest-log-opens"]),
-        new("window", "Window", GratisIcons.EyeOff, [], MultiIds: ["hide-map"]),
     ];
     private static (EssentialCard Card, SettingsEntry[] Entries, SettingsPreset[] Presets,
         SettingsMultiSelect[] MultiSelects)[]? essentialCards;
@@ -62,7 +61,7 @@ public sealed partial class SettingsLayout {
         var cards = ResolveEssentials();
         var changed = false;
         ImGui.PushID("essentials");
-        DrawPageTitle(Tabs[EssentialsTab], TabHelpers[EssentialsTab]);
+        DrawPageTitle(Tabs[EssentialsTab]);
         foreach (var (card, entries, presets, multiSelects) in cards) {
             essentialRows.Clear();
             essentialPresets.Clear();
@@ -83,8 +82,6 @@ public sealed partial class SettingsLayout {
             ImGui.GetWindowDrawList().AddRect(cardStart,
                 new Vector2(cardStart.X + ImGui.GetContentRegionAvail().X, bottom),
                 ImGui.GetColorU32(GratisTheme.Border), GratisTheme.Radius.Card * scale);
-            if (card.Id == "window" && ChromeControls.TextButton("Different size or position in duties", scale: scale))
-                SelectTab(ControlsTab, Sub.Window);
             ImGui.Spacing();
         }
         ImGui.Spacing();
@@ -112,7 +109,6 @@ public sealed partial class SettingsLayout {
             ImGui.PushID(i);
             var clicked = SegmentedChip.Draw("##look", looks[i].Name, i == current,
                 new(ChipFaces.Regular, GratisTheme.WarmAccent, new Vector2(width, height), scale, Centered: true));
-            ChromeControls.Tooltip(looks[i].Blurb, scale: scale);
 #if GRATIS_PREVIEW
             TestLookChips[i] = new(ImGui.GetItemRectMin().X, ImGui.GetItemRectMin().Y, ImGui.GetItemRectMax().X,
                 ImGui.GetItemRectMax().Y);
@@ -124,18 +120,24 @@ public sealed partial class SettingsLayout {
         return changed;
     }
 
-    /// <summary>One line under a label, cut to the label column; the full text is the row's tooltip.</summary>
     // One height for every settings row, so a toggle, a swatch and a slider space the same; a caption adds one line.
     private const float SettingsRowHeight = 44, SettingsCaptionHeight = 12;
     private static float RowHeight(bool captioned, float s) =>
         (SettingsRowHeight + (captioned ? SettingsCaptionHeight : 0)) * s;
 
+    /// <summary>One line under a label, cut to the label column; a cut-off line shows its full text as a tooltip.</summary>
     private void DrawHelperLine(string key, string text, float width, float rowTop, float s) {
         if (!helperLabels.TryGetValue(key, out var cache))
             helperLabels.Add(key, cache = new());
         // The label sits centred in a frame-height line; the caption hangs just under it at a fixed offset.
         ImGui.SetCursorPosY(rowTop + ImGui.GetStyle().FramePadding.Y + ImGui.GetTextLineHeight() + 2 * s);
-        using var font = SettingsTheme.Font(12);
-        ImGui.TextColored(GratisTheme.Secondary, cache.Fit(text, MathF.Max(1, width)));
+        string fitted;
+        using (SettingsTheme.Font(12)) {
+            fitted = cache.Fit(text, MathF.Max(1, width));
+            ImGui.TextColored(GratisTheme.Secondary, fitted);
+        }
+        // Only a caption that was cut short needs its full text on hover.
+        if (fitted != text)
+            ChromeControls.Tooltip(text, scale: s);
     }
 }

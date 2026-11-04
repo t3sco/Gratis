@@ -44,7 +44,6 @@ public partial class MapWindow {
 
     void Rendering.IMapWindowHost.SaveWindowPosition() => SystemConfig.Save();
 
-    void Rendering.IMapWindowHost.DrawSpoilerWarning() => DrawSpoilerWarning();
 
     void Rendering.IMapWindowHost.DrawToolbar() => mapToolbar.Draw();
 

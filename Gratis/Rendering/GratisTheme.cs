@@ -20,6 +20,8 @@ public static class GratisTheme {
         new(.42f, .91f, .59f, 1), new(.75f, .78f, .82f, 1), new(.96f, .62f, .49f, 1),
     ];
     public static readonly Vector4 WarmAccent = new(.85f, .72f, .48f, 1);
+    // For an action that cannot be undone, shown only on the confirming click.
+    public static readonly Vector4 Danger = new(.96f, .46f, .42f, 1);
     public static readonly Vector4 Crystal = new(.72f, .9f, 1, 1);
     public static float ChromeScale => MapDrawContext.Current.GlobalScale
         * global::System.Math.Clamp(float.IsFinite(MapDrawContext.Current.Config.ChromeScale)

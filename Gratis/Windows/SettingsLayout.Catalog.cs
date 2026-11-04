@@ -49,11 +49,8 @@ public sealed partial class SettingsLayout {
         Add("MapCircle", "Circular map");
         Group("Appearance", "Gratis style", Gratis);
         Add("AccentColor", "Accent colour");
-        Add("FramePreset", "Frame preset", choices: "Hairline|Double ring|Inset glow|Notched corners|Soft shadow|None",
-            tip: "The frame stays visible when the controls fade.");
-        Add("NeutralFrame", "Use the Gratis frame",
-            tip: "Turn off, with Hairline selected, to use the gradient border or your older "
-                + "edge settings. Older edge settings are editable in Classic.");
+        Add("FramePreset", "Frame preset", choices: "Hairline|Double ring|Inset glow|Notched corners|Soft shadow|None");
+        Add("NeutralFrame", "Gratis frame style");
         Add("FlatCornerRadius", "Corner radius", 0, 80, "%.0f px", when: c => c.NeutralFrame && !c.MapCircle);
         Group("Appearance", "Map recolour");
         Add("MapColour.Preset", "Recolour preset");
@@ -65,7 +62,7 @@ public sealed partial class SettingsLayout {
             when: c => c.MapColour.Preset == MapColourPreset.Custom);
         Add("MapColour.Tint", "Tint", when: c => c.MapColour.Preset == MapColourPreset.Custom);
         Add("MapColour.TintStrength", "Tint strength", when: c => c.MapColour.Preset == MapColourPreset.Custom);
-        Add("MapColour.GradientEnabled", "Gradient map", when: c => c.MapColour.Preset == MapColourPreset.Custom);
+        Add("MapColour.GradientEnabled", "Three-colour map", when: c => c.MapColour.Preset == MapColourPreset.Custom);
         Add("MapColour.Shadow", "Shadow colour",
             when: c => c.MapColour.Preset == MapColourPreset.Custom && c.MapColour.GradientEnabled);
         Add("MapColour.Mid", "Midtone colour",
@@ -105,8 +102,7 @@ public sealed partial class SettingsLayout {
         Add("MapGlowColor", "Glow colour", when: c => c.MapGlow);
         Add("MapGlowSize", "Glow size", 2, 60, "%.0f px", when: c => c.MapGlow);
         Add("MapGlowPulse", "Glow pulse", when: c => c.MapGlow);
-        Add("MapGlowSpeed", "Pulse speed", .2f, 6, "%.1f rad/s", when: c => c.MapGlow && c.MapGlowPulse > 0,
-            tip: "Angular pulse speed; the renderer applies a factor of two.");
+        Add("MapGlowSpeed", "Pulse speed", .2f, 6, "%.1f rad/s", when: c => c.MapGlow && c.MapGlowPulse > 0);
         Add("MapVignette", "Edge vignette");
 
         Group("Map", "Travel", Gratis);
@@ -120,10 +116,10 @@ public sealed partial class SettingsLayout {
         Group("Map", "Viewport");
         Add("FollowPlayer", "Follow player");
         Add("RememberMapView", "Remember map views", when: Gratis,
-            tip: "Reopen each map at the zoom and position you left it. Remembers up to 100 maps.");
+            tip: "Remembers up to 100 maps.");
         Add("RememberMapLens", "Remember map filters", when: Gratis);
-        Add("ScaleWithFrame", "Zoom with window size", tip: "Resizing the window keeps what you see the same.");
-        Add("ClampToMap", "Keep view inside map", tip: "Stops you panning past the edge of the map.");
+        Add("ScaleWithFrame", "Zoom with window size");
+        Add("ClampToMap", "Keep view inside map");
         Add("FitSmallRoomsToContent", "Zoom small areas to fit", when: Gratis,
             tip: "Zoom in on small rooms the first time you visit. You can still zoom out to see "
                 + "the whole map.");
@@ -140,8 +136,6 @@ public sealed partial class SettingsLayout {
         Group("Map", "Zoom");
         Add("UseLinearZoom", "Linear zoom");
         Add("ZoomSpeed", "Wheel zoom step", .001f, .5f, "%.3f / tick");
-        Add("AutoZoom", "Auto zoom");
-        Add("AutoZoomScaleFactor", "Auto zoom factor", .2f, 1, "%.2fx", when: c => c.AutoZoom);
         Group("Map", "Place search", Gratis);
         Add("Palette", "Place search");
         Add("PaletteTeleportButton", "Allow teleports from search",
@@ -152,17 +146,12 @@ public sealed partial class SettingsLayout {
                 + "while it loads.");
         Add("PaletteMaxResults", "Search results shown", 1, 12, "%.0f");
         Group("Map", "Quest Log", Gratis);
-        Add("QuestLogShowLocked", "Show quests you have not unlocked",
-            tip: "Off by default. Available shows client-known map offers without checking every requirement. Turn on to browse other quests, including locked quests.");
-        Add("QuestLogOpenWithMap", "Open quest log with the map",
-            tip: "Initial visibility when the map opens. You can close it unless Keep quest log pinned is enabled.");
-        Add("QuestLogPinned", "Keep quest log pinned",
-            tip: "Keep the log visible across Escape, map actions and zone changes. Overrides the initial visibility setting. Unpin to close it.");
-        Add("QuestLogWidth", "Quest log panel width", 240, 440, "%.0f px",
-            tip: "320 by default. Narrow maps use a smaller overlay without resizing the map.");
+        Add("QuestLogShowLocked", "Show quests you have not unlocked");
+        Add("QuestLogOpenWithMap", "Open quest log with the map");
+        Add("QuestLogPinned", "Keep quest log pinned");
+        Add("QuestLogWidth", "Quest log panel width", 240, 440, "%.0f px");
         Group("Map", "Journal replacement", Gratis);
-        Add("QuestLogReplaceJournal", "Use the Gratis Quest Log instead of the game's Journal",
-            tip: "Your Journal key, Duty menu, /journal and quest links open the Gratis Quest Log. /gratis journal also works with this setting off.");
+        Add("QuestLogReplaceJournal", "Use the Gratis Quest Log instead of the game's Journal");
         Group("Map", "Window");
         Add("WindowPresets", "Window presets",
             tip: "Save up to five named window sizes and positions. Pick one to apply it, "
@@ -172,8 +161,8 @@ public sealed partial class SettingsLayout {
         Add("CenterOnOpen", "Centre on open", choices: "Disabled|Player|Map");
         Group("Map", "Zone changes");
         Add("AutoSwitchOnZoneChange", "Switch map when changing zone");
-        Add("OnlyIfViewingCurrentZone", "Only while viewing the current zone", when: c => c.AutoSwitchOnZoneChange,
-            tip: "Stay on a map you opened yourself.");
+        Add("OnlyIfViewingCurrentZone", "Stay on a map I opened myself", when: c => c.AutoSwitchOnZoneChange,
+            tip: "Turn off to always switch to your new zone's map, even if you were looking at another map.");
         Add("SwitchInDuties", "Switch maps in duties", when: c => c.AutoSwitchOnZoneChange);
         Group("Map", "Map links");
         Add("CenterOnFlag", "Centre on flags");
@@ -269,9 +258,8 @@ public sealed partial class SettingsLayout {
         Add("ShowRadarInDuties", "Radar in duties", when: c => c.ShowRadar);
         Add("RadarColor", "Radar fill", when: c => c.ShowRadar);
         Add("RadarOutlineColor", "Radar outline", when: c => c.ShowRadar);
-        Add("AreaColor", "Area fill", tip: "Gratis category colours override RGB; alpha still controls radius fills.");
-        Add("AreaOutlineColor", "Area outline",
-            tip: "Gratis category colours override RGB; alpha still controls radius outlines.");
+        Add("AreaColor", "Area fill");
+        Add("AreaOutlineColor", "Area outline");
 
         Group("Chrome & motion", "Chrome visibility", Gratis);
         Add("AutoHideChrome", "Auto-hide controls",
@@ -374,7 +362,7 @@ public sealed partial class SettingsLayout {
         Add("Motion.EaseFollow", "Ease player follow", when: c => !c.ReduceMotion);
         Add("Motion.EaseZoom", "Ease wheel zoom", when: c => !c.ReduceMotion);
         Add("Motion.PanInertia", "Drag pan inertia", when: c => !c.ReduceMotion);
-        Add("Motion.PanInertiaStrength", "Pan inertia strength", .1f, 1, "%.2f s",
+        Add("Motion.PanInertiaStrength", "Drag glide time", .1f, 1, "%.2f s",
             when: c => !c.ReduceMotion && c.Motion.PanInertia,
             tip: "How long the glide lasts. Clicking or zooming stops it.");
         Add("Motion.SettleSeconds", "Pan and zoom smoothing", .05f, .3f, "%.2f s",
@@ -422,10 +410,6 @@ public sealed partial class SettingsLayout {
         Add("BlurStrength", "Blur strength", .5f, 10, "%.1fx", when: c => c.BlurBackground);
         Group("Advanced", "Diagnostics");
         Add("DebugMode", "Debug marker details", tip: "Shows marker IDs on hover. Not saved.");
-        Add("TextPixelSnap", "Snap text glyphs to pixels", when: c => c.IsGratis,
-            tip: "Off spaces letters by their true widths. Applies after reloading the plugin.");
-        Add("TextOversampleH", "Text horizontal oversample", 1, 2, "%.0f", when: c => c.IsGratis,
-            tip: "2 smooths small text but uses twice the font atlas area. Applies after reloading the plugin.");
         presetCache = SettingsPreset.CreateAll(SettingsPresets.Definitions, entries);
         multiSelectCache = SettingsMultiSelect.CreateAll(SettingsMultiSelects.Definitions, entries);
         if (advancedSeen != advanced.Count)

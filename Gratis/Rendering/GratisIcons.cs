@@ -18,6 +18,7 @@ public static class GratisIcons {
     public const char Settings = '\ue154';
     public const char X = '\ue1b2';
     public const char ArrowUp = '\ue04a';
+    public const char ArrowLeft = '\ue048';
     public const char Plus = '\ue13d';
     public const char Minus = '\ue11c';
     public const char MapPin = '\ue111';
@@ -96,6 +97,7 @@ public static class GratisIcons {
         BookOpen, BookOpen,
         Check, Check,
         ArrowUp, ArrowUp,
+        ArrowLeft, ArrowLeft,
         Compass, Compass,
         Copy, Copy,
         Crosshair, Crosshair,

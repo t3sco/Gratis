@@ -29,7 +29,6 @@ public interface IMapWindowHost {
     Vector2 MinimumWindowSize => new Vector2(400, 250) * MapDrawContext.Current.GlobalScale;
     void SaveWindowPosition() {
     }
-    void DrawSpoilerWarning();
     void DrawToolbar();
     void DrawCoordinates(bool mapHovered, Vector2 offset);
     void DrawContextMenu(Vector2 offset);
@@ -129,10 +128,6 @@ public sealed partial class MapWindowFrame {
                 return;
             MapShape.Update(ImGui.GetWindowSize());
             MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
-            if (!host.Config.AcceptedSpoilerWarning) {
-                host.DrawSpoilerWarning();
-                return;
-            }
 
             var mouseOverFrame = !paletteInput && !questInput && ChromeVisibility.IsMapFrameHovered();
             var activity = ChromeActivity.None;

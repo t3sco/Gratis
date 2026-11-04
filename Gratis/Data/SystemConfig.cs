@@ -86,6 +86,7 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public Vector2 WindowSize = new(500.0f, 500.0f);
     public bool AlwaysShowToolbar = false;
     public bool ShowToolbarOnHover = true;
+    // Retired: the spoiler warning is gone and nothing reads this. It stays so old saves and shared profiles still load.
     public bool AcceptedSpoilerWarning = false;
     public bool CenterOnFlag = true;
     public bool CenterOnGathering = true;
@@ -95,6 +96,7 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public bool ShowPlayers = true;
     public bool SetFlagOnFateClick = false;
     public float MapScale = 1.0f;
+    // Retired: the setting is gone and nothing reads these two. They stay so old saves and shared profiles still load.
     public bool AutoZoom = false;
     public bool ShowRegionLabel = true;
     public bool ShowMapLabel = true;

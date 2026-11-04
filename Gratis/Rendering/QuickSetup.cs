@@ -23,11 +23,11 @@ public sealed partial class QuickSetup {
     public const int MaxSlots = 16;
     public static readonly QuickSetupBehaviour[] Behaviours = [
         new("TravelActions", "##qs-travel", "Teleport actions",
-            "Offer teleports for quests and places. Costly teleports still ask you to confirm."),
+            "Costly teleports still ask you first."),
         new("QuestLogReplaceJournal", "##qs-journal", "Replace the game's Journal",
-            "The Gratis Quest Log opens from the Journal key and /journal. Off unless you turn it on."),
+            "Opens from the Journal key and /journal."),
         new("AutoHideChrome", "##qs-autohide", "Auto-hide controls",
-            "Fade the toolbar and cards when idle. Hover to bring them back."),
+            "Fade when idle, hover to show."),
         new("GhostMode", "##qs-ghost", "Click-through while moving",
             "Fade the map and let clicks reach the game while you move."),
     ];
@@ -209,8 +209,8 @@ public sealed partial class QuickSetup {
         Visible = InputActive = false;
         pending = -1;
         if (!IsOpen) {
-            // A fresh install only: after the spoiler warning, on an open map, outside PvP, loading and duties.
-            if (config.QuickSetupDone || !config.AcceptedSpoilerWarning || context.IsPvP || context.QuickSetupBlocked)
+            // A fresh install only: on an open map, outside PvP, loading and duties.
+            if (config.QuickSetupDone || context.IsPvP || context.QuickSetupBlocked)
                 return;
             IsOpen = true;
             Step = QuickSetupStep.Welcome;
@@ -236,8 +236,9 @@ public sealed partial class QuickSetup {
             return;
         ImGui.SetNextFrameWantCaptureKeyboard(true);
         if (Pressed(ImGuiKey.Escape, false) || Pressed(ImGuiKey.GamepadFaceRight, false)) {
+            // Choices already made apply live and stay; Escape only leaves.
             swallowEscape = true;
-            Skip(config);
+            Finish(config);
             return;
         }
         var shift = ImGui.GetIO().KeyShift;

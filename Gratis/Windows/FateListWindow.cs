@@ -20,7 +20,7 @@ public class FateListWindow : Window {
     private static float ElementHeight => 48.0f * ImGuiHelpers.GlobalScale;
 
     public FateListWindow() : base("Gratis Fate List Window", new Vector2(300.0f, 400.0f)) {
-        AdditionalInfoTooltip = "Shows Fates for the zone you are currently in";
+        AdditionalInfoTooltip = "Current zone only";
     }
 
     protected override unsafe void DrawContents() {

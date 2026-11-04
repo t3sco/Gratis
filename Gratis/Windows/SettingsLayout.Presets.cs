@@ -52,9 +52,10 @@ public sealed partial class SettingsLayout {
 #if GRATIS_PREVIEW
         var labelMin = ImGui.GetItemRectMin(); var labelMax = ImGui.GetItemRectMax();
 #endif
-        ChromeControls.Tooltip(preset.Tooltip, scale: s);
         if (essentials)
             DrawHelperLine("preset-" + preset.Id, preset.Tooltip, cellWidth, rowTop, s);
+        else
+            ChromeControls.Tooltip(preset.Tooltip, scale: s);
         if (!stacked)
             ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);

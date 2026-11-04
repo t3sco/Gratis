@@ -29,7 +29,6 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
     private bool focusTitle, importing;
     private string title = "", note = "", editorMessage = "";
     private int colour;
-    private static readonly HintRow[] EditorKeys = [new("Save", "Enter", true), new("Cancel", "Esc", true)];
     private string headerMap = "", headerCoords = "", counterText = "";
     private (uint Map, float X, float Y) headerKey = (uint.MaxValue, 0, 0);
     private int counterLength = -1;
@@ -286,7 +285,8 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             if (Button("Spotlight"))
                 Spotlight(pin);
             ImGui.SameLine();
-            if (Button("Delete")) {
+            var deleteKey = "pin-delete:" + pin.Id;
+            if (Button(deleteConfirm.IsArmed(deleteKey) ? "Confirm delete" : "Delete") && deleteConfirm.Click(deleteKey)) {
                 store.Delete(pin);
                 hover = null;
                 Notify("Pin deleted");
@@ -303,7 +303,7 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             return;
         var s = GratisTheme.ChromeScale;
         var (safeMin, safeMax) = ChromeLayout.SafeBounds();
-        var size = Vector2.Min(new Vector2(360, 348) * s, safeMax - safeMin);
+        var size = Vector2.Min(new Vector2(360, 312) * s, safeMax - safeMin);
         var pos = MapAssistance.ConstrainPanel(ImGui.GetWindowPos() + (ImGui.GetWindowSize() - size) / 2, size);
         EditorBounds = interactive ? new(pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y) : Vector4.Zero;
         assistance.Panel("##pin-editor", pos, size, () => {
@@ -334,9 +334,18 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
             var pointer = draft.Pointer;
+            // The default box is a dark square on a dark panel: give it an outline and a filled, accent-coloured tick.
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(1, 1, 1, .12f));
+            ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new Vector4(1, 1, 1, .20f));
+            ImGui.PushStyleColor(ImGuiCol.FrameBgActive, new Vector4(1, 1, 1, .28f));
+            ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(1, 1, 1, .45f));
+            ImGui.PushStyleColor(ImGuiCol.CheckMark, GratisTheme.WarmAccent);
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, MathF.Max(1, s));
             if (ImGui.Checkbox("Edge pointer", ref pointer))
                 draft.Pointer = pointer;
-            DrawEditorFooter(s);
+            ImGui.PopStyleVar();
+            ImGui.PopStyleColor(5);
+            DrawEditorCounter(s, ImGui.GetItemRectMin(), ImGui.GetItemRectSize().Y);
             var columns = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + 4 * s) / (40 * s)));
             for (var i = 0; i < 8; i++) {
                 if (i % columns != 0)
@@ -373,9 +382,12 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
     private void DrawEditorHeader(UserPin draft, float s) {
         if (headerKey != (draft.MapId, draft.X, draft.Y)) {
             headerKey = (draft.MapId, draft.X, draft.Y);
-            headerMap = $"Map {draft.MapId}";
-            headerCoords = $"{draft.X:0.0}, {draft.Y:0.0}";
+            var actions = MapDrawContext.Current.ContextMenu.Actions;
+            headerMap = actions?.MapName ?? "";
+            headerCoords = actions == null ? "" : CoordinateShare.Text(actions.Coordinates(draft.World));
         }
+        if (headerCoords.Length == 0)
+            return;
         var list = ImGui.GetWindowDrawList();
         var at = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
@@ -388,24 +400,25 @@ public sealed class PinOverlay(PinStore store, Action<PlaceEntry> show) {
         }
     }
 
-    private void DrawEditorFooter(float s) {
+    // The count only appears once the note is nearly full, on the edge-pointer row, so the form never shifts.
+    private void DrawEditorCounter(float s, Vector2 rowMin, float rowHeight) {
+        if (note.Length < 240)
+            return;
         if (counterLength != note.Length) {
             counterLength = note.Length;
             counterText = $"{note.Length}/280";
         }
-        var list = ImGui.GetWindowDrawList();
-        var at = ImGui.GetCursorScreenPos();
+        var left = ImGui.GetCursorScreenPos().X;
         var width = ImGui.GetContentRegionAvail().X;
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
-            var height = HintCard.RowHeight(s);
             var counter = TextDrawing.Measure(counterText);
-            TextDrawing.Draw(list, at + new Vector2(0, (height - counter.Y) / 2),
-                ImGui.GetColorU32(GratisTheme.Secondary), counterText);
-            if (counter.X + 16 * s + HintCard.InlineWidth(EditorKeys, s) <= width)
-                HintCard.DrawInline(list, at.X + width, at.Y, EditorKeys, s);
-            ImGui.Dummy(new Vector2(width, height));
+            TextDrawing.Draw(ImGui.GetWindowDrawList(), new(left + width - counter.X,
+                rowMin.Y + (rowHeight - counter.Y) / 2),
+                ImGui.GetColorU32(note.Length >= 280 ? GratisTheme.Objective : GratisTheme.Secondary), counterText);
         }
     }
+
+    private readonly ArmedConfirm deleteConfirm = new();
 
     private bool Button(string text) {
         var result = ActionButton.Draw(text, text, new(ActionFaces.Quiet));

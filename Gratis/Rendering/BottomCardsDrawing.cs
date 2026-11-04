@@ -135,13 +135,18 @@ public static class BottomCardsDrawing {
         var list = ImGui.GetWindowDrawList();
         MapWindowDrawing.DrawSurface(list, pos, pos + size, GratisTheme.Radius.Card * s, surface: GlassSurface.Title);
         var threeLines = LocationRegion.Length > 0;
+        var otherLineCut = false;
         var textWidth = size.X - 12 * s - MathF.Max(12 * s, LocationMenuDrawing.UpReserve(s));
         using (c.GetChromeFont(GratisTheme.SmallTextSize * s, ChromeFontRole.Body)?.Push()) {
-            if (threeLines)
-                list.AddText(pos + new Vector2(12, 5) * s, ImGui.GetColorU32(GratisTheme.Secondary),
-                    regionLabel.Fit(LocationRegion, textWidth));
+            if (threeLines) {
+                var shownRegion = regionLabel.Fit(LocationRegion, textWidth);
+                otherLineCut = shownRegion != LocationRegion;
+                list.AddText(pos + new Vector2(12, 5) * s, ImGui.GetColorU32(GratisTheme.Secondary), shownRegion);
+            }
+            var shownSecondary = secondaryLabel.Fit(LocationSecondary, textWidth);
+            otherLineCut |= shownSecondary != LocationSecondary;
             list.AddText(pos + new Vector2(12, threeLines ? 20 : 8) * s, ImGui.GetColorU32(GratisTheme.Secondary),
-                secondaryLabel.Fit(LocationSecondary, textWidth));
+                shownSecondary);
         }
         using (c.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push()) {
             var fitted = primaryLabel.Fit(LocationPrimary, textWidth);
@@ -152,7 +157,8 @@ public static class BottomCardsDrawing {
         }
         ImGui.SetCursorScreenPos(pos);
         if (c.Config.IsGratis)
-            LocationMenuDrawing.Draw(locationBounds, LocationPrimary, LocationRegion, LocationSecondary);
+            LocationMenuDrawing.Draw(locationBounds, LocationPrimary, LocationRegion, LocationSecondary,
+                LocationTruncated || otherLineCut);
         else
             ImGui.Dummy(size);
         if (!c.Config.IsGratis && ImGui.IsItemHovered())

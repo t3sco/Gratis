@@ -100,9 +100,7 @@ public static class HoverCardDrawing {
         var height = 0f;
         for (var i = 0; i < rows; i++) {
             var entry = shown[i];
-            var attuned = AetheryteAttunement.Status(context.Config, entry.Marker);
-            var swatch = (context.Config.HoverCardSwatch && entry.Category.HasValue ? 24 * scale : 0)
-                + (attuned.HasValue ? 18 * scale : 0);
+            var swatch = context.Config.HoverCardSwatch && entry.Category.HasValue ? 24 * scale : 0;
             var wrap = Math.Max(1, Math.Min(300 * scale, available.X - padding.X * 2 - swatch));
             Vector2 primary, secondary;
             using (context.GetChromeFont(titleSize, ChromeFontRole.Title)?.Push())
@@ -164,12 +162,7 @@ public static class HoverCardDrawing {
         float columnWidth) {
         var context = MapDrawContext.Current;
         var marker = entry.Marker;
-        var attuned = AetheryteAttunement.Status(context.Config, marker);
         var text = origin + new Vector2(swatch, 0);
-        if (attuned.HasValue)
-            GratisIcons.Draw(list, text + new Vector2(-10, 7) * scale,
-                attuned.Value ? GratisIcons.Unlock : GratisIcons.Lock, GratisTheme.Secondary with { W = fade },
-                12 * scale);
         if (context.Config.HoverCardSwatch && swatch > 0 && entry.Category is { } shape) {
             var center = origin + new Vector2(7, 7) * scale;
             if (marker != null && MarkerVisual.UseFlatMarker(marker))

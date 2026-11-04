@@ -48,7 +48,7 @@ Open the map with `/gratis map` or your usual map key. The Quest Log button is a
 - **Travel:** see whether an aetheryte is attuned and what the trip costs. Gratis starts the teleport but never moves your character.
 - **Settings:** simple toggles, five window presets, colour presets, a circular map, and a Classic look if you prefer the old one.
 
-Not done yet: abandoning and tracking quests from the Quest Log.
+You can abandon an accepted quest from its summary in the Quest Log. It asks you to confirm first, and Main Scenario quests cannot be abandoned. Tracking a quest is still done in the game's own Journal.
 
 <br>
 

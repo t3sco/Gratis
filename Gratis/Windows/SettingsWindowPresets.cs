@@ -50,7 +50,8 @@ public static class SettingsWindowPresets {
                 + new Vector2(ImGui.GetStyle().FramePadding.X, (height - ImGui.GetFontSize()) / 2),
                 ImGui.GetColorU32(GratisTheme.Primary), label);
             ImGui.PopStyleColor();
-            ChromeControls.Tooltip(preset.Name, scale: config.IsGratis ? SettingsTheme.Scale : null);
+            if (label != preset.Name)
+                ChromeControls.Tooltip(preset.Name, scale: config.IsGratis ? SettingsTheme.Scale : null);
             ImGui.PopID();
         }
         ImGui.BeginDisabled(settings.Presets.Count >= WindowPresetSettings.Limit);

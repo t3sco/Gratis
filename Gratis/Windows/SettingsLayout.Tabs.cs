@@ -49,12 +49,6 @@ public sealed partial class SettingsLayout {
         "##tab-essentials", "##tab-appearance", "##tab-map", "##tab-controls", "##tab-tweaks", "##tab-advanced",
         "##tab-changelog"];
     private static readonly string[] SubTabIds = ["##subtab-0", "##subtab-1", "##subtab-2", "##subtab-3", "##subtab-4"];
-    private static readonly string[] TabHelpers = [
-        "The few settings most people change.",
-        "Make the map feel at home.",
-        "Find your way around Eorzea.",
-        "Keep the controls close and the map clear.",
-        "", "Fine-tuning, window geometry and diagnostics.", ""];
 
     // Every catalog group, keyed "Section/Group". A group missing from here still lands on its section's home tab.
     private static readonly Dictionary<string, (int Tab, int Sub)> Homes = new(StringComparer.Ordinal) {

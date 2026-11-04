@@ -18,7 +18,7 @@ public static class QuickSetupFaces {
 }
 
 public sealed partial class QuickSetup {
-    public const string SkipLabel = "Skip, use defaults", CompactSkipLabel = "Skip";
+    public const string SkipLabel = "Skip", CompactSkipLabel = "Skip";
     private const float Pad = 20, CompactPad = 12, Gap = 8, Row = 36, WheelStep = 48, FooterTop = 4, MinBody = 24,
         MinWidth = 150;
     private bool draw, fBack, fUndo, fSkip, compactFooter, inFooter;
@@ -136,34 +136,27 @@ public sealed partial class QuickSetup {
         switch (page) {
             case QuickSetupStep.Welcome:
                 Heading("Welcome to Gratis");
-                Para("Gratis is an alternative FFXIV map and a fork of Mappy by MidoriKami, shared under the AGPL "
-                    + "with credit to their work. A few quick choices apply to your map as you make them.");
+                Para("Pick a look and a few options. Each one applies as you choose it.");
+                Para("Gratis is a fork of Mappy by MidoriKami, shared under the AGPL.", GratisTheme.Secondary);
                 Footer(false, false, "Next", true);
                 break;
             case QuickSetupStep.Look:
                 Heading("Pick a look");
                 Looks(config);
                 Para(QuickSetupLooks.All[QuickSetupLooks.Current(config)].Blurb);
-                if (!config.IsGratis)
-                    Para("Place search, teleport cards and the quest log work in Gratis looks only, so the next step "
-                        + "is skipped.", GratisTheme.WarmAccent);
                 Para("Marker icons", GratisTheme.Primary, 4);
                 Icons(config);
                 Footer(true, HasChange, "Next", true);
                 break;
             case QuickSetupStep.Behaviours:
                 Heading("Behaviours");
-                Para("Each one applies now. Undo puts this page back.");
                 for (var i = 0; i < Behaviours.Length; i++)
                     Toggles(config, i);
                 Footer(true, HasChange, "Next", true);
                 break;
             default:
                 Heading("You're set");
-                Para("Open Settings any time with /gratis or the gear on the map toolbar. /gratis map shows or hides "
-                    + "the map, /gratis find searches places and /gratis help lists the rest.");
-                Para("In Settings, Appearance, Save current settings as profile keeps this setup, and Run Quick setup "
-                    + "again replays it.");
+                Para("Settings are under the gear on the toolbar, or type /gratis.");
                 Footer(true, false, "Finish", false);
                 break;
         }

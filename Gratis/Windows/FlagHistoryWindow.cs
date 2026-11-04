@@ -14,7 +14,6 @@ public class FlagHistoryWindow : Window {
     private static float FlagElementHeight => 95.0f * ImGuiHelpers.GlobalScale;
 
     public FlagHistoryWindow() : base("Gratis Flag History Window", new Vector2(400.0f, 400.0f)) {
-        AdditionalInfoTooltip = "Shows a list of all recently used flags";
     }
 
     protected override void DrawContents() {

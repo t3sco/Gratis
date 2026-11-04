@@ -186,9 +186,6 @@ public sealed unsafe class ZoneSwitchController : IDisposable {
                 System.SystemConfig.FollowPlayer = true;
                 System.MapRenderer.Frame.viewportMotion.Follow.Reset();
                 System.MapRenderer.CenterOnGameObject(player);
-                if (System.SystemConfig.AutoZoom)
-                    MapRenderer.MapRenderer.Scale = DrawHelpers.GetMapScaleFactor()
-                        * System.SystemConfig.AutoZoomScaleFactor;
                 System.MapWindow.ProcessingCommand = false;
                 System.MapWindow.RefreshTitle();
                 Finish(input.WindowOpen ? "switched" : "switched: closed (selection only)");

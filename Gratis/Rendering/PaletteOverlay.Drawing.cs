@@ -10,16 +10,18 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public sealed partial class PaletteOverlay {
+    // A pill only appears where it adds something the row does not already show. The kind of an ordinary place is
+    // carried by its icon.
     private static string PlaceStatus(PlaceResult result) {
-        if (result.Place.Kind != PlaceKind.Aetheryte) return result.Place.Kind switch {
-            PlaceKind.Zone => "Zone", PlaceKind.Quest => "Quest", PlaceKind.Marker => "Marker",
-            PlaceKind.Flag => "Flag", PlaceKind.Pin => "Pin", PlaceKind.Action => "Action", _ => "Place",
-        };
+        if (result.Place.Kind != PlaceKind.Aetheryte)
+            return result.Place.Kind == PlaceKind.Action ? "Action" : "";
         if (result.Place.IsShard) return "Aethernet";
         return result.Access.Attuned ? "Attuned" : "Not yet attuned";
     }
 
     private readonly PlaceTooltip placeTooltip = new();
+    // One height for Home and for search, so the panel's lower edge stays put while the player types.
+    private const float PanelHeight = 740;
     private uint selectionMotionKey;
     public void Draw(MapDrawingConfig config) {
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Palette);
@@ -37,12 +39,11 @@ public sealed partial class PaletteOverlay {
         if (card.Z > card.X && card.Y < anchorBottom && card.W > min.Y)
             min.Y = MathF.Min(max.Y, MathF.Max(min.Y, card.W + GratisTheme.Gap * GratisTheme.ChromeScale));
         var area = max - min;
-        var rows = Math.Clamp(results.Length, 2, Math.Clamp(config.PaletteMaxResults, 2, 12));
         var questMaxHeight = area.Y / 3;
         var questHeight = PlaceSearch.Parse(query, scopes[scope]).Scope == PlaceKind.Quest
             ? QuestChips(config, scale, MathF.Min(940 * scale, area.X - 2 * GratisTheme.Gap * scale)
                 - 2 * GratisTheme.Inset * scale, false, questMaxHeight) + GratisTheme.Gap * scale : 0;
-        var size = Vector2.Min(new Vector2(940 * scale, (Home ? 740 : 118 + rows * 80) * scale + questHeight),
+        var size = Vector2.Min(new Vector2(940 * scale, PanelHeight * scale + questHeight),
             Vector2.Max(Vector2.One, area - new Vector2(GratisTheme.Gap * 2 * scale)));
         var anchor = FieldBounds.Z > FieldBounds.X ? FieldBounds : MapToolbarDrawing.LastBounds;
         var bounds = ChromePopoverMath.Place(anchor, size, min, max, GratisTheme.Gap * scale);
@@ -155,7 +156,7 @@ public sealed partial class PaletteOverlay {
                         if (IsOpen)
                             NavigateResults(config, size, scale);
                         if (results.Length == 0) {
-                            EmptyState.Draw(source.Building ? "Indexing places..." : "No places found",
+                            EmptyState.Draw(source.Building ? "Loading places..." : "No places found",
                                 EmptyFaces.PaletteSearch);
                         }
                         for (var i = 0; i < results.Length; i++)
@@ -295,7 +296,7 @@ public sealed partial class PaletteOverlay {
         var canTeleport = canTravel
             || config.PaletteTeleportButton && result.Place.Kind == PlaceKind.Aetheryte && !result.Place.IsShard
                 && result.Access.Attuned;
-        var buttonWidth = canTeleport && width >= 600 * scale ? 108 * scale : 0;
+        var buttonWidth = canTeleport && width >= 600 * scale ? 168 * scale : 0;
         if (ImGui.InvisibleButton("##show", new Vector2(MathF.Max(1, rowWidth - buttonWidth), rowHeight)))
             Activate(result.Place);
         var hovered = ImGui.IsItemHovered();
@@ -333,38 +334,34 @@ public sealed partial class PaletteOverlay {
         var textMin = start + new Vector2(imageWidth > 0 ? imageWidth + 18 * scale : 40 * scale, 9 * scale);
         // Aetheryte rows carry no expansion name or chevron: the status pill alone sits on the action's centre line.
         var aetheryte = result.Place.Kind == PlaceKind.Aetheryte;
-        var textMax = start + new Vector2(rowWidth - buttonWidth
-            - (buttonWidth == 0 ? aetheryte ? 14 : 24 : 8) * scale, rowHeight);
+        var textMax = start + new Vector2(rowWidth - buttonWidth - (buttonWidth == 0 ? 14 : 8) * scale, rowHeight);
         var text = rowNames.Text(result, results);
         var textWidth = MathF.Max(0, textMax.X - textMin.X);
         list.PushClipRect(textMin, Vector2.Max(textMin + Vector2.One, textMax), true);
-        PaletteRowDrawing.TextPair(list, textMin, textWidth, text.Name,
+        // The expansion is named on a row only when the list mixes expansions; inside one expansion it is redundant.
+        var showExpansion = !aetheryte && !browse && !rowNames.SharedExpansion(results);
+        var nameCut = PaletteRowDrawing.TextPair(list, textMin, textWidth, text.Name,
             text.Distance.Length > 0 ? text.Distance : text.Identifier, scale, rowNames);
-        PaletteRowDrawing.TextPair(list, textMin + new Vector2(0, 23 * scale), textWidth,
-            text.Detail == text.Name ? "" : text.Detail, aetheryte ? "" : text.Expansion, scale, rowNames,
+        var detailCut = PaletteRowDrawing.TextPair(list, textMin + new Vector2(0, 23 * scale), textWidth,
+            text.Detail == text.Name ? "" : text.Detail, showExpansion ? text.Expansion : "", scale, rowNames,
             secondary: true);
         using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Body)?.Push()) {
             var status = PlaceStatus(result);
-            var pillSize = Pill.Measure(status, PillFaces.PaletteRow, scale);
+            var pillSize = status.Length > 0 ? Pill.Measure(status, PillFaces.PaletteRow, scale) : Vector2.Zero;
             var pillY = aetheryte ? start.Y + (RowActionTop + GratisTheme.ControlHeight / 2) * scale - pillSize.Y / 2
                 : textMin.Y + 42 * scale;
             var pillMin = new Vector2(MathF.Max(textMin.X, textMax.X - pillSize.X), pillY);
-            PaletteRowDrawing.Pill(list, pillMin, status,
-                result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
-                    ? GratisTheme.Transport : GratisTheme.Secondary, scale);
+            if (status.Length > 0)
+                PaletteRowDrawing.Pill(list, pillMin, status,
+                    result.Place.Kind == PlaceKind.Aetheryte && result.Access.Attuned
+                        ? GratisTheme.Transport : GratisTheme.Secondary, scale);
             TextDrawing.Draw(list, textMin + new Vector2(0, 43 * scale), ImGui.GetColorU32(GratisTheme.Secondary),
                 rowNames.Fit(text.Coordinates, MathF.Max(0, pillMin.X - textMin.X - 12 * scale), secondary: true));
         }
         list.PopClipRect();
-        if (hovered)
-            placeTooltip.Show(text.Name, text.Detail, result.Place.Kind == PlaceKind.Aetheryte && !result.Access.Attuned
-                ? "Not yet attuned" : text.Coordinates);
-        if (buttonWidth == 0 && !aetheryte && rowWidth > 240 * scale) {
-            var chevron = start + new Vector2(rowWidth - 13 * scale, rowHeight / 2);
-            var colour = ImGui.GetColorU32(GratisTheme.Secondary);
-            list.AddLine(chevron - new Vector2(3, 4) * scale, chevron + new Vector2(1, 0) * scale, colour, scale);
-            list.AddLine(chevron + new Vector2(1, 0) * scale, chevron - new Vector2(3, -4) * scale, colour, scale);
-        }
+        // Only text that was actually cut off needs the tooltip; everything else is already printed on the row.
+        if (hovered && (nameCut || detailCut))
+            placeTooltip.Show(nameCut ? text.Name : text.Detail, nameCut && detailCut ? text.Detail : "");
         if (buttonWidth > 0) {
             ImGui.SetCursorScreenPos(start + new Vector2(rowWidth - buttonWidth, RowActionTop * scale));
             using (MapDrawContext.Current.GetChromeFont(GratisTheme.SmallTextSize * scale, ChromeFontRole.Chip)?.Push())

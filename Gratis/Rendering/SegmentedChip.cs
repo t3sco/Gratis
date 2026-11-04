@@ -76,7 +76,7 @@ public static class SegmentedChip {
                     (min.Y + max.Y - textSize.Y) / 2);
             TextDrawing.Draw(list, position, ImGui.GetColorU32(face.Ink), text);
             // A tooltip that repeats the visible label says nothing: show one only when it adds text or the label was cut.
-            if (options.Tooltip != null || !ReferenceEquals(text, label))
+            if (options.Tooltip is { } extra && extra != label || !ReferenceEquals(text, label))
                 ChromeControls.Tooltip(options.Tooltip ?? label, windowBounds: MapToolbarDrawing.WindowBounds);
             return clicked;
         }

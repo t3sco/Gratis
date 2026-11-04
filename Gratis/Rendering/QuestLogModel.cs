@@ -17,6 +17,8 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public bool Completed { get; init; }
     public bool ClientKnown { get; init; }
     public bool Repeatable { get; init; }
+    // An accepted quest the game itself lets you abandon (never a Main Scenario quest).
+    public bool CanAbandon { get; init; }
     public string ObjectiveProgress { get; init; } = "";
     public string DestinationNote { get; init; } = "";
     // Where the player enters a quest instance: the game marks only the instance map, so Gratis marks this itself.
@@ -52,6 +54,8 @@ public interface IQuestLogSource {
     IItemTooltipSource? Items => null;
     bool Show(QuestLogQuest quest);
     void RequestDetail(uint id) { }
+    // Abandons an accepted quest; true when the request was made. Callers ask the player to confirm first.
+    bool Abandon(QuestLogQuest quest) => false;
 }
 
 public static class QuestLogModel {

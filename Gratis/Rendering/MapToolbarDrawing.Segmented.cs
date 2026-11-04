@@ -117,7 +117,8 @@ public static partial class MapToolbarDrawing {
                     Pill.Draw(list, min, "", PillFaces.FilterDot, scale);
                 ChromeControls.Tooltip(tooltip, windowBounds: WindowBounds,
                     meta: id == "Filters" && FilterBarDrawing.TriggerLabel.Length > 0
-                        ? FilterBarDrawing.TriggerLabel : null);
+                        ? FilterBarDrawing.TriggerLabel
+                        : id == "Settings" && news > .5f ? "New changes to read" : null);
                 if (clicked) {
                     if (id == "Lens")
                         ImGui.OpenPopup(MapMenu);
