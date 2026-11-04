@@ -219,9 +219,40 @@ public sealed partial class PaletteOverlay {
         ("Nearest inn", "inn", 60436),
     ];
 
-    private PlaceResult?[] FindNearby() => NearbyCards.Select(card => NearestPlaces.Find(
-        source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries), card.Query, context, source.Access,
-        showUnattuned) is { Length: > 0 } found ? (PlaceResult?)found[0] : null).ToArray();
+    private PlaceResult?[] FindNearby() {
+        var entries = source.Entries.Concat(MapDrawContext.Current.MarkerTargets.Entries).ToArray();
+        var cards = new PlaceResult?[NearbyCards.Length];
+        nearbyTitles = new string?[NearbyCards.Length];
+        for (var i = 0; i < NearbyCards.Length; i++) {
+            if (NearestPlaces.Find(entries, NearbyCards[i].Query, context, source.Access, showUnattuned)
+                is not { Length: > 0 } found)
+                continue;
+            cards[i] = found[0];
+            // The map's own markers are named for what they are ("aetheryte", "Market"), which says nothing about
+            // where. The index knows each aetheryte and aethernet shard by name, so a card for a place near one is
+            // titled with it. The aetheryte card only trusts a shard standing right at the marker.
+            nearbyTitles[i] = i == 0 && found[0].Place.Kind == PlaceKind.Marker
+                ? NearestShard(entries, found[0].Place, 40) : i == 1 ? NearestShard(entries, found[0].Place, 150) : null;
+        }
+        return cards;
+    }
+
+    private static string? NearestShard(PlaceEntry[] entries, PlaceEntry place, float within) {
+        if (place.World is not { } at)
+            return null;
+        string? name = null;
+        foreach (var candidate in entries) {
+            if (candidate.Kind != PlaceKind.Aetheryte || candidate.MapId != place.MapId
+                || candidate.World is not { } position)
+                continue;
+            var distance = Vector2.Distance(at, position);
+            if (distance >= within)
+                continue;
+            within = distance;
+            name = candidate.Name;
+        }
+        return name;
+    }
 
     private bool DrawNearby(MapDrawingConfig config, float scale, int columns, float width) {
         var start = ImGui.GetCursorScreenPos();
@@ -238,7 +269,7 @@ public sealed partial class PaletteOverlay {
                 UiMotion.ItemId("##card");
                 using var control = UiMotion.Control(ImGui.GetWindowDrawList(), position, position + cardSize);
                 var text = found is { } result ? rowNames.Text(result, results) : default;
-                DrawCard(found?.Place, found?.Place.Name ?? NearbyCards[i].Title,
+                DrawCard(found?.Place, nearbyTitles[i] ?? found?.Place.Name ?? NearbyCards[i].Title,
                     found.HasValue ? NearbyCards[i].Title : "", GratisTheme.Transport,
                     found.HasValue ? text.Detail : "None in this zone", position, cardSize, hovered && found.HasValue, config, scale,
                     trailing: found.HasValue ? text.Distance : "", iconId: NearbyCards[i].Icon, slide: false);

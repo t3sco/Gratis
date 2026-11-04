@@ -63,7 +63,9 @@ internal sealed class PerfCommand : IDisposable {
         ResetDeltas();
         gcAtStart = GcNow();
         BenchmarkProbe.Reset();
-        BenchmarkProbe.Mask = 1UL << (int)BenchmarkSection.Window;
+        worstFirstMs = 0;
+        worstFirstParts = "";
+        BenchmarkProbe.Mask = FirstPhaseMask;
         BenchmarkProbe.Enabled = true;
         phase = Phase.Total;
         phaseEnds = Environment.TickCount64 + totalSeconds * 1000L;
@@ -122,13 +124,32 @@ internal sealed class PerfCommand : IDisposable {
             if (ms > SlowMs) slowFrames++;
             else fastFrames++;
         }
-        if (phase != Phase.Detail || ms <= worstMs)
+        var first = phase == Phase.Total;
+        if (first ? ms <= worstFirstMs : ms <= worstMs)
             return;
-        worstMs = ms;
-        worstGc = collected;
-        worstParts = string.Join(", ", deltas.Where(d => d.Calls > 0 && d.Name != nameof(BenchmarkSection.Window))
+        var parts = string.Join(", ", deltas.Where(d => d.Calls > 0 && d.Name != nameof(BenchmarkSection.Window))
             .OrderByDescending(d => d.Self).Take(5).Select(d => $"{d.Name} {d.Self:0.00}ms x{d.Calls}"));
+        if (first) {
+            worstFirstMs = ms;
+            worstFirstParts = parts;
+        }
+        else {
+            worstMs = ms;
+            worstGc = collected;
+            worstParts = parts;
+        }
     }
+
+    // The first phase times the window alone, so a hitch in it would be unexplained. These are the parts that only
+    // run now and then (opening the palette, a new font size, a texture upload), cheap enough to leave on.
+    private static readonly ulong FirstPhaseMask = (1UL << (int)BenchmarkSection.Window)
+        | (1UL << (int)BenchmarkSection.Palette) | (1UL << (int)BenchmarkSection.PaletteOpen)
+        | (1UL << (int)BenchmarkSection.Search) | (1UL << (int)BenchmarkSection.PaletteFind)
+        | (1UL << (int)BenchmarkSection.PaletteBrowse) | (1UL << (int)BenchmarkSection.PaletteNearby)
+        | (1UL << (int)BenchmarkSection.PaletteRows) | (1UL << (int)BenchmarkSection.FontLookup)
+        | (1UL << (int)BenchmarkSection.Texture) | (1UL << (int)BenchmarkSection.MapImage);
+    private double worstFirstMs;
+    private string worstFirstParts = "";
 
     private static string Spread(global::System.Collections.Generic.List<double> frames) {
         if (frames.Count == 0)
@@ -199,7 +220,11 @@ internal sealed class PerfCommand : IDisposable {
         var worst = worstMs > 0
             ? $" Slowest timed frame {worstMs:0.00} ms{(worstGc.Length > 0 ? $" (a {worstGc} GC ran in it)" : "")}: {worstParts}."
             : "";
-        var spread = $" Frames without section timers: {Spread(totalFrameMs)}. With: {Spread(detailFrameMs)}."
+        var firstWorst = worstFirstMs > 0
+            ? $" Slowest frame in the first phase {worstFirstMs:0.00} ms (only the palette, font, texture and map image "
+                + $"parts were timed): {(worstFirstParts.Length > 0 ? worstFirstParts : "none of those ran in it")}."
+            : "";
+        var spread = firstWorst + $" Frames without section timers: {Spread(totalFrameMs)}. With: {Spread(detailFrameMs)}."
             + $" GC while sampling, first phase: {gcNoTimers}; second phase: {GcSince(gcAtSwitch)}.";
         Service.Log.Information("[Gratis] " + summary + spread + slowParts + worst + " Context: " + context + detail);
         ChatGui.Print("[Gratis] " + summary + spread + slowParts + worst + " Full breakdown is in dalamud.log.");

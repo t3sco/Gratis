@@ -59,7 +59,14 @@ public static partial class DrawHelpers {
                 using (BenchmarkProbe.Measure(BenchmarkSection.HoverText)) {
                     key = FlatMarkerDrawing.Key(marker);
                     var now = ImGui.GetTime();
-                    if (key == hoverTextKey && now - hoverTextAt < .25) {
+                    // The card key alone is not enough to tell markers apart: every player dot shares one icon and no
+                    // ids, so a stack of different players would all show the first one's name. Object-table markers
+                    // (players, pets, enemies) are never cached; the rest also have to sit at the same place.
+                    var cacheX = (int)global::System.MathF.Round(marker.Position.X);
+                    var cacheY = (int)global::System.MathF.Round(marker.Position.Y);
+                    var cacheKey = $"{key}@{cacheX},{cacheY}";
+                    if (marker.Source != Rendering.MapMarkerSource.ObjectTable && cacheKey == hoverTextKey
+                        && now - hoverTextAt < .25) {
                         title = hoverTextTitle;
                         body = hoverTextBody;
                     }
@@ -69,7 +76,7 @@ public static partial class DrawHelpers {
                         var secondary = marker.SecondaryText?.Invoke();
                         body = PlayerDrawing.IsPlayerMarker(marker) ? secondary ?? ""
                             : string.IsNullOrWhiteSpace(secondary) ? label : $"{label}\n{secondary}";
-                        hoverTextKey = key;
+                        hoverTextKey = cacheKey;
                         hoverTextAt = now;
                         hoverTextTitle = title;
                         hoverTextBody = body;

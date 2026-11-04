@@ -45,11 +45,18 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
         Service.PluginInterface.Inject(this);
         Overlay = new PaletteOverlay(this);
         index.Start(BuildSheets,
-            (count, ms) => Service.Log.Information($"[PlaceIndex] Built {count} places in {ms:0} ms: "
-                + $"maps={index.Entries.Count(p => p.Kind == PlaceKind.Zone)}, "
-                + $"aetherytes={index.Entries.Count(p => p.Kind == PlaceKind.Aetheryte && !p.IsShard)}, "
-                + $"shards={index.Entries.Count(p => p.IsShard)}, "
-                + $"markers={index.Entries.Count(p => p.Kind == PlaceKind.Marker)}"),
+            (count, ms) => {
+                Service.Log.Information($"[PlaceIndex] Built {count} places in {ms:0} ms: "
+                    + $"maps={index.Entries.Count(p => p.Kind == PlaceKind.Zone)}, "
+                    + $"aetherytes={index.Entries.Count(p => p.Kind == PlaceKind.Aetheryte && !p.IsShard)}, "
+                    + $"shards={index.Entries.Count(p => p.IsShard)}, "
+                    + $"markers={index.Entries.Count(p => p.Kind == PlaceKind.Marker)}");
+                // Still on the index's own background thread: pays the first-use cost of searching here, not in the
+                // frame where the palette is first opened.
+                var warm = global::System.Diagnostics.Stopwatch.StartNew();
+                PaletteBrowser.Warm(index.Entries);
+                Service.Log.Information($"[PlaceIndex] Warmed the palette's search in {warm.ElapsedMilliseconds} ms");
+            },
             error => Service.Log.Error(error, "[PlaceIndex] Sheet build failed"));
         System.CommandManager.RegisterCommand(new CommandHandler { ActivationPath = "/find", Delegate = Find });
         RegisterStoryAction();

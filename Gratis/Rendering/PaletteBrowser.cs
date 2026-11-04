@@ -26,8 +26,64 @@ public static class PaletteBrowser {
         "Endwalker",
         "Dawntrail"];
     internal static IReadOnlyList<string> ExpansionNames => names;
+
+    /// <summary>
+    /// Runs the palette's searching and grouping once on throwaway results. The first call of this LINQ-heavy code
+    /// costs about 15 ms of JIT compilation, which otherwise lands in the frame where the palette is first opened.
+    /// Everything it calls is a pure function of immutable entries, so it is safe on a background thread. Any failure
+    /// is ignored: this only saves time, and the real search still runs when the palette opens.
+    /// </summary>
+    public static void Warm(PlaceEntry[] entries) {
+        PrepareCode(typeof(PaletteOverlay), typeof(PaletteRowDrawing), typeof(PaletteBrowser),
+            typeof(PlaceSearch), typeof(NearestPlaces), typeof(QuestLogPanel));
+        try {
+            if (entries.Length == 0)
+                return;
+            // The nearby cards search with a player position; without one the search returns at once and warms nothing.
+            var nearby = new PlaceSearchContext(0, 0, Vector2.Zero);
+            foreach (var query in new[] { "aetheryte", "market board", "inn" })
+                NearestPlaces.Find(entries, query, nearby, _ => new PlaceAccess(true), true);
+            var context = new PlaceSearchContext(0, 0, null);
+            var recent = new Dictionary<string, long>();
+            PlaceAccess Access(PlaceEntry _) => new(true);
+            foreach (var (query, scope) in new[] { ("", PlaceKind.All), ("a", PlaceKind.All), ("z:a", PlaceKind.All),
+                    ("a", PlaceKind.Quest) }) {
+                var results = Distinct(PlaceSearch.Find(entries, query, scope, context, recent, Access, true, false));
+                if (results.Length == 0)
+                    continue;
+                Expansions(entries, results.Select(r => r.Place));
+                Zones(results, entries);
+            }
+        }
+        catch (Exception) { }
+    }
     public static string Expansion(PlaceEntry place) => place.ExpansionName.Length > 0 ? place.ExpansionName
         : place.Expansion < names.Length ? names[place.Expansion] : $"Expansion {place.Expansion}";
+
+    /// <summary>
+    /// Compiles every method of these types, and of the closures and iterators nested in them, without running any.
+    /// The palette's first draw otherwise compiles its drawing code in that one frame (tens of milliseconds); this
+    /// does the same work on a background thread. A method that cannot be prepared is skipped.
+    /// </summary>
+    private static void PrepareCode(params Type[] types) {
+        const global::System.Reflection.BindingFlags all = global::System.Reflection.BindingFlags.Instance
+            | global::System.Reflection.BindingFlags.Static | global::System.Reflection.BindingFlags.Public
+            | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.DeclaredOnly;
+        var pending = new Queue<Type>(types);
+        while (pending.Count > 0) {
+            var type = pending.Dequeue();
+            if (type.ContainsGenericParameters)
+                continue;
+            foreach (var nested in type.GetNestedTypes(all))
+                pending.Enqueue(nested);
+            foreach (var method in type.GetMethods(all)) {
+                if (method.IsAbstract || method.ContainsGenericParameters)
+                    continue;
+                try { global::System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle); }
+                catch (Exception) { }
+            }
+        }
+    }
 
     public static PaletteExpansion[] Expansions(IEnumerable<PlaceEntry> entries,
         IEnumerable<PlaceEntry>? counted = null) {

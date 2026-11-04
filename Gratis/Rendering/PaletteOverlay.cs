@@ -128,6 +128,7 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
     private uint? expansion;
     private int browserSelection;
     private PlaceResult?[] nearby = new PlaceResult?[NearbyCards.Length];
+    private string?[] nearbyTitles = new string?[NearbyCards.Length];
     public uint? BrowsedExpansion => expansion;
     public int BrowserSelection => browserSelection;
     public IReadOnlyList<PaletteExpansion> Expansions => expansions;
@@ -169,7 +170,8 @@ public sealed partial class PaletteOverlay(IPaletteSource source) {
         openZones.Clear();
         zoneLimits.Clear();
         resetBrowserScroll = true;
-        source.Opening();
+        using (BenchmarkProbe.Measure(BenchmarkSection.PaletteOpen))
+            source.Opening();
         source.Used();
     }
 
