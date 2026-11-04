@@ -171,7 +171,7 @@ public static class ProfileCodec {
     }
 
     /// <summary>Reads one value as the setting's own type, or fails. Numbers are clamped to the slider range.</summary>
-    private static bool TryRead(SettingsEntry entry, object like, JsonElement element, out object value) {
+    internal static bool TryRead(SettingsEntry entry, object like, JsonElement element, out object value) {
         value = like;
         switch (like) {
             case bool when element.ValueKind is JsonValueKind.True or JsonValueKind.False:
@@ -253,6 +253,30 @@ public static class ProfileCodec {
                 entry.Reset(config, defaults);
             else
                 entry.Set(config, target);
+            changed++;
+        }
+        return changed;
+    }
+
+    /// <summary>
+    /// Sets only the settings the data names and leaves every other setting alone (unlike <see cref="Apply"/>, which
+    /// resets the rest to the defaults). With apply false it only reports. Returns how many settings change.
+    /// </summary>
+    public static int Merge(SystemConfig config, ProfileData data, bool apply = true, List<string>? changedPaths = null) {
+        var defaults = new SystemConfig();
+        var changed = 0;
+        foreach (var entry in Portable) {
+            var fallback = entry.Value(defaults);
+            if (!data.Values.TryGetValue(entry.Path, out var element) || !TryRead(entry, fallback, element, out var target)
+                || Equals(entry.Value(config), target))
+                continue;
+            if (apply) {
+                if (Equals(target, fallback))
+                    entry.Reset(config, defaults);
+                else
+                    entry.Set(config, target);
+            }
+            changedPaths?.Add(entry.Path);
             changed++;
         }
         return changed;

@@ -45,6 +45,7 @@ public static class SettingsProfilesDrawing {
             selected = 0;
             message = "";
             incoming = null;
+            MappyImportPanel.Reset();
             revertArmed = false;
             deleteConfirm.Clear();
             name = "";
@@ -147,7 +148,7 @@ public static class SettingsProfilesDrawing {
             ImGui.SetClipboardText(ProfileManager.Export(config, selected));
             Say("Copied. Paste it anywhere to share this profile.");
         }
-        if (incoming == null
+        if (incoming == null && !MappyImportPanel.Open
             && ChromeControls.TextButton("Import from clipboard", QuietSize("Import from clipboard"), scale: scale)) {
             if (ProfileCodec.TryDecode(ImGui.GetClipboardText(), out var data, out var error)) {
                 incoming = data;
@@ -157,6 +158,14 @@ public static class SettingsProfilesDrawing {
             }
             else
                 Say(error);
+        }
+        if (incoming == null && !MappyImportPanel.Open) {
+            var clicked = ChromeControls.TextButton("Import from Mappy", QuietSize("Import from Mappy"), scale: scale);
+            MappyImportPanel.ButtonBounds = MappyImportPanel.ItemBounds();
+            if (clicked) {
+                message = "";
+                MappyImportPanel.Scan(config);
+            }
         }
         if (!revertArmed
             && ChromeControls.TextButton("Revert to defaults", QuietSize("Revert to defaults"), scale: scale)) {
@@ -190,6 +199,7 @@ public static class SettingsProfilesDrawing {
             if (set.FreeSlot() == 0)
                 ImGui.TextDisabled("Delete a profile first to make room.");
         }
+        changed |= MappyImportPanel.Draw(config, half, scale, Say);
         if (revertArmed) {
             ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.WarmAccent);
             ImGui.TextWrapped("Your current settings are not saved as a profile. Reverting replaces them. You can "
