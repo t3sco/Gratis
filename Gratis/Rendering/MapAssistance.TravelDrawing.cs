@@ -56,7 +56,7 @@ public sealed partial class MapAssistance {
             var requested = TeleportCardSize(place.Name, max.X - min.X);
             if (requested.X < 230 * s)
                 return;
-            bounds = ChromeLayout.PlacePopover("hover-travel", requested, anchor);
+            bounds = ChromeLayout.PlacePopover("hover-travel", requested, anchor, allowOverlap: true);
             if (bounds == Vector4.Zero)
                 return;
             retainedTravel = place;
