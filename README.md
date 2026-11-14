@@ -4,7 +4,7 @@
 
 <br>
 
-![Status: Dalamud testing channel](https://img.shields.io/badge/status-Dalamud%20testing-C9A24B)
+![Status: Official Testing](https://img.shields.io/badge/status-Dalamud%20testing-C9A24B)
 ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-4C8BF5)
 ![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
 ![Downloads](https://img.shields.io/github/downloads/t3sco/Gratis/total?color=4C8BF5)
@@ -19,7 +19,7 @@
 
 <br>
 
-Gratis keeps the game's maps and replaces the interface around them: a flat glass look in warm gold and crystal blue, fast search, and an optional Quest Log.
+Gratis reimagines the XIV map with a focus on customization, QoL tweaks across the board, a powerful search palette and an an integration of the quest log.
 
 ## Install
 
@@ -31,38 +31,34 @@ Gratis is in the official Dalamud plugin repository's **testing** channel, so yo
 
 Updates arrive through the normal plugin installer. Testing builds can have bugs, so please report anything odd (see [Feedback and bugs](#feedback-and-bugs)).
 
-**Installed Gratis from the old custom repository?** Remove this URL from `/xlsettings`, Experimental, Custom Plugin Repositories, so you do not get two copies of the plugin:
+**Installed Gratis from the old custom repository?** Remove this URL from `/xlsettings`, Experimental, Custom Plugin Repositories, so you do not get two copies of the plugin - the custom repo will **no longer be receiving support**:
 
 ```
-https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
+https://raw.githubusercontent.com/t3sco/Grat...
 ```
 
 Open the map with `/gratis map` or your usual map key. The Quest Log button is at the top right of the map.
 
 ## Features
 
-- **Search:** find any zone, aetheryte, quest, marker or NPC. Results show the distance, whether you are attuned and what the teleport costs.
-- **Browse:** leave the box empty to browse by expansion, and use the keyboard throughout.
-- **Glass interface:** the map fades away when you are not using it, with smooth animation you can turn down or off.
-- **Remembers your view:** each zone keeps its own view, and small areas and raid arenas fit automatically.
-- **Markers:** quests, FATEs, flags, aetherytes and your party are always shown. Six lenses and a filter drawer clear a busy zone.
-- **Quest Log:** browse Accepted, Completed and Available quests beside the map, with details and rewards. It can replace the game's Journal.
-- **Travel:** see whether an aetheryte is attuned and what the trip costs. Gratis starts the teleport but never moves your character.
-- **Settings:** simple toggles, five window presets, colour presets, a circular map, and a Classic look if you prefer the old one.
-
-You can abandon an accepted quest from its summary in the Quest Log. It asks you to confirm first, and Main Scenario quests cannot be abandoned. Tracking a quest is still done in the game's own Journal.
+- **Search:** find any zone, aetheryte, quest, marker or NPC. Results show the distance, whether you are attuned and what the teleport costs. No longer are you expected to know where everything is from the get-go.
+- **Browse:** no particular location in mind? Browse through the entirety of XIV by expansion, zone and quest.
+- **A modernised, standardised UI:** optimised for ease of access and built to be endlessly resizable with responsive scaling.
+- **Remembers your view:** each zone keeps its own view, and small areas and raid arenas fit automatically. Dragging the map no longer interrupts following your character - a short delay and it springs back. Maps update on zone change so you aren't left in an old map after a teleport.
+- **Markers:** quests, FATEs, flags, aetherytes and your party are always shown. Lenses allow you to build presets for gathering, raiding, questing and more without cluttering your map.
+- **Quest Log:** browse Accepted, Completed and Available quests beside the map, with details and rewards. It can replace the game's Journal - inspired by World of Warcraft.
+- **Travel:** see whether an aetheryte is attuned and what the trip costs. Gratis starts the teleport but never moves your character. Wayfinding a quest will suggest the nearest aetheryte automatically.
+- **Settings:** simple toggles, five window presets, colour presets, a circular map, and a Classic look if you prefer the old one. Every single element of the map can be tuned to your liking.
 
 <br>
 
 <img src="docs/images/icons.png" alt="Flag and instance-link markers with a hover card, in the Gratis icon set" width="100%">
 
-## Commands
+## Roadmap
 
-| Command | What it does |
-| --- | --- |
-| `/gratis` | Open settings |
-| `/gratis map` | Open or close the map |
-| `/gratis report` | Save a report to attach to a bug report (no character names) |
+- **Aethernet:** A complete rework of the aethernet selector map UI to bring it in-line with Gratis.
+- **Custom Map Artwork:** Replace splash imagery with your own artwork in the search palette.
+- **Accepting Suggestions:** I want to hear from you! This plugin is built for the community. Have an idea? Suggest using the speech icon in the bottom left of the map.
 
 <br>
 
