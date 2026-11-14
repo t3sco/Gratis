@@ -400,12 +400,14 @@ public sealed partial class SettingsLayout {
         Group("Advanced", "Window behaviour");
         Add("KeepOpen", "Keep map open");
         Add("LockWindow", "Lock window position");
-        Add("MoveHandle", "Top-edge move handle", when: c => c.IsGratis);
+        Add("MoveHandle", "Top-edge move handle", when: c => c.IsGratis,
+            tip: "Drag the thin bar at the top, or any edge of the window, to move it. Drag a corner to resize it.");
         Add("ClassicMoveHandle", "Top-edge move handle", when: c => !c.IsGratis);
         Add("AltDragMovesWindow", "Alt-drag moves window");
         Add("MoveHandleSnap", "Snap window while moving",
             tip: "Double-click the handle to snap or restore. Hold Shift to align to screen edges.");
-        Add("EnableShiftDragMove", "Shift-drag moves window");
+        Add("EnableShiftDragMove", "Shift-drag moves window",
+            tip: "Hold Shift and drag anywhere on the map to move the window. On by default.");
         Add("NoFocusOnAppear", "Avoid focus on open");
         Add("HideWithGameGui", "Hide with game UI");
         Add("HideBetweenAreas", "Hide between areas");

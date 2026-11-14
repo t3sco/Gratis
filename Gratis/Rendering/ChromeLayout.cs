@@ -24,7 +24,7 @@ public static class ChromeLayout {
 
     public static (Vector2 Min, Vector2 Max) ToolbarSafeBounds() {
         var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-        var buttons = CornerButtons(MapDrawContext.Current);
+        var buttons = CornerButtons(MapDrawContext.Current, max.X - min.X);
         if (buttons > 0)
             max.X = MathF.Max(min.X, max.X - buttons * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
         return (min, max);
@@ -37,8 +37,22 @@ public static class ChromeLayout {
 
     public static bool FateButtonShown(MapDrawContext context) => context.Config.IsGratis && context.FateSource != null;
 
-    public static int CornerButtons(MapDrawContext context) =>
-        (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0);
+    // The Shared FATE button is the last in the row, to the left of the FATE button.
+    public static bool SharedFateButtonShown(MapDrawContext context) =>
+        context.Config.IsGratis && context.SharedFateSource != null;
+
+    // The toolbar keeps priority: this optional button is dropped when adding it would leave the toolbar less than its
+    // smallest form (a very small or circular map), so those windows lay out exactly as they did without it.
+    public static bool SharedFateButtonFits(MapDrawContext context, float safeWidth) {
+        var scale = GratisTheme.ChromeScale;
+        var buttons = (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0) + 1;
+        return safeWidth - buttons * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * scale
+            >= MapToolbarDrawing.CollapsedWidth(2) * scale;
+    }
+
+    public static int CornerButtons(MapDrawContext context, float safeWidth = float.PositiveInfinity) =>
+        (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0)
+        + (SharedFateButtonShown(context) && SharedFateButtonFits(context, safeWidth) ? 1 : 0);
 
     public static (Vector2 Min, Vector2 Max) RawSafeBounds(Vector2 position, Vector2 size) {
         var (min, max) = MapShape.Bounds(position, size);

@@ -93,7 +93,7 @@ public static class TweakCatalog {
             "Fade the map and let clicks reach the game while you move.", "GhostMode", section: "Chrome & motion",
             configureGroup: "Chrome visibility");
         Add("move-handle", "Window", GratisIcons.Anchor, "Top-edge move handle",
-            "Drag the thin bar at the top edge to move the window.", "MoveHandle", section: "Advanced",
+            "Drag the thin bar at the top, or any edge, to move the window. Drag a corner to resize it.", "MoveHandle", section: "Advanced",
             configureGroup: "Window behaviour");
         Add("alt-drag", "Window", GratisIcons.Unlock, "Alt-drag move", "Hold Alt and drag to move the map window.",
             "AltDragMovesWindow");

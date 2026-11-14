@@ -52,6 +52,8 @@ public abstract class MapDrawContext {
     public QuestLogPanel QuestLog { get; } = new();
     public virtual IFateListSource? FateSource => null;
     public FatePanel Fates { get; } = new();
+    public virtual ISharedFateSource? SharedFateSource => null;
+    public SharedFatePanel SharedFates { get; } = new();
     public QuickSetup QuickSetup { get; } = new();
     // True while loading or inside a duty, when Quick setup must not appear.
     public virtual bool QuickSetupBlocked => false;

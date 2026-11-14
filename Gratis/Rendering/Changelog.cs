@@ -18,6 +18,14 @@ public static class Changelog {
     };
 
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new ChangelogRelease("0.1.2.1", "14 Nov 2026", "Shared FATEs, and a window you can grab anywhere", [
+            new(ChangeKind.New, [
+                "A Shared FATE button beside the FATE button opens your Shared FATE progress, reskinned in the Gratis style.",
+                "Grab any edge of the map to move it, and any corner to resize it. A small handle fades in as you move the cursor near.",
+                "Hold Shift and drag the map to move the window instead of scrolling the map art (on by default, switch it off in Settings)."]),
+            new(ChangeKind.Fixed, [
+                "Map labels no longer flip between positions while your character runs."]),
+        ]),
         new ChangelogRelease("0.1.2.0", "14 Nov 2026", "FATEs on the map, and a new home", [
             new(ChangeKind.New, [
                 "Gratis is now in the official Dalamud plugin repository (testing channel). If you installed from the old custom repository, switch: in /xlsettings > Experimental, tick Get plugin testing builds, install Gratis from /xlplugins, then remove the old custom repository URL so you don't get two copies.",

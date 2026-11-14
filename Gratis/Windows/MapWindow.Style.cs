@@ -19,6 +19,9 @@ public partial class MapWindow {
         Rendering.MapDrawContext.Current.Blur.BeginFrame(ImGui.GetFrameCount());
         if (System.SystemConfig.LockWindow || System.SystemConfig.IsGratis || System.SystemConfig.ClassicMoveHandle)
             Flags |= ImGuiWindowFlags.NoMove;
+        // The corners resize through the frame's own grab zones, which replace ImGui's grip and edge resizing.
+        if (Rendering.MoveHandleInput.EdgesEnabled(System.SystemConfig))
+            Flags |= ImGuiWindowFlags.NoResize;
         pushedGripColors = 0;
         pushedChromeStyles = System.SystemConfig.IsGratis && System.SystemConfig.NeutralFrame;
         if (pushedChromeStyles) {
@@ -81,6 +84,7 @@ public partial class MapWindow {
             && !Rendering.LocationMenuDrawing.CapturesKeyboard
             && !Rendering.MapDrawContext.Current.QuestLog.CapturesKeyboard
             && !Rendering.MapDrawContext.Current.Fates.CapturesKeyboard
+            && !Rendering.MapDrawContext.Current.SharedFates.CapturesKeyboard
             && !Rendering.MapDrawContext.Current.QuickSetup.CapturesKeyboard
             && Rendering.MapDrawContext.Current.Assistance?.PinLayer?.CapturesInput != true
             && !Rendering.MapDrawContext.Current.ContextMenu.CapturesInput && Service.KeyState[VirtualKey.ESCAPE]

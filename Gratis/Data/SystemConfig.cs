@@ -74,7 +74,7 @@ public class SystemConfig : Gratis.Rendering.MapDrawingConfig {
     public bool HideWindowBackground = true;
     public bool BlurBackground = false;
     public float BlurStrength = 0.5f;
-    public bool EnableShiftDragMove = false;
+    public bool EnableShiftDragMove = true;
     public bool LockWindow = false;
     public bool MoveHandle = true;
     public bool AltDragMovesWindow = true;

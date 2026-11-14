@@ -21,6 +21,7 @@ internal sealed partial class DalamudMapDrawContext : MapDrawContext, IDisposabl
     public override ILocationMenuSource? LocationMenu => System.MapWindow.PlacePalette;
     public override IQuestLogSource? QuestLogSource => System.MapWindow.QuestLog;
     public override IFateListSource? FateSource => System.MapWindow.FateList;
+    public override ISharedFateSource? SharedFateSource => System.MapWindow.SharedFates;
     public override void JournalReplacementChanged() => System.JournalController?.Refresh();
 
     public override void OpenFilterSettings() => System.ConfigWindow.OpenSection("Filters");
