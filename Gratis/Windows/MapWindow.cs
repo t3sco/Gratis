@@ -22,6 +22,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost {
 
     public PlaceIndexGame PlacePalette { get; } = new();
     public QuestLogGame QuestLog { get; } = new();
+    public FateGame FateList { get; } = new();
 
     public void OpenPalette() {
         if (System.SystemConfig.IsGratis && System.SystemConfig.Palette)
@@ -61,6 +62,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost {
 
     public override void OnOpen() {
         Rendering.MapDrawContext.Current.QuestLog.OnOpen(System.SystemConfig);
+        Rendering.MapDrawContext.Current.Fates.OnOpen();
         Rendering.MapDrawContext.Current.WindowPresets.OnOpen(System.SystemConfig.WindowPresetOptions,
             Service.Condition.IsBoundByDuty());
         WakeGhost();
@@ -99,6 +101,7 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost {
 
     public override unsafe void OnClose() {
         Rendering.MapDrawContext.Current.QuestLog.OnClose();
+        Rendering.MapDrawContext.Current.Fates.OnClose();
         Rendering.MapDrawContext.Current.WindowPresets.Cancel();
         windowFrame.ResetWindowInput();
         if (PlacePalette.Overlay.IsOpen)

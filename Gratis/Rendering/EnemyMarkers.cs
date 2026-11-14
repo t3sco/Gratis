@@ -18,8 +18,11 @@ public sealed class EnemyMarkers {
         Shown = Needed = 0;
     }
 
-    public static bool IsVisibleEnemy(bool targetable, bool combatant, bool hostile, uint hp, float distanceSquared) =>
-        targetable && combatant && hostile && hp > 0 && float.IsFinite(distanceSquared) && distanceSquared < 22500;
+    // Striking dummies are drawn by the object pass as neutral markers, so the enemy pass skips them when asked to.
+    public static bool IsVisibleEnemy(bool targetable, bool combatant, bool hostile, uint hp, float distanceSquared,
+        bool dummy = false) =>
+        targetable && combatant && hostile && !dummy && hp > 0 && float.IsFinite(distanceSquared)
+        && distanceSquared < 22500;
 
     public bool Draw(Vector2 center, float scale, Vector4 accent, bool needed) {
         if (!Enabled || Shown >= MarkerLimit || !float.IsFinite(center.X) || !float.IsFinite(center.Y))

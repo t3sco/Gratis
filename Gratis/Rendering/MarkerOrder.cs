@@ -6,6 +6,7 @@ namespace Gratis.Rendering;
 public static class MarkerOrder {
     public static int Tier(MarkerInfo marker) {
         var family = MarkerIcon.Family(marker);
+        if (family == MarkerIconFamily.Pet && !marker.IsTarget) return -1;
         if (family == MarkerIconFamily.Player) return 3;
         if (marker.IsFlag || family == MarkerIconFamily.Flag) return 2;
         if (marker.IsTarget || marker.IsTracked || marker.IsObjective || marker.IsSpotlighted

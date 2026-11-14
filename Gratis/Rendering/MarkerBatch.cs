@@ -182,7 +182,7 @@ public sealed class MarkerBatch {
             return;
         Resolve();
         // Stable submission order within each tier; clustering protection is independent.
-        for (var tier = 0; tier <= 3; tier++)
+        for (var tier = -1; tier <= 3; tier++)
             for (var i = 0; i < count; i++) {
                 if (MarkerOrder.Tier(entries[i].Marker) != tier || entries[i].Root != i)
                     continue;

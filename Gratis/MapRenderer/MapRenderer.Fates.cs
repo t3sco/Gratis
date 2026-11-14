@@ -30,14 +30,14 @@ public partial class MapRenderer {
                     _ => FateProgressState.Unknown,
                 };
                 fateProgress[fate.FateId] = Rendering.FateProgress.Evaluate(new(state, fate.Progress,
-                    (long)fate.StartTimeEpoch + fate.Duration - now, fate.Duration));
+                    (long)fate.StartTimeEpoch + fate.Duration - now, fate.Duration, fate.HasBonus));
             }
         }
         marker.FateProgress = null;
         if (FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentMap.Instance()->SelectedTerritoryId == territory
             && marker.DataId is { } id && fateProgress.TryGetValue(id, out var display)) {
             marker.FateProgress = display;
-            marker.MotionRevision = (uint)(display.Fraction * 100) | (uint)display.State << 8;
+            marker.MotionRevision = (uint)(display.Fraction * 100) | (uint)display.State << 8 | (display.HasBonus ? 1u << 16 : 0);
         }
         return true;
     }

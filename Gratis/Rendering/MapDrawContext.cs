@@ -50,6 +50,8 @@ public abstract class MapDrawContext {
     public virtual ILocationMenuSource? LocationMenu => null;
     public virtual IQuestLogSource? QuestLogSource => null;
     public QuestLogPanel QuestLog { get; } = new();
+    public virtual IFateListSource? FateSource => null;
+    public FatePanel Fates { get; } = new();
     public QuickSetup QuickSetup { get; } = new();
     // True while loading or inside a duty, when Quick setup must not appear.
     public virtual bool QuickSetupBlocked => false;

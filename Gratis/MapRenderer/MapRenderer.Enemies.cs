@@ -126,7 +126,8 @@ public partial class MapRenderer {
 
     private static bool IsEnemy(IBattleNpc npc, Vector3 from) => EnemyMarkers.IsVisibleEnemy(npc.IsTargetable,
         npc.BattleNpcKind == BattleNpcSubKind.Combatant, (npc.StatusFlags & StatusFlags.Hostile) != 0,
-        npc.CurrentHp, Vector3.DistanceSquared(npc.Position, from));
+        npc.CurrentHp, Vector3.DistanceSquared(npc.Position, from),
+        System.SystemConfig.IsGratis && GameObjectMarkers.IsDummy(npc.NameId));
 
     private void DrawEnemyTooltip() {
         var context = MapDrawContext.Current;

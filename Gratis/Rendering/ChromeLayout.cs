@@ -24,11 +24,21 @@ public static class ChromeLayout {
 
     public static (Vector2 Min, Vector2 Max) ToolbarSafeBounds() {
         var (min, max) = RawSafeBounds(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-        var current = MapDrawContext.Current;
-        if (current.Config.IsGratis && current.QuestLogSource != null && !current.IsPvP)
-            max.X = MathF.Max(min.X, max.X - 2 * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
+        var buttons = CornerButtons(MapDrawContext.Current);
+        if (buttons > 0)
+            max.X = MathF.Max(min.X, max.X - buttons * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * GratisTheme.ChromeScale);
         return (min, max);
     }
+
+    // The top-right corner holds the quest log's toggle and pin, with the FATE button to their left. The FATE button
+    // stays in PvP (disabled, with its reason), where the quest log is hidden altogether.
+    public static bool QuestButtonsShown(MapDrawContext context) =>
+        context.Config.IsGratis && context.QuestLogSource != null && !context.IsPvP;
+
+    public static bool FateButtonShown(MapDrawContext context) => context.Config.IsGratis && context.FateSource != null;
+
+    public static int CornerButtons(MapDrawContext context) =>
+        (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0);
 
     public static (Vector2 Min, Vector2 Max) RawSafeBounds(Vector2 position, Vector2 size) {
         var (min, max) = MapShape.Bounds(position, size);

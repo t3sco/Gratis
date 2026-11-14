@@ -46,10 +46,7 @@ public partial class MapRenderer {
                 continue;
             if (System.SystemConfig.IsGratis && obj.EntityId == player.EntityId)
                 continue;
-            if (obj.ObjectKind == ObjectKind.BattleNpc && (System.SystemConfig.IsGratis
-                || System.SystemConfig.ShowEnemies && obj is IBattleNpc enemy
-                    && enemy.BattleNpcKind == BattleNpcSubKind.Combatant
-                    && (enemy.StatusFlags & Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile) != 0))
+            if (obj.ObjectKind == ObjectKind.BattleNpc && !ShowsBattleNpc(obj, player))
                 continue;
             if (GroupManager.Instance()->MainGroup.IsEntityIdInParty(obj.EntityId))
                 continue;
@@ -71,6 +68,24 @@ public partial class MapRenderer {
     }
 
     private readonly List<IGameObject> gameObjectBuffer = [];
+
+    // Classic keeps its rule: every battle NPC except the hostile combatants the enemy pass draws. Gratis draws only
+    // your pet, party and alliance pets, and striking dummies; other combatants belong to the enemy markers.
+    private unsafe bool ShowsBattleNpc(IGameObject obj, IPlayerCharacter player) {
+        if (!System.SystemConfig.IsGratis)
+            return !(System.SystemConfig.ShowEnemies && obj is IBattleNpc enemy
+                && enemy.BattleNpcKind == BattleNpcSubKind.Combatant
+                && (enemy.StatusFlags & Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile) != 0);
+        if (obj.SubKind == (int)BattleNpcSubKind.Pet)
+            return Rendering.GameObjectMarkers.ShowsPet(PetOwnerOf(obj, player.EntityId), System.SystemConfig.ShowPlayers);
+        return obj is IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant } npc && Rendering.GameObjectMarkers.IsDummy(npc.NameId);
+    }
+
+    private static unsafe Rendering.PetOwner PetOwnerOf(IGameObject pet, uint localId) {
+        var group = &GroupManager.Instance()->MainGroup;
+        return Rendering.GameObjectMarkers.Owner(pet.OwnerId, localId, group->IsEntityIdInParty(pet.OwnerId),
+            group->IsEntityIdInAlliance(pet.OwnerId));
+    }
 
     private unsafe uint GetGameObjectIconId(IGameObject obj) => obj.ObjectKind switch {
         ObjectKind.Pc when GroupManager.Instance()->MainGroup.MemberCount is 0
@@ -95,6 +110,10 @@ public partial class MapRenderer {
     // Separate from the loop so the closure over obj is only allocated for objects that are drawn, not for every
     // entry in the object table.
     private void DrawGameObjectMarker(IGameObject obj, uint iconId, uint? targetId, IPlayerCharacter player) {
+        var owner = System.SystemConfig.IsGratis && obj.SubKind == (int)BattleNpcSubKind.Pet
+            && obj.ObjectKind == ObjectKind.BattleNpc ? PetOwnerOf(obj, player.EntityId) : Rendering.PetOwner.None;
+        var named = System.SystemConfig.IsGratis && (obj is IPlayerCharacter || owner != Rendering.PetOwner.None
+            || obj is IBattleNpc npc && Rendering.GameObjectMarkers.IsDummy(npc.NameId));
         DrawHelpers.DrawMapMarker(new MarkerInfo {
             Source = Rendering.MapMarkerSource.ObjectTable,
             Position = (obj.GetMapPosition() - DrawHelpers.GetMapOffsetVector()
@@ -114,11 +133,11 @@ public partial class MapRenderer {
             IsRelevant = targetId == obj.EntityId
                 || Vector3.DistanceSquared(obj.Position, player.Position) < 10000,
             IconId = iconId,
-            PrimaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter ? obj.Name.ToString()
-                : GetTooltipForGameObject(obj),
-            SecondaryText = () => System.SystemConfig.IsGratis && obj is IPlayerCharacter character
-                ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}"
-                : GatherWindowText(obj),
+            PrimaryText = () => named ? obj.Name.ToString() : GetTooltipForGameObject(obj),
+            SecondaryText = () => !System.SystemConfig.IsGratis ? GatherWindowText(obj)
+                : obj is IPlayerCharacter character
+                    ? $"{character.ClassJob.Value.Abbreviation.ExtractText()}\tLv. {character.Level}"
+                    : owner != Rendering.PetOwner.None ? Rendering.GameObjectMarkers.Relation(owner) : GatherWindowText(obj),
         });
     }
 

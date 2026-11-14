@@ -11,13 +11,16 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Rendering;
 
 public enum FateProgressState { Unknown, Preparing, Active, Complete, Failed, WaitingForEnd }
-public readonly record struct FateSnapshot(FateProgressState State, int Progress, long RemainingSeconds, int Duration);
-public readonly record struct FateDisplay(FateProgressState State, float Fraction, string Text);
+public readonly record struct FateSnapshot(FateProgressState State, int Progress, long RemainingSeconds, int Duration,
+    bool HasBonus = false);
+public readonly record struct FateDisplay(FateProgressState State, float Fraction, string Text, bool HasBonus = false);
 
 public static class FateProgress {
     // Called at snapshot refresh, never from the per-marker drawing loop.
     public static FateDisplay Evaluate(FateSnapshot snapshot) {
         var progress = Math.Clamp(snapshot.Progress, 0, 100);
+        // A bonus only matters while the FATE can still be joined or finished.
+        var bonus = snapshot.HasBonus && snapshot.State is FateProgressState.Preparing or FateProgressState.Active;
         var text = snapshot.State switch {
             FateProgressState.Preparing => "Preparing",
             FateProgressState.Complete => "Complete",
@@ -27,8 +30,10 @@ public static class FateProgress {
                 + (snapshot.Duration > 0 ? FormatTime(Math.Clamp(snapshot.RemainingSeconds, 0, snapshot.Duration)) : "Unavailable"),
             _ => "Status unavailable",
         };
-        return new(snapshot.State, progress / 100f, text);
+        return new(snapshot.State, progress / 100f, bonus ? BonusText + "\n" + text : text, bonus);
     }
+
+    public const string BonusText = "EXP bonus";
 
     public static string FormatTime(long seconds) {
         seconds = Math.Max(0, seconds);
@@ -38,7 +43,11 @@ public static class FateProgress {
 
     public static void Draw(MarkerInfo marker) {
         var context = MapDrawContext.Current;
-        if (!context.Config.IsGratis || !context.Config.Markers.ShowFateProgress
+        if (!context.Config.IsGratis) return;
+        // Flat markers draw their own badge with the hover-scaled radius; game icons get it here.
+        if (!MarkerVisual.UseFlatMarker(marker))
+            FateBonusBadge.DrawOnIcon(marker);
+        if (!context.Config.Markers.ShowFateProgress
             || marker.FateProgress is not { State: FateProgressState.Active } progress)
             return;
         var half = MarkerVisual.HalfSize(marker);

@@ -84,6 +84,8 @@ public static class FlatMarkerDrawing {
         if (hover > 0)
             Glow(list, center, radius, config.AccentColor, hover);
         var path = Symbol(list, center, radius, marker);
+        if (config.IsGratis)
+            FateBonusBadge.Draw(list, center, radius, marker);
         context.MarkerRendering.Record(path, marker, radius * 1.9f);
         return true;
     }

@@ -50,8 +50,14 @@ public sealed partial class MapWindowFrame {
     public void PreDraw(IMapWindowHost host) {
         MapDrawContext.Current.WindowPresets.PrepareWindow(host, MoveHandle.Dragging || isDragStarted);
         MoveHandle.PrepareWindow(host);
-        MapDrawContext.Current.QuestLog.Prepare(host, host.Config.WindowPosition, host.Config.WindowSize);
+        PrepareCorner(host, host.Config.WindowPosition, host.Config.WindowSize);
         PrepareGhost(host);
+    }
+
+    // The quest log and the FATE panel share the top-right corner, so both are laid out from the same window rectangle.
+    private static void PrepareCorner(IMapWindowHost host, Vector2 position, Vector2 size) {
+        MapDrawContext.Current.QuestLog.Prepare(host, position, size);
+        MapDrawContext.Current.Fates.Prepare(host, position, size);
     }
 
     private static bool IsBoundedBy(Vector2 cursor, Vector2 min, Vector2 max) => cursor.X >= min.X && cursor.Y >= min.Y
@@ -60,7 +66,7 @@ public sealed partial class MapWindowFrame {
     public void Draw(IMapWindowHost host) {
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Window);
         MapDrawContext.Current.Trace?.BeginFrame(ImGui.GetFrameCount());
-        MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
+        PrepareCorner(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
         host.UpdateWindow();
         if (host.Config.IsGratis)
             UiMotion.Begin();
@@ -73,8 +79,8 @@ public sealed partial class MapWindowFrame {
         var paletteInput = host.Palette?.CapturesInput == true;
         MapDrawContext.Current.QuickSetup.Prepare(host);
         // The first-install panel takes pointer input exactly like the quest log panel does.
-        var questInput = host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive
-            || MapDrawContext.Current.QuickSetup.InputActive;
+        var questInput = host.Config.IsGratis && (MapDrawContext.Current.QuestLog.InputActive
+            || MapDrawContext.Current.Fates.InputActive) || MapDrawContext.Current.QuickSetup.InputActive;
         MapDrawContext.Current.ContextMenu.Prepare(host.Config);
         var assistanceInput = MapDrawContext.Current.Assistance?.InputActive == true
             || MapDrawContext.Current.ContextMenu.CapturesInput;
@@ -122,7 +128,7 @@ public sealed partial class MapWindowFrame {
             if (!renderChild.Visible)
                 return;
             MapShape.Update(ImGui.GetWindowSize());
-            MapDrawContext.Current.QuestLog.Prepare(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            PrepareCorner(host, ImGui.GetWindowPos(), ImGui.GetWindowSize());
 
             var mouseOverFrame = !paletteInput && !questInput && ChromeVisibility.IsMapFrameHovered();
             var activity = ChromeActivity.None;
@@ -185,6 +191,7 @@ public sealed partial class MapWindowFrame {
                 }
             }
             MapDrawContext.Current.QuestLog.Draw(host);
+            MapDrawContext.Current.Fates.Draw(host);
             if (!MapDrawContext.Current.Measure.InputActive && !questInput)
                 MapDrawContext.Current.ContextMenu.Draw(host, MapDrawOffset);
             host.Palette?.Draw(host.Config);
@@ -261,7 +268,8 @@ public sealed partial class MapWindowFrame {
     private void ProcessInputs(IMapWindowHost host, bool panelInput) {
         // Keep capture even if a panel button closed it during this frame's draw.
         if (panelInput || MapDrawContext.Current.QuickSetup.InputActive
-            || host.Config.IsGratis && MapDrawContext.Current.QuestLog.InputActive) {
+            || host.Config.IsGratis && (MapDrawContext.Current.QuestLog.InputActive
+                || MapDrawContext.Current.Fates.InputActive)) {
             isDragStarted = false;
             host.Flags |= ImGuiWindowFlags.NoMove;
             return;

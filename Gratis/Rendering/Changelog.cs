@@ -18,6 +18,16 @@ public static class Changelog {
     };
 
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new ChangelogRelease("0.1.2.0", "14 Nov 2026", "FATEs on the map, and a new home", [
+            new(ChangeKind.New, [
+                "Gratis is now in the official Dalamud plugin repository (testing channel). If you installed from the old custom repository, switch: in /xlsettings > Experimental, tick Get plugin testing builds, install Gratis from /xlplugins, then remove the old custom repository URL so you don't get two copies.",
+                "A FATE button beside the Quest Log lists the FATEs on your map with level, progress, time left and distance. Click one to find it on the map.",
+                "FATEs with the EXP bonus now show a gold + on the map without hovering.",
+                "Your pet and party pets, and striking dummies, now appear on the map in the Gratis style."]),
+            new(ChangeKind.Improved, [
+                "The old FATE window now opens the map and the FATE list instead.",
+                "Teleport cards now open in small map windows."]),
+        ]),
         new ChangelogRelease("0.1.0.8", "1 Nov 2026", "Lighter on your frame time (and sorry for the spam)", [
             new(ChangeKind.New, [
                 "/gratis perf: times Gratis's own drawing while the map is open and tells you the average, the slowest frames, what costs the most and whether a garbage collection hit. The details go to dalamud.log if you want to share them."]),
