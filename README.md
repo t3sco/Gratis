@@ -15,10 +15,6 @@
 
 <br>
 
-<img src="docs/images/redesigned.png" alt="The Gratis quest summary beside the Quest Log on a recoloured map" width="100%">
-
-<br>
-
 Gratis reimagines the XIV map with a focus on customization, QoL tweaks across the board, a powerful search palette and an an integration of the quest log.
 
 ## Install
