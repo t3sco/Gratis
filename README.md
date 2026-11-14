@@ -4,7 +4,7 @@
 
 <br>
 
-![Status: early testing](https://img.shields.io/badge/status-early%20testing-C9A24B)
+![Status: Dalamud testing channel](https://img.shields.io/badge/status-Dalamud%20testing-C9A24B)
 ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-4C8BF5)
 ![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
 ![Downloads](https://img.shields.io/github/downloads/t3sco/Gratis/total?color=4C8BF5)
@@ -23,17 +23,19 @@ Gratis keeps the game's maps and replaces the interface around them: a flat glas
 
 ## Install
 
-Gratis is in early testing and is not in the official Dalamud repository yet.
+Gratis is in the official Dalamud plugin repository's **testing** channel, so you need to opt in to testing builds once.
 
-1. In game, open `/xlsettings`, then Experimental, then Custom Plugin Repositories.
-2. Add this URL, tick Enabled and save:
+1. In game, open `/xlsettings`, then Experimental, and tick **Get plugin testing builds**. Save.
+2. Open `/xlplugins`, search for Gratis and install it.
+3. If you run another map replacement plugin, disable it so the two do not fight over the map.
 
-   ```
-   https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
-   ```
+Updates arrive through the normal plugin installer. Testing builds can have bugs, so please report anything odd (see [Feedback and bugs](#feedback-and-bugs)).
 
-3. Open `/xlplugins`, search for Gratis and install it.
-4. If you run another map replacement plugin, disable it so the two do not fight over the map.
+**Installed Gratis from the old custom repository?** Remove this URL from `/xlsettings`, Experimental, Custom Plugin Repositories, so you do not get two copies of the plugin:
+
+```
+https://raw.githubusercontent.com/t3sco/Gratis/master/repo.json
+```
 
 Open the map with `/gratis map` or your usual map key. The Quest Log button is at the top right of the map.
 
