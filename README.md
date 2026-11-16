@@ -8,7 +8,6 @@
 ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-4C8BF5)
 ![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
 ![Dalamud downloads](https://img.shields.io/endpoint?url=https://qzysathwfhebdai6xgauhz4q7m0mzmrf.lambda-url.us-east-1.on.aws/Gratis&label=Dalamud%20downloads&color=4C8BF5)
-![Custom repo downloads](https://img.shields.io/github/downloads/t3sco/Gratis/total?color=4C8BF5&label=custom%20repo%20downloads)
 
 [Install](#install) · [Features](#features) · [Commands](#commands) · [Feedback and bugs](#feedback-and-bugs) · [Credits](#credits)
 
