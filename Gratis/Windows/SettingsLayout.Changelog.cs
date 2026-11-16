@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Gratis.Data;
 using Gratis.Rendering;
 #if GRATIS_PREVIEW
 using ImGuiNET;
@@ -10,7 +11,7 @@ using Dalamud.Bindings.ImGui;
 namespace Gratis.Windows;
 
 public sealed partial class SettingsLayout {
-    private static void DrawChangelog() {
+    private void DrawChangelog(SystemConfig config) {
         var s = SettingsTheme.Scale;
         using (SettingsTheme.Font(14, ChromeFontRole.Title)) {
             ImGui.AlignTextToFramePadding();
@@ -46,8 +47,11 @@ public sealed partial class SettingsLayout {
                         ImGui.GetColorU32(tint));
                     ImGui.Indent(indent);
                     ImGui.PushTextWrapPos(0);
-                    ImGui.TextUnformatted(line);
+                    var (text, setting) = Changelog.Split(line);
+                    ImGui.TextUnformatted(text);
                     ImGui.PopTextWrapPos();
+                    if (setting is not null && WhatsNewPanel.SettingLink(setting, config.IsGratis))
+                        OpenSetting(setting, config);
                     ImGui.Unindent(indent);
                 }
             }

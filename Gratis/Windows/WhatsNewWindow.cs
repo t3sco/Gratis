@@ -21,6 +21,7 @@ public sealed class WhatsNewWindow : Window {
         PositionCondition = ImGuiCond.Appearing;
         panel.Save = SystemConfig.Save;
         panel.OpenChangelog = OpenChangelog;
+        panel.OpenSetting = path => System.ConfigWindow.OpenSetting(path);
     }
 
     public void ShowNow() {

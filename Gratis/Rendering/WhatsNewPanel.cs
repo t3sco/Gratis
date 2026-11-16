@@ -30,6 +30,8 @@ public sealed class WhatsNewPanel {
 
     public Action? Save { get; set; }
     public Action? OpenChangelog { get; set; }
+    public Action<string>? OpenSetting { get; set; }
+    private bool gratis;
     public Vector4 GotItBounds { get; private set; }
     public Vector4 SeeAllBounds { get; private set; }
     public Vector4 CloseBounds { get; private set; }
@@ -60,6 +62,7 @@ public sealed class WhatsNewPanel {
     public bool Draw(MapDrawingConfig config) {
         var s = MapDrawContext.Current.GlobalScale;
         var release = Changelog.Releases[0];
+        gratis = config.IsGratis;
         GroupsDrawn = BulletsDrawn = 0;
         ImGui.PushID(opens);
         var fade = UiMotion.Visibility(ImGui.GetID("whats-new"), true);
@@ -164,12 +167,46 @@ public sealed class WhatsNewPanel {
                     ImGui.GetColorU32(tint));
                 ImGui.Indent(indent);
                 ImGui.PushTextWrapPos(0);
-                ImGui.TextUnformatted(group.Items[i]);
+                var (text, setting) = Changelog.Split(group.Items[i]);
+                ImGui.TextUnformatted(text);
                 ImGui.PopTextWrapPos();
+                if (setting is not null && SettingLink(setting, gratis))
+                    OpenSetting?.Invoke(setting);
                 ImGui.Unindent(indent);
             }
         }
         ImGui.EndChild();
+    }
+
+    /// <summary>
+    /// A quiet link line naming where a setting lives. Returns true when it was clicked. Draws nothing when the
+    /// setting is not in the catalogue, so a stale marker never shows a dead link.
+    /// </summary>
+    // Link text and ids are built once per setting, so drawing a link allocates nothing.
+    private static readonly global::System.Collections.Generic.Dictionary<string, (string? Text, string Id)> GratisLinks = [],
+        ClassicLinks = [];
+
+    public static bool SettingLink(string path, bool gratis) {
+        var links = gratis ? GratisLinks : ClassicLinks;
+        if (!links.TryGetValue(path, out var link)) {
+            var crumb = SettingsLayout.Breadcrumb(path, gratis);
+            links[path] = link = (crumb is null ? null : "Settings > " + crumb, "##setting-" + path);
+        }
+        if (link.Text is not { } text)
+            return false;
+        using var font = SettingsTheme.Font(12);
+        var pos = ImGui.GetCursorScreenPos();
+        var size = ImGui.CalcTextSize(text);
+        ImGui.InvisibleButton(link.Id, size);
+        var hovered = ImGui.IsItemHovered();
+        if (hovered)
+            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+        var colour = ImGui.GetColorU32(hovered ? GratisTheme.Crystal : GratisTheme.Crystal with { W = .8f });
+        var list = ImGui.GetWindowDrawList();
+        list.AddText(pos, colour, text);
+        if (hovered)
+            list.AddLine(pos + new Vector2(0, size.Y), pos + size, colour);
+        return ImGui.IsItemClicked();
     }
 
     private void Footer(float s, ref bool closed, ref bool seeAll) {

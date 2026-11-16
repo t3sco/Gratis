@@ -17,12 +17,25 @@ public static class Changelog {
         _ => "Fixed",
     };
 
+    // A line can end with {setting:Path}, naming the settings row it talks about. The windows turn it into a link;
+    // Text is what is left once the marker is removed.
+    public static (string Text, string? Setting) Split(string item) {
+        if (Parsed.TryGetValue(item, out var cached))
+            return cached;
+        var at = item.LastIndexOf(" {setting:", StringComparison.Ordinal);
+        return Parsed[item] = at < 0 || !item.EndsWith('}') ? (item, null)
+            : (item[..at], item[(at + " {setting:".Length)..^1]);
+    }
+
+    // Parsed once per line, so drawing the changelog every frame allocates nothing.
+    private static readonly Dictionary<string, (string Text, string? Setting)> Parsed = new(StringComparer.Ordinal);
+
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
         new ChangelogRelease("0.1.2.2", "16 Nov 2026", "Tester feedback: a steadier map, and a tidier toolbar", [
             new(ChangeKind.New, [
-                "Quick Setup now asks whether the arrow and view cone follow your character or your camera, like the vanilla map and minimap.",
-                "Quest circles have their own colours (blue by default), so they stand out on dark maps. Find them in Settings > Advanced.",
-                "A new option puts the location text inside the toolbar. It stops widening at a sensible size and sits beside the buttons.",
+                "Quick Setup now asks whether the arrow and view cone follow your character or your camera, like the vanilla map and minimap. {setting:ArrowPoints}",
+                "Quest circles have their own colours (blue by default), so they stand out on dark maps. {setting:QuestAreaColor}",
+                "A new option puts the location text inside the toolbar. It stops widening at a sensible size and sits beside the buttons. {setting:LocationPlacement}",
                 "Feedback can now carry an optional Discord handle, so you can be told when it is answered.",
                 "Quests show their Priority and Hidden state from the journal."]),
             new(ChangeKind.Improved, [
@@ -38,7 +51,7 @@ public static class Changelog {
             new(ChangeKind.New, [
                 "A Shared FATE button beside the FATE button opens your Shared FATE progress, reskinned in the Gratis style.",
                 "Grab any edge of the map to move it, and any corner to resize it. A small handle fades in as you move the cursor near.",
-                "Hold Shift and drag the map to move the window instead of scrolling the map art (on by default, switch it off in Settings)."]),
+                "Hold Shift and drag the map to move the window instead of scrolling the map art (on by default). {setting:EnableShiftDragMove}"]),
             new(ChangeKind.Fixed, [
                 "Map labels no longer flip between positions while your character runs."]),
         ]),

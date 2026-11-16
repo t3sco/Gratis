@@ -82,7 +82,7 @@ public sealed partial class SettingsLayout {
                 changed = true;
             }
             if (changelogPage)
-                DrawChangelog();
+                DrawChangelog(config);
             var found = true;
             if (tweaksPage || changelogPage) { }
             else if (searching)

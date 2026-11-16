@@ -22,6 +22,13 @@ public class ConfigurationWindow : Window {
         ImGui.SetWindowFocus(WindowName);
     }
 
+    public void OpenSetting(string path) {
+        if (!layout.OpenSetting(path, System.SystemConfig))
+            return;
+        UnCollapseOrShow();
+        ImGui.SetWindowFocus(WindowName);
+    }
+
     private SettingsTheme? theme;
 
     public override void PreDraw() => theme = SettingsTheme.Push(System.SystemConfig);
