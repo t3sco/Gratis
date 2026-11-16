@@ -125,7 +125,7 @@ public sealed class FatePanel {
         corner = QuestLogLayout.Resolve(min, max, top, PanelWidth, s);
         cornerValid = true;
         var button = GratisTheme.ToolbarHeight * s;
-        var shift = ChromeLayout.QuestButtonsShown(context) ? 2 * (button + GratisTheme.Gap * s) : 0;
+        var shift = ChromeLayout.QuestButtonsShown(context) ? button + GratisTheme.Gap * s : 0;
         var x = MathF.Max(min.X, corner.Toggle.X - shift);
         toggle = new(x, corner.Toggle.Y, x + button, corner.Toggle.W);
         panel = Place(corner, context, host.Config, s, out var room);

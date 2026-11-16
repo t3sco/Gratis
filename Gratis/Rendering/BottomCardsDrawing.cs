@@ -68,6 +68,15 @@ public static class BottomCardsDrawing {
         location = next;
     }
 
+    /// <summary>The region, zone and place for the toolbar row, from the location the window host prepared this frame.</summary>
+    internal static (string Region, string Secondary, string Primary) ToolbarLines(MapDrawingConfig config) {
+        if (!ReferenceEquals(context, MapDrawContext.Current))
+            return ("", "", "");
+        var safe = new MapLocation(location.Region ?? "", location.Zone ?? "", location.Area ?? "");
+        var (secondary, primary) = safe.Lines(config.LocationCardShows);
+        return (safe.Overline(config.LocationCardShows), secondary, primary);
+    }
+
     private static void Layout(float requestedCoordinates) {
         var current = MapDrawContext.Current;
         var c = current.Config;
@@ -91,7 +100,8 @@ public static class BottomCardsDrawing {
         var safeLocation = new MapLocation(location.Region ?? "", location.Zone ?? "", location.Area ?? "");
         (LocationSecondary, LocationPrimary) = safeLocation.Lines(c.LocationCardShows);
         LocationRegion = safeLocation.Overline(c.LocationCardShows);
-        var showLocation = c.ShowTitleOnMap && (c.IsGratis || c.CompactTitle) && LocationPrimary.Length > 0;
+        var showLocation = c.ShowTitleOnMap && (c.IsGratis || c.CompactTitle) && LocationPrimary.Length > 0
+            && !MapToolbarDrawing.LocationInToolbar(c);
         float titleWidth;
         using (current.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Body)?.Push())
             titleWidth = ImGui.CalcTextSize(LocationPrimary).X;

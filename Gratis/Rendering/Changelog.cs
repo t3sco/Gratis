@@ -18,6 +18,22 @@ public static class Changelog {
     };
 
     public static IReadOnlyList<ChangelogRelease> Releases { get; } = Array.AsReadOnly(new[] {
+        new ChangelogRelease("0.1.2.2", "16 Nov 2026", "Tester feedback: a steadier map, and a tidier toolbar", [
+            new(ChangeKind.New, [
+                "Quick Setup now asks whether the arrow and view cone follow your character or your camera, like the vanilla map and minimap.",
+                "Quest circles have their own colours (blue by default), so they stand out on dark maps. Find them in Settings > Advanced.",
+                "A new option puts the location text inside the toolbar. It stops widening at a sensible size and sits beside the buttons.",
+                "Feedback can now carry an optional Discord handle, so you can be told when it is answered.",
+                "Quests show their Priority and Hidden state from the journal."]),
+            new(ChangeKind.Improved, [
+                "The quest log pin now lives in the journal header, next to search.",
+                "Pins on the map have their own icon, so they no longer look like a real flag."]),
+            new(ChangeKind.Fixed, [
+                "Centre on open now works every time you open the map, not only the first.",
+                "Segmented buttons no longer sometimes fail to light up when you click.",
+                "The Classic toolbar now lines up flush with the top of the map.",
+                "Quest markers from another floor no longer show on the map you are viewing."]),
+        ]),
         new ChangelogRelease("0.1.2.1", "14 Nov 2026", "Shared FATEs, and a window you can grab anywhere", [
             new(ChangeKind.New, [
                 "A Shared FATE button beside the FATE button opens your Shared FATE progress, reskinned in the Gratis style.",

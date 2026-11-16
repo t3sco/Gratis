@@ -42,6 +42,7 @@ public static partial class MapToolbarDrawing {
         PaletteOverlay? palette = null) {
         using var benchmark = BenchmarkProbe.Measure(BenchmarkSection.Toolbar);
         LastBounds = Vector4.Zero;
+        BeginLocation();
         ClosingSearchBounds = Vector4.Zero;
         Array.Clear(ButtonBounds);
         Array.Clear(GlyphBounds);

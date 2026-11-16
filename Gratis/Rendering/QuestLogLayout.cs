@@ -4,7 +4,6 @@ using System.Numerics;
 namespace Gratis.Rendering;
 
 public readonly record struct QuestLogLayout(Vector4 Toggle, Vector4 Panel, bool Compact) {
-    public Vector4 Pin { get; init; }
     public Vector4 Detail { get; init; }
     public bool DetailOverlay { get; init; }
 
@@ -22,7 +21,6 @@ public readonly record struct QuestLogLayout(Vector4 Toggle, Vector4 Panel, bool
         var overlay = available < actual + gap + detailWidth + 160 * scale;
         var detail = overlay ? panel : new Vector4(panel.X - gap - detailWidth, y, panel.X - gap, bottom);
         return new(toggle, panel, compact) {
-            Pin = toggle - new Vector4(button + gap, 0, button + gap, 0),
             Detail = detail, DetailOverlay = overlay,
         };
     }

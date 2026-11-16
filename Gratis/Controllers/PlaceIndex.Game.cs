@@ -155,7 +155,7 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
                 });
                 var name = marker.PlaceNameSubtext.ValueNullable?.Name.ExtractText() ?? "";
                 if (name.Length == 0)
-                    name = family is not (MarkerIconFamily.Auto or MarkerIconFamily.Neutral) ? family.ToString() : "";
+                    name = family is not (MarkerIconFamily.Auto or MarkerIconFamily.Neutral) ? MarkerIcon.Name(family) : "";
                 if (name.Length == 0)
                     continue;
                 yield return new PlaceEntry($"m:{map.RowId}:{marker.SubrowId}", PlaceKind.Marker, name,
@@ -218,10 +218,10 @@ public sealed partial class PlaceIndexGame : IPaletteSource, IDisposable {
                 if (marker.MapMarker.IconId == 0)
                     continue;
                 if (string.IsNullOrWhiteSpace(name))
-                    name = MarkerIcon.Family(new MarkerInfo {
+                    name = MarkerIcon.Name(MarkerIcon.Family(new MarkerInfo {
                         Position = default, Offset = default, Scale = 1,
                         IconId = marker.MapMarker.IconId
-                    }).ToString();
+                    }));
                 var world = new Vector2(marker.MapMarker.X, marker.MapMarker.Y) / 16 / DrawHelpers.GetMapScaleFactor()
                     + DrawHelpers.GetRawMapOffsetVector();
                 live.Add(new PlaceEntry($"live:{lastMap}:{i}", PlaceKind.Marker, name, "Current map", lastMap,

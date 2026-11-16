@@ -23,10 +23,17 @@ public static class FeedbackLink {
 
 public static class FeedbackButtonDrawing {
     private const string Popup = "Gratis_Feedback";
-    public const string Prompt = "Reports are anonymous, so I can't reply. Add as much detail as you can, or find me on Discord: tesco";
+    public const string Prompt = "Reports are anonymous unless you add your Discord handle below. I'll only use it to reply about this report.";
+    public const string ContactHint = "Discord handle (optional)";
     public const string ReportLabel = "Include a diagnostic report";
     private const string Idle = "Settings and technical details only, no character name or chat.";
     private static string draft = "";
+    internal static string TestDraft { get => draft; set => draft = value; }
+    internal static string TestContact { get => contact; set => contact = value; }
+    internal static Vector4 LastPopupBounds { get; private set; }
+    internal static float LastContentBottom { get; private set; }
+    // Kept for the session only so a second report needs no retyping: never saved, never cleared on send.
+    private static string contact = "";
     // On by default: a report without the technical details is rarely enough to find a bug. The note under the box
     // says what it holds, and the player can untick it.
     private static bool includeReport = true, sentHandled;
@@ -36,6 +43,7 @@ public static class FeedbackButtonDrawing {
 
     public static void Draw() {
         LastBounds = Vector4.Zero;
+        LastPopupBounds = Vector4.Zero;
         PopupOpen = false;
         var context = MapDrawContext.Current;
         if (!context.Config.IsGratis || !context.Config.ShowFeedbackButton || context.ContextMenu.CapturesInput)
@@ -77,8 +85,9 @@ public static class FeedbackButtonDrawing {
         var title = GratisTheme.TextSize * 1.2f * s;
         var promptHeight = ImGui.CalcTextSize(Prompt, false, wrap).Y;
         var noteHeight = ImGui.CalcTextSize(Idle, false, wrap).Y;
-        var height = 2 * padding.Y + title + promptHeight + field + ImGui.GetFrameHeight() + noteHeight
-            + GratisTheme.ControlHeight * s + 6 * spacing;
+        var handleHeight = ImGui.GetTextLineHeight() + 10 * s;
+        var height = 2 * padding.Y + title + promptHeight + field + handleHeight + ImGui.GetFrameHeight() + noteHeight
+            + GratisTheme.ControlHeight * s + 7 * spacing;
         var size = Vector2.Min(new Vector2(width, MathF.Ceiling(height)), max - min);
         var x = Math.Clamp(anchor.X, min.X, MathF.Max(min.X, max.X - size.X));
         var y = Math.Clamp(anchor.Y - GratisTheme.Gap * s - size.Y, min.Y, MathF.Max(min.Y, max.Y - size.Y));
@@ -93,6 +102,7 @@ public static class FeedbackButtonDrawing {
         }
         try {
             PopupOpen = popup.Interactive;
+            LastPopupBounds = b;
             context.Chrome.Reveal(ImGui.GetTime());
             if (popup.Interactive)
                 ImGui.SetNextFrameWantCaptureKeyboard(true);
@@ -100,7 +110,7 @@ public static class FeedbackButtonDrawing {
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 5) * s);
             using (context.GetChromeFont(GratisTheme.TextSize * s, ChromeFontRole.Title)?.Push())
                 ImGui.TextUnformatted("Feedback");
-            // The note stays visible while typing: it says why nobody can write back.
+            // The note stays visible while typing: it says when a reply is possible.
             ImGui.PushStyleColor(ImGuiCol.Text, GratisTheme.Secondary);
             ImGui.PushTextWrapPos(ImGui.GetWindowWidth() - padding.X);
             ImGui.TextUnformatted(Prompt);
@@ -110,6 +120,8 @@ public static class FeedbackButtonDrawing {
             var typed = ImGui.InputTextMultiline("##feedback-text", ref draft, FeedbackSender.MaxLength,
                 new Vector2(-1, field));
             UiMotion.ScrollbarEndItem(bar, typed);
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputTextWithHint("##feedback-contact", ContactHint, ref contact, FeedbackSender.MaxContact);
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
             ImGui.Checkbox(ReportLabel, ref includeReport);
@@ -140,10 +152,11 @@ public static class FeedbackButtonDrawing {
                 UnavailableDrawing.Control(UnavailableReason.Action(draft.Trim().Length == 0
                     ? UnavailableAction.EmptyFeedback : UnavailableAction.FeedbackCooldown));
             if (send && ready)
-                FeedbackSender.Send(draft, includeReport ? FeedbackLink.BuildReport?.Invoke() : null);
+                FeedbackSender.Send(draft, includeReport ? FeedbackLink.BuildReport?.Invoke() : null, contact);
             ImGui.SameLine();
             if (ActionButton.Draw("Open on GitHub", "Open on GitHub", new(ActionFaces.Quiet)))
                 FeedbackLink.Open?.Invoke(FeedbackLink.Url());
+            LastContentBottom = ImGui.GetItemRectMax().Y;
         }
         finally {
             ImGui.PopStyleVar(2);

@@ -134,7 +134,7 @@ public sealed class SharedFatePanel {
         corner = QuestLogLayout.Resolve(min, max, top, PanelWidth, s);
         cornerValid = true;
         var button = GratisTheme.ToolbarHeight * s;
-        // This button is the last one in the row: it sits left of the FATE button and the quest log's two.
+        // This button is the last one in the row: it sits left of the FATE button and the quest log's toggle.
         var shift = (ChromeLayout.CornerButtons(context, max.X - min.X) - 1) * (button + GratisTheme.Gap * s);
         var x = MathF.Max(min.X, corner.Toggle.X - shift);
         toggle = new(x, corner.Toggle.Y, x + button, corner.Toggle.W);

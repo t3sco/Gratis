@@ -42,7 +42,7 @@ public sealed class MapMarkerTargets {
                 yield return new PlaceEntry(seen[id] == 0 ? id : $"{id}:{seen[id]}",
                     marker.IsFlag ? PlaceKind.Flag : MarkerIcon.Family(marker) == MarkerIconFamily.Quest
                         ? PlaceKind.Quest : PlaceKind.Marker,
-                    marker.PrimaryText?.Invoke() ?? MarkerIcon.Family(marker).ToString(), "Current map", MapId, 0,
+                    marker.PrimaryText?.Invoke() ?? MarkerIcon.Name(MarkerIcon.Family(marker)), "Current map", MapId, 0,
                     world) { Icon = marker.IconId };
             }
         }

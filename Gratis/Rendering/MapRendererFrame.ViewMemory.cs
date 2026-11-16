@@ -11,9 +11,30 @@ public sealed partial class MapRendererFrame {
     private float restoreZoomVelocity;
     private double lastViewSave;
     private bool viewDirty;
+    // Set by CenterOnOpen. For a few seconds after opening, a remembered-view restore keeps the remembered zoom but
+    // aims the pan at this centre instead of the saved offset (otherwise the saved pan overwrites the centre we just
+    // wrote: the "only centres the first time" bug). It is recomputed per map, so a map switch right after opening
+    // (Follow on open) still centres on the map that ends up shown. A drag or zoom by the user ends it.
+    private const double OpenCenterSeconds = 3;
+    private (Data.CenterTarget Target, Vector2? Player, double Until)? openCenter;
     public void RestoreMapViewOnOpen() {
         rememberedMap = null;
+        openCenter = null;
         AutoFit.Invalidate();
+    }
+
+    /// <summary>The "Centre on open" setting, applied on every open (call after <see cref="RestoreMapViewOnOpen"/>).</summary>
+    public void CenterOnOpen(Data.CenterTarget target, Vector2? player) {
+        switch (target) {
+            case Data.CenterTarget.Player when player is { } position:
+                openCenter = (target, position, host.Now + OpenCenterSeconds);
+                CenterOnCoordinate(position, false);
+                break;
+            case Data.CenterTarget.Map:
+                openCenter = (target, null, host.Now + OpenCenterSeconds);
+                CenterOnOffset(Vector2.Zero, false);
+                break;
+        }
     }
 
     public string ViewMemoryDiagnostics() =>
@@ -56,7 +77,7 @@ public sealed partial class MapRendererFrame {
                 : scale;
             host.Config.MapScale = next;
             viewportMotion.Zoom.Resolve(viewportSize, next, config.ScaleWithFrame);
-            var target = !config.FollowPlayer && !config.LockCenterOnMap ? saved.Offset : null;
+            var target = !config.FollowPlayer && !config.LockCenterOnMap ? OpenCenterOffset() ?? saved.Offset : null;
             if (target is { } pan)
                 DrawOffset = ease && motion.EaseFollow
                     ? MotionMath.DampBounded(DrawOffset, pan, ref restorePanVelocity, viewportMotion.LastStep,
@@ -82,6 +103,17 @@ public sealed partial class MapRendererFrame {
             lastViewSave = host.Now;
             viewDirty = false;
         }
+    }
+
+    private Vector2? OpenCenterOffset() {
+        if (openCenter is not { } center)
+            return null;
+        if (host.Now > center.Until) {
+            openCenter = null;
+            return null;
+        }
+        return center.Target == Data.CenterTarget.Map ? Vector2.Zero
+            : center.Player is { } player ? host.CoordinateOffset(player) : null;
     }
 
     private void RememberSpotlightReturn() {

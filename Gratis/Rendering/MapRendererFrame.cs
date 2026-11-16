@@ -137,6 +137,7 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
         if (host.Config.IsGratis && !viewportReady)
             return;
         UseManualView("wheel/cluster zoom");
+        openCenter = null;
         var config = host.Config;
         viewportMotion.CancelPan();
         if (animate)
@@ -202,6 +203,8 @@ public sealed partial class MapRendererFrame(IMapRendererHost host) {
         if (host.Config.IsGratis && !viewportReady)
             return;
         UseManualView(drag ? "drag pan" : "viewport input");
+        if (drag)
+            openCenter = null;
         restoringView = null;
         if (Spotlight.OwnsViewport) {
             Spotlight.Release(host.Now, "input: keeping view");

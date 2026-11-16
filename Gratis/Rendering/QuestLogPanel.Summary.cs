@@ -183,6 +183,9 @@ public sealed partial class QuestLogPanel {
         Chip(presentation.For(quest).Level, GratisTheme.WarmAccent);
         Chip(quest.Completed ? "Completed" : Tab == QuestLogTab.Unaccepted ? QuestLogText.Available : "Accepted",
             GratisTheme.Crystal);
+        // The Journal's own choices for this quest; they are changed there, so these are labels, not buttons.
+        if (QuestLogFlags.ShowPriority(quest, Tab)) Chip(QuestLogFlags.PriorityLabel, GratisTheme.WarmAccent);
+        if (QuestLogFlags.ShowHidden(quest, Tab)) Chip(QuestLogFlags.HiddenChip, GratisTheme.Secondary);
     }
 
     private void DrawRewards(QuestLogRewards? rewards, QuestLogPresentation.Text text, float s) {

@@ -21,6 +21,17 @@ public partial class MapRenderer {
         public float MaxRadius;
     }
 
+    // /gratis events: every quest objective record the game holds for the viewed territory, with the Map row and
+    // world height it carries, and whether Gratis draws it. For a quest marker on the wrong floor, run this on that map.
+    public unsafe string EventDiagnostics() {
+        var agent = AgentMap.Instance();
+        var rows = new List<Rendering.EventMarkerRow>();
+        foreach (ref readonly var marker in agent->EventMarkers.AsSpan())
+            rows.Add(new(marker.ObjectiveId, marker.MapId, marker.TerritoryTypeId, marker.IconId, marker.Position.Y,
+                marker.Flags));
+        return Rendering.EventMarkerScope.Summary(rows, agent->SelectedMapId, agent->SelectedTerritoryId);
+    }
+
     private unsafe void DrawDynamicMarkers() {
         // The game splits the radius and foreground icon into records with the same data ID.
         // Groups are collected in first-seen order (as GroupBy did) before anything is drawn.

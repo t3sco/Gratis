@@ -21,6 +21,7 @@ public static class FlatMarkerDrawing {
         MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial =>
             "FATE / event",
         MarkerIconFamily.Flag => "Flag",
+        MarkerIconFamily.Pin => "Pin",
         MarkerIconFamily.Treasure => "Treasure",
         MarkerIconFamily.Gathering or MarkerIconFamily.Botany or MarkerIconFamily.Fishing => "Gathering",
         _ => Label(Category(marker)),

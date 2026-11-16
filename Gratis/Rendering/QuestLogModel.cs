@@ -29,6 +29,9 @@ public sealed record QuestLogQuest(uint RowId, string Name, ushort Level, QuestB
     public string RequiredClass { get; init; } = "";
     public string Prerequisites { get; init; } = "";
     public bool MoreConditions { get; init; }
+    // The game's own priority and hidden-from-map state for an accepted quest, read from its quest work every refresh.
+    public bool Priority { get; init; }
+    public bool Hidden { get; init; }
 }
 
 public sealed record QuestLogRewards(uint Gil, uint? Exp, IReadOnlyList<QuestLogRewardItem> Items);

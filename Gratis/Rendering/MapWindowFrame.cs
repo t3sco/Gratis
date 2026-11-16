@@ -171,11 +171,12 @@ public sealed partial class MapWindowFrame {
                 if (host.Config.IsGratis)
                     DrawFrameEffects();
                 MapDrawContext.Current.Trace?.Chrome("toolbar-call");
+                MapToolbarDrawing.LocationTitle = host.Title;
+                if (host.Config.IsGratis)
+                    BottomCardsDrawing.Prepare(host.Title, host.SubZone, host.Location);
                 DrawToolbar(host);
                 using (var paletteBlock = new MoveHandleInput.InputScope(paletteInput)) {
                     MapDrawContext.Current.Trace?.Chrome("coordinates-call");
-                    if (host.Config.IsGratis)
-                        BottomCardsDrawing.Prepare(host.Title, host.SubZone, host.Location);
                     DrawCoordinateBar(host);
                     if (!host.Config.IsGratis)
                         DrawFrameEffects();

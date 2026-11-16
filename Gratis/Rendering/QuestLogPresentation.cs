@@ -80,9 +80,8 @@ internal sealed class QuestLogPresentation {
         showLocked = locked;
         Filtered = QuestLogModel.Filter(snapshot!, search, tab, locked);
         Groups = QuestBuckets.Order.Select(bucket => {
-            var rows = Filtered.Where(q => q.Bucket == bucket).ToArray();
-            if (bucket == QuestBucket.Scenario)
-                rows = rows.OrderByDescending(q => q.RowId == ScenarioId).ToArray();
+            var rows = QuestLogFlags.Order(Filtered.Where(q => q.Bucket == bucket),
+                bucket == QuestBucket.Scenario ? ScenarioId : 0);
             return (bucket, rows);
         }).Where(group => group.rows.Length > 0).ToArray();
     }

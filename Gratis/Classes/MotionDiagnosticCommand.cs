@@ -15,6 +15,10 @@ internal sealed class MotionDiagnosticCommand {
             Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.EnemyDiagnostics()),
         });
         System.CommandManager.RegisterCommand(new CommandHandler {
+            ActivationPath = "/events",
+            Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.EventDiagnostics()),
+        });
+        System.CommandManager.RegisterCommand(new CommandHandler {
             ActivationPath = "/links",
             Delegate = _ => diagnostics.ChatGui.Print("[Gratis] " + System.MapRenderer.LinkDiagnostics()),
         });

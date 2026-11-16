@@ -164,17 +164,20 @@ public static partial class DrawHelpers {
             marker.RadiusOutlineColor with { W = MapDrawContext.Current.Config.AreaOutlineColor.W });
 
         if (MapDrawContext.Current.Config.IsGratis) {
-            var color = FlatMarkerDrawing.Color(FlatMarkerDrawing.Category(marker));
-            fillColor = ImGui.GetColorU32(color with {
-                W = MathF.Min(MapDrawContext.Current.Config.AreaColor.W,
-                .10f)
-            });
-            radiusColor = ImGui.GetColorU32(color with {
-                W = MathF.Min(MapDrawContext.Current.Config.AreaOutlineColor.W,
-                .28f)
-            });
-            ImGui.GetWindowDrawList().AddCircleFilled(center, radius, fillColor);
-            ImGui.GetWindowDrawList().AddCircle(center, radius, radiusColor, 0, MapDrawContext.Current.GlobalScale);
+            var (fill, outline) = AreaCircleColours.Flat(marker, MapDrawContext.Current.Config);
+            fillColor = ImGui.GetColorU32(fill);
+            radiusColor = ImGui.GetColorU32(outline);
+            var list = ImGui.GetWindowDrawList();
+            var scale = MapDrawContext.Current.GlobalScale;
+            list.AddCircleFilled(center, radius, fillColor);
+            if (AreaCircleColours.IsQuest(marker)) {
+                // A thin dark edge under the outline keeps a quest circle readable on a pale map.
+                list.AddCircle(center, radius, ImGui.GetColorU32(AreaCircleColours.Halo(outline)), 0,
+                    (AreaCircleColours.QuestOutlineWidth + 2 * AreaCircleColours.HaloExtra) * scale);
+                list.AddCircle(center, radius, radiusColor, 0, AreaCircleColours.QuestOutlineWidth * scale);
+            }
+            else
+                list.AddCircle(center, radius, radiusColor, 0, scale);
             return;
         }
 

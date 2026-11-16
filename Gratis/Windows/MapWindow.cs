@@ -81,20 +81,11 @@ public partial class MapWindow : Window, Rendering.IMapWindowHost {
             System.SystemConfig.FollowPlayer = true;
         }
 
-        switch (System.SystemConfig.CenterOnOpen) {
-            case CenterTarget.Player when Service.ObjectTable.LocalPlayer is { } localPlayer:
-                System.MapRenderer.CenterOnGameObject(localPlayer);
-                break;
-
-            case CenterTarget.Map:
-                System.SystemConfig.FollowPlayer = false;
-                System.MapRenderer.DrawOffset = Vector2.Zero;
-                break;
-
-            case CenterTarget.Disabled:
-            default:
-                break;
-        }
+        var centre = System.SystemConfig.CenterOnOpen;
+        if (centre == CenterTarget.Map)
+            System.SystemConfig.FollowPlayer = false;
+        System.MapRenderer.Frame.CenterOnOpen(centre,
+            Service.ObjectTable.LocalPlayer is { } localPlayer ? new Vector2(localPlayer.Position.X, localPlayer.Position.Z) : null);
     }
 
     public void WakeGhost() => windowFrame.Ghost.Wake(ImGui.GetTime());

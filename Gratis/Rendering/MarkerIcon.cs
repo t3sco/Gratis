@@ -7,6 +7,8 @@ public enum MarkerIconFamily {
     FateEscort, FateSpecial, Duty, Exit, Shop, Mender, Inn, Housing, Stable, Mail,
     Bell, Market, Gathering, Botany, Fishing, Hunt, Treasure, Flag, Party, Alliance,
     Player, Pet, Anchor, Chocobo, AetherCurrent, Leve, Lore, Guildhest, Cards, Gate, Novice, Neutral,
+    // Appended last so saved per-icon family choices keep their numbers. The game's map-pin icons, not the player's flag.
+    Pin,
 }
 
 public enum QuestMarkerState {
@@ -64,8 +66,9 @@ public static class MarkerIcon {
             60432 or 60433 => MarkerIconFamily.Botany,
             60445 or >= 70200 and <= 70299 => MarkerIconFamily.Fishing,
             60653 => MarkerIconFamily.AetherCurrent,
-            60442 => MarkerIconFamily.Flag,
-            >= 61240 and <= 61249 => MarkerIconFamily.Flag,
+            // Pinned nodes, not the player's flag: only a marker with IsFlag set is the real flag (see above).
+            60442 => MarkerIconFamily.Pin,
+            >= 61240 and <= 61249 => MarkerIconFamily.Pin,
             60412 or 61731 => MarkerIconFamily.Shop,
             60434 or 60910 => MarkerIconFamily.Mender,
             60436 or 60559 or 60988 => MarkerIconFamily.Inn,
@@ -107,7 +110,7 @@ public static class MarkerIcon {
     public static MarkerCategory Category(MarkerIconFamily family) => family switch {
         MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet or MarkerIconFamily.Anchor or MarkerIconFamily.Chocobo =>
             MarkerCategory.Transport,
-        MarkerIconFamily.Quest or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or MarkerIconFamily.Flag or MarkerIconFamily.Leve =>
+        MarkerIconFamily.Quest or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or MarkerIconFamily.Flag or MarkerIconFamily.Pin or MarkerIconFamily.Leve =>
             MarkerCategory.Objective,
         MarkerIconFamily.Duty or MarkerIconFamily.Exit => MarkerCategory.Link,
         MarkerIconFamily.Shop or MarkerIconFamily.Mender or MarkerIconFamily.Inn or MarkerIconFamily.Housing or MarkerIconFamily.Stable or MarkerIconFamily.Mail or MarkerIconFamily.Bell or MarkerIconFamily.Market =>
@@ -140,10 +143,18 @@ public static class MarkerIcon {
         MarkerIconFamily.Fishing => GratisIcons.Fish,
         MarkerIconFamily.Hunt => GratisIcons.Crosshair,
         MarkerIconFamily.Flag => GratisIcons.Flag,
+        MarkerIconFamily.Pin => GratisIcons.MapPin,
         MarkerIconFamily.Anchor => GratisIcons.Anchor,
         MarkerIconFamily.Leve or MarkerIconFamily.Lore => GratisIcons.BookOpen,
         MarkerIconFamily.Cards => GratisIcons.Layers,
         MarkerIconFamily.Gate => GratisIcons.Ticket,
         _ => GratisIcons.Landmark,
+    };
+
+    // The word shown for an unnamed marker in hovers and search. Flag is only ever the player's own flag.
+    public static string Name(MarkerIconFamily family) => family switch {
+        MarkerIconFamily.Flag => "Flag",
+        MarkerIconFamily.Pin => "Pin",
+        _ => family.ToString(),
     };
 }

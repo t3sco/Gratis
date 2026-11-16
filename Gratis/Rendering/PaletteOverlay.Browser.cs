@@ -469,7 +469,7 @@ public sealed partial class PaletteOverlay {
         PlaceKind.Zone => GratisIcons.Compass,
         PlaceKind.Quest => GratisIcons.BookOpen,
         PlaceKind.Flag => GratisIcons.Flag,
-        PlaceKind.Pin => GratisIcons.Anchor,
+        PlaceKind.Pin => GratisIcons.MapPin,
         PlaceKind.Action => GratisIcons.LocateFixed,
         _ => GratisIcons.MapPin,
     };

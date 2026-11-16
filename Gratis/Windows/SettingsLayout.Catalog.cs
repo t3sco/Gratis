@@ -256,8 +256,8 @@ public sealed partial class SettingsLayout {
         Add("FlatPlayer", "Arrow and soft view cone");
         Add("PlayerArrowSmoothing", "Arrow smoothing", choices: "Off|Low|Medium|High",
             tip: "Smooths how the arrow and cone turn. Turning animations off turns them instantly.");
-        Add("ArrowPoints", "Arrow points", choices: "Camera|Character",
-            tip: "Whether your arrow follows the camera or your character. Uses the character if the camera is unavailable.");
+        Add("ArrowPoints", "Arrow and cone follow", choices: "Camera|Character",
+            tip: "Camera turns the arrow and view cone with the game camera, like the game's own map. Character uses the way your character faces. Falls back to the character if the camera cannot be read.");
         Add("PlayerInnerHighlight", "Arrow highlight", when: c => c.FlatPlayer && c.ShowPlayerIcon);
         Add("SoftConeLength", "Cone length", 0, 200, "%.0f px", when: c => c.FlatPlayer);
         Add("SoftConeOpacity", "Cone opacity", 0, .5f, when: c => c.FlatPlayer);
@@ -272,6 +272,9 @@ public sealed partial class SettingsLayout {
         Add("RadarOutlineColor", "Radar outline", when: c => c.ShowRadar);
         Add("AreaColor", "Area fill");
         Add("AreaOutlineColor", "Area outline");
+        Add("QuestAreaColor", "Quest area fill", when: Gratis,
+            tip: "The circle around a quest objective on the map. Its opacity is the strength of the fill.");
+        Add("QuestAreaOutlineColor", "Quest area outline", when: Gratis);
 
         Group("Chrome & motion", "Chrome visibility", Gratis);
         Add("AutoHideChrome", "Auto-hide controls",
@@ -309,6 +312,9 @@ public sealed partial class SettingsLayout {
         Add("ToolbarFade", "Toolbar opacity");
         Group("Chrome & motion", "Title");
         Add("ShowTitleOnMap", "Title on map");
+        Add("LocationPlacement", "Location text position", choices: "Floating|In toolbar", when: c => c.ShowTitleOnMap,
+            tip: "In toolbar writes the place name into the toolbar row, between its buttons, and widens the toolbar to "
+                + "fit it. It hides with the toolbar, and circular maps keep the floating location.");
         Add("ShowRegionLabel", "Region in title");
         Add("ShowMapLabel", "Map in title");
         Add("ShowAreaLabel", "Area in title", when: c => !c.IsGratis);

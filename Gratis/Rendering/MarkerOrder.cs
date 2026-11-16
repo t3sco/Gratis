@@ -8,7 +8,7 @@ public static class MarkerOrder {
         var family = MarkerIcon.Family(marker);
         if (family == MarkerIconFamily.Pet && !marker.IsTarget) return -1;
         if (family == MarkerIconFamily.Player) return 3;
-        if (marker.IsFlag || family == MarkerIconFamily.Flag) return 2;
+        if (marker.IsFlag || family is MarkerIconFamily.Flag or MarkerIconFamily.Pin) return 2;
         if (marker.IsTarget || marker.IsTracked || marker.IsObjective || marker.IsSpotlighted
             || marker.MarkerType is MarkerType.Fate or MarkerType.Stellar
             || family is MarkerIconFamily.Quest or MarkerIconFamily.Leve

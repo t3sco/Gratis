@@ -152,6 +152,8 @@ public sealed partial class QuickSetup {
                 Heading("Behaviours");
                 for (var i = 0; i < Behaviours.Length; i++)
                     Toggles(config, i);
+                Para("Arrow and view cone follow", GratisTheme.Primary, 4);
+                ArrowChoice(config);
                 Footer(true, HasChange, "Next", true);
                 break;
             default:
@@ -329,6 +331,24 @@ public sealed partial class QuickSetup {
                 ChooseIcons(config, style);
         }
         fy += (GratisTheme.ControlHeight - 4) * fs + Gap * fs;
+    }
+
+    private void ArrowChoice(SystemConfig config) {
+        var width = (fw - Gap * fs) / 2;
+        var height = (GratisTheme.ControlHeight - 4) * fs;
+        for (var i = 0; draw && i < 2; i++) {
+            var direction = i == 0 ? PlayerArrowDirection.Camera : PlayerArrowDirection.Character;
+            var label = i == 0 ? "Camera" : "Character";
+            var min = new Vector2(fx + i * (width + Gap * fs), fy);
+            ImGui.SetCursorScreenPos(min);
+            ImGui.PushID(slots);
+            var clicked = SegmentedChip.Draw("##arrow", label, config.ArrowPoints == direction,
+                new(ChipFaces.Regular, GratisTheme.WarmAccent, new Vector2(width, height), fs, Centered: true));
+            ImGui.PopID();
+            if (Slot(label, min, min + new Vector2(width, height), clicked))
+                ChooseArrow(config, direction);
+        }
+        fy += height + Gap * fs;
     }
 
     private void Toggles(SystemConfig config, int index) {

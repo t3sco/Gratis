@@ -30,7 +30,7 @@ public sealed partial class SettingsLayout {
             "PinMaxPerMap", "PoiMarkerColor", "TransportMarkerColor", "ObjectiveMarkerColor", "LinkMarkerColor",
             "ServiceMarkerColor", "PartyMarkerColor", "ScalePlayerCone", "PlayerInnerHighlight", "SoftConeLength",
             "SoftConeOpacity", "ConeSize", "PlayerConeColor", "PlayerConeOutlineColor", "ShowRadarInDuties",
-            "RadarColor", "RadarOutlineColor", "AreaColor", "AreaOutlineColor",
+            "RadarColor", "RadarOutlineColor", "AreaColor", "AreaOutlineColor", "QuestAreaColor", "QuestAreaOutlineColor",
             // Chrome & motion
             "ChromeTitleMinAlpha", "ChromeControlsMinAlpha", "ChromeIdleDelay", "ChromeFadeDurationMs",
             "GhostRestoreDelay", "ToolbarAnchor", "LocationAnchor", "CoordinateAnchor",

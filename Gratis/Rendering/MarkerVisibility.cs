@@ -73,7 +73,7 @@ public sealed class MarkerVisibility {
     public static bool IsPriority(MarkerInfo marker) => marker.IsTarget || marker.IsFlag || marker.IsTracked
         || marker.IsHovered || marker.IsSpotlighted || marker.IsObjective
         || marker.MarkerType is MarkerType.Fate or MarkerType.Stellar
-        || MarkerIcon.Family(marker) is MarkerIconFamily.Quest or MarkerIconFamily.Leve or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet or MarkerIconFamily.Flag or MarkerIconFamily.Party or MarkerIconFamily.Alliance;
+        || MarkerIcon.Family(marker) is MarkerIconFamily.Quest or MarkerIconFamily.Leve or MarkerIconFamily.Fate or MarkerIconFamily.FateBoss or MarkerIconFamily.FateCollect or MarkerIconFamily.FateDefend or MarkerIconFamily.FateEscort or MarkerIconFamily.FateSpecial or MarkerIconFamily.Aetheryte or MarkerIconFamily.Aethernet or MarkerIconFamily.Flag or MarkerIconFamily.Pin or MarkerIconFamily.Party or MarkerIconFamily.Alliance;
 
     public static MarkerVisibilityState Resolve(MarkerVisibilityState lens, MarkerVisibilityState? filter,
         bool priority, bool peek) =>

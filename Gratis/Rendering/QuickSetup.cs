@@ -36,6 +36,11 @@ public sealed partial class QuickSetup {
         b => Array.Find(SettingsLayout.Entries, e => e.Path == b.Path)
             ?? throw new InvalidOperationException("Unknown setting " + b.Path)))[index];
 
+    private static SettingsEntry? arrowEntry;
+    /// <summary>The camera/character choice shown under the toggles; snapshotted with them so Undo and Skip restore it.</summary>
+    private static SettingsEntry ArrowEntry => arrowEntry ??= Array.Find(SettingsLayout.Entries,
+        e => e.Path == "ArrowPoints") ?? throw new InvalidOperationException("Unknown setting ArrowPoints");
+
     public bool IsOpen { get; private set; }
     public bool Visible { get; private set; }
     public bool InputActive { get; private set; }
@@ -97,7 +102,7 @@ public sealed partial class QuickSetup {
     private static StepSnapshot? Capture(SystemConfig config, QuickSetupStep step) {
         SettingsEntry[] entries = step switch {
             QuickSetupStep.Look => QuickSetupLooks.OwnedEntries,
-            QuickSetupStep.Behaviours => Enumerable.Range(0, Behaviours.Length).Select(Entry).ToArray(),
+            QuickSetupStep.Behaviours => Enumerable.Range(0, Behaviours.Length).Select(Entry).Append(ArrowEntry).ToArray(),
             _ => [],
         };
         return entries.Length == 0 ? null : new(entries, Array.ConvertAll(entries, e => e.Value(config)),
@@ -187,6 +192,13 @@ public sealed partial class QuickSetup {
         if (config.Markers.IconStyle == style)
             return;
         config.Markers.IconStyle = style;
+        MarkDirty();
+    }
+
+    public void ChooseArrow(SystemConfig config, PlayerArrowDirection direction) {
+        if (config.ArrowPoints == direction)
+            return;
+        config.ArrowPoints = direction;
         MarkDirty();
     }
 

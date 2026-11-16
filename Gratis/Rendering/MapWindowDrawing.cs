@@ -207,9 +207,21 @@ public static class MapWindowDrawing {
 
     private static string? titleSource, titleTrimmed;
 
+    /// <summary>Splits a window title into its leading names and the place (the last part).</summary>
+    internal static (string Secondary, string Primary) TitleParts(string title, MapDrawingConfig config) {
+        var idIndex = title.IndexOf("###");
+        if (idIndex >= 0)
+            title = title[..idIndex];
+        var parts = title.Split(" - ",
+            global::System.StringSplitOptions.RemoveEmptyEntries | global::System.StringSplitOptions.TrimEntries);
+        return parts.Length == 0 ? ("", "")
+            : (string.Join(config.TitleSeparator, parts[..^1]), parts[^1]);
+    }
+
     public static void DrawTitleOnMap(string title) {
         var config = MapDrawContext.Current.Config;
-        if (!config.ShowTitleOnMap || (!config.IsGratis && !config.HideWindowFrame))
+        if (!config.ShowTitleOnMap || (!config.IsGratis && !config.HideWindowFrame)
+            || MapToolbarDrawing.LocationInToolbar(config))
             return;
 
         using var chromeAlpha = new ChromeVisibility.AlphaScope(config.IsGratis,

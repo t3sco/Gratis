@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -28,18 +29,40 @@ public static class FeedbackSender {
             state = FeedbackState.Idle;
     }
 
-    public static void Send(string message, string? report) {
+    public const int MaxContact = 40;
+
+    // Control characters and newlines are dropped, then the result is trimmed and cut to the relay's limit.
+    public static string CleanContact(string? contact) {
+        if (string.IsNullOrEmpty(contact))
+            return "";
+        var cleaned = new StringBuilder(contact.Length);
+        foreach (var c in contact)
+            if (!char.IsControl(c))
+                cleaned.Append(c);
+        var text = cleaned.ToString().Trim();
+        return text.Length > MaxContact ? text[..MaxContact].TrimEnd() : text;
+    }
+
+    public static string BuildJson(string message, string? report, string? contact, string version) {
+        var payload = new Dictionary<string, object?> {
+            ["message"] = message.Length > MaxLength ? message[..MaxLength] : message,
+            ["version"] = version,
+            ["report"] = report,
+        };
+        var handle = CleanContact(contact);
+        if (handle.Length > 0)
+            payload["contact"] = handle;
+        return JsonSerializer.Serialize(payload);
+    }
+
+    public static void Send(string message, string? report, string? contact = null) {
         message = message.Trim();
         if (message.Length == 0 || !CanSend)
             return;
         state = FeedbackState.Sending;
         error = "";
         var version = typeof(FeedbackSender).Assembly.GetName().Version?.ToString() ?? "unknown";
-        var json = JsonSerializer.Serialize(new {
-            message = message.Length > MaxLength ? message[..MaxLength] : message,
-            version,
-            report,
-        });
+        var json = BuildJson(message, report, contact, version);
         _ = Task.Run(async () => {
             try {
                 if (await Post(json).ConfigureAwait(false)) {

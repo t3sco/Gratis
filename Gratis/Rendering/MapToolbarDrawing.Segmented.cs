@@ -45,8 +45,14 @@ public static partial class MapToolbarDrawing {
         EffectiveAnchor = anchor == ChromeAnchor.TopCenter
             && available < MathF.Max(fullWidth, contentWidth) + centerAllowance
             ? ChromeAnchor.TopLeft : anchor;
-        var width = context.Config.SegmentedToolbar ? contentWidth : available;
-        if (!context.Config.SegmentedToolbar && EffectiveAnchor == ChromeAnchor.TopCenter)
+        // The location text sits between the button groups, so it needs the full-width band and its right-hand group.
+        var fullBand = !context.Config.SegmentedToolbar || LocationInToolbar(context.Config);
+        var width = fullBand ? available : contentWidth;
+        // With the location text inside it the band would stretch across a wide screen, so it stops growing at a
+        // sensible width and stays beside the left-hand buttons.
+        if (fullBand && LocationInToolbar(context.Config))
+            width = MathF.Min(width, MaxLocationBandWidth * scale);
+        if (fullBand && EffectiveAnchor == ChromeAnchor.TopCenter)
             width -= centerAllowance;
         var height = GratisTheme.ToolbarHeight * scale;
         var bounds = ChromeLayout.Place("toolbar", new Vector2(width, height), EffectiveAnchor);
@@ -69,13 +75,19 @@ public static partial class MapToolbarDrawing {
                 GratisTheme.Radius.Card * scale, surface: GlassSurface.Toolbar);
             var x = 4 * scale;
             var divider = 0;
+            float locationLeft = -1, locationRight = -1;
             for (var index = 0; index < count; index++) {
                 var buttonIndex = compact || count == 2 ? index == 0 ? 0 : index + 4 : index;
                 var (id, action, tooltip) = Buttons[buttonIndex];
                 var separated = index > 0 && !(buttonIndex == 2 && !compact);
-                if (!context.Config.SegmentedToolbar && buttonIndex == 5)
+                var groupEnd = x;
+                if (fullBand && buttonIndex == 5) {
                     x = MathF.Max(x, width - 4 * scale - (count - index) * GratisTheme.ControlHeight * scale
                         - (count - index - 1) * DividerSpace * scale - (separated ? DividerSpace * scale : 0));
+                    // The free gap runs from the end of the left group to the divider before Settings.
+                    locationLeft = origin.X + groupEnd + GratisTheme.Gap * scale / 2;
+                    locationRight = origin.X + x - GratisTheme.Gap * scale / 2;
+                }
                 if (separated) {
                     var spacing = DividerSpace * scale;
                     var dx = origin.X + x + spacing / 2;
@@ -105,7 +117,10 @@ public static partial class MapToolbarDrawing {
                         ImGui.GetColorU32(Vector4.Lerp(new Vector4(1, 1, 1, .06f * lift),
                             context.Config.AccentColor with { W = .12f }, chosen)),
                         radius);
-                ChromeControls.Feedback(list, min, min + new Vector2(GratisTheme.ControlHeight * scale), fill: false, radius: radius);
+                // Passes the same state as `chosen` above: feedback shares channel 6, and two targets on one channel
+                // restart each other every frame, so a button that became active would never fill.
+                ChromeControls.Feedback(list, min, min + new Vector2(GratisTheme.ControlHeight * scale), active,
+                    fill: false, radius: radius);
                 DrawToolbarGlyph(list, min + buttonSize / 2, buttonIndex, action,
                     active ? context.Config.AccentColor : GratisTheme.Primary, scale);
                 var news = UiMotion.Value(UiMotion.Item, 14,
@@ -148,6 +163,8 @@ public static partial class MapToolbarDrawing {
                     drawLayersContextMenu();
                 }
             }
+            if (locationRight > locationLeft && LocationInToolbar(context.Config))
+                DrawGratisLocation(list, context, scale, origin, locationLeft, locationRight);
         }
         finally { ImGui.EndChild(); ImGui.PopStyleColor(); }
     }

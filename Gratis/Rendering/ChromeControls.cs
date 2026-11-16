@@ -63,14 +63,16 @@ public static partial class ChromeControls {
     }
 
     public static bool IconButton(string id, char glyph, string label, Vector2 size, float? scale = null,
-        Vector4? windowBounds = null, float? radius = null) {
+        Vector4? windowBounds = null, float? radius = null, bool selected = false, Vector4? iconColor = null) {
         var pos = ImGui.GetCursorScreenPos();
         var clicked = Button(id, size);
         var list = ImGui.GetWindowDrawList();
         var s = scale ?? GratisTheme.ChromeScale;
         using var motion = UiMotion.Control(list, pos, pos + size);
-        Feedback(list, pos, pos + size, scale: s, radius: radius);
-        GratisIcons.Draw(list, pos + size / 2, glyph, GratisTheme.Secondary, GratisTheme.IconSize * s);
+        // A toggle passes its state here rather than calling Feedback a second time on the same item: two calls with
+        // different targets share one animated value and keep restarting it, so the toggle would never light.
+        Feedback(list, pos, pos + size, selected, scale: s, radius: radius);
+        GratisIcons.Draw(list, pos + size / 2, glyph, iconColor ?? GratisTheme.Secondary, GratisTheme.IconSize * s);
         Tooltip(label, scale: s, windowBounds: windowBounds);
         return clicked;
     }

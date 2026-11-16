@@ -1,14 +1,19 @@
 ﻿using System.Numerics;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Gratis.Classes;
 using MarkerInfo = Gratis.Classes.MarkerInfo;
 
 namespace Gratis.Extensions;
 
 public static class MapMarkerDataExtensions {
-    public static void Draw(this MapMarkerData marker, Vector2 offset, float scale) {
+    public static unsafe void Draw(this MapMarkerData marker, Vector2 offset, float scale) {
         if ((marker.Flags & 1) == 1)
+            return;
+        // The game's list covers the whole territory; a quest objective for another floor names another Map row.
+        var agent = AgentMap.Instance();
+        if (agent != null && !Rendering.EventMarkerScope.Shows(marker.ObjectiveId, marker.MapId, agent->SelectedMapId))
             return;
         var questObjective = marker.ObjectiveId != 0 && Rendering.MarkerRelevance.IsActive(marker.ObjectiveId);
 

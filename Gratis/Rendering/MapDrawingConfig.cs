@@ -220,6 +220,9 @@ public partial class MapDrawingConfig : CharacterConfiguration {
     public bool ScaleWithZoom = true;
     public Vector4 AreaColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.33f };
     public Vector4 AreaOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.30f };
+    // The circle around a quest objective in the Gratis style: a mid-bright blue that reads on dark and light maps.
+    public Vector4 QuestAreaColor = new(0.25f, 0.55f, 1.0f, 0.20f);
+    public Vector4 QuestAreaOutlineColor = new(0.25f, 0.55f, 1.0f, 0.85f);
     public Vector4 PlayerConeColor = ColorVector(KnownColor.CornflowerBlue) with { W = 0.33f };
     public Vector4 PlayerConeOutlineColor = ColorVector(KnownColor.CornflowerBlue) with { W = 1.0f };
     public float ToolbarFade = 0.19f;

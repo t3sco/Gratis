@@ -52,10 +52,14 @@ public sealed class ChipLabelCache {
 }
 
 public static class SegmentedChip {
+    internal const uint ChosenChannel = 25;
+
     public static bool Draw(string id, string label, bool selected, in ChipOptions options) {
         var face = options.Profile;
         var s = options.Scale;
-        var chosen = UiMotion.Value(ImGui.GetID(id), 6, selected ? 1 : 0);
+        // Its own channel: the button's feedback (channel 6, never selected here) shares this item's key, and two
+        // callers with different targets on one channel restart each other every frame, so a newly chosen chip never lit.
+        var chosen = UiMotion.Value(ImGui.GetID(id), ChosenChannel, selected ? 1 : 0);
         ImGui.PushStyleColor(ImGuiCol.Button,
             Vector4.Lerp(face.Fill, options.Accent with { W = face.SelectedAlpha }, chosen));
         try {

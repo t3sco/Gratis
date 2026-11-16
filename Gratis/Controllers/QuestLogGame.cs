@@ -98,9 +98,13 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
             }
             ReadHistory(now);
             var accepted = new Dictionary<uint, byte>();
+            // The Journal's priority and hide-from-map choices live on the quest work; they are read, never written.
+            var marked = new Dictionary<uint, (bool Priority, bool Hidden)>();
             foreach (var work in manager->NormalQuests)
-                if (work.QuestId != 0)
+                if (work.QuestId != 0) {
                     accepted[65536u + work.QuestId] = work.Sequence;
+                    marked[65536u + work.QuestId] = (work.IsPriority, work.IsHidden);
+                }
             CheckAbandon(now, accepted);
             var signature = string.Join(",", accepted.Keys.Order());
             if (acceptance != signature) {
@@ -130,6 +134,7 @@ public sealed partial class QuestLogGame : IQuestLogSource, IDisposable {
                     Completed = data != null && Service.UnlockState.IsQuestCompleted(data.Row),
                     Repeatable = data?.Row.IsRepeatable ?? false, ClientKnown = true,
                     CanAbandon = data is { Row.CanCancel: true } && data.Bucket != QuestBucket.Scenario,
+                    Priority = marked[id].Priority, Hidden = marked[id].Hidden,
                 };
                 return data == null ? quest : WithRequirements(quest, data.Row);
             }).ToArray();

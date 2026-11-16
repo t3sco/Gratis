@@ -44,7 +44,9 @@ public static partial class UnavailableReason {
         or "TripleTriadOpponents"
         or "Markers.ShowFateProgress"
         or "Markers.ShowAetherCurrents"
-        or "Markers.ShowGatherWindows" => "This setting requires the Gratis visual style.",
+        or "Markers.ShowGatherWindows"
+        or "QuestAreaColor"
+        or "QuestAreaOutlineColor" => "This setting requires the Gratis visual style.",
         "FollowReturnToPlayer"
         or "Markers.Opacity"
         or "MoveHandle" => "This setting requires the Gratis visual style.",
@@ -79,6 +81,7 @@ public static partial class UnavailableReason {
         or "ShowSubAreaLabel"
         or "ClassicMoveHandle" => "This setting requires the Classic visual style.",
         "LocationCardShows"
+        or "LocationPlacement"
         or "TitleCorner"
         or "TitleOffset"
         or "TitleBelowToolbar"

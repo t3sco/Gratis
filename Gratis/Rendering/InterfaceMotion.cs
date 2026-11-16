@@ -34,6 +34,13 @@ public sealed class InterfaceMotionStore {
     private int cursor, frame = -1;
     private double now;
     public int Count => slots.Count;
+    /// <summary>
+    /// How many times a value was asked for a second time in one frame with a different target. Two callers sharing a
+    /// key and channel (a control's own selected state and the shared button feedback, say) restart each other's
+    /// animation every frame, so the value never leaves where it started. Zero in healthy drawing.
+    /// </summary>
+    public int Conflicts { get; private set; }
+    public MotionKey LastConflict { get; private set; }
     public bool Contains(MotionKey key) => slots.ContainsKey(key);
     public int Active { get; private set; }
     public int Samples { get; private set; }
@@ -90,6 +97,10 @@ public sealed class InterfaceMotionStore {
             };
         }
         ref var entry = ref entries[at];
+        if (entry.Frame == frame && entry.Target != target) {
+            Conflicts++;
+            LastConflict = key;
+        }
         if (entry.Target != target) {
             entry.From = entry.Value;
             entry.Target = target;

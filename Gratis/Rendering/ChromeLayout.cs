@@ -30,7 +30,7 @@ public static class ChromeLayout {
         return (min, max);
     }
 
-    // The top-right corner holds the quest log's toggle and pin, with the FATE button to their left. The FATE button
+    // The top-right corner holds the quest log's toggle, with the FATE button to its left. The FATE button
     // stays in PvP (disabled, with its reason), where the quest log is hidden altogether.
     public static bool QuestButtonsShown(MapDrawContext context) =>
         context.Config.IsGratis && context.QuestLogSource != null && !context.IsPvP;
@@ -45,13 +45,13 @@ public static class ChromeLayout {
     // smallest form (a very small or circular map), so those windows lay out exactly as they did without it.
     public static bool SharedFateButtonFits(MapDrawContext context, float safeWidth) {
         var scale = GratisTheme.ChromeScale;
-        var buttons = (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0) + 1;
+        var buttons = (QuestButtonsShown(context) ? 1 : 0) + (FateButtonShown(context) ? 1 : 0) + 1;
         return safeWidth - buttons * (GratisTheme.ToolbarHeight + GratisTheme.Gap) * scale
             >= MapToolbarDrawing.CollapsedWidth(2) * scale;
     }
 
     public static int CornerButtons(MapDrawContext context, float safeWidth = float.PositiveInfinity) =>
-        (QuestButtonsShown(context) ? 2 : 0) + (FateButtonShown(context) ? 1 : 0)
+        (QuestButtonsShown(context) ? 1 : 0) + (FateButtonShown(context) ? 1 : 0)
         + (SharedFateButtonShown(context) && SharedFateButtonFits(context, safeWidth) ? 1 : 0);
 
     public static (Vector2 Min, Vector2 Max) RawSafeBounds(Vector2 position, Vector2 size) {
